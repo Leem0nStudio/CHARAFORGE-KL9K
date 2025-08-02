@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText } from "lucide-react";
+import { Wand2, Loader2, FileText, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,13 +23,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { generateCharacterBio } from "@/ai/flows/generate-character-bio";
 import { generateCharacterImage } from "@/ai/flows/generate-character-image";
+import { saveCharacter } from "@/ai/flows/save-character";
 import { Skeleton } from "./ui/skeleton";
 
-const FormSchema = z.object({
+const generationFormSchema = z.object({
   description: z.string().min(20, {
     message: "Please enter a more detailed description (at least 20 characters).",
   }).max(1000, {
@@ -37,25 +40,51 @@ const FormSchema = z.object({
   }),
 });
 
+const saveFormSchema = z.object({
+  name: z.string().min(2, {
+    message: "Name must be at least 2 characters.",
+  }).max(50, {
+    message: "Name must not be longer than 50 characters."
+  }),
+});
+
 type CharacterData = {
   bio: string;
   imageUrl: string;
+  description: string;
 };
 
 export function CharacterGenerator() {
   const [characterData, setCharacterData] = useState<CharacterData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const form = useForm<z.infer<typeof FormSchema>>({
-    resolver: zodResolver(FormSchema),
+  const generationForm = useForm<z.infer<typeof generationFormSchema>>({
+    resolver: zodResolver(generationFormSchema),
     defaultValues: {
       description: "",
     },
   });
 
-  async function onSubmit(data: z.infer<typeof FormSchema>) {
-    setIsLoading(true);
+  const saveForm = useForm<z.infer<typeof saveFormSchema>>({
+    resolver: zodResolver(saveFormSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
+
+  async function onGenerate(data: z.infer<typeof generationFormSchema>) {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "Please log in to generate a character.",
+      });
+      return;
+    }
+    setIsGenerating(true);
     setCharacterData(null);
 
     try {
@@ -71,6 +100,7 @@ export function CharacterGenerator() {
       setCharacterData({
         bio: bioResult.biography,
         imageUrl: imageResult.imageUrl,
+        description: data.description,
       });
 
     } catch (error) {
@@ -81,9 +111,44 @@ export function CharacterGenerator() {
         description: "There was a problem creating your character. Please try again.",
       });
     } finally {
-      setIsLoading(false);
+      setIsGenerating(false);
     }
   }
+
+  async function onSave(data: z.infer<typeof saveFormSchema>) {
+    if (!characterData || !user) return;
+
+    setIsSaving(true);
+    try {
+      await saveCharacter({
+        ...data,
+        ...characterData,
+        userId: user.uid,
+      });
+
+      toast({
+        title: "Character Saved!",
+        description: `${data.name} has been saved to your private gallery.`,
+      });
+      
+      // Reset state
+      setCharacterData(null);
+      generationForm.reset();
+      saveForm.reset();
+
+    } catch (error) {
+      console.error("Save character error:", error);
+      toast({
+        variant: "destructive",
+        title: "Save Failed",
+        description: "Could not save your character. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  const isLoading = isGenerating || isSaving;
 
   return (
     <section id="generator" className="container my-12">
@@ -97,10 +162,10 @@ export function CharacterGenerator() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <Form {...generationForm}>
+                <form onSubmit={generationForm.handleSubmit(onGenerate)} className="space-y-6">
                   <FormField
-                    control={form.control}
+                    control={generationForm.control}
                     name="description"
                     render={({ field }) => (
                       <FormItem>
@@ -110,14 +175,15 @@ export function CharacterGenerator() {
                             placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder. They are haunted by a past betrayal..."
                             className="min-h-[150px] resize-none"
                             {...field}
+                            disabled={isLoading}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading}>
-                    {isLoading ? (
+                  <Button type="submit" size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !user}>
+                    {isGenerating ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Forging...
@@ -129,6 +195,7 @@ export function CharacterGenerator() {
                       </>
                     )}
                   </Button>
+                  {!user && <p className="text-xs text-center text-muted-foreground">You must be logged in to forge a character.</p>}
                 </form>
               </Form>
             </CardContent>
@@ -144,7 +211,7 @@ export function CharacterGenerator() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoading && (
+              {isGenerating && (
                 <div className="grid gap-8 md:grid-cols-5">
                   <Skeleton className="md:col-span-2 w-full aspect-square rounded-lg" />
                   <div className="md:col-span-3 space-y-4">
@@ -157,7 +224,7 @@ export function CharacterGenerator() {
                   </div>
                 </div>
               )}
-              {!isLoading && !characterData && (
+              {!isGenerating && !characterData && (
                 <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[300px] border-2 border-dashed rounded-lg bg-card">
                   <Wand2 className="h-12 w-12 mb-4 text-primary" />
                   <p className="text-lg font-medium font-headline tracking-wider">Your character awaits</p>
@@ -178,11 +245,35 @@ export function CharacterGenerator() {
                     </div>
                     <div className="md:col-span-3">
                         <h3 className="font-headline text-2xl flex items-center mb-4"><FileText className="w-5 h-5 mr-2 text-primary" /> Biography</h3>
-                        <div className="space-y-4 text-muted-foreground">
+                        <div className="space-y-4 text-muted-foreground mb-6">
                           {characterData.bio.split('\n').filter(p => p.trim() !== '').map((paragraph, index) => (
                             <p key={index}>{paragraph}</p>
                           ))}
                         </div>
+                        <Form {...saveForm}>
+                          <form onSubmit={saveForm.handleSubmit(onSave)} className="space-y-4">
+                             <FormField
+                                control={saveForm.control}
+                                name="name"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Character Name</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="e.g., Captain Kaelen" {...field} disabled={isSaving} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <Button type="submit" className="w-full" disabled={isSaving}>
+                                {isSaving ? (
+                                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                                ) : (
+                                  <><Save className="mr-2 h-4 w-4" /> Save to Gallery</>
+                                )}
+                              </Button>
+                          </form>
+                        </Form>
                     </div>
                  </div>
               )}
