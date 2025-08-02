@@ -20,6 +20,7 @@ import { admin } from '@/lib/firebase/server';
 import { Separator } from '@/components/ui/separator';
 import { CharacterCard } from '@/components/character-card';
 import type { Character } from '@/components/character-card';
+import { redirect } from 'next/navigation';
 
 
 async function getCharactersForUser(userId: string): Promise<Character[]> {
@@ -57,14 +58,21 @@ export default async function CharactersPage() {
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
   let characters: Character[] = [];
+  let uid: string | null = null;
 
   if (idToken) {
     try {
       const decodedToken = await getAuth(admin).verifyIdToken(idToken);
-      characters = await getCharactersForUser(decodedToken.uid);
+      uid = decodedToken.uid;
+      characters = await getCharactersForUser(uid);
     } catch (error) {
-      console.error('Error verifying token or fetching data:', error);
+      console.error('Auth error, redirecting:', error);
+      // If token is invalid, redirect to home
+      redirect('/');
     }
+  } else {
+    // If no token, redirect to home
+    redirect('/');
   }
 
   return (

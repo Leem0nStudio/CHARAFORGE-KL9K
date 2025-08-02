@@ -7,14 +7,17 @@ import { cookies } from 'next/headers';
 import { admin } from '@/lib/firebase/server';
 
 async function verifyAndGetUid() {
-  const idToken = cookies().get('firebaseIdToken')?.value;
+  const cookieStore = cookies();
+  const idToken = cookieStore.get('firebaseIdToken')?.value;
+
   if (!idToken) {
-    throw new Error('User is not authenticated.');
+    throw new Error('User is not authenticated. No token found.');
   }
   try {
     const decodedToken = await getAuth(admin).verifyIdToken(idToken);
     return decodedToken.uid;
   } catch (error) {
+    console.error('Error verifying token in server action:', error);
     throw new Error('Invalid authentication token.');
   }
 }

@@ -16,19 +16,27 @@ export interface AuthContextType {
   loading: boolean;
 }
 
-const AUTH_COOKIE_NAME = 'firebaseIdToken';
-
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
 });
 
 async function setCookie(token: string | null) {
-    if(token) {
-        document.cookie = `${AUTH_COOKIE_NAME}=${token}; path=/;`;
-    } else {
-        document.cookie = `${AUTH_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  // Use a server action to set the cookie
+  try {
+    const response = await fetch('/api/auth/set-cookie', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to set auth cookie');
     }
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -53,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       setLoading(false);
     }
-  }, [auth]);
+  }, []);
 
   if (loading) {
     return (
