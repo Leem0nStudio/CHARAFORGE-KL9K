@@ -16,10 +16,20 @@ export interface AuthContextType {
   loading: boolean;
 }
 
+const AUTH_COOKIE_NAME = 'firebaseIdToken';
+
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
 });
+
+async function setCookie(token: string | null) {
+    if(token) {
+        document.cookie = `${AUTH_COOKIE_NAME}=${token}; path=/;`;
+    } else {
+        document.cookie = `${AUTH_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    }
+}
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -29,19 +39,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (user) {
         const token = await user.getIdToken();
-        // Set session cookie
-        await fetch('/api/auth/session', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        await setCookie(token);
         setUser(user);
       } else {
-        // Clear session cookie
-        await fetch('/api/auth/session', {
-          method: 'DELETE',
-        });
+        await setCookie(null);
         setUser(null);
       }
       setLoading(false);

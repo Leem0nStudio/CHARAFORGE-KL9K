@@ -4,7 +4,7 @@ import {
   signInWithPopup,
   signOut,
 } from 'firebase/auth';
-import { LogIn, LogOut, User as UserIcon } from 'lucide-react';
+import { LogIn, LogOut, User as UserIcon, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase/client';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -17,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import Link from 'next/link';
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -73,6 +74,13 @@ export function LoginButton() {
               </p>
             </div>
           </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/characters">
+              <Users className="mr-2 h-4 w-4" />
+              <span>My Characters</span>
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" />
