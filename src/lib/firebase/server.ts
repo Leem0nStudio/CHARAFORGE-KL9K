@@ -7,17 +7,25 @@ const createFirebaseAdminApp = () => {
     return getApp();
   }
 
-  const serviceAccount = JSON.parse(
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string
-  );
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-  return initializeApp({
-    credential: {
-      projectId: serviceAccount.project_id,
-      clientEmail: serviceAccount.client_email,
-      privateKey: serviceAccount.private_key,
-    },
-  });
+  if (!serviceAccountKey) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. The server could not be initialized.');
+  }
+
+  try {
+    const serviceAccount = JSON.parse(serviceAccountKey);
+    return initializeApp({
+      credential: {
+        projectId: serviceAccount.project_id,
+        clientEmail: serviceAccount.client_email,
+        privateKey: serviceAccount.private_key,
+      },
+    });
+  } catch (error) {
+    console.error('Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:', error);
+    throw new Error('Failed to parse Firebase service account key.');
+  }
 };
 
 export const admin: App = createFirebaseAdminApp();

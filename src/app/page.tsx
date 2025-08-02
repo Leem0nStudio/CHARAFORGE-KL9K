@@ -7,13 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { LoginButton } from '@/components/login-button';
+import { adminDb } from '@/lib/firebase/server';
+import type { Character } from '@/components/character-card';
 
 const featuredCreations = [
-    { name: 'Kaelen, the Shadow Rogue', creator: 'seraphina', image: 'https://placehold.co/400x400.png', hint: 'fantasy rogue' },
-    { name: 'Unit 734: "Glitch"', creator: 'cypher', image: 'https://placehold.co/400x400.png', hint: 'sci-fi robot' },
-    { name: 'Captain "Iron-Eye" Isabella', creator: 'mad_max', image: 'https://placehold.co/400x400.png', hint: 'pirate captain' },
-    { name: 'Lyra of the Whispering Woods', creator: 'elara', image: 'https://placehold.co/400x400.png', hint: 'forest elf' },
+    { id: '1', name: 'Kaelen, the Shadow Rogue', imageUrl: 'https://placehold.co/400x400.png', description: 'A rogue shrouded in mystery.', biography: '', userId: '', status: 'public', createdAt: new Date(), creator: 'seraphina' },
+    { id: '2', name: 'Unit 734: "Glitch"', imageUrl: 'https://placehold.co/400x400.png', description: 'A rogue AI with a quirky personality.', biography: '', userId: '', status: 'public', createdAt: new Date(), creator: 'cypher' },
+    { id: '3', name: 'Captain "Iron-Eye" Isabella', imageUrl: 'https://placehold.co/400x400.png', description: 'A fierce pirate captain.', biography: '', userId: '', status: 'public', createdAt: new Date(), creator: 'mad_max' },
+    { id: '4', name: 'Lyra of the Whispering Woods', imageUrl: 'https://placehold.co/400x400.png', description: 'An enigmatic elf of the forest.', biography: '', userId: '', status: 'public', createdAt: new Date(), creator: 'elara' },
 ];
+
 
 const topCreators = [
     { name: 'seraphina', avatar: 'https://placehold.co/100x100.png', creations: 87 },
@@ -29,7 +32,8 @@ const dataPacks = [
     { name: 'Cosmic Horror', description: 'Unspeakable horrors from beyond.', icon: <ScrollText className="w-6 h-6" /> },
 ];
 
-export default function Home() {
+export default async function Home() {
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -67,15 +71,15 @@ export default function Home() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {featuredCreations.map((creation) => (
-              <Card key={creation.name} className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
+              <Card key={creation.id} className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
                 <CardHeader className="p-0">
                   <Image
-                    src={creation.image}
+                    src={creation.imageUrl}
                     alt={creation.name}
                     width={400}
                     height={400}
                     className="w-full h-auto aspect-square object-cover"
-                    data-ai-hint={creation.hint}
+                    data-ai-hint="fantasy rogue"
                   />
                 </CardHeader>
                 <CardContent className="p-4">
