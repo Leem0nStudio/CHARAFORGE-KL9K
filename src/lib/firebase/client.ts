@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,15 +12,25 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-export const app =
-  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-
-let auth: any;
-
-try {
-  auth = getAuth(app);
-} catch (e) {
-  console.log(e);
+let app: FirebaseApp;
+if (getApps().length === 0) {
+    if (firebaseConfig.apiKey) {
+        app = initializeApp(firebaseConfig);
+    } else {
+        console.error("Firebase API key is missing. Firebase could not be initialized.");
+    }
+} else {
+    app = getApp();
 }
 
-export { auth };
+
+let auth: Auth | undefined;
+if (app) {
+    try {
+      auth = getAuth(app);
+    } catch (e) {
+      console.error(e);
+    }
+}
+
+export { app, auth };
