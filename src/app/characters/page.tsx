@@ -1,6 +1,5 @@
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import Image from 'next/image';
 import { User, Copy, BookOpen, Trash2, Send } from 'lucide-react';
 import {
   Card,
@@ -19,17 +18,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { admin } from '@/lib/firebase/server';
 import { Separator } from '@/components/ui/separator';
+import { CharacterCard } from '@/components/character-card';
+import type { Character } from '@/components/character-card';
 
-type Character = {
-  id: string;
-  name: string;
-  description: string;
-  biography: string;
-  imageUrl: string;
-  userId: string;
-  status: 'private' | 'public';
-  createdAt: Date;
-};
 
 async function getCharactersForUser(userId: string): Promise<Character[]> {
   try {
@@ -86,56 +77,7 @@ export default async function CharactersPage() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {characters.length > 0 ? (
               characters.map((character) => (
-                <Card key={character.id} className="flex flex-col">
-                  <CardHeader className="p-0">
-                     <Image
-                        src={character.imageUrl}
-                        alt={character.name}
-                        width={400}
-                        height={400}
-                        className="w-full h-auto aspect-square object-cover rounded-t-lg"
-                      />
-                  </CardHeader>
-                  <CardContent className="p-4 flex-grow">
-                    <CardTitle className="font-headline text-2xl mb-2">{character.name}</CardTitle>
-                    
-                    <Accordion type="single" collapsible>
-                      <AccordionItem value="item-1">
-                        <AccordionTrigger>
-                           <span className="flex items-center gap-2 text-sm font-semibold">
-                            <BookOpen className="h-4 w-4" /> Biography
-                           </span>
-                        </AccordionTrigger>
-                        <AccordionContent className="text-muted-foreground text-sm space-y-3 py-2">
-                           {character.biography.split('\n').filter(p => p.trim() !== '').map((paragraph, index) => (
-                            <p key={index}>{paragraph}</p>
-                          ))}
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-
-                    <Separator className="my-4" />
-
-                    <div>
-                      <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                        <Copy className="h-4 w-4" /> Original Prompt
-                      </h4>
-                      <p className="text-sm text-muted-foreground italic p-3 bg-muted rounded-md">
-                        &quot;{character.description}&quot;
-                      </p>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="p-4 flex gap-2">
-                     <Button variant="outline" className="w-full">
-                        <Send className="h-4 w-4 mr-2"/>
-                        Post to Feed
-                     </Button>
-                     <Button variant="destructive" className="w-full">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                     </Button>
-                  </CardFooter>
-                </Card>
+                <CharacterCard key={character.id} character={character} />
               ))
             ) : (
               <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card">
