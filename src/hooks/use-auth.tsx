@@ -36,19 +36,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      if (user) {
-        const token = await user.getIdToken();
-        await setCookie(token);
-        setUser(user);
-      } else {
-        await setCookie(null);
-        setUser(null);
-      }
-      setLoading(false);
-    });
+    if (auth) {
+      const unsubscribe = onIdTokenChanged(auth, async (user) => {
+        if (user) {
+          const token = await user.getIdToken();
+          await setCookie(token);
+          setUser(user);
+        } else {
+          await setCookie(null);
+          setUser(null);
+        }
+        setLoading(false);
+      });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   if (loading) {

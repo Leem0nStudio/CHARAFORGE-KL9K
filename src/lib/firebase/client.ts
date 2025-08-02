@@ -24,13 +24,13 @@ if (getApps().length === 0) {
 }
 
 
-let auth: Auth | undefined;
-if (app) {
-    try {
-      auth = getAuth(app);
-    } catch (e) {
-      console.error(e);
-    }
+let auth: Auth;
+
+try {
+  auth = getAuth(app);
+} catch (e) {
+  console.error(e);
 }
+
 
 export { app, auth };
