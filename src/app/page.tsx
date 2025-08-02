@@ -1,11 +1,12 @@
 import Image from 'next/image';
-import { Bot, Swords, Rocket, ScrollText } from 'lucide-react';
+import { Bot, Swords, Rocket, ScrollText, User } from 'lucide-react';
 import { CharacterGenerator } from '@/components/character-generator';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { LoginButton } from '@/components/login-button';
 
 const featuredCreations = [
     { name: 'Kaelen, the Shadow Rogue', creator: 'seraphina', image: 'https://placehold.co/400x400.png', hint: 'fantasy rogue' },
@@ -38,6 +39,7 @@ export default function Home() {
             <span className="font-bold font-headline text-2xl tracking-wider">CharaForge</span>
           </div>
           <div className="flex flex-1 items-center justify-end space-x-2">
+            <LoginButton />
             <ThemeToggle />
           </div>
         </div>
