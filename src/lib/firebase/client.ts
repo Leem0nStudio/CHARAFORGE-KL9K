@@ -13,11 +13,16 @@ const firebaseConfig = {
 
 // Initialize Firebase
 let app: FirebaseApp;
+// Check that all required fields are present before initializing
 if (getApps().length === 0) {
-    if (firebaseConfig.apiKey) {
+    if (
+      firebaseConfig.apiKey &&
+      firebaseConfig.authDomain &&
+      firebaseConfig.projectId
+    ) {
         app = initializeApp(firebaseConfig);
     } else {
-        console.error("Firebase API key is missing. Firebase could not be initialized.");
+        console.error("Firebase configuration is missing or incomplete. Firebase could not be initialized.");
     }
 } else {
     app = getApp();
@@ -26,10 +31,12 @@ if (getApps().length === 0) {
 
 let auth: Auth;
 
-try {
-  auth = getAuth(app);
-} catch (e) {
-  console.error(e);
+if (app) {
+    try {
+      auth = getAuth(app);
+    } catch (e) {
+      console.error(e);
+    }
 }
 
 
