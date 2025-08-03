@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { User, onIdTokenChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase/client';
+import { getFirebaseClient } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export interface UserProfile extends User {
@@ -47,9 +47,7 @@ async function setCookie(token: string | null): Promise<void> {
 }
 
 const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
-  if (!db) {
-     return null;
-  }
+  const { db } = getFirebaseClient();
   const userDocRef = doc(db, 'users', user.uid);
   try {
     const userDoc = await getDoc(userDocRef);
@@ -85,6 +83,7 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
     return updatedUserDoc.data() || null;
 
   } catch (error: unknown) {
+    console.error("Error in ensureUserDocument:", error);
     return null;
   }
 };
@@ -95,33 +94,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth) {
-        setLoading(false);
-        return;
-    }
+    const { auth } = getFirebaseClient();
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (authUser) {
         setLoading(true);
         const token = await authUser.getIdToken();
         
-        // --- Start of Synchronous Flow ---
-        // 1. Set server-side cookie and wait for it to complete.
         await setCookie(token);
-
-        // 2. Ensure user document exists in Firestore and get data.
         const firestoreData = await ensureUserDocument(authUser);
         
-        // 3. Create the final user profile object for the client.
         const userProfile: UserProfile = {
             ...authUser,
             ...firestoreData,
             role: firestoreData?.role || 'user',
         }
         
-        // 4. Set the user state, which unlocks the UI.
         setUser(userProfile);
-        // --- End of Synchronous Flow ---
-
       } else {
         await setCookie(null);
         setUser(null);

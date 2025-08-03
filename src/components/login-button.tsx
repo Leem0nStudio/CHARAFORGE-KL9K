@@ -2,7 +2,7 @@
 import { LogIn, LogOut, User as UserIcon, Users, Settings, BarChart } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/hooks/use-auth';
-import { auth } from '@/lib/firebase/client';
+import { getFirebaseClient } from '@/lib/firebase/client';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import {
@@ -20,10 +20,7 @@ export function LoginButton() {
 
   const handleSignOut = async () => {
     try {
-      if (!auth) {
-        console.error("Auth service is not available for sign out.");
-        return;
-      }
+      const { auth } = getFirebaseClient();
       await signOut(auth);
     } catch (error: unknown) {
       console.error("Error signing out: ", error);
