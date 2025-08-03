@@ -57,7 +57,13 @@ function ProfileForm({ user }: { user: UserProfile }) {
       if (state.success) {
         toast({ title: 'Success', description: state.message });
       } else {
-        toast({ variant: 'destructive', title: 'Error', description: state.message });
+        toast({ 
+            variant: 'destructive', 
+            title: 'Error', 
+            description: state.message.includes('Authentication service is unavailable')
+                ? 'Could not save profile. The server is missing required configuration. Please contact support or check server logs.'
+                : state.message 
+        });
       }
     }
   }, [state, toast]);
