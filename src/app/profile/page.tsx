@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, UserStats } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -27,8 +27,9 @@ import { updateUserProfile, deleteUserAccount, updateUserPreferences } from './a
 import { Loader2, User, Swords, Heart, Package, Gem, Calendar } from 'lucide-react';
 import type { UserPreferences } from './actions';
 import { format } from 'date-fns';
+import React from 'react';
 
-function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) {
+const StatCard = React.memo(function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) {
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -40,7 +41,7 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string
             </CardContent>
         </Card>
     );
-}
+});
 
 
 export default function ProfilePage() {
@@ -61,16 +62,7 @@ export default function ProfilePage() {
     // In a full implementation, you'd fetch userDoc.data().preferences
   }, [user]);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
-
-  const handleUpdateProfile = async (formData: FormData) => {
+  const handleUpdateProfile = useCallback(async (formData: FormData) => {
     setIsSubmitting(true);
     const result = await updateUserProfile(formData);
     if (result.success) {
@@ -79,9 +71,9 @@ export default function ProfilePage() {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
     setIsSubmitting(false);
-  };
+  }, [toast]);
   
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = useCallback(async () => {
     setIsSubmitting(true);
     const result = await deleteUserAccount();
      if (result.success) {
@@ -91,13 +83,13 @@ export default function ProfilePage() {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
     setIsSubmitting(false);
-  }
+  }, [toast, router]);
 
-  const handlePreferencesChange = (field: keyof UserPreferences, value: any) => {
+  const handlePreferencesChange = useCallback((field: keyof UserPreferences, value: any) => {
     setPreferences(prev => ({ ...prev, [field]: value }));
-  };
+  }, []);
   
-  const handleNestedPreferencesChange = (parent: 'notifications' | 'privacy', field: string, value: any) => {
+  const handleNestedPreferencesChange = useCallback((parent: 'notifications' | 'privacy', field: string, value: any) => {
       setPreferences(prev => ({
           ...prev,
           [parent]: {
@@ -105,9 +97,9 @@ export default function ProfilePage() {
               [field]: value
           }
       }));
-  }
+  }, []);
 
-  const handleSavePreferences = () => {
+  const handleSavePreferences = useCallback(() => {
     startTransition(async () => {
         const result = await updateUserPreferences(preferences);
         if (result.success) {
@@ -116,6 +108,15 @@ export default function ProfilePage() {
             toast({ variant: 'destructive', title: 'Error', description: result.message });
         }
     });
+  }, [preferences, toast]);
+  
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    router.push('/login');
+    return null;
   }
   
   const userStats = user.stats;

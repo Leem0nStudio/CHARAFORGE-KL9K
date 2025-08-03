@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import Image from 'next/image';
 import { BookOpen, Copy, Send, Trash2, Loader2, Pencil } from 'lucide-react';
 import Link from 'next/link';
@@ -50,7 +51,7 @@ type CharacterCardProps = {
   character: Character;
 };
 
-export function CharacterCard({ character }: CharacterCardProps) {
+function CharacterCardComponent({ character }: CharacterCardProps) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
@@ -61,15 +62,15 @@ export function CharacterCard({ character }: CharacterCardProps) {
     setIsClientSide(true);
   }, []);
 
-  const handleCopyPrompt = () => {
+  const handleCopyPrompt = useCallback(() => {
     navigator.clipboard.writeText(character.description);
     toast({
       title: 'Prompt Copied!',
       description: 'The original prompt has been copied to your clipboard.',
     });
-  };
+  }, [character.description, toast]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     setIsDeleting(true);
     try {
       await deleteCharacter(character.id);
@@ -88,9 +89,9 @@ export function CharacterCard({ character }: CharacterCardProps) {
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [character.id, character.name, toast]);
 
-  const handlePost = async () => {
+  const handlePost = useCallback(async () => {
     setIsPosting(true);
     try {
       await updateCharacterStatus(character.id, 'public');
@@ -109,7 +110,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
     } finally {
       setIsPosting(false);
     }
-  }
+  }, [character.id, character.name, toast]);
 
   const isPosted = character.status === 'public';
 
@@ -210,3 +211,5 @@ export function CharacterCard({ character }: CharacterCardProps) {
     </Card>
   );
 }
+
+export const CharacterCard = memo(CharacterCardComponent);
