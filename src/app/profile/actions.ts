@@ -15,11 +15,6 @@ export type ActionResponse = {
 
 // This function centralizes the logic for verifying the user's session from the server-side.
 async function verifyAndGetUid(): Promise<string> {
-  // Ensure Firebase Admin services are available before proceeding.
-  if(!adminAuth) {
-    throw new Error('Authentication service is unavailable on the server.');
-  }
-
   // Retrieve the session cookie.
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
@@ -27,6 +22,11 @@ async function verifyAndGetUid(): Promise<string> {
   // If no token is found, the user is not authenticated.
   if (!idToken) {
     throw new Error('User session not found. Please log in again.');
+  }
+
+  // Ensure Firebase Admin services are available before proceeding.
+  if(!adminAuth) {
+    throw new Error('Authentication service is unavailable on the server.');
   }
 
   // Verify the token using the Firebase Admin SDK.
@@ -48,12 +48,16 @@ export async function updateUserProfile(
   prevState: ActionResponse,
   formData: FormData
 ): Promise<ActionResponse> {
+  // Explicitly check for server-side service availability first.
+  if (!adminAuth || !adminDb) {
+      return { 
+          success: false, 
+          message: 'Could not save profile. The server is missing required configuration. Please contact support or check server logs.' 
+      };
+  }
+  
   try {
     const uid = await verifyAndGetUid();
-
-    if (!adminDb) {
-      return { success: false, message: 'Database service is unavailable.' };
-    }
 
     const validatedFields = UpdateProfileSchema.safeParse({
       displayName: formData.get('displayName'),
@@ -75,6 +79,13 @@ export async function updateUserProfile(
     return { success: true, message: 'Profile updated successfully!' };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update profile. Please try again.';
+    // Specifically check for the server configuration error message
+    if (message.includes('Authentication service is unavailable')) {
+       return { 
+          success: false, 
+          message: 'Could not save profile. The server is missing required configuration. Please contact support or check server logs.'
+      };
+    }
     return { success: false, message };
   }
 }

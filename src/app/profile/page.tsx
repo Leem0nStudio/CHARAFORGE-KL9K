@@ -60,9 +60,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
         toast({ 
             variant: 'destructive', 
             title: 'Error', 
-            description: state.message.includes('Authentication service is unavailable')
-                ? 'Could not save profile. The server is missing required configuration. Please contact support or check server logs.'
-                : state.message 
+            description: state.message
         });
       }
     }
@@ -77,6 +75,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
       </Button>
     );
   }
+  SubmitButton.displayName = "SubmitButton";
 
   return (
     <Card>
@@ -100,6 +99,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
     </Card>
   );
 }
+ProfileForm.displayName = "ProfileForm";
 
 function PreferencesForm({ initialPreferences }: { initialPreferences: UserPreferences }) {
   const { toast } = useToast();
@@ -193,6 +193,7 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
     </Card>
   );
 }
+PreferencesForm.displayName = "PreferencesForm";
 
 function StatsTab({ userStats }: { userStats?: UserStats }) {
     const memberSinceDate = userStats?.memberSince?.toDate ? format(userStats.memberSince.toDate(), 'PPP') : 'N/A';
@@ -219,6 +220,7 @@ function StatsTab({ userStats }: { userStats?: UserStats }) {
         </Card>
     );
 }
+StatsTab.displayName = "StatsTab";
 
 function SecurityTab() {
   const { toast } = useToast();
@@ -289,6 +291,7 @@ function SecurityTab() {
      </div>
   );
 }
+SecurityTab.displayName = "SecurityTab";
 
 // #endregion
 

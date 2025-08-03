@@ -27,13 +27,13 @@ const createFirebaseAdminApp = (): App | null => {
 
   // The service account key is essential for production.
   if (!serviceAccountKey) {
-    console.error('[server.ts] ERROR: FIREBASE_SERVICE_ACCOUNT_KEY is not set. Server features will be disabled.');
+    console.error('[server.ts] ERROR: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Server features requiring admin privileges will be disabled.');
     return null;
   }
   
   // A common mistake is leaving the key as an empty object.
-  if (serviceAccountKey === "{}") {
-    console.warn('[server.ts] WARN: FIREBASE_SERVICE_ACCOUNT_KEY is an empty JSON object. Server features will be disabled.');
+  if (serviceAccountKey.trim() === "" || serviceAccountKey.trim() === "{}") {
+    console.warn('[server.ts] WARN: FIREBASE_SERVICE_ACCOUNT_KEY is empty or an empty JSON object. Server features will be disabled.');
     return null;
   }
 
@@ -43,14 +43,15 @@ const createFirebaseAdminApp = (): App | null => {
     const serviceAccount: ServiceAccount = JSON.parse(sanitizedKey);
 
     // Validate the parsed service account for the necessary property.
-    if (!serviceAccount.projectId) {
-      console.error('[server.ts] ERROR: Service account JSON is missing "project_id".');
+    if (!serviceAccount.projectId && !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+      console.error('[server.ts] ERROR: Service account JSON is missing "project_id" and no NEXT_PUBLIC_FIREBASE_PROJECT_ID is set.');
       return null;
     }
     
     // Initialize the app with the service account credentials.
     return initializeApp({
       credential: cert(serviceAccount),
+      projectId: serviceAccount.projectId || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
     });
   } catch (error) {
     // Catch any JSON parsing errors.
