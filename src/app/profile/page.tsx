@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useEffect, useState, useTransition, useCallback } from 'react';
@@ -33,7 +32,7 @@ import { format } from 'date-fns';
 
 // #region Sub-components for each Tab
 
-const StatCard = React.memo(function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) {
+const StatCard = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) => {
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -45,7 +44,7 @@ const StatCard = React.memo(function StatCard({ icon, label, value }: { icon: Re
             </CardContent>
         </Card>
     );
-});
+};
 StatCard.displayName = "StatCard";
 
 
@@ -197,7 +196,7 @@ function StatsTab({ userStats }: { userStats?: UserStats }) {
             <CardHeader>
                 <CardTitle>Your Activity</CardTitle>
                 <CardDescription>An overview of your contributions and activity on CharaForge.</CardDescription>
-            </Header>
+            </CardHeader>
             <CardContent>
                {userStats ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -213,7 +212,7 @@ function StatsTab({ userStats }: { userStats?: UserStats }) {
                )}
             </CardContent>
         </Card>
-    )
+    );
 }
 
 function SecurityTab() {
@@ -257,7 +256,7 @@ function SecurityTab() {
          <CardHeader>
           <CardTitle>Danger Zone</CardTitle>
           <CardDescription>Permanently delete your account and all of your content. This action is not reversible.</CardDescription>
-        </Header>
+        </CardHeader>
         <CardContent>
             <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -305,11 +304,15 @@ export default function ProfilePage() {
   }, [user, loading, router]);
   
   if (loading || !user) {
-    return <div>Loading...</div>; // Or a proper skeleton loader
+    return (
+      <div className="flex items-center justify-center h-screen w-full">
+         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
   
-  const userPreferences = user.preferences as UserPreferences || defaultPreferences;
-  const userStats = user.stats;
+  const userPreferences = (user?.preferences as UserPreferences) || defaultPreferences;
+  const userStats = user?.stats;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -340,3 +343,4 @@ export default function ProfilePage() {
   );
 }
 
+    
