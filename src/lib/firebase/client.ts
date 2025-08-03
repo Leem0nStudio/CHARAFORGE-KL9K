@@ -3,30 +3,26 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  "projectId": "charaforge-kl9ck",
+  "appId": "1:347255894214:web:67952f04171bd3041867c7",
+  "storageBucket": "charaforge-kl9ck.firebasestorage.app",
+  "apiKey": "AIzaSyBXEP7Ni8Tj4jhVLUC_kreLT91g28y0dXQ",
+  "authDomain": "charaforge-kl9ck.firebaseapp.com",
+  "messagingSenderId": "347255894214"
 };
+
 
 // Initialize Firebase
 let app: FirebaseApp;
 let auth: Auth;
 
 // This check is important for Next.js a fast refresh feature.
-if (getApps().length === 0) {
-  if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-  } else {
-    console.error("Firebase configuration is missing or incomplete. Firebase could not be initialized on the client.");
-  }
-} else {
+if (getApps().length) {
   app = getApp();
-  auth = getAuth(app);
+} else {
+  app = initializeApp(firebaseConfig);
 }
 
+auth = getApp() ? getAuth(app) : getAuth();
 
 export { app, auth };
