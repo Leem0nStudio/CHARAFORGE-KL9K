@@ -1,5 +1,11 @@
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
+import { 
+  getAuth, 
+  Auth, 
+  connectAuthEmulator, 
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
+} from 'firebase/auth';
 import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -20,9 +26,9 @@ const areClientVarsPresent =
   firebaseConfig.messagingSenderId &&
   firebaseConfig.appId;
 
-let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
-let db: Firestore | null = null;
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
 if (areClientVarsPresent) {
   // Initialize Firebase only if config is fully present
@@ -43,8 +49,12 @@ if (areClientVarsPresent) {
   }
 } else {
   console.error(
-    'Firebase client configuration is missing or incomplete. Make sure NEXT_PUBLIC_FIREBASE_* environment variables are set in your .env.local file. Client-side Firebase features will be disabled.'
+    'Firebase client configuration is missing or incomplete. Make sure NEXT_PUBLIC_FIREBASE_* environment variables are set in your .env file. Client-side Firebase features will be disabled.'
   );
+  // Provide dummy instances if config is not present to avoid app crash
+  app = {} as FirebaseApp;
+  auth = {} as Auth;
+  db = {} as Firestore;
 }
 
 export { app, auth, db };
