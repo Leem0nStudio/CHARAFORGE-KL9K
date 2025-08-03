@@ -7,7 +7,7 @@ import {
   createUserWithEmailAndPassword,
   type AuthError,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase/client"; // auth is now guaranteed to be initialized
+import { auth } from "@/lib/firebase/client"; 
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
-// A more robust error mapping for better user feedback.
 const errorMessages: Record<string, string> = {
   "auth/invalid-email": "The email address is not valid.",
   "auth/user-not-found": "No account found with this email. Please sign up.",
@@ -58,6 +57,16 @@ export function LoginForm() {
     e.preventDefault();
     setLoading(true);
 
+    if (!auth) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Service Not Ready",
+            description: "The authentication service is still initializing. Please try again in a moment.",
+        });
+        setLoading(false);
+        return;
+    }
+
     try {
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
@@ -74,6 +83,7 @@ export function LoginForm() {
       }
       router.push("/");
     } catch (error: unknown) {
+        console.error("Authentication error details:", error);
         if (error instanceof Error && 'code' in error) {
             handleAuthError(error as AuthError);
         } else {

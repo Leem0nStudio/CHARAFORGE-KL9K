@@ -1,6 +1,6 @@
 'use client';
 import { LogIn, LogOut, User as UserIcon, Users, Settings, BarChart } from 'lucide-react';
-import { signOut, type Auth } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase/client';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -20,11 +20,13 @@ export function LoginButton() {
 
   const handleSignOut = async () => {
     try {
-      if (auth && (auth as Auth).signOut) {
-        await signOut(auth);
+      if (!auth) {
+        console.error("Auth service is not available for sign out.");
+        return;
       }
+      await signOut(auth);
     } catch (error: unknown) {
-      // Error is handled silently on the client.
+      console.error("Error signing out: ", error);
     }
   };
 

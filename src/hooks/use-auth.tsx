@@ -53,7 +53,7 @@ async function setCookie(token: string | null) {
 
 const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
    console.log(`[useAuth] ensureUserDocument for user: ${user.uid}`);
-  if (!db || !db.collection) {
+  if (!db) {
     console.error('[useAuth] Firestore (db) is not available in ensureUserDocument.');
     return null; 
   }
@@ -110,6 +110,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     console.log('[useAuth] AuthProvider mounted. Setting up onIdTokenChanged listener.');
+    if (!auth) {
+        console.error("[useAuth] Firebase Auth is not available. Cannot set up listener.");
+        setLoading(false);
+        return;
+    }
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       console.log('[useAuth] onIdTokenChanged fired.');
       if (authUser) {
