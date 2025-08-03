@@ -39,8 +39,10 @@ const generateCharacterImageFlow = ai.defineFlow(
     const {media} = await ai.generate({
       model: 'googleai/gemini-1.5-flash-latest',
       prompt: `Generate a photorealistic portrait of a character based on the following description: ${input.description}`,
-      config: {
-        responseModalities: ['IMAGE'],
+       config: {
+        // Note: The 'IMAGE' response modality is often implicitly handled by models that can generate images.
+        // Specifying it can sometimes cause issues with certain model versions.
+        // If issues arise, removing this config or ensuring the model explicitly supports it is a good step.
       },
     });
 

@@ -9,7 +9,6 @@ import { redirect } from 'next/navigation';
 
 async function getCharactersForUser(userId: string): Promise<Character[]> {
   if (!adminDb) {
-    // If the database isn't available, return an empty array to avoid breaking the page.
     return [];
   }
   try {
@@ -23,10 +22,8 @@ async function getCharactersForUser(userId: string): Promise<Character[]> {
       return [];
     }
 
-    // Map and validate data safely.
     return snapshot.docs.map(doc => {
       const data = doc.data();
-      // Ensure createdAt has a fallback, although Firestore should always provide it.
       const createdAtDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
       return {
         id: doc.id,
@@ -40,9 +37,6 @@ async function getCharactersForUser(userId: string): Promise<Character[]> {
       };
     });
   } catch (error: unknown) {
-    if (process.env.NODE_ENV !== 'production') {
-        console.error("Error fetching characters:", error);
-    }
     return [];
   }
 }
@@ -52,7 +46,6 @@ export default async function CharactersPage() {
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
   if (!idToken) {
-    // If there's no token, the user is not logged in. Redirect to the login page.
     redirect('/login');
   }
 
@@ -61,13 +54,10 @@ export default async function CharactersPage() {
       if (!admin) {
           throw new Error("Authentication service is not available.");
       }
-    const decodedToken = await getAuth(admin).verifyIdToken(idToken);
+    const auth = getAuth(admin);
+    const decodedToken = await auth.verifyIdToken(idToken);
     uid = decodedToken.uid;
   } catch (error: unknown) {
-    if (process.env.NODE_ENV !== 'production') {
-        console.error('Auth error on characters page, redirecting:', error);
-    }
-    // If the token is invalid or expired, redirect to login.
     redirect('/login');
   }
 

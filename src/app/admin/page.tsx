@@ -11,32 +11,17 @@ async function getIsAdmin(): Promise<boolean> {
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
-  // If there's no token, or if the admin app isn't initialized, they can't be an admin.
-  if (!idToken || !admin) {
+  if (!idToken || !admin || !adminDb) {
     return false;
-  }
-  // If the database isn't available, we can't check the role claim.
-  if (!adminDb) {
-      return false;
   }
 
   try {
-    const decodedToken = await getAuth(admin).verifyIdToken(idToken);
+    const auth = getAuth(admin);
+    const decodedToken = await auth.verifyIdToken(idToken);
     const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
     
-    // Check for the 'admin' role in the user's document in Firestore.
-    // This is more secure and flexible than relying only on custom claims.
     return userDoc.exists && userDoc.data()?.role === 'admin';
   } catch (error: unknown) {
-    // Don't log the error in production for security reasons.
-    // In a real app, this should go to a proper logging service.
-    if (process.env.NODE_ENV !== 'production') {
-        if (error instanceof Error) {
-            console.error('Error verifying admin status:', error.message);
-        } else {
-            console.error('An unknown error occurred while verifying admin status');
-        }
-    }
     return false;
   }
 }
@@ -45,7 +30,7 @@ export default async function AdminDashboardPage() {
   const isAdmin = await getIsAdmin();
   
   if (!isAdmin) {
-    redirect('/'); // Or to a dedicated "unauthorized" page
+    redirect('/');
   }
   
   const stats = await getDashboardStats();

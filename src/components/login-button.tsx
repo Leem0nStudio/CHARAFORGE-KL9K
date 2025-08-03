@@ -20,20 +20,15 @@ export function LoginButton() {
 
   const handleSignOut = async () => {
     try {
-      // Ensure auth object is fully initialized before using.
       if (auth && (auth as Auth).signOut) {
         await signOut(auth);
       }
     } catch (error: unknown) {
-      // Avoid logging errors to the console in production.
-      if (process.env.NODE_ENV !== 'production') {
-          console.error('Error signing out:', error);
-      }
+      // Error is handled silently on the client.
     }
   };
 
   if (loading) {
-    // Show a placeholder button while auth state is loading.
     return <Button variant="ghost" size="icon" className="w-24 h-9" disabled><UserIcon /></Button>;
   }
 

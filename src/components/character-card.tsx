@@ -55,8 +55,6 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
   const [isPosting, setIsPosting] = useState(false);
   const [isClientSide, setIsClientSide] = useState(false);
 
-  // useEffect runs only on the client, so this is a safe way to
-  // prevent hydration mismatches for UI that should only be client-rendered.
   useEffect(() => {
     setIsClientSide(true);
   }, []);
@@ -77,7 +75,6 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
         title: 'Character Deleted',
         description: `${character.name} has been removed from your gallery.`,
       });
-      // The page will revalidate and remove the card, so no need to manage state here.
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
@@ -97,7 +94,6 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
         title: 'Character Posted!',
         description: `${character.name} is now public.`,
       });
-       // The page will revalidate and update the card status.
     } catch (error: unknown) {
       toast({
         variant: 'destructive',

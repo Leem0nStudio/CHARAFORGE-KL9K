@@ -15,7 +15,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 export interface UserProfile extends User {
   stats?: UserStats;
   role?: 'admin' | 'moderator' | 'user';
-  // Add other firestore specific fields here
 }
 
 export interface UserStats {
@@ -24,7 +23,7 @@ export interface UserStats {
   collectionsCreated: number;
   installedPacks: string[];
   subscriptionTier: string;
-  memberSince: any; // Using `any` to be flexible with Firestore Timestamp
+  memberSince: any; 
 }
 
 
@@ -42,38 +41,27 @@ async function setCookie(token: string | null) {
   try {
     await fetch('/api/auth/set-cookie', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     });
   } catch (error: unknown) {
-    // Avoid logging in production
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('Failed to set auth cookie:', error);
-    }
+    // Silently fail on cookie setting error
   }
 }
 
-/**
- * Ensures a user document exists in Firestore and is up-to-date.
- * Creates one if it doesn't, updates it if it does.
- * @param user The Firebase Auth user object.
- */
 const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
-  if (!db) return null; 
+  if (!db || !db.collection) return null; 
   const userDocRef = doc(db, 'users', user.uid);
   try {
     const userDoc = await getDoc(userDocRef);
     if (!userDoc.exists()) {
-      // Create document for new user
       await setDoc(userDocRef, {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
         photoURL: user.photoURL,
         createdAt: serverTimestamp(),
-        role: 'user', // Default role for new users
+        role: 'user',
         stats: {
           charactersCreated: 0,
           totalLikes: 0,
@@ -84,27 +72,20 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
         }
       });
     } else {
-        // Update existing user document with latest auth info
-        // This is important if a user changes their display name or profile picture.
         const updateData: { displayName: string | null; photoURL: string | null; email?: string | null } = {
           displayName: user.displayName,
           photoURL: user.photoURL,
         };
-        // Only update email if it has changed.
         if (user.email !== userDoc.data()?.email) {
             updateData.email = user.email;
         }
         await updateDoc(userDocRef, updateData);
     }
     
-    // Return the latest user document data
     const updatedUserDoc = await getDoc(userDocRef);
     return updatedUserDoc.data() || null;
 
   } catch (error: unknown) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error("Error ensuring user document exists:", error);
-    }
     return null;
   }
 };
@@ -115,8 +96,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // This robust check ensures that the `auth` object is a valid Firebase Auth instance
-    // before we try to use it, preventing runtime errors.
     const isAuthReady = auth && typeof (auth as Auth).onIdTokenChanged === 'function';
 
     if (!isAuthReady) {
@@ -134,7 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userProfile: UserProfile = {
             ...authUser,
             ...firestoreData,
-            role: firestoreData?.role || 'user', // Set role from firestore
+            role: firestoreData?.role || 'user',
         }
         setUser(userProfile);
 

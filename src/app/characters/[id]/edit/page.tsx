@@ -14,7 +14,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 async function getCharacterForEdit(characterId: string) {
   if (!adminDb || !admin) {
-     console.warn("Edit page loaded without server credentials. Editing will be disabled.");
      return { error: 'SERVICE_UNAVAILABLE' };
   }
 
@@ -23,37 +22,35 @@ async function getCharacterForEdit(characterId: string) {
     const idToken = cookieStore.get('firebaseIdToken')?.value;
 
     if (!idToken) {
-      return null; // No user logged in
+      return null;
     }
 
     let uid;
     try {
-      const decodedToken = await getAuth(admin).verifyIdToken(idToken);
+      const auth = getAuth(admin);
+      const decodedToken = await auth.verifyIdToken(idToken);
       uid = decodedToken.uid;
     } catch (error) {
-      console.error('Auth error in getCharacterForEdit:', error);
-      return null; // Invalid token
+      return null;
     }
 
     const characterRef = adminDb.collection('characters').doc(characterId);
     const characterDoc = await characterRef.get();
 
     if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
-      return null; // Not found or permission denied
+      return null;
     }
 
     return characterDoc.data();
   } catch (error) {
-    console.error("Unexpected error in getCharacterForEdit:", error);
-    // Gracefully handle the case where the service is unavailable
     return { error: 'SERVICE_UNAVAILABLE' };
   }
 }
 
 export default async function EditCharacterPage({ params }: { params: { id: string } }) {
-  const character = await getCharacterForEdit(params.id);
+  const characterData = await getCharacterForEdit(params.id);
 
-  if (character?.error === 'SERVICE_UNAVAILABLE') {
+  if (characterData?.error === 'SERVICE_UNAVAILABLE') {
     return (
        <main className="flex-1 p-4 md:p-10">
         <div className="mx-auto grid w-full max-w-2xl gap-2">
@@ -73,11 +70,12 @@ export default async function EditCharacterPage({ params }: { params: { id: stri
     )
   }
 
-  if (!character) {
+  if (!characterData) {
     notFound();
   }
   
   const updateCharacterWithId = updateCharacter.bind(null, params.id);
+  const character = characterData as { name: string, biography: string };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">

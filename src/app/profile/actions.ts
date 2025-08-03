@@ -16,17 +16,15 @@ async function verifyAndGetUid() {
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
-  if (!idToken) {
-    throw new Error('User is not authenticated. No token found.');
+  if (!idToken || !admin) {
+    throw new Error('User is not authenticated or auth service is unavailable.');
   }
-  if (!admin) {
-    throw new Error('The authentication service is currently unavailable.');
-  }
+
   try {
-    const decodedToken = await getAuth(admin).verifyIdToken(idToken);
+    const auth = getAuth(admin);
+    const decodedToken = await auth.verifyIdToken(idToken);
     return decodedToken.uid;
   } catch (error) {
-    console.error('Error verifying token in server action:', error);
     throw new Error('Invalid authentication token.');
   }
 }
@@ -36,23 +34,23 @@ const UpdateProfileSchema = z.object({
 });
 
 export async function updateUserProfile(formData: FormData): Promise<ActionResponse> {
-  const uid = await verifyAndGetUid();
-  
-  const validatedFields = UpdateProfileSchema.safeParse({
-    displayName: formData.get('displayName'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      success: false,
-      message: validatedFields.error.flatten().fieldErrors.displayName?.[0] || 'Invalid input.',
-    };
-  }
-
-  const { displayName } = validatedFields.data;
-
   try {
-    await getAuth(admin).updateUser(uid, { displayName });
+    const uid = await verifyAndGetUid();
+    
+    const validatedFields = UpdateProfileSchema.safeParse({
+      displayName: formData.get('displayName'),
+    });
+
+    if (!validatedFields.success) {
+      return {
+        success: false,
+        message: validatedFields.error.flatten().fieldErrors.displayName?.[0] || 'Invalid input.',
+      };
+    }
+
+    const { displayName } = validatedFields.data;
+    const auth = getAuth(admin);
+    await auth.updateUser(uid, { displayName });
 
     if(adminDb) {
       const userRef = adminDb.collection('users').doc(uid);
@@ -62,8 +60,7 @@ export async function updateUserProfile(formData: FormData): Promise<ActionRespo
     revalidatePath('/profile');
     return { success: true, message: 'Profile updated successfully!' };
   } catch (error) {
-    console.error('Error updating user profile:', error);
-    return { success: false, message: 'Failed to update profile. Please try again.' };
+    return { success: false, message: error instanceof Error ? error.message : 'Failed to update profile. Please try again.' };
   }
 }
 
@@ -80,56 +77,58 @@ export type UserPreferences = z.infer<typeof UpdatePreferencesSchema>;
 
 
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
-    const uid = await verifyAndGetUid();
-
-    const validatedFields = UpdatePreferencesSchema.safeParse(preferences);
-
-    if (!validatedFields.success) {
-        return {
-            success: false,
-            message: 'Invalid preferences data provided.',
-        };
-    }
-
-    if (!adminDb) {
-        return { success: false, message: 'Database service is unavailable.' };
-    }
-    
     try {
+        const uid = await verifyAndGetUid();
+
+        const validatedFields = UpdatePreferencesSchema.safeParse(preferences);
+
+        if (!validatedFields.success) {
+            return {
+                success: false,
+                message: 'Invalid preferences data provided.',
+            };
+        }
+
+        if (!adminDb) {
+            return { success: false, message: 'Database service is unavailable.' };
+        }
+    
         const userRef = adminDb.collection('users').doc(uid);
         await userRef.set({ preferences: validatedFields.data }, { merge: true });
 
         revalidatePath('/profile');
         return { success: true, message: 'Preferences updated successfully.' };
     } catch (error) {
-        console.error('Error updating user preferences:', error);
-        return { success: false, message: 'Failed to save preferences. Please try again.' };
+        return { success: false, message: error instanceof Error ? error.message : 'Failed to save preferences. Please try again.' };
     }
 }
 
 
 export async function deleteUserAccount(): Promise<ActionResponse> {
-  const uid = await verifyAndGetUid();
-
   try {
+    const uid = await verifyAndGetUid();
+
     if(adminDb) {
-      await adminDb.collection('users').doc(uid).delete();
-      const charactersSnapshot = await adminDb.collection('characters').where('userId', '==', uid).get();
-      const batch = adminDb.batch();
-      charactersSnapshot.forEach(doc => {
-        batch.delete(doc.ref);
+      const userRef = adminDb.collection('users').doc(uid);
+      const charactersQuery = adminDb.collection('characters').where('userId', '==', uid);
+      
+      await adminDb.runTransaction(async (transaction) => {
+        const charactersSnapshot = await transaction.get(charactersQuery);
+        charactersSnapshot.forEach(doc => {
+          transaction.delete(doc.ref);
+        });
+        transaction.delete(userRef);
       });
-      await batch.commit();
     }
     
-    await getAuth(admin).deleteUser(uid);
+    const auth = getAuth(admin);
+    await auth.deleteUser(uid);
     
     cookies().set('firebaseIdToken', '', { maxAge: 0 });
 
     revalidatePath('/');
     return { success: true, message: 'Your account has been permanently deleted.' };
   } catch (error) {
-    console.error('Error deleting user account:', error);
-    return { success: false, message: 'Failed to delete your account. Please try again.' };
+    return { success: false, message: error instanceof Error ? error.message : 'Failed to delete your account. Please try again.' };
   }
 }

@@ -12,20 +12,15 @@ async function verifyAndGetUid() {
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
-  if (!idToken) {
-    throw new Error('User is not authenticated. No token found.');
-  }
-
-  // Ensure admin auth service is available
-  if (!admin) {
-      throw new Error('The authentication service is currently unavailable.');
+  if (!idToken || !admin) {
+    throw new Error('User is not authenticated or auth service is unavailable.');
   }
 
   try {
-    const decodedToken = await getAuth(admin).verifyIdToken(idToken);
+    const auth = getAuth(admin);
+    const decodedToken = await auth.verifyIdToken(idToken);
     return decodedToken.uid;
   } catch (error) {
-    console.error('Error verifying token in server action:', error);
     throw new Error('Invalid authentication token.');
   }
 }
@@ -38,19 +33,19 @@ export async function deleteCharacter(characterId: string) {
   }
 
   const characterRef = adminDb.collection('characters').doc(characterId);
-  const characterDoc = await characterRef.get();
-
-  if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
-    throw new Error('Permission denied or character not found.');
-  }
-
+  
   try {
+    const characterDoc = await characterRef.get();
+
+    if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+      throw new Error('Permission denied or character not found.');
+    }
+
     await characterRef.delete();
     revalidatePath('/characters');
     return { success: true };
   } catch (error) {
-    console.error('Error deleting character from Firestore:', error);
-    throw new Error('Could not delete character.');
+    throw new Error(error instanceof Error ? error.message : 'Could not delete character.');
   }
 }
 
@@ -70,20 +65,20 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
   }
 
   const characterRef = adminDb.collection('characters').doc(characterId);
-  const characterDoc = await characterRef.get();
-
-  if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
-    throw new Error('Permission denied or character not found.');
-  }
-
+  
   try {
+    const characterDoc = await characterRef.get();
+
+    if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+      throw new Error('Permission denied or character not found.');
+    }
+
     await characterRef.update({ status: validation.data });
     revalidatePath('/characters');
     revalidatePath('/'); // Also revalidate home page in case it's featured
     return { success: true };
   } catch (error) {
-    console.error('Error updating character status in Firestore:', error);
-    throw new Error('Could not update character status.');
+    throw new Error(error instanceof Error ? error.message : 'Could not update character status.');
   }
 }
 
@@ -104,27 +99,23 @@ export async function updateCharacter(characterId: string, formData: FormData) {
   });
 
   if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Missing or invalid fields. Failed to update character.',
-    };
+    // This is a simple way to return errors. A more complex app might have a better error handling state.
+    redirect(`/characters/${characterId}/edit?error=validation`);
   }
   
   const { name, biography } = validatedFields.data;
-
   const characterRef = adminDb.collection('characters').doc(characterId);
-  const characterDoc = await characterRef.get();
-
-  if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
-     throw new Error('Permission denied or character not found.');
-  }
   
   try {
-    // Only update the fields that are allowed to be changed.
+    const characterDoc = await characterRef.get();
+
+    if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+       throw new Error('Permission denied or character not found.');
+    }
+  
     await characterRef.update({ name, biography });
   } catch (error) {
-    console.error('Error updating character in Firestore:', error);
-    throw new Error('Could not update character.');
+    throw new Error(error instanceof Error ? error.message : 'Could not update character.');
   }
 
   revalidatePath('/characters');

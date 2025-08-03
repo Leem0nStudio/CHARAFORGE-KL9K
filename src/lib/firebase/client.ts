@@ -8,15 +8,13 @@ import {
 } from 'firebase/auth';
 import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
 
-// To prevent initialization errors, we check if all required client-side
-// environment variables are present before attempting to initialize Firebase.
 const areClientVarsPresent =
-  !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-  !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-  !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-  !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET &&
-  !!process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
-  !!process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
+  typeof process.env.NEXT_PUBLIC_FIREBASE_API_KEY === 'string' &&
+  typeof process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN === 'string' &&
+  typeof process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === 'string' &&
+  typeof process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET === 'string' &&
+  typeof process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID === 'string' &&
+  typeof process.env.NEXT_PUBLIC_FIREBASE_APP_ID === 'string';
 
 
 const firebaseConfig = areClientVarsPresent ? {
@@ -33,26 +31,23 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
-// Initialize Firebase only if the configuration is present.
-// This prevents the app from crashing if the .env file is not set up.
 if (areClientVarsPresent) {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     db = getFirestore(app);
 
-    // Connect to emulators if in development mode and NEXT_PUBLIC_USE_EMULATORS is true.
     if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
         try {
             connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
             connectFirestoreEmulator(db, '127.0.0.1', 8080);
         } catch (error) {
-            // This might fail if emulators are not running, which is fine.
-            // We don't want to log this in production.
+            // Emulator connection can fail if they aren't running. This is not a critical error.
         }
     }
 } else {
-  // If config is not present, provide dummy instances to avoid app crashing on import.
-  // The application will show a logged-out state and requests will not be made.
+  // Provide dummy/empty objects if Firebase is not configured.
+  // This allows the app to build and run without crashing.
+  // Components should handle the unauthenticated state gracefully.
   app = {} as FirebaseApp;
   auth = {} as Auth;
   db = {} as Firestore;
