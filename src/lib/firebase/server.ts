@@ -3,9 +3,7 @@ import { getAuth, Auth } from 'firebase-admin/auth';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
 const createFirebaseAdminApp = (): App | null => {
-  console.log('[server.ts] Attempting to create Firebase Admin App...');
   if (getApps().length > 0) {
-    console.log('[server.ts] Existing Firebase Admin App found.');
     return getApp();
   }
   
@@ -27,21 +25,17 @@ const createFirebaseAdminApp = (): App | null => {
   }
     
   try {
-    // This is the crucial fix: It replaces newline characters with escaped newlines
-    // so the JSON can be parsed correctly, even if copied directly from the Firebase console.
-    const sanitizedKey = serviceAccountKey.replace(/\n/g, '\\n');
+    const sanitizedKey = serviceAccountKey.replace(/\\n/g, '\n');
     const serviceAccount: ServiceAccount = JSON.parse(sanitizedKey);
 
     if (!serviceAccount.projectId) {
          console.error('[server.ts] Service account JSON is missing projectId. Server features will be disabled.');
          return null;
     }
-    console.log(`[server.ts] Initializing Admin App for project: ${serviceAccount.projectId}`);
     return initializeApp({
       credential: cert(serviceAccount),
     });
   } catch (error: unknown) {
-    // Provide a more detailed error message for easier debugging.
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(`[server.ts] FATAL: Error parsing FIREBASE_SERVICE_ACCOUNT_KEY. Please ensure it's a valid, single-line JSON string. Error: ${errorMessage}`);
     return null;
@@ -52,7 +46,6 @@ const adminApp = createFirebaseAdminApp();
 
 const getAdminDb = (): Firestore | null => {
   if (!adminApp) {
-    console.log('[server.ts] Admin App not available, Firestore cannot be initialized.');
     return null;
   }
   try {
@@ -65,7 +58,6 @@ const getAdminDb = (): Firestore | null => {
 
 const getAdminAuth = (): Auth | null => {
     if (!adminApp) {
-        console.log('[server.ts] Admin App not available, Auth cannot be initialized.');
         return null;
     }
     try {
@@ -79,7 +71,3 @@ const getAdminAuth = (): Auth | null => {
 export const admin: App | null = adminApp;
 export const adminDb: Firestore | null = getAdminDb();
 export const adminAuth: Auth | null = getAdminAuth();
-
-if (admin) console.log('[server.ts] Firebase Admin SDK initialized.');
-if (adminDb) console.log('[server.ts] Firestore for Admin is available.');
-if (adminAuth) console.log('[server.ts] Auth for Admin is available.');

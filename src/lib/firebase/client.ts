@@ -18,8 +18,6 @@ const firebaseConfig = {
 function initializeFirebase() {
     if (!getApps().length) {
         if (!firebaseConfig.projectId) {
-            // No hacer console.error aquí porque puede ejecutarse en el navegador.
-            // Los errores se deben manejar donde se usa.
             throw new Error("Firebase configuration is incomplete. Please check your NEXT_PUBLIC_FIREBASE_* variables.");
         }
         
@@ -32,7 +30,7 @@ function initializeFirebase() {
                 connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
                 connectFirestoreEmulator(db, '127.0.0.1', 8080);
             } catch (error: unknown) {
-               // Silently fail in browser
+               console.error("Failed to connect to Firebase emulators.", error);
             }
         }
     } else {
@@ -42,14 +40,10 @@ function initializeFirebase() {
     }
 }
 
-// Immediately initialize Firebase
 try {
     initializeFirebase();
 } catch (error: unknown) {
-    // Fail gracefully if config is missing.
-    // The app will show an error boundary or fail on a page that needs Firebase.
+    console.error("Failed to initialize Firebase.", error);
 }
 
-
-// Export the initialized instances
 export { app, auth, db };

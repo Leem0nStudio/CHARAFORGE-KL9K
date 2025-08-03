@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, memo, useEffect } from 'react';
+import { useState, useCallback, memo } from 'react';
 import Image from 'next/image';
 import { BookOpen, Copy, Send, Trash2, Loader2, Pencil } from 'lucide-react';
 import Link from 'next/link';
@@ -53,11 +53,6 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
-  const [isClientSide, setIsClientSide] = useState(false);
-
-  useEffect(() => {
-    setIsClientSide(true);
-  }, []);
 
   const handleCopyPrompt = useCallback(() => {
     navigator.clipboard.writeText(character.description);
@@ -163,50 +158,48 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
           </p>
         </div>
       </CardContent>
-      {isClientSide && (
-        <CardFooter className="p-4 flex flex-col gap-2">
-            <div className='flex w-full gap-2'>
-              <Button variant="outline" className="w-full" onClick={handlePost} disabled={isPosting || isPosted}>
-                  {isPosting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                  <Send className="h-4 w-4 mr-2" />
-                  )}
-                  {isPosted ? 'Posted' : 'Post'}
+      <CardFooter className="p-4 flex flex-col gap-2">
+          <div className='flex w-full gap-2'>
+            <Button variant="outline" className="w-full" onClick={handlePost} disabled={isPosting || isPosted}>
+                {isPosting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                <Send className="h-4 w-4 mr-2" />
+                )}
+                {isPosted ? 'Posted' : 'Post'}
+            </Button>
+              <Button variant="secondary" className="w-full" asChild>
+                <Link href={`/characters/${character.id}/edit`}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit
+                </Link>
               </Button>
-               <Button variant="secondary" className="w-full" asChild>
-                  <Link href={`/characters/${character.id}/edit`}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
-                  </Link>
-                </Button>
-            </div>
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="w-full" disabled={isDeleting}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your character
-                    and remove their data from our servers.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Continue
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </CardFooter>
-      )}
+          </div>
+          <AlertDialog>
+              <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="w-full" disabled={isDeleting}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+              </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your character
+                  and remove their data from our servers.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+                  {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Continue
+                  </AlertDialogAction>
+              </AlertDialogFooter>
+              </AlertDialogContent>
+          </AlertDialog>
+      </CardFooter>
     </Card>
   );
 }
