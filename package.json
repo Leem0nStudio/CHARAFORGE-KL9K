@@ -10,6 +10,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "firebase:setup": "node scripts/firebase-setup.js",
+    "firebase:emulators": "firebase emulators:start --only auth,firestore",
     "admin:grant": "node scripts/manage-admin.js grant",
     "admin:revoke": "node scripts/manage-admin.js revoke",
     "admin:check": "node scripts/manage-admin.js check",

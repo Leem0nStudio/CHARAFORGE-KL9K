@@ -9,77 +9,43 @@ service cloud.firestore {
     }
 
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return request.auth.uid == userId;
     }
 
-    // Admins can be designated via custom claims
-    function isAdmin() {
-      return isAuthenticated() && request.auth.token.admin == true;
+    function isPublic() {
+      return resource.data.status == 'public';
     }
 
-    // === USER PROFILES ===
-    // Users can only manage their own profile.
+    //
+    // Rules for the 'users' collection
+    //
     match /users/{userId} {
-      // READ: A user can only read their own profile.
-      // WRITE: A user can create their own profile, and can only update their own profile.
-      allow read, update: if isOwner(userId);
-      allow create: if isAuthenticated() && request.auth.uid == userId;
+      // Anyone authenticated can read a user's profile
+      allow read: if isAuthenticated();
 
-      // Data Validation for User Profiles
-      // Ensure the structure and types of the user document are correct on write.
-      match /users/{userId} {
-        allow write: if request.resource.data.uid == userId &&
-                        request.resource.data.email is string &&
-                        request.resource.data.displayName is string &&
-                        request.resource.data.createdAt is timestamp &&
-                        (!('role' in request.resource.data) || request.resource.data.role == 'user') &&
-                        (!('stats' in request.resource.data) || validateStats(request.resource.data.stats));
-      }
+      // Only the user themselves can create their own document
+      allow create: if isOwner(userId);
 
-       // Function to validate the structure of the stats object
-      function validateStats(stats) {
-        return stats.keys().hasAll(['charactersCreated', 'totalLikes', 'collectionsCreated', 'installedPacks', 'subscriptionTier', 'memberSince']) &&
-               stats.charactersCreated is number &&
-               stats.totalLikes is number &&
-               stats.collectionsCreated is number &&
-               stats.installedPacks is number &&
-               stats.subscriptionTier is string &&
-               stats.memberSince is timestamp;
-      }
+      // Only the user themselves can update their document
+      allow update: if isOwner(userId);
+
+      // Users cannot delete their own documents directly through a client request.
+      // Deletions should be handled by a trusted server environment (e.g., Cloud Function or Server Action).
+      allow delete: if false;
     }
 
-
-    // === CHARACTERS ===
-    // Characters can be public or private.
+    //
+    // Rules for the 'characters' collection
+    //
     match /characters/{characterId} {
-      // READ: Anyone can read a public character. Private characters can only be read by their owner.
-      allow read: if resource.data.status == 'public' || isOwner(resource.data.userId);
+      // Allow read access if the character is public OR if the requesting user is the owner
+      allow read: if isPublic() || (isAuthenticated() && isOwner(resource.data.userId));
 
-      // CREATE: Any authenticated user can create a character.
-      allow create: if isAuthenticated() &&
-                       isOwner(request.resource.data.userId) &&
-                       request.resource.data.createdAt is timestamp &&
-                       request.resource.data.status in ['private', 'public'];
+      // Allow any authenticated user to create a new character
+      allow create: if isAuthenticated();
 
-      // UPDATE, DELETE: Only the owner of a character can update or delete it.
-      allow update, delete: if isOwner(resource.data.userId);
-
-      // Data Validation for Characters
-      // - userId and createdAt cannot be changed after creation.
-      // - Name and biography must be strings.
-      // - Status must be 'public' or 'private'.
-      match /characters/{characterId} {
-        allow write: if request.resource.data.userId == resource.data.userId &&
-                        request.resource.data.createdAt == resource.data.createdAt &&
-                        request.resource.data.name is string &&
-                        request.resource.data.biography is string &&
-                        request.resource.data.status in ['private', 'public'];
-      }
-    }
-
-    // Default deny all other reads/writes
-    match /{document=**} {
-      allow read, write: if false;
+      // Allow update and delete only for the user who owns the character
+      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
   }
 }
