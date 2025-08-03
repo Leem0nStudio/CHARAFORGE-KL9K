@@ -27,7 +27,11 @@ const createFirebaseAdminApp = (): App | null => {
   }
     
   try {
-    const serviceAccount: ServiceAccount = JSON.parse(serviceAccountKey);
+    // This is the crucial fix: It replaces newline characters with escaped newlines
+    // so the JSON can be parsed correctly, even if copied directly from the Firebase console.
+    const sanitizedKey = serviceAccountKey.replace(/\n/g, '\\n');
+    const serviceAccount: ServiceAccount = JSON.parse(sanitizedKey);
+
     if (!serviceAccount.projectId) {
          console.error('[server.ts] Service account JSON is missing projectId. Server features will be disabled.');
          return null;
