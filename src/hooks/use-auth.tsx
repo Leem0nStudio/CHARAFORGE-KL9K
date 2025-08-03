@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -105,7 +106,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth) {
+    // Robust check to ensure 'auth' is a valid Firebase Auth instance
+    if (!auth || typeof auth.onIdTokenChanged !== 'function') {
       setLoading(false);
       return;
     }
