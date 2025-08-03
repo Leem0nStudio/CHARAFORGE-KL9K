@@ -20,7 +20,6 @@ async function verifyAndGetUid() {
     throw new Error('User is not authenticated.');
   }
 
-  // This check is crucial for environments where the admin SDK might fail to initialize.
   if (!admin) {
     throw new Error('Auth service is unavailable.');
   }
@@ -30,9 +29,6 @@ async function verifyAndGetUid() {
     const decodedToken = await auth.verifyIdToken(idToken);
     return decodedToken.uid;
   } catch (error) {
-    // This catches invalid, expired, or malformed tokens.
-    // It's a security catch-all.
-    console.error('[actions] Invalid auth token:', error);
     throw new Error('Invalid authentication session.');
   }
 }
@@ -134,7 +130,6 @@ export async function deleteUserAccount(): Promise<ActionResponse> {
     
     await auth.deleteUser(uid);
     
-    // Clear the cookie by setting its maxAge to 0
     cookies().set('firebaseIdToken', '', { maxAge: 0, path: '/' });
 
     revalidatePath('/');
