@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, UserStats } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -241,7 +241,7 @@ export default function ProfilePage() {
                             <StatCard icon={<Heart />} label="Total Likes Received" value={userStats.totalLikes} />
                             <StatCard icon={<Gem />} label="Subscription Tier" value={userStats.subscriptionTier} />
                             <StatCard icon={<User />} label="Collections Created" value={userStats.collectionsCreated} />
-                            <StatCard icon={<Package />} label="DataPacks Installed" value={userStats.installedPacks} />
+                            <StatCard icon={<Package />} label="DataPacks Installed" value={userStats.installedPacks.length} />
                             <StatCard icon={<Calendar />} label="Member Since" value={memberSinceDate} />
                         </div>
                    ) : (

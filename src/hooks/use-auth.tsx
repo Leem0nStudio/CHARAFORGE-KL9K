@@ -6,10 +6,9 @@ import {
   useEffect,
   useContext,
   ReactNode,
-  useCallback,
 } from 'react';
 import { User, onIdTokenChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData, getDocs, collection } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -23,7 +22,7 @@ export interface UserStats {
   charactersCreated: number;
   totalLikes: number;
   collectionsCreated: number;
-  installedPacks: number;
+  installedPacks: string[];
   subscriptionTier: string;
   memberSince: any; // Using `any` to be flexible with Firestore Timestamp
 }
@@ -76,7 +75,7 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
           charactersCreated: 0,
           totalLikes: 0,
           collectionsCreated: 0,
-          installedPacks: 0,
+          installedPacks: ['core_base_styles'],
           subscriptionTier: 'free',
           memberSince: serverTimestamp(),
         }
@@ -113,8 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (authUser) {
-        const token = await authUser.getIdToken(true); // Force refresh to get latest claims
-        const decodedToken = await authUser.getIdTokenResult();
+        const token = await authUser.getIdToken();
         const firestoreData = await ensureUserDocument(authUser);
         
         await setCookie(token);
