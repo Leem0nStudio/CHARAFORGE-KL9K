@@ -4,10 +4,12 @@ import type { NextRequest } from 'next/server';
 const AUTH_COOKIE_NAME = 'firebaseIdToken';
 
 export async function POST(request: NextRequest) {
+  console.log('[set-cookie] POST request received.');
   const { token } = await request.json();
   const response = NextResponse.json({ success: true });
 
   if (token) {
+    console.log('[set-cookie] Token received. Setting auth cookie.');
     response.cookies.set({
       name: AUTH_COOKIE_NAME,
       value: token,
@@ -17,6 +19,7 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24, // 1 day
     });
   } else {
+    console.log('[set-cookie] No token received. Clearing auth cookie.');
     response.cookies.set({
       name: AUTH_COOKIE_NAME,
       value: '',
@@ -26,5 +29,6 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  console.log('[set-cookie] Sending response.');
   return response;
 }

@@ -3,29 +3,41 @@ import { getAuth, Auth } from 'firebase-admin/auth';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
 const createFirebaseAdminApp = (): App | null => {
+  console.log('[server.ts] Attempting to create Firebase Admin App...');
   if (getApps().length > 0) {
+    console.log('[server.ts] Existing Firebase Admin App found.');
     return getApp();
   }
   
   if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
+     console.log('[server.ts] Initializing Admin App for EMULATORS.');
      return initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID });
   }
 
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-  if (!serviceAccountKey || serviceAccountKey === "{}") {
+  if (!serviceAccountKey) {
+    console.error('[server.ts] FIREBASE_SERVICE_ACCOUNT_KEY is not defined.');
+    return null;
+  }
+    
+  if (serviceAccountKey === "{}") {
+    console.warn('[server.ts] FIREBASE_SERVICE_ACCOUNT_KEY is an empty JSON object. Server-side features will be limited.');
     return null;
   }
     
   try {
     const serviceAccount: ServiceAccount = JSON.parse(serviceAccountKey);
     if (!serviceAccount.projectId) {
+         console.error('[server.ts] Service account JSON is missing projectId.');
          return null;
     }
+    console.log(`[server.ts] Initializing Admin App for project: ${serviceAccount.projectId}`);
     return initializeApp({
       credential: cert(serviceAccount),
     });
   } catch (error: unknown) {
+    console.error('[server.ts] Error parsing service account key JSON:', error);
     return null;
   }
 };
@@ -33,19 +45,27 @@ const createFirebaseAdminApp = (): App | null => {
 const adminApp = createFirebaseAdminApp();
 
 const getAdminDb = (): Firestore | null => {
-  if (!adminApp) return null;
+  if (!adminApp) {
+    console.log('[server.ts] Admin App not available, Firestore cannot be initialized.');
+    return null;
+  }
   try {
     return getFirestore(adminApp);
   } catch (e) {
+    console.error('[server.ts] Failed to get Firestore instance:', e);
     return null;
   }
 };
 
 const getAdminAuth = (): Auth | null => {
-    if (!adminApp) return null;
+    if (!adminApp) {
+        console.log('[server.ts] Admin App not available, Auth cannot be initialized.');
+        return null;
+    }
     try {
         return getAuth(adminApp);
     } catch(e) {
+        console.error('[server.ts] Failed to get Auth instance:', e);
         return null;
     }
 }
@@ -53,3 +73,7 @@ const getAdminAuth = (): Auth | null => {
 export const admin: App | null = adminApp;
 export const adminDb: Firestore | null = getAdminDb();
 export const adminAuth: Auth | null = getAdminAuth();
+
+if (admin) console.log('[server.ts] Firebase Admin SDK initialized.');
+if (adminDb) console.log('[server.ts] Firestore for Admin is available.');
+if (adminAuth) console.log('[server.ts] Auth for Admin is available.');

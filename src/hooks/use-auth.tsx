@@ -38,23 +38,30 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 async function setCookie(token: string | null) {
+  console.log('[useAuth] setCookie called. Token:', token ? 'Present' : 'null');
   try {
     await fetch('/api/auth/set-cookie', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     });
+     console.log('[useAuth] setCookie request sent successfully.');
   } catch (error: unknown) {
-    // Silently fail on cookie setting error
+    console.error('[useAuth] Error setting cookie:', error);
   }
 }
 
 const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
-  if (!db || !db.collection) return null; 
+   console.log(`[useAuth] ensureUserDocument for user: ${user.uid}`);
+  if (!db || !db.collection) {
+    console.error('[useAuth] Firestore (db) is not available in ensureUserDocument.');
+    return null; 
+  }
   const userDocRef = doc(db, 'users', user.uid);
   try {
     const userDoc = await getDoc(userDocRef);
     if (!userDoc.exists()) {
+      console.log(`[useAuth] No document found for user ${user.uid}, creating new one.`);
       await setDoc(userDocRef, {
         uid: user.uid,
         email: user.email,
@@ -71,7 +78,9 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
           memberSince: serverTimestamp(),
         }
       });
+      console.log(`[useAuth] User document for ${user.uid} created.`);
     } else {
+        console.log(`[useAuth] Document found for user ${user.uid}, checking for updates.`);
         const updateData: { displayName: string | null; photoURL: string | null; email?: string | null } = {
           displayName: user.displayName,
           photoURL: user.photoURL,
@@ -80,12 +89,16 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
             updateData.email = user.email;
         }
         await updateDoc(userDocRef, updateData);
+        console.log(`[useAuth] User document for ${user.uid} updated.`);
     }
     
     const updatedUserDoc = await getDoc(userDocRef);
-    return updatedUserDoc.data() || null;
+    const firestoreData = updatedUserDoc.data() || null;
+    console.log(`[useAuth] Returning firestore data for ${user.uid}:`, firestoreData);
+    return firestoreData;
 
   } catch (error: unknown) {
+    console.error(`[useAuth] Error in ensureUserDocument for ${user.uid}:`, error);
     return null;
   }
 };
@@ -96,11 +109,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // onIdTokenChanged is the correct listener for auth state.
-    // It will fire when the app starts and whenever the user's token changes.
+    console.log('[useAuth] AuthProvider mounted. Setting up onIdTokenChanged listener.');
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
+      console.log('[useAuth] onIdTokenChanged fired.');
       if (authUser) {
+        console.log(`[useAuth] User detected (UID: ${authUser.uid}).`);
         const token = await authUser.getIdToken();
+        console.log('[useAuth] Got ID token from Firebase.');
+        
         const firestoreData = await ensureUserDocument(authUser);
         
         await setCookie(token);
@@ -110,16 +126,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             ...firestoreData,
             role: firestoreData?.role || 'user',
         }
+        console.log('[useAuth] Setting user profile state:', userProfile);
         setUser(userProfile);
 
       } else {
+        console.log('[useAuth] No user detected.');
         await setCookie(null);
         setUser(null);
       }
+      console.log('[useAuth] Setting loading to false.');
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('[useAuth] AuthProvider unmounted. Unsubscribing from onIdTokenChanged.');
+      unsubscribe();
+    }
     
   }, []);
 
