@@ -20,40 +20,44 @@ const areClientVarsPresent =
     firebaseConfig.authDomain &&
     firebaseConfig.projectId;
 
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
+
 if (!areClientVarsPresent) {
   console.error(
     'Firebase client configuration is missing or incomplete. Make sure NEXT_PUBLIC_FIREBASE_* environment variables are set in your .env file. Client-side Firebase features will be disabled.'
   );
-}
-
-// Initialize Firebase
-let app: FirebaseApp;
-if (areClientVarsPresent) {
+  // Provide dummy instances if config is not present to avoid app crash
+  app = {} as FirebaseApp;
+  auth = {} as Auth;
+  db = {} as Firestore;
+} else {
+    // Initialize Firebase
     if (!getApps().length) {
       app = initializeApp(firebaseConfig);
     } else {
       app = getApp();
     }
-} else {
-    app = {} as FirebaseApp; // Provide a dummy app if not initialized
+    
+    auth = getAuth(app);
+    db = getFirestore(app);
+
+    // Connect to emulators if in development
+    if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
+      console.log('CLIENT: Connecting to Firebase Emulators');
+      try {
+        const authHost = process.env.NEXT_PUBLIC_AUTH_EMULATOR_HOST || '127.0.0.1';
+        const authPort = parseInt(process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT || '9099');
+        connectAuthEmulator(auth, `http://${authHost}:${authPort}`);
+
+        const firestoreHost = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST || '127.0.0.1';
+        const firestorePort = parseInt(process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT || '8080');
+        connectFirestoreEmulator(db, firestoreHost, firestorePort);
+      } catch (error) {
+        console.error('Error connecting to Firebase Emulators (Client):', error);
+      }
+    }
 }
 
-
-export const auth: Auth = areClientVarsPresent ? getAuth(app) : ({} as Auth);
-export const db: Firestore = areClientVarsPresent ? getFirestore(app) : ({} as Firestore);
-
-// Connect to emulators if in development
-if (areClientVarsPresent && process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
-  console.log('CLIENT: Connecting to Firebase Emulators');
-  try {
-    const authHost = process.env.NEXT_PUBLIC_AUTH_EMULATOR_HOST || '127.0.0.1';
-    const authPort = parseInt(process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT || '9099');
-    connectAuthEmulator(auth, `http://${authHost}:${authPort}`);
-
-    const firestoreHost = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST || '127.0.0.1';
-    const firestorePort = parseInt(process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT || '8080');
-    connectFirestoreEmulator(db, firestoreHost, firestorePort);
-  } catch (error) {
-    console.error('Error connecting to Firebase Emulators (Client):', error);
-  }
-}
+export { app, auth, db };
