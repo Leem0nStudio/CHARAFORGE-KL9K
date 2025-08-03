@@ -2,34 +2,34 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { admin, adminDb } from '@/lib/firebase/server';
-import { getAuth } from 'firebase-admin/auth';
-import { cookies } from 'next/headers';
+import { cookies } from 'next/navigation';
 import { z } from 'zod';
+import { adminDb, adminAuth } from '@/lib/firebase/server';
+
 
 type ActionResponse = {
   success: boolean;
   message: string;
 }
 
-async function verifyAndGetUid() {
+async function verifyAndGetUid(): Promise<string> {
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
   if (!idToken) {
-    throw new Error('User is not authenticated.');
+    throw new Error('User session not found. Please log in again.');
   }
-
-  if (!admin) {
-    throw new Error('Auth service is unavailable.');
+  
+  if(!adminAuth) {
+    throw new Error('Authentication service is unavailable on the server.');
   }
 
   try {
-    const auth = getAuth(admin);
-    const decodedToken = await auth.verifyIdToken(idToken);
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
     return decodedToken.uid;
   } catch (error) {
-    throw new Error('Invalid authentication session.');
+    console.error('Error verifying auth token:', error);
+    throw new Error('Invalid or expired user session. Please log in again.');
   }
 }
 
@@ -41,6 +41,10 @@ export async function updateUserProfile(formData: FormData): Promise<ActionRespo
   try {
     const uid = await verifyAndGetUid();
     
+    if (!adminDb || !adminAuth) {
+      return { success: false, message: 'Server services are unavailable.' };
+    }
+
     const validatedFields = UpdateProfileSchema.safeParse({
       displayName: formData.get('displayName'),
     });
@@ -53,13 +57,9 @@ export async function updateUserProfile(formData: FormData): Promise<ActionRespo
     }
 
     const { displayName } = validatedFields.data;
-    const auth = getAuth(admin);
-    await auth.updateUser(uid, { displayName });
-
-    if(adminDb) {
-      const userRef = adminDb.collection('users').doc(uid);
-      await userRef.update({ displayName });
-    }
+    await adminAuth.updateUser(uid, { displayName });
+    const userRef = adminDb.collection('users').doc(uid);
+    await userRef.update({ displayName });
 
     revalidatePath('/profile');
     return { success: true, message: 'Profile updated successfully!' };
@@ -113,23 +113,25 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
 export async function deleteUserAccount(): Promise<ActionResponse> {
   try {
     const uid = await verifyAndGetUid();
-    const auth = getAuth(admin); // We know admin is available
-
-    if(adminDb) {
-      const userRef = adminDb.collection('users').doc(uid);
-      const charactersQuery = adminDb.collection('characters').where('userId', '==', uid);
-      
-      await adminDb.runTransaction(async (transaction) => {
-        const charactersSnapshot = await transaction.get(charactersQuery);
-        charactersSnapshot.forEach(doc => {
-          transaction.delete(doc.ref);
-        });
-        transaction.delete(userRef);
-      });
+    
+    if (!adminAuth || !adminDb) {
+        return { success: false, message: 'Server services are unavailable to perform deletion.' };
     }
     
-    await auth.deleteUser(uid);
+    const userRef = adminDb.collection('users').doc(uid);
+    const charactersQuery = adminDb.collection('characters').where('userId', '==', uid);
     
+    await adminDb.runTransaction(async (transaction) => {
+      const charactersSnapshot = await transaction.get(charactersQuery);
+      charactersSnapshot.forEach(doc => {
+        transaction.delete(doc.ref);
+      });
+      transaction.delete(userRef);
+    });
+    
+    await adminAuth.deleteUser(uid);
+    
+    // This will signal the client to clear its state
     cookies().set('firebaseIdToken', '', { maxAge: 0, path: '/' });
 
     revalidatePath('/');

@@ -2,35 +2,36 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { admin, adminDb } from '@/lib/firebase/server';
-import { getAuth } from 'firebase-admin/auth';
-import { cookies } from 'next/headers';
+import { cookies } from 'next/navigation';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { adminDb, adminAuth } from '@/lib/firebase/server';
 
-async function verifyAndGetUid() {
+
+async function verifyAndGetUid(): Promise<string> {
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
   if (!idToken) {
-    throw new Error('User is not authenticated.');
+    throw new Error('User session not found. Please log in again.');
   }
   
-  if(!admin) {
-    throw new Error('Auth service is unavailable.');
+  if(!adminAuth) {
+    throw new Error('Authentication service is unavailable on the server.');
   }
 
   try {
-    const auth = getAuth(admin);
-    const decodedToken = await auth.verifyIdToken(idToken);
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
     return decodedToken.uid;
   } catch (error) {
-    throw new Error('Invalid authentication token.');
+    console.error('Error verifying auth token:', error);
+    throw new Error('Invalid or expired user session. Please log in again.');
   }
 }
 
 export async function deleteCharacter(characterId: string) {
   if (!adminDb) throw new Error('Database service is unavailable.');
+  
   const uid = await verifyAndGetUid();
   if (!characterId) {
     throw new Error('Character ID is required.');
