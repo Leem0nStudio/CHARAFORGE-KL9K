@@ -24,7 +24,7 @@ const createFirebaseAdminApp = () => {
   }
 
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (!serviceAccountKey) {
+  if (!serviceAccountKey || serviceAccountKey === "{}") {
     console.warn('SERVER: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Server-side Firebase features will be limited.');
     return null;
   }
