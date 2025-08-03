@@ -3,7 +3,7 @@
 'use client';
 
 import { useEffect, useTransition, useCallback } from 'react';
-import { useFormState } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +31,7 @@ import type { UserPreferences } from './actions';
 import { format } from 'date-fns';
 import React from 'react';
 
-const StatCard = React.memo(function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) {
+const StatCard = React.memo(({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) => {
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -44,6 +44,7 @@ const StatCard = React.memo(function StatCard({ icon, label, value }: { icon: Re
         </Card>
     );
 });
+StatCard.displayName = 'StatCard';
 
 
 export default function ProfilePage() {
@@ -130,7 +131,7 @@ export default function ProfilePage() {
   
   const userStats = user.stats;
   const memberSinceDate = userStats?.memberSince?.toDate ? format(userStats.memberSince.toDate(), 'PPP') : 'N/A';
-  const isUpdatingProfile = (updateProfileAction as any).pending;
+  const { pending: isUpdatingProfile } = useFormStatus();
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -316,3 +317,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
