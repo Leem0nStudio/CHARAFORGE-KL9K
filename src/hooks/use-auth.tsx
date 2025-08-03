@@ -13,11 +13,6 @@ import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData } from 'f
 import { getFirebaseClient } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export interface UserProfile extends User {
-  stats?: UserStats;
-  role?: 'admin' | 'moderator' | 'user';
-}
-
 export interface UserStats {
   charactersCreated: number;
   totalLikes: number;
@@ -25,6 +20,12 @@ export interface UserStats {
   installedPacks: string[];
   subscriptionTier: string;
   memberSince: any; 
+}
+
+export interface UserProfile extends User {
+  stats?: UserStats;
+  role?: 'admin' | 'moderator' | 'user';
+  preferences?: DocumentData;
 }
 
 
@@ -48,6 +49,10 @@ async function setCookie(token: string | null): Promise<void> {
 
 const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
   const { db } = getFirebaseClient();
+  if (!db) {
+      console.error("[useAuth] Firestore (db) is not available in ensureUserDocument.");
+      return null;
+  }
   const userDocRef = doc(db, 'users', user.uid);
   try {
     const userDoc = await getDoc(userDocRef);
@@ -97,12 +102,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { auth } = getFirebaseClient();
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (authUser) {
-        setLoading(true);
         const token = await authUser.getIdToken();
         
+        // This is the correct, sequential flow:
+        // 1. Set the cookie and wait for it to complete.
         await setCookie(token);
+
+        // 2. Only after the session is established on the server, ensure the DB document exists.
         const firestoreData = await ensureUserDocument(authUser);
         
+        // 3. Finally, set the user state on the client.
         const userProfile: UserProfile = {
             ...authUser,
             ...firestoreData,

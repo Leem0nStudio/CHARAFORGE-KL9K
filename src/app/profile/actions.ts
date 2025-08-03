@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { adminDb, adminAuth } from '@/lib/firebase/server';
 
 
-type ActionResponse = {
+export type ActionResponse = {
   success: boolean;
   message: string;
 }
