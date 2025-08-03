@@ -30,7 +30,7 @@ import type { UserPreferences } from './actions';
 import { format } from 'date-fns';
 import React from 'react';
 
-const StatCard = React.memo(({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) => {
+const StatCard = React.memo(function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) {
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -43,7 +43,6 @@ const StatCard = React.memo(({ icon, label, value }: { icon: React.ReactNode, la
         </Card>
     );
 });
-StatCard.displayName = 'StatCard';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -138,7 +137,7 @@ export default function ProfilePage() {
     return null;
   }
   
-  const userStats = user.stats;
+  const userStats = user?.stats;
   const memberSinceDate = userStats?.memberSince?.toDate ? format(userStats.memberSince.toDate(), 'PPP') : 'N/A';
 
   return (
@@ -273,7 +272,7 @@ export default function ProfilePage() {
               <CardDescription>
                 Change your password here. For security, this feature is not yet fully implemented.
               </CardDescription>
-            </CardHeader>
+            </Header>
             <CardContent className="space-y-4">
                <div className="space-y-2">
                   <Label htmlFor="new-password">New Password</Label>
