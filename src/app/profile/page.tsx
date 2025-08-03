@@ -1,7 +1,9 @@
 
+
 'use client';
 
-import { useState, useEffect, useTransition, useCallback } from 'react';
+import { useEffect, useTransition, useCallback } from 'react';
+import { useFormState } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -48,42 +50,48 @@ export default function ProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const [preferences, setPreferences] = useState<UserPreferences>({
+  
+  const [isDeleting, startDeleteTransition] = useTransition();
+  const [isSavingPrefs, startPrefsTransition] = useTransition();
+
+  const [updateProfileState, updateProfileAction] = useFormState(updateUserProfile, {
+      success: false,
+      message: '',
+  });
+  
+  const [preferences, setPreferences] = React.useState<UserPreferences>({
     theme: 'system',
     notifications: { email: false },
     privacy: { profileVisibility: 'private' },
   });
 
   useEffect(() => {
-    // This would typically be fetched from the user's document in a real app
-    // For now, we'll use defaults and let the user save them.
-    // In a full implementation, you'd fetch userDoc.data().preferences
+    if (user?.preferences) {
+        setPreferences(user.preferences);
+    }
   }, [user]);
 
-  const handleUpdateProfile = useCallback(async (formData: FormData) => {
-    setIsSubmitting(true);
-    const result = await updateUserProfile(formData);
-    if (result.success) {
-      toast({ title: 'Success', description: result.message });
-    } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+  useEffect(() => {
+    if (updateProfileState.message) {
+      if (updateProfileState.success) {
+        toast({ title: 'Success', description: updateProfileState.message });
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: updateProfileState.message });
+      }
     }
-    setIsSubmitting(false);
-  }, [toast]);
+  }, [updateProfileState, toast]);
   
   const handleDeleteAccount = useCallback(async () => {
-    setIsSubmitting(true);
-    const result = await deleteUserAccount();
-     if (result.success) {
-      toast({ title: 'Account Deleted', description: result.message });
-      router.refresh(); // Force a refresh to clear server components
-      router.push('/'); // Navigate to home
-    } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
-    }
-    setIsSubmitting(false);
+    startDeleteTransition(async () => {
+      const result = await deleteUserAccount();
+      if (result.success) {
+        toast({ title: 'Account Deleted', description: result.message });
+        router.refresh(); 
+        router.push('/');
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+      }
+    });
   }, [toast, router]);
 
   const handlePreferencesChange = useCallback((field: keyof UserPreferences, value: any) => {
@@ -101,7 +109,7 @@ export default function ProfilePage() {
   }, []);
 
   const handleSavePreferences = useCallback(() => {
-    startTransition(async () => {
+    startPrefsTransition(async () => {
         const result = await updateUserPreferences(preferences);
         if (result.success) {
             toast({ title: 'Preferences Saved', description: result.message });
@@ -122,6 +130,7 @@ export default function ProfilePage() {
   
   const userStats = user.stats;
   const memberSinceDate = userStats?.memberSince?.toDate ? format(userStats.memberSince.toDate(), 'PPP') : 'N/A';
+  const isUpdatingProfile = (updateProfileAction as any).pending;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -144,7 +153,7 @@ export default function ProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form action={handleUpdateProfile} className="space-y-4">
+              <form action={updateProfileAction} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="displayName">Display Name</Label>
                   <Input id="displayName" name="displayName" defaultValue={user.displayName || ''} />
@@ -153,8 +162,8 @@ export default function ProfilePage() {
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" type="email" defaultValue={user.email || ''} disabled />
                 </div>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" disabled={isUpdatingProfile}>
+                  {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Update Profile
                 </Button>
               </form>
@@ -220,8 +229,8 @@ export default function ProfilePage() {
                     </div>
                 </div>
                 
-                 <Button onClick={handleSavePreferences} disabled={isPending}>
-                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                 <Button onClick={handleSavePreferences} disabled={isSavingPrefs}>
+                    {isSavingPrefs && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Preferences
                 </Button>
             </CardContent>
@@ -234,7 +243,7 @@ export default function ProfilePage() {
                     <CardDescription>
                         An overview of your contributions and activity on CharaForge.
                     </CardDescription>
-                </CardHeader>
+                </Header>
                 <CardContent>
                    {userStats ? (
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -281,7 +290,7 @@ export default function ProfilePage() {
             <CardContent>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive" disabled={isSubmitting}>Delete My Account</Button>
+                        <Button variant="destructive" disabled={isDeleting}>Delete My Account</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
@@ -293,8 +302,8 @@ export default function ProfilePage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteAccount} disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <AlertDialogAction onClick={handleDeleteAccount} disabled={isDeleting}>
+                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Continue
                         </AlertDialogAction>
                         </AlertDialogFooter>
