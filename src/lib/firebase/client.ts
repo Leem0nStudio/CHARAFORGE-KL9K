@@ -23,6 +23,16 @@ if (getApps().length) {
   app = initializeApp(firebaseConfig);
 }
 
-auth = getApp() ? getAuth(app) : getAuth();
+// Check if the app was initialized before getting auth
+// This can sometimes fail in certain environments if not checked
+try {
+  auth = getAuth(app);
+} catch (e) {
+  console.error("Could not get Firebase Auth instance", e);
+  // In a real app, you might want to handle this more gracefully
+  // For now, we'll let it be undefined so the app doesn't crash,
+  // but auth-related features will fail.
+}
+
 
 export { app, auth };
