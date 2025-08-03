@@ -1,3 +1,4 @@
+
 import { initializeApp, getApps, getApp, App, ServiceAccount, Credential } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -23,13 +24,19 @@ const createFirebaseAdminApp = () => {
   }
 
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (!serviceAccountKey || serviceAccountKey === "{}") {
-    console.warn('SERVER: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set or is empty. Server-side Firebase features will be limited.');
+  if (!serviceAccountKey) {
+    console.warn('SERVER: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Server-side Firebase features will be limited.');
     return null;
   }
     
   try {
     const serviceAccount: ServiceAccount = JSON.parse(serviceAccountKey);
+    // Check if the service account is the placeholder empty object
+    if (!serviceAccount.project_id) {
+         console.warn('SERVER: FIREBASE_SERVICE_ACCOUNT_KEY is a placeholder. Server-side Firebase features will be limited.');
+         return null;
+    }
+
      console.log('SERVER: Initializing Firebase Admin SDK with service account');
     return initializeApp({
       credential: Credential.cert(serviceAccount),
