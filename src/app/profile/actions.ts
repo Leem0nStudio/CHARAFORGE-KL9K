@@ -32,7 +32,7 @@ async function verifyAndGetUid() {
   } catch (error) {
     // This catches invalid, expired, or malformed tokens.
     // It's a security catch-all.
-    console.error('Invalid auth token:', error);
+    console.error('[actions] Invalid auth token:', error);
     throw new Error('Invalid authentication session.');
   }
 }
