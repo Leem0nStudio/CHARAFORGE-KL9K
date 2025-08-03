@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node -r dotenv/config ./node_modules/.bin/next dev --turbopack -p 9002",
+    "dev": "next dev --turbopack -p 9002",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
@@ -15,7 +15,8 @@
     "admin:grant": "node scripts/manage-admin.js grant",
     "admin:revoke": "node scripts/manage-admin.js revoke",
     "admin:check": "node scripts/manage-admin.js check",
-    "admin:list": "node scripts/manage-admin.js list"
+    "admin:list": "node scripts/manage-admin.js list",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.14.1",
