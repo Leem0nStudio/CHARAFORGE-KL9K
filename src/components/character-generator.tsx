@@ -124,6 +124,7 @@ export function CharacterGenerator() {
         ...data,
         ...characterData,
         userId: user.uid,
+        userName: user.displayName || 'Anonymous',
       });
 
       toast({

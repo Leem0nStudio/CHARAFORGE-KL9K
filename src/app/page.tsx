@@ -10,12 +10,44 @@ import { LoginButton } from '@/components/login-button';
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/components/character-card';
 
-const featuredCreations = [
-    { id: '1', name: 'Kaelen, the Shadow Rogue', imageUrl: 'https://placehold.co/400x400.png', description: 'A rogue shrouded in mystery.', biography: '', userId: '', status: 'public', createdAt: new Date(), creator: 'seraphina' },
-    { id: '2', name: 'Unit 734: "Glitch"', imageUrl: 'https://placehold.co/400x400.png', description: 'A rogue AI with a quirky personality.', biography: '', userId: '', status: 'public', createdAt: new Date(), creator: 'cypher' },
-    { id: '3', name: 'Captain "Iron-Eye" Isabella', imageUrl: 'https://placehold.co/400x400.png', description: 'A fierce pirate captain.', biography: '', userId: '', status: 'public', createdAt: new Date(), creator: 'mad_max' },
-    { id: '4', name: 'Lyra of the Whispering Woods', imageUrl: 'https://placehold.co/400x400.png', description: 'An enigmatic elf of the forest.', biography: '', userId: '', status: 'public', createdAt: new Date(), creator: 'elara' },
-];
+async function getFeaturedCharacters(): Promise<Character[]> {
+  try {
+    const snapshot = await adminDb
+      .collection('characters')
+      .where('status', '==', 'public')
+      .orderBy('createdAt', 'desc')
+      .limit(4)
+      .get();
+
+    if (snapshot.empty) {
+      return [];
+    }
+
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name,
+        description: data.description,
+        biography: data.biography,
+        imageUrl: data.imageUrl,
+        userId: data.userId,
+        status: data.status,
+        createdAt: data.createdAt.toDate(),
+        userName: data.userName || 'Anonymous',
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching featured characters, returning placeholder data:", error);
+    // Return placeholder data on error to prevent build failures
+    return [
+        { id: '1', name: 'Kaelen, the Shadow Rogue', imageUrl: 'https://placehold.co/400x400.png', description: '', biography: '', userId: '', status: 'public', createdAt: new Date(), userName: 'seraphina' },
+        { id: '2', name: 'Unit 734: "Glitch"', imageUrl: 'https://placehold.co/400x400.png', description: '', biography: '', userId: '', status: 'public', createdAt: new Date(), userName: 'cypher' },
+        { id: '3', name: 'Captain "Iron-Eye" Isabella', imageUrl: 'https://placehold.co/400x400.png', description: '', biography: '', userId: '', status: 'public', createdAt: new Date(), userName: 'mad_max' },
+        { id: '4', name: 'Lyra of the Whispering Woods', imageUrl: 'https://placehold.co/400x400.png', description: '', biography: '', userId: '', status: 'public', createdAt: new Date(), userName: 'elara' },
+    ];
+  }
+}
 
 
 const topCreators = [
@@ -33,6 +65,7 @@ const dataPacks = [
 ];
 
 export default async function Home() {
+  const featuredCreations = await getFeaturedCharacters();
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -84,7 +117,7 @@ export default async function Home() {
                 </CardHeader>
                 <CardContent className="p-4">
                   <CardTitle className="text-xl font-headline">{creation.name}</CardTitle>
-                  <CardDescription>by @{creation.creator}</CardDescription>
+                  <CardDescription>by @{creation.userName}</CardDescription>
                 </CardContent>
               </Card>
             ))}

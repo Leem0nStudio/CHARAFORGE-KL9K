@@ -16,6 +16,7 @@ const SaveCharacterInputSchema = z.object({
   biography: z.string(),
   imageUrl: z.string(),
   userId: z.string(),
+  userName: z.string(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
@@ -25,11 +26,12 @@ export async function saveCharacter(input: SaveCharacterInput) {
     throw new Error(validation.error.message);
   }
 
-  const { name, description, biography, imageUrl, userId } = validation.data;
+  const { name, description, biography, imageUrl, userId, userName } = validation.data;
 
   try {
     const characterRef = await adminDb.collection('characters').add({
       userId,
+      userName,
       name,
       description,
       biography,

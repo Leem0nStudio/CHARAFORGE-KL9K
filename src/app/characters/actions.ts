@@ -5,6 +5,8 @@ import { adminDb } from '@/lib/firebase/server';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { admin } from '@/lib/firebase/server';
+import { redirect } from 'next/navigation';
+import { z } from 'zod';
 
 async function verifyAndGetUid() {
   const cookieStore = cookies();
@@ -67,4 +69,46 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
     console.error('Error updating character status in Firestore:', error);
     throw new Error('Could not update character status.');
   }
+}
+
+
+const UpdateCharacterSchema = z.object({
+  name: z.string().min(1, "Name is required."),
+  biography: z.string().min(1, "Biography is required."),
+});
+
+
+export async function updateCharacter(characterId: string, formData: FormData) {
+  const uid = await verifyAndGetUid();
+
+  const validatedFields = UpdateCharacterSchema.safeParse({
+    name: formData.get('name'),
+    biography: formData.get('biography'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Update Character.',
+    };
+  }
+  
+  const { name, biography } = validatedFields.data;
+
+  const characterRef = adminDb.collection('characters').doc(characterId);
+  const characterDoc = await characterRef.get();
+
+  if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+     throw new Error('Permission denied or character not found.');
+  }
+  
+  try {
+    await characterRef.update({ name, biography });
+  } catch (error) {
+    console.error('Error updating character in Firestore:', error);
+    throw new Error('Could not update character.');
+  }
+
+  revalidatePath('/characters');
+  redirect('/characters');
 }
