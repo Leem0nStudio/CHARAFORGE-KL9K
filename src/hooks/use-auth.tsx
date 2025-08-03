@@ -37,9 +37,10 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
 });
 
-async function setCookie(token: string | null) {
+async function setCookie(token: string | null): Promise<void> {
   console.log('[useAuth] setCookie called. Token:', token ? 'Present' : 'null');
   try {
+    // Return the promise from fetch
     await fetch('/api/auth/set-cookie', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -48,6 +49,8 @@ async function setCookie(token: string | null) {
      console.log('[useAuth] setCookie request sent successfully.');
   } catch (error: unknown) {
     console.error('[useAuth] Error setting cookie:', error);
+    // Even if it fails, we resolve the promise so the app can continue.
+    // The server-side logic will just not find the user authenticated.
   }
 }
 
@@ -119,12 +122,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('[useAuth] onIdTokenChanged fired.');
       if (authUser) {
         console.log(`[useAuth] User detected (UID: ${authUser.uid}).`);
+        setLoading(true); // Set loading while we process the token and user doc
         const token = await authUser.getIdToken();
         console.log('[useAuth] Got ID token from Firebase.');
         
-        const firestoreData = await ensureUserDocument(authUser);
-        
+        // Wait for the cookie to be set before proceeding
         await setCookie(token);
+
+        const firestoreData = await ensureUserDocument(authUser);
         
         const userProfile: UserProfile = {
             ...authUser,
@@ -150,7 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
   }, []);
 
-  if (loading) {
+  if (loading && !user) { // Only show the global skeleton on initial load
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="w-full max-w-md p-8 space-y-4">

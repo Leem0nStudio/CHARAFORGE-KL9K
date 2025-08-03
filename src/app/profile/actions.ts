@@ -16,8 +16,14 @@ async function verifyAndGetUid() {
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
-  if (!idToken || !admin) {
-    throw new Error('User is not authenticated or auth service is unavailable.');
+  if (!idToken) {
+    throw new Error('User is not authenticated.');
+  }
+
+  if (!admin) {
+    // This case should ideally not be hit if the server SDK is initialized correctly.
+    // If it is, it's a server configuration error.
+    throw new Error('Auth service is unavailable.');
   }
 
   try {
@@ -25,7 +31,10 @@ async function verifyAndGetUid() {
     const decodedToken = await auth.verifyIdToken(idToken);
     return decodedToken.uid;
   } catch (error) {
-    throw new Error('Invalid authentication token.');
+    // This catches invalid, expired, or malformed tokens.
+    // It's a security catch-all.
+    console.error('Invalid auth token:', error);
+    throw new Error('Invalid authentication session.');
   }
 }
 
@@ -49,7 +58,7 @@ export async function updateUserProfile(formData: FormData): Promise<ActionRespo
     }
 
     const { displayName } = validatedFields.data;
-    const auth = getAuth(admin);
+    const auth = getAuth(admin); // We know admin is available from verifyAndGetUid
     await auth.updateUser(uid, { displayName });
 
     if(adminDb) {
@@ -60,7 +69,9 @@ export async function updateUserProfile(formData: FormData): Promise<ActionRespo
     revalidatePath('/profile');
     return { success: true, message: 'Profile updated successfully!' };
   } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Failed to update profile. Please try again.' };
+    const message = error instanceof Error ? error.message : 'Failed to update profile. Please try again.';
+    console.error('[actions][updateUserProfile] Error:', message);
+    return { success: false, message };
   }
 }
 
@@ -99,7 +110,9 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
         revalidatePath('/profile');
         return { success: true, message: 'Preferences updated successfully.' };
     } catch (error) {
-        return { success: false, message: error instanceof Error ? error.message : 'Failed to save preferences. Please try again.' };
+        const message = error instanceof Error ? error.message : 'Failed to save preferences. Please try again.';
+        console.error('[actions][updateUserPreferences] Error:', message);
+        return { success: false, message };
     }
 }
 
@@ -107,6 +120,7 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
 export async function deleteUserAccount(): Promise<ActionResponse> {
   try {
     const uid = await verifyAndGetUid();
+    const auth = getAuth(admin); // We know admin is available
 
     if(adminDb) {
       const userRef = adminDb.collection('users').doc(uid);
@@ -121,14 +135,16 @@ export async function deleteUserAccount(): Promise<ActionResponse> {
       });
     }
     
-    const auth = getAuth(admin);
     await auth.deleteUser(uid);
     
-    cookies().set('firebaseIdToken', '', { maxAge: 0 });
+    // Clear the cookie by setting its maxAge to 0
+    cookies().set('firebaseIdToken', '', { maxAge: 0, path: '/' });
 
     revalidatePath('/');
     return { success: true, message: 'Your account has been permanently deleted.' };
   } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Failed to delete your account. Please try again.' };
+    const message = error instanceof Error ? error.message : 'Failed to delete your account. Please try again.';
+    console.error('[actions][deleteUserAccount] Error:', message);
+    return { success: false, message };
   }
 }

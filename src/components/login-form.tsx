@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   signInWithEmailAndPassword,
@@ -8,6 +8,7 @@ import {
   type AuthError,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase/client"; 
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,17 +31,25 @@ const errorMessages: Record<string, string> = {
     "This email is already registered. Please log in.",
   "auth/weak-password": "Password should be at least 6 characters.",
   "auth/too-many-requests": "Access to this account has been temporarily disabled due to many failed login attempts. You can try again later.",
-  "auth/network-request-failed": "Network error. Please check your internet connection and try again.",
   "auth/configuration-not-found": "Authentication configuration failed. Please ensure Email/Password sign-in is enabled in your Firebase console.",
 };
 
 export function LoginForm() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      router.push("/");
+    }
+  }, [user, authLoading, router]);
+
 
   const handleAuthError = (error: AuthError) => {
     const message =
@@ -72,16 +81,16 @@ export function LoginForm() {
         await createUserWithEmailAndPassword(auth, email, password);
         toast({
           title: "Account Created!",
-          description: "You have been successfully registered.",
+          description: "You have been successfully registered. Redirecting...",
         });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         toast({
           title: "Login Successful!",
-          description: "Welcome back to CharaForge.",
+          description: "Welcome back to CharaForge. Redirecting...",
         });
       }
-      router.push("/");
+      // The useEffect hook will handle the redirect once the auth state is confirmed.
     } catch (error: unknown) {
         console.error("Authentication error details:", error);
         if (error instanceof Error && 'code' in error) {
@@ -97,6 +106,8 @@ export function LoginForm() {
       setLoading(false);
     }
   };
+  
+  const totalLoading = loading || authLoading;
 
   return (
     <Card className="w-full max-w-md">
@@ -122,7 +133,7 @@ export function LoginForm() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
+              disabled={totalLoading}
             />
           </div>
           <div className="space-y-2">
@@ -134,13 +145,13 @@ export function LoginForm() {
               autoComplete={isSignUp ? "new-password" : "current-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
+              disabled={totalLoading}
             />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="submit" className="w-full" disabled={totalLoading}>
+            {totalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSignUp ? "Sign Up" : "Sign In"}
           </Button>
           <Button
@@ -148,7 +159,7 @@ export function LoginForm() {
             variant="link"
             className="w-full text-sm"
             onClick={() => setIsSignUp(!isSignUp)}
-            disabled={loading}
+            disabled={totalLoading}
           >
             {isSignUp
               ? "Already have an account? Sign In"
