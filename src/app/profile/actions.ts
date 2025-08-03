@@ -20,9 +20,8 @@ async function verifyAndGetUid() {
     throw new Error('User is not authenticated.');
   }
 
+  // This check is crucial for environments where the admin SDK might fail to initialize.
   if (!admin) {
-    // This case should ideally not be hit if the server SDK is initialized correctly.
-    // If it is, it's a server configuration error.
     throw new Error('Auth service is unavailable.');
   }
 
@@ -58,7 +57,7 @@ export async function updateUserProfile(formData: FormData): Promise<ActionRespo
     }
 
     const { displayName } = validatedFields.data;
-    const auth = getAuth(admin); // We know admin is available from verifyAndGetUid
+    const auth = getAuth(admin);
     await auth.updateUser(uid, { displayName });
 
     if(adminDb) {
@@ -70,7 +69,6 @@ export async function updateUserProfile(formData: FormData): Promise<ActionRespo
     return { success: true, message: 'Profile updated successfully!' };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update profile. Please try again.';
-    console.error('[actions][updateUserProfile] Error:', message);
     return { success: false, message };
   }
 }
@@ -111,7 +109,6 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
         return { success: true, message: 'Preferences updated successfully.' };
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to save preferences. Please try again.';
-        console.error('[actions][updateUserPreferences] Error:', message);
         return { success: false, message };
     }
 }
@@ -144,7 +141,6 @@ export async function deleteUserAccount(): Promise<ActionResponse> {
     return { success: true, message: 'Your account has been permanently deleted.' };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete your account. Please try again.';
-    console.error('[actions][deleteUserAccount] Error:', message);
     return { success: false, message };
   }
 }

@@ -7,7 +7,6 @@ import {
   createUserWithEmailAndPassword,
   type AuthError,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase/client"; 
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { getFirebaseClient } from "@/lib/firebase/client";
 
 const errorMessages: Record<string, string> = {
   "auth/invalid-email": "The email address is not valid.",
@@ -43,7 +43,7 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Redirect if user is already logged in
+  // Redirect if user is already logged in and auth is not loading
   useEffect(() => {
     if (user && !authLoading) {
       router.push("/");
@@ -65,16 +65,7 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-
-    if (!auth) {
-        toast({
-            variant: "destructive",
-            title: "Authentication Service Not Ready",
-            description: "The authentication service is still initializing. Please try again in a moment.",
-        });
-        setLoading(false);
-        return;
-    }
+    const { auth } = getFirebaseClient();
 
     try {
       if (isSignUp) {
@@ -92,7 +83,6 @@ export function LoginForm() {
       }
       // The useEffect hook will handle the redirect once the auth state is confirmed.
     } catch (error: unknown) {
-        console.error("Authentication error details:", error);
         if (error instanceof Error && 'code' in error) {
             handleAuthError(error as AuthError);
         } else {

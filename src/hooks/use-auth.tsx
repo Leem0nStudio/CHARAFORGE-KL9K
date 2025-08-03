@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { User, onIdTokenChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase/client';
+import { getFirebaseClient } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export interface UserProfile extends User {
@@ -38,33 +38,20 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 async function setCookie(token: string | null): Promise<void> {
-  console.log('[useAuth] setCookie called. Token:', token ? 'Present' : 'null');
-  try {
-    // Return the promise from fetch
-    await fetch('/api/auth/set-cookie', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
-    });
-     console.log('[useAuth] setCookie request sent successfully.');
-  } catch (error: unknown) {
-    console.error('[useAuth] Error setting cookie:', error);
-    // Even if it fails, we resolve the promise so the app can continue.
-    // The server-side logic will just not find the user authenticated.
-  }
+  // This promise will resolve when the fetch call is complete.
+  await fetch('/api/auth/set-cookie', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
 }
 
 const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
-   console.log(`[useAuth] ensureUserDocument for user: ${user.uid}`);
-  if (!db) {
-    console.error('[useAuth] Firestore (db) is not available in ensureUserDocument.');
-    return null; 
-  }
+  const { db } = getFirebaseClient();
   const userDocRef = doc(db, 'users', user.uid);
   try {
     const userDoc = await getDoc(userDocRef);
     if (!userDoc.exists()) {
-      console.log(`[useAuth] No document found for user ${user.uid}, creating new one.`);
       await setDoc(userDocRef, {
         uid: user.uid,
         email: user.email,
@@ -81,9 +68,7 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
           memberSince: serverTimestamp(),
         }
       });
-      console.log(`[useAuth] User document for ${user.uid} created.`);
     } else {
-        console.log(`[useAuth] Document found for user ${user.uid}, checking for updates.`);
         const updateData: { displayName: string | null; photoURL: string | null; email?: string | null } = {
           displayName: user.displayName,
           photoURL: user.photoURL,
@@ -92,13 +77,10 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
             updateData.email = user.email;
         }
         await updateDoc(userDocRef, updateData);
-        console.log(`[useAuth] User document for ${user.uid} updated.`);
     }
     
     const updatedUserDoc = await getDoc(userDocRef);
-    const firestoreData = updatedUserDoc.data() || null;
-    console.log(`[useAuth] Returning firestore data for ${user.uid}:`, firestoreData);
-    return firestoreData;
+    return updatedUserDoc.data() || null;
 
   } catch (error: unknown) {
     console.error(`[useAuth] Error in ensureUserDocument for ${user.uid}:`, error);
@@ -112,21 +94,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('[useAuth] AuthProvider mounted. Setting up onIdTokenChanged listener.');
-    if (!auth) {
-        console.error("[useAuth] Firebase Auth is not available. Cannot set up listener.");
-        setLoading(false);
-        return;
-    }
+    const { auth } = getFirebaseClient();
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
-      console.log('[useAuth] onIdTokenChanged fired.');
       if (authUser) {
-        console.log(`[useAuth] User detected (UID: ${authUser.uid}).`);
-        setLoading(true); // Set loading while we process the token and user doc
+        setLoading(true);
         const token = await authUser.getIdToken();
-        console.log('[useAuth] Got ID token from Firebase.');
         
-        // Wait for the cookie to be set before proceeding
+        // Wait for the cookie to be set before proceeding. This is the fix.
         await setCookie(token);
 
         const firestoreData = await ensureUserDocument(authUser);
@@ -136,22 +110,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             ...firestoreData,
             role: firestoreData?.role || 'user',
         }
-        console.log('[useAuth] Setting user profile state:', userProfile);
         setUser(userProfile);
 
       } else {
-        console.log('[useAuth] No user detected.');
         await setCookie(null);
         setUser(null);
       }
-      console.log('[useAuth] Setting loading to false.');
       setLoading(false);
     });
 
-    return () => {
-      console.log('[useAuth] AuthProvider unmounted. Unsubscribing from onIdTokenChanged.');
-      unsubscribe();
-    }
+    return () => unsubscribe();
     
   }, []);
 
