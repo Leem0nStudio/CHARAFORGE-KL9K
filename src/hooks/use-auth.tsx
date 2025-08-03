@@ -7,7 +7,7 @@ import {
   useContext,
   ReactNode,
 } from 'react';
-import { User, onIdTokenChanged, type Auth } from 'firebase/auth';
+import { User, onIdTokenChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -96,13 +96,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const isAuthReady = auth && typeof (auth as Auth).onIdTokenChanged === 'function';
-
-    if (!isAuthReady) {
-      setLoading(false);
-      return;
-    }
-    
+    // onIdTokenChanged is the correct listener for auth state.
+    // It will fire when the app starts and whenever the user's token changes.
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (authUser) {
         const token = await authUser.getIdToken();

@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  type Auth,
   type AuthError,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
+import { auth } from "@/lib/firebase/client"; // auth is now guaranteed to be initialized
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,15 +56,6 @@ export function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Check if the auth service is available and properly configured.
-    if (!auth || typeof (auth as Auth).app?.options?.apiKey !== 'string') {
-        toast({
-            variant: "destructive",
-            title: "Configuration Error",
-            description: "Firebase is not configured correctly. Please check the setup."
-        });
-        return;
-    }
     setLoading(true);
 
     try {
