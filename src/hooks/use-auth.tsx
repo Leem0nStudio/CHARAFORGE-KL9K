@@ -8,7 +8,7 @@ import {
   ReactNode,
 } from 'react';
 import { User, onIdTokenChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, DocumentData } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -52,8 +52,8 @@ async function setCookie(token: string | null) {
 }
 
 /**
- * Ensures a user document exists in Firestore.
- * Creates one if it doesn't.
+ * Ensures a user document exists in Firestore and is up-to-date.
+ * Creates one if it doesn't, updates it if it does.
  * @param user The Firebase Auth user object.
  */
 const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
@@ -62,12 +62,13 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
   try {
     const userDoc = await getDoc(userDocRef);
     if (!userDoc.exists()) {
+      // Create document for new user
       await setDoc(userDocRef, {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
-        createdAt: serverTimestamp(),
         photoURL: user.photoURL,
+        createdAt: serverTimestamp(),
         role: 'user',
         stats: {
           charactersCreated: 0,
@@ -78,11 +79,19 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
           memberSince: serverTimestamp(),
         }
       });
-      const newUserDoc = await getDoc(userDocRef);
-      return newUserDoc.data() || null;
     } else {
-      return userDoc.data();
+        // Update existing user document with latest auth info
+        await updateDoc(userDocRef, {
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            email: user.email, // email can change in some providers
+        });
     }
+    
+    // Return the latest user document data
+    const updatedUserDoc = await getDoc(userDocRef);
+    return updatedUserDoc.data() || null;
+
   } catch (error) {
     console.error("Error ensuring user document exists:", error);
     return null;

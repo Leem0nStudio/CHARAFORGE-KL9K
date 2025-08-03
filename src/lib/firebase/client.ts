@@ -13,25 +13,36 @@ const firebaseConfig = {
 };
 
 // Validate that all client-side environment variables are present
-if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+const areClientVarsPresent = 
+    firebaseConfig.apiKey &&
+    firebaseConfig.apiKey !== 'changeme' &&
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId;
+
+if (!areClientVarsPresent) {
   console.error(
-    'Firebase client configuration is missing. Make sure NEXT_PUBLIC_FIREBASE_* environment variables are set.'
+    'Firebase client configuration is missing or incomplete. Make sure NEXT_PUBLIC_FIREBASE_* environment variables are set in your .env file.'
   );
 }
 
 // Initialize Firebase
 let app: FirebaseApp;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
+if (areClientVarsPresent) {
+    if (!getApps().length) {
+      app = initializeApp(firebaseConfig);
+    } else {
+      app = getApp();
+    }
 } else {
-  app = getApp();
+    app = {} as FirebaseApp; // Provide a dummy app if not initialized
 }
 
-const auth: Auth = getAuth(app);
-const db: Firestore = getFirestore(app);
+
+export const auth: Auth = areClientVarsPresent ? getAuth(app) : ({} as Auth);
+export const db: Firestore = areClientVarsPresent ? getFirestore(app) : ({} as Firestore);
 
 // Connect to emulators if in development
-if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
+if (areClientVarsPresent && process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
   console.log('Connecting to Firebase Emulators');
   const authHost = process.env.NEXT_PUBLIC_AUTH_EMULATOR_HOST || '127.0.0.1';
   const authPort = parseInt(process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT || '9099');
@@ -41,6 +52,3 @@ if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
   const firestorePort = parseInt(process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT || '8080');
   connectFirestoreEmulator(db, firestoreHost, firestorePort);
 }
-
-
-export { app, auth, db };
