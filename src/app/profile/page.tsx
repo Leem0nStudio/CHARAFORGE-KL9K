@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, UserStats } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,8 +24,24 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { updateUserProfile, deleteUserAccount, updateUserPreferences } from './actions';
-import { Loader2 } from 'lucide-react';
+import { Loader2, User, Swords, Heart, Package, Gem, Calendar } from 'lucide-react';
 import type { UserPreferences } from './actions';
+import { format } from 'date-fns';
+
+function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) {
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{label}</CardTitle>
+                <div className="text-muted-foreground">{icon}</div>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{value}</div>
+            </CardContent>
+        </Card>
+    );
+}
+
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
@@ -101,6 +117,9 @@ export default function ProfilePage() {
         }
     });
   }
+  
+  const userStats = user.stats;
+  const memberSinceDate = userStats?.memberSince?.toDate ? format(userStats.memberSince.toDate(), 'PPP') : 'N/A';
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -111,7 +130,7 @@ export default function ProfilePage() {
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="prefs">Preferences</TabsTrigger>
-          <TabsTrigger value="stats" disabled>Statistics</TabsTrigger>
+          <TabsTrigger value="stats">Statistics</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="space-y-4">
@@ -205,6 +224,30 @@ export default function ProfilePage() {
                 </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="stats" className="space-y-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Your Activity</CardTitle>
+                    <CardDescription>
+                        An overview of your contributions and activity on CharaForge.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                   {userStats ? (
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            <StatCard icon={<Swords />} label="Characters Created" value={userStats.charactersCreated} />
+                            <StatCard icon={<Heart />} label="Total Likes Received" value={userStats.totalLikes} />
+                            <StatCard icon={<Gem />} label="Subscription Tier" value={userStats.subscriptionTier} />
+                            <StatCard icon={<User />} label="Collections Created" value={userStats.collectionsCreated} />
+                            <StatCard icon={<Package />} label="DataPacks Installed" value={userStats.installedPacks} />
+                            <StatCard icon={<Calendar />} label="Member Since" value={memberSinceDate} />
+                        </div>
+                   ) : (
+                     <p className="text-muted-foreground">Statistics are not available yet. Please check back later.</p>
+                   )}
+                </CardContent>
+            </Card>
         </TabsContent>
          <TabsContent value="security" className="space-y-4">
            <Card>

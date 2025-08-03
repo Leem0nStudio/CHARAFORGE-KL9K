@@ -8,12 +8,27 @@ import {
   ReactNode,
 } from 'react';
 import { User, onIdTokenChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, DocumentData } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
+export interface UserProfile extends User {
+  stats?: UserStats;
+  // Add other firestore specific fields here
+}
+
+export interface UserStats {
+  charactersCreated: number;
+  totalLikes: number;
+  collectionsCreated: number;
+  installedPacks: number;
+  subscriptionTier: string;
+  memberSince: any; // Using `any` to be flexible with Firestore Timestamp
+}
+
+
 export interface AuthContextType {
-  user: User | null;
+  user: UserProfile | null;
   loading: boolean;
 }
 
@@ -41,13 +56,12 @@ async function setCookie(token: string | null) {
  * Creates one if it doesn't.
  * @param user The Firebase Auth user object.
  */
-const ensureUserDocument = async (user: User) => {
-  if (!db) return; // Firestore might not be initialized
+const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
+  if (!db) return null; 
   const userDocRef = doc(db, 'users', user.uid);
   try {
     const userDoc = await getDoc(userDocRef);
     if (!userDoc.exists()) {
-      // User document doesn't exist, create it.
       await setDoc(userDocRef, {
         uid: user.uid,
         email: user.email,
@@ -55,16 +69,29 @@ const ensureUserDocument = async (user: User) => {
         createdAt: serverTimestamp(),
         photoURL: user.photoURL,
         role: 'user',
+        stats: {
+          charactersCreated: 0,
+          totalLikes: 0,
+          collectionsCreated: 0,
+          installedPacks: 0,
+          subscriptionTier: 'free',
+          memberSince: serverTimestamp(),
+        }
       });
+      const newUserDoc = await getDoc(userDocRef);
+      return newUserDoc.data() || null;
+    } else {
+      return userDoc.data();
     }
   } catch (error) {
     console.error("Error ensuring user document exists:", error);
+    return null;
   }
 };
 
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,12 +100,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
-    const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      if (user) {
-        await ensureUserDocument(user);
-        const token = await user.getIdToken();
+    const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
+      if (authUser) {
+        const firestoreData = await ensureUserDocument(authUser);
+        const token = await authUser.getIdToken();
         await setCookie(token);
-        setUser(user);
+        
+        const userProfile: UserProfile = {
+            ...authUser,
+            ...firestoreData,
+        }
+        setUser(userProfile);
+
       } else {
         await setCookie(null);
         setUser(null);

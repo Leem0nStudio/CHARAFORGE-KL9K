@@ -9,6 +9,7 @@
 
 import { z } from 'zod';
 import { adminDb } from '@/lib/firebase/server';
+import { FieldValue } from 'firebase-admin/firestore';
 
 const SaveCharacterInputSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -29,16 +30,28 @@ export async function saveCharacter(input: SaveCharacterInput) {
   const { name, description, biography, imageUrl, userId, userName } = validation.data;
 
   try {
-    const characterRef = await adminDb.collection('characters').add({
-      userId,
-      userName,
-      name,
-      description,
-      biography,
-      imageUrl,
-      status: 'private', // 'private' or 'public'
-      createdAt: new Date(),
+    const characterRef = adminDb.collection('characters').doc();
+    const userRef = adminDb.collection('users').doc(userId);
+
+    await adminDb.runTransaction(async (transaction) => {
+        // 1. Create the new character
+        transaction.set(characterRef, {
+            userId,
+            userName,
+            name,
+            description,
+            biography,
+            imageUrl,
+            status: 'private', // 'private' or 'public'
+            createdAt: new Date(),
+        });
+
+        // 2. Atomically increment the user's character count
+        transaction.update(userRef, {
+            'stats.charactersCreated': FieldValue.increment(1)
+        });
     });
+
     return { success: true, characterId: characterRef.id };
   } catch (error) {
     console.error('Error saving character to Firestore:', error);
