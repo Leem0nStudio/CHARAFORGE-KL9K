@@ -1,0 +1,45 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Rules for the 'users' collection
+    match /users/{userId} {
+      // Any authenticated user can create their own user document
+      allow create: if isAuthenticated() && isOwner(userId);
+      // Only the owner can read or update their own user document
+      allow read, update: if isAuthenticated() && isOwner(userId);
+      // Deletion is not allowed to preserve user data integrity
+      allow delete: if false;
+    }
+
+    // Rules for the 'characters' collection
+    match /characters/{characterId} {
+      // Public characters can be read by anyone. Private ones only by the owner.
+      allow read: if resource.data.status == 'public' || (isAuthenticated() && isOwner(resource.data.userId));
+
+      // Any authenticated user can create a character, as long as they set themselves as the owner.
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId)
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.status in ['private', 'public'];
+
+      // Only the owner of a character can update or delete it.
+      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+
+      // Further validation for updates: Ensure critical fields are not changed.
+      // The user can only change name, biography, and status.
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'biography', 'status']);
+    }
+  }
+}

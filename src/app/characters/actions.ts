@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -53,8 +54,16 @@ export async function deleteCharacter(characterId: string) {
   }
 }
 
+const UpdateStatusSchema = z.enum(['private', 'public']);
+
 export async function updateCharacterStatus(characterId: string, status: 'private' | 'public') {
   if (!adminDb) throw new Error('Database service is unavailable.');
+  
+  const validation = UpdateStatusSchema.safeParse(status);
+  if (!validation.success) {
+      throw new Error('Invalid status provided.');
+  }
+
   const uid = await verifyAndGetUid();
   if (!characterId) {
     throw new Error('Character ID is required.');
@@ -68,7 +77,7 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
   }
 
   try {
-    await characterRef.update({ status });
+    await characterRef.update({ status: validation.data });
     revalidatePath('/characters');
     revalidatePath('/'); // Also revalidate home page in case it's featured
     return { success: true };
@@ -80,8 +89,8 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
 
 
 const UpdateCharacterSchema = z.object({
-  name: z.string().min(1, "Name is required."),
-  biography: z.string().min(1, "Biography is required."),
+  name: z.string().min(1, "Name is required.").max(100, "Name is too long."),
+  biography: z.string().min(1, "Biography is required.").max(5000, "Biography is too long."),
 });
 
 
@@ -97,7 +106,7 @@ export async function updateCharacter(characterId: string, formData: FormData) {
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Missing Fields. Failed to Update Character.',
+      message: 'Missing or invalid fields. Failed to update character.',
     };
   }
   
@@ -111,6 +120,7 @@ export async function updateCharacter(characterId: string, formData: FormData) {
   }
   
   try {
+    // Only update the fields that are allowed to be changed.
     await characterRef.update({ name, biography });
   } catch (error) {
     console.error('Error updating character in Firestore:', error);
