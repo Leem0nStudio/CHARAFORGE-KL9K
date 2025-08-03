@@ -13,6 +13,7 @@ const firebaseConfig = {
 
 // Initialize Firebase
 let app: FirebaseApp;
+// This check is important for Next.js's fast refresh feature.
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
 } else {
