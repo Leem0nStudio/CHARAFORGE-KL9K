@@ -1,5 +1,5 @@
 'use client';
-import { LogIn, LogOut, User as UserIcon, Users, Settings } from 'lucide-react';
+import { LogIn, LogOut, User as UserIcon, Users, Settings, BarChart } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase/client';
@@ -31,6 +31,7 @@ export function LoginButton() {
   }
 
   if (user) {
+    const isAdmin = user.role === 'admin';
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -63,6 +64,14 @@ export function LoginButton() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+           {isAdmin && (
+             <DropdownMenuItem asChild>
+                <Link href="/admin">
+                  <BarChart className="mr-2 h-4 w-4" />
+                  <span>Admin Dashboard</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
           <DropdownMenuItem asChild>
             <Link href="/characters">
               <Users className="mr-2 h-4 w-4" />

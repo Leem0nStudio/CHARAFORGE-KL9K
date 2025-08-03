@@ -6,14 +6,16 @@ import {
   useEffect,
   useContext,
   ReactNode,
+  useCallback,
 } from 'react';
 import { User, onIdTokenChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData, getDocs, collection } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export interface UserProfile extends User {
   stats?: UserStats;
+  role?: 'admin' | 'moderator' | 'user';
   // Add other firestore specific fields here
 }
 
@@ -69,7 +71,7 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
         displayName: user.displayName,
         photoURL: user.photoURL,
         createdAt: serverTimestamp(),
-        role: 'user',
+        role: 'user', // Default role for new users
         stats: {
           charactersCreated: 0,
           totalLikes: 0,
@@ -111,13 +113,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (authUser) {
+        const token = await authUser.getIdToken(true); // Force refresh to get latest claims
+        const decodedToken = await authUser.getIdTokenResult();
         const firestoreData = await ensureUserDocument(authUser);
-        const token = await authUser.getIdToken();
+        
         await setCookie(token);
         
         const userProfile: UserProfile = {
             ...authUser,
             ...firestoreData,
+            role: firestoreData?.role || 'user', // Set role from firestore
         }
         setUser(userProfile);
 
