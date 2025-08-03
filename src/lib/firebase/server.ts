@@ -17,7 +17,7 @@ const createFirebaseAdminApp = (): App | null => {
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-    console.error('[server.ts] FIREBASE_SERVICE_ACCOUNT_KEY is not defined.');
+    console.error('[server.ts] FIREBASE_SERVICE_ACCOUNT_KEY is not defined. Server features will be disabled.');
     return null;
   }
     
@@ -29,7 +29,7 @@ const createFirebaseAdminApp = (): App | null => {
   try {
     const serviceAccount: ServiceAccount = JSON.parse(serviceAccountKey);
     if (!serviceAccount.projectId) {
-         console.error('[server.ts] Service account JSON is missing projectId.');
+         console.error('[server.ts] Service account JSON is missing projectId. Server features will be disabled.');
          return null;
     }
     console.log(`[server.ts] Initializing Admin App for project: ${serviceAccount.projectId}`);
@@ -37,7 +37,9 @@ const createFirebaseAdminApp = (): App | null => {
       credential: cert(serviceAccount),
     });
   } catch (error: unknown) {
-    console.error('[server.ts] Error parsing service account key JSON:', error);
+    // Provide a more detailed error message for easier debugging.
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error(`[server.ts] FATAL: Error parsing FIREBASE_SERVICE_ACCOUNT_KEY. Please ensure it's a valid, single-line JSON string. Error: ${errorMessage}`);
     return null;
   }
 };
