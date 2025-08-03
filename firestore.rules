@@ -10,36 +10,51 @@ service cloud.firestore {
     }
 
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Rules for the 'users' collection
+    // Matches any document in the 'users' collection.
     match /users/{userId} {
-      // Any authenticated user can create their own user document
-      allow create: if isAuthenticated() && isOwner(userId);
-      // Only the owner can read or update their own user document
-      allow read, update: if isAuthenticated() && isOwner(userId);
-      // Deletion is not allowed to preserve user data integrity
-      allow delete: if false;
+      // Users can only read and write to their own document.
+      allow read, update: if isOwner(userId);
+      // A user can only create their own user document.
+      allow create: if isOwner(userId);
     }
 
-    // Rules for the 'characters' collection
+    // Matches any document in the 'characters' collection.
     match /characters/{characterId} {
-      // Public characters can be read by anyone. Private ones only by the owner.
-      allow read: if resource.data.status == 'public' || (isAuthenticated() && isOwner(resource.data.userId));
+      // Anyone can read a character document if its status is 'public'.
+      // The owner can read it regardless of status.
+      allow read: if resource.data.status == 'public' || isOwner(resource.data.userId);
 
-      // Any authenticated user can create a character, as long as they set themselves as the owner.
+      // A user can create a character if they are authenticated and the new
+      // character's userId matches their own auth uid.
+      // Also validates incoming data.
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId)
                     && request.resource.data.name is string
                     && request.resource.data.name.size() > 0
-                    && request.resource.data.status in ['private', 'public'];
+                    && request.resource.data.description is string
+                    && request.resource.data.biography is string
+                    && request.resource.data.imageUrl is string
+                    && request.resource.data.status in ['private', 'public']
+                    && request.resource.data.createdAt == request.time;
 
-      // Only the owner of a character can update or delete it.
-      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+      // The owner of a character can update it.
+      // We also prevent certain fields from being changed.
+      allow update: if isOwner(resource.data.userId)
+                    && request.resource.data.name is string
+                    && request.resource.data.biography is string
+                    // Prevent ownership or creation timestamp from being changed
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.createdAt == resource.data.createdAt;
 
-      // Further validation for updates: Ensure critical fields are not changed.
-      // The user can only change name, biography, and status.
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'biography', 'status']);
+      // The owner of a character can delete it.
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    // Disallow any other access to the database
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
