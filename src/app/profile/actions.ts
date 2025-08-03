@@ -14,10 +14,10 @@ export type ActionResponse = {
 }
 
 // This function centralizes the logic for verifying the user's session from the server-side.
-async function verifyAndGetUid(): Promise<string> {
+async function verifyAndGetUid(): Promise<{uid: string | null, error: string | null}> {
   // Ensure Firebase Admin services are available before proceeding.
   if(!adminAuth) {
-    throw new Error('Authentication service is unavailable on the server.');
+    return { uid: null, error: 'Authentication service is unavailable on the server.' };
   }
 
   // Retrieve the session cookie.
@@ -26,16 +26,16 @@ async function verifyAndGetUid(): Promise<string> {
 
   // If no token is found, the user is not authenticated.
   if (!idToken) {
-    throw new Error('User session not found. Please log in again.');
+    return { uid: null, error: 'User session not found. Please log in again.' };
   }
 
   // Verify the token using the Firebase Admin SDK.
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
-    return decodedToken.uid;
+    return { uid: decodedToken.uid, error: null };
   } catch (error) {
     // Handle cases where the token is invalid or expired.
-    throw new Error('Invalid or expired user session. Please log in again.');
+    return { uid: null, error: 'Invalid or expired user session. Please log in again.' };
   }
 }
 
@@ -48,24 +48,27 @@ export async function updateUserProfile(
   prevState: ActionResponse,
   formData: FormData
 ): Promise<ActionResponse> {
+  const { uid, error } = await verifyAndGetUid();
+  if (error || !uid) {
+    return { success: false, message: error || 'Failed to verify user.' };
+  }
+
+  if (!adminDb) {
+    return { success: false, message: 'Database service is unavailable.' };
+  }
+
+  const validatedFields = UpdateProfileSchema.safeParse({
+    displayName: formData.get('displayName'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: validatedFields.error.flatten().fieldErrors.displayName?.[0] || 'Invalid input.',
+    };
+  }
+
   try {
-    const uid = await verifyAndGetUid();
-    
-    if (!adminDb) {
-      return { success: false, message: 'Database service is unavailable.' };
-    }
-
-    const validatedFields = UpdateProfileSchema.safeParse({
-      displayName: formData.get('displayName'),
-    });
-
-    if (!validatedFields.success) {
-      return {
-        success: false,
-        message: validatedFields.error.flatten().fieldErrors.displayName?.[0] || 'Invalid input.',
-      };
-    }
-
     const { displayName } = validatedFields.data;
     // Update both Firebase Auth and Firestore for consistency
     await adminAuth.updateUser(uid, { displayName });
@@ -92,22 +95,25 @@ export type UserPreferences = z.infer<typeof UpdatePreferencesSchema>;
 
 
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
+    const { uid, error } = await verifyAndGetUid();
+    if (error || !uid) {
+        return { success: false, message: error || 'Failed to verify user.' };
+    }
+
+    const validatedFields = UpdatePreferencesSchema.safeParse(preferences);
+
+    if (!validatedFields.success) {
+        return {
+            success: false,
+            message: 'Invalid preferences data provided.',
+        };
+    }
+
+    if (!adminDb) {
+        return { success: false, message: 'Database service is unavailable.' };
+    }
+
     try {
-        const uid = await verifyAndGetUid();
-
-        const validatedFields = UpdatePreferencesSchema.safeParse(preferences);
-
-        if (!validatedFields.success) {
-            return {
-                success: false,
-                message: 'Invalid preferences data provided.',
-            };
-        }
-
-        if (!adminDb) {
-            return { success: false, message: 'Database service is unavailable.' };
-        }
-    
         const userRef = adminDb.collection('users').doc(uid);
         await userRef.set({ preferences: validatedFields.data }, { merge: true });
 
@@ -121,13 +127,16 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
 
 
 export async function deleteUserAccount(): Promise<ActionResponse> {
+  const { uid, error } = await verifyAndGetUid();
+  if (error || !uid) {
+      return { success: false, message: error || 'Failed to verify user.' };
+  }
+    
+  if (!adminAuth || !adminDb) {
+      return { success: false, message: 'Server services are unavailable to perform deletion.' };
+  }
+    
   try {
-    const uid = await verifyAndGetUid();
-    
-    if (!adminAuth || !adminDb) {
-        return { success: false, message: 'Server services are unavailable to perform deletion.' };
-    }
-    
     // Use a transaction to delete the user's data and profile atomically.
     const userRef = adminDb.collection('users').doc(uid);
     const charactersQuery = adminDb.collection('characters').where('userId', '==', uid);
