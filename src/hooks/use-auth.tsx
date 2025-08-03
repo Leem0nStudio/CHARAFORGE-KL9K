@@ -24,18 +24,15 @@ const AuthContext = createContext<AuthContextType>({
 async function setCookie(token: string | null) {
   // Use a server action to set the cookie
   try {
-    const response = await fetch('/api/auth/set-cookie', {
+    await fetch('/api/auth/set-cookie', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ token }),
     });
-    if (!response.ok) {
-      throw new Error('Failed to set auth cookie');
-    }
   } catch (error) {
-    console.error(error);
+    console.error('Failed to set auth cookie:', error);
   }
 }
 
@@ -44,23 +41,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (auth) {
-      const unsubscribe = onIdTokenChanged(auth, async (user) => {
-        if (user) {
-          const token = await user.getIdToken();
-          await setCookie(token);
-          setUser(user);
-        } else {
-          await setCookie(null);
-          setUser(null);
-        }
-        setLoading(false);
-      });
-
-      return () => unsubscribe();
-    } else {
+    // This check prevents the app from crashing if Firebase fails to initialize
+    if (!auth) {
       setLoading(false);
+      return;
     }
+    
+    const unsubscribe = onIdTokenChanged(auth, async (user) => {
+      if (user) {
+        const token = await user.getIdToken();
+        await setCookie(token);
+        setUser(user);
+      } else {
+        await setCookie(null);
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+    
   }, []);
 
   if (loading) {

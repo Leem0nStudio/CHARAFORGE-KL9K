@@ -13,30 +13,19 @@ const firebaseConfig = {
 
 // Initialize Firebase
 let app: FirebaseApp;
-// Check that all required fields are present before initializing
-if (getApps().length === 0) {
-    if (
-      firebaseConfig.apiKey &&
-      firebaseConfig.authDomain &&
-      firebaseConfig.projectId
-    ) {
-        app = initializeApp(firebaseConfig);
-    } else {
-        console.error("Firebase configuration is missing or incomplete. Firebase could not be initialized.");
-    }
-} else {
-    app = getApp();
-}
-
-
 let auth: Auth;
 
-if (app) {
-    try {
-      auth = getAuth(app);
-    } catch (e) {
-      console.error(e);
-    }
+// This check is important for Next.js a fast refresh feature.
+if (getApps().length === 0) {
+  if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+  } else {
+    console.error("Firebase configuration is missing or incomplete. Firebase could not be initialized on the client.");
+  }
+} else {
+  app = getApp();
+  auth = getAuth(app);
 }
 
 

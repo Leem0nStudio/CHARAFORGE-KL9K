@@ -16,7 +16,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { admin } from '@/lib/firebase/server';
+import { admin, adminDb } from '@/lib/firebase/server';
 import { Separator } from '@/components/ui/separator';
 import { CharacterCard } from '@/components/character-card';
 import type { Character } from '@/components/character-card';
@@ -24,8 +24,12 @@ import { redirect } from 'next/navigation';
 
 
 async function getCharactersForUser(userId: string): Promise<Character[]> {
+  if (!adminDb) {
+    console.warn("Characters page could not fetch data: Firebase Admin is not initialized.");
+    return [];
+  }
   try {
-    const snapshot = await admin.firestore()
+    const snapshot = await adminDb
       .collection('characters')
       .where('userId', '==', userId)
       .orderBy('createdAt', 'desc')
@@ -60,18 +64,16 @@ export default async function CharactersPage() {
   let characters: Character[] = [];
   let uid: string | null = null;
 
-  if (idToken) {
+  if (idToken && admin) {
     try {
       const decodedToken = await getAuth(admin).verifyIdToken(idToken);
       uid = decodedToken.uid;
       characters = await getCharactersForUser(uid);
     } catch (error) {
-      console.error('Auth error, redirecting:', error);
-      // If token is invalid, redirect to home
+      console.error('Auth error on characters page, redirecting:', error);
       redirect('/');
     }
-  } else {
-    // If no token, redirect to home
+  } else if (!idToken) {
     redirect('/');
   }
 

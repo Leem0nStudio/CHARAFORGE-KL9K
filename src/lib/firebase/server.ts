@@ -1,4 +1,4 @@
-import { initializeApp, getApps, getApp, App } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp, App, ServiceAccount } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
@@ -10,11 +10,13 @@ const createFirebaseAdminApp = () => {
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. The server could not be initialized.');
+    // This console.warn is important for debugging in environments where the key isn't set.
+    console.warn('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Server-side Firebase features will be disabled.');
+    return null;
   }
 
   try {
-    const serviceAccount = JSON.parse(serviceAccountKey);
+    const serviceAccount: ServiceAccount = JSON.parse(serviceAccountKey);
     return initializeApp({
       credential: {
         projectId: serviceAccount.project_id,
@@ -24,10 +26,33 @@ const createFirebaseAdminApp = () => {
     });
   } catch (error) {
     console.error('Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:', error);
-    throw new Error('Failed to parse Firebase service account key.');
+    // Return null or a mock app to prevent hard crash
+    return null;
   }
 };
 
-export const admin: App = createFirebaseAdminApp();
-export const adminAuth = getAuth(admin);
-export const adminDb = getFirestore(admin);
+const adminApp = createFirebaseAdminApp();
+
+// Use a function to get the db/auth instance to handle the case where adminApp is null.
+const getAdminDb = () => {
+  if (!adminApp) return null;
+  try {
+    return getFirestore(adminApp);
+  } catch (e) {
+    return null;
+  }
+};
+
+const getAdminAuth = () => {
+    if (!adminApp) return null;
+    try {
+        return getAuth(adminApp);
+    } catch(e) {
+        return null;
+    }
+}
+
+
+export const admin = adminApp;
+export const adminDb = getAdminDb();
+export const adminAuth = getAdminAuth();

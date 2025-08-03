@@ -11,6 +11,11 @@ import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/components/character-card';
 
 async function getFeaturedCharacters(): Promise<Character[]> {
+  // Gracefully handle cases where adminDb is not available (e.g., in development without service key)
+  if (!adminDb) {
+    console.warn("Featured characters could not be fetched: Firebase Admin is not initialized.");
+    return [];
+  }
   try {
     const snapshot = await adminDb
       .collection('characters')
@@ -38,14 +43,8 @@ async function getFeaturedCharacters(): Promise<Character[]> {
       };
     });
   } catch (error) {
-    console.error("Error fetching featured characters, returning placeholder data:", error);
-    // Return placeholder data on error to prevent build failures
-    return [
-        { id: '1', name: 'Kaelen, the Shadow Rogue', imageUrl: 'https://placehold.co/400x400.png', description: '', biography: '', userId: '', status: 'public', createdAt: new Date(), userName: 'seraphina' },
-        { id: '2', name: 'Unit 734: "Glitch"', imageUrl: 'https://placehold.co/400x400.png', description: '', biography: '', userId: '', status: 'public', createdAt: new Date(), userName: 'cypher' },
-        { id: '3', name: 'Captain "Iron-Eye" Isabella', imageUrl: 'https://placehold.co/400x400.png', description: '', biography: '', userId: '', status: 'public', createdAt: new Date(), userName: 'mad_max' },
-        { id: '4', name: 'Lyra of the Whispering Woods', imageUrl: 'https://placehold.co/400x400.png', description: '', biography: '', userId: '', status: 'public', createdAt: new Date(), userName: 'elara' },
-    ];
+    console.error("Error fetching featured characters:", error);
+    return [];
   }
 }
 
@@ -103,7 +102,8 @@ export default async function Home() {
             </p>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {featuredCreations.map((creation) => (
+            {featuredCreations.length > 0 ? (
+              featuredCreations.map((creation) => (
               <Card key={creation.id} className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
                 <CardHeader className="p-0">
                   <Image
@@ -120,7 +120,13 @@ export default async function Home() {
                   <CardDescription>by @{creation.userName}</CardDescription>
                 </CardContent>
               </Card>
-            ))}
+            ))
+            ) : (
+               <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[200px] border-2 border-dashed rounded-lg bg-card">
+                  <p className="text-lg font-medium font-headline tracking-wider">No Featured Characters Yet</p>
+                  <p className="text-sm">Be the first to post a public character!</p>
+              </div>
+            )}
           </div>
         </section>
 

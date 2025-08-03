@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { adminDb } from '@/lib/firebase/server';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
@@ -13,6 +13,11 @@ import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 async function getCharacterForEdit(characterId: string) {
+  if (!adminDb || !admin) {
+     console.warn("Edit page loaded without server credentials. Editing will be disabled.");
+     return { error: 'SERVICE_UNAVAILABLE' };
+  }
+
   try {
     const cookieStore = cookies();
     const idToken = cookieStore.get('firebaseIdToken')?.value;
@@ -39,12 +44,9 @@ async function getCharacterForEdit(characterId: string) {
 
     return characterDoc.data();
   } catch (error) {
-     if (error instanceof Error && error.message.includes('FIREBASE_SERVICE_ACCOUNT_KEY')) {
-      console.warn("Edit page loaded without server credentials. Editing will be disabled.");
-      return { error: 'SERVICE_UNAVAILABLE' };
-    }
     console.error("Unexpected error in getCharacterForEdit:", error);
-    return null;
+    // Gracefully handle the case where the service is unavailable
+    return { error: 'SERVICE_UNAVAILABLE' };
   }
 }
 

@@ -1,10 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { adminDb } from '@/lib/firebase/server';
+import { admin, adminDb } from '@/lib/firebase/server';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import { admin } from '@/lib/firebase/server';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
@@ -15,6 +14,12 @@ async function verifyAndGetUid() {
   if (!idToken) {
     throw new Error('User is not authenticated. No token found.');
   }
+
+  // Ensure admin auth service is available
+  if (!admin) {
+      throw new Error('The authentication service is currently unavailable.');
+  }
+
   try {
     const decodedToken = await getAuth(admin).verifyIdToken(idToken);
     return decodedToken.uid;
@@ -25,6 +30,7 @@ async function verifyAndGetUid() {
 }
 
 export async function deleteCharacter(characterId: string) {
+  if (!adminDb) throw new Error('Database service is unavailable.');
   const uid = await verifyAndGetUid();
   if (!characterId) {
     throw new Error('Character ID is required.');
@@ -48,6 +54,7 @@ export async function deleteCharacter(characterId: string) {
 }
 
 export async function updateCharacterStatus(characterId: string, status: 'private' | 'public') {
+  if (!adminDb) throw new Error('Database service is unavailable.');
   const uid = await verifyAndGetUid();
   if (!characterId) {
     throw new Error('Character ID is required.');
@@ -79,6 +86,7 @@ const UpdateCharacterSchema = z.object({
 
 
 export async function updateCharacter(characterId: string, formData: FormData) {
+  if (!adminDb) throw new Error('Database service is unavailable.');
   const uid = await verifyAndGetUid();
 
   const validatedFields = UpdateCharacterSchema.safeParse({
