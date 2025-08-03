@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useTransition, useCallback } from 'react';
@@ -45,6 +44,16 @@ const StatCard = React.memo(({ icon, label, value }: { icon: React.ReactNode, la
     );
 });
 StatCard.displayName = 'StatCard';
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      Update Profile
+    </Button>
+  );
+}
 
 
 export default function ProfilePage() {
@@ -131,7 +140,6 @@ export default function ProfilePage() {
   
   const userStats = user.stats;
   const memberSinceDate = userStats?.memberSince?.toDate ? format(userStats.memberSince.toDate(), 'PPP') : 'N/A';
-  const { pending: isUpdatingProfile } = useFormStatus();
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -163,10 +171,7 @@ export default function ProfilePage() {
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" type="email" defaultValue={user.email || ''} disabled />
                 </div>
-                <Button type="submit" disabled={isUpdatingProfile}>
-                  {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Update Profile
-                </Button>
+                <SubmitButton />
               </form>
             </CardContent>
           </Card>
@@ -287,7 +292,7 @@ export default function ProfilePage() {
               <CardDescription>
                 Permanently delete your account and all of your content. This action is not reversible.
               </CardDescription>
-            </CardHeader>
+            </Header>
             <CardContent>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -317,5 +322,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    
