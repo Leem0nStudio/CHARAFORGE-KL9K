@@ -1,10 +1,6 @@
 'use client';
-import {
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-} from 'firebase/auth';
 import { LogIn, LogOut, User as UserIcon, Users } from 'lucide-react';
+import { signOut } from 'firebase/auth';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase/client';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -19,18 +15,8 @@ import {
 } from './ui/dropdown-menu';
 import Link from 'next/link';
 
-const googleProvider = new GoogleAuthProvider();
-
 export function LoginButton() {
   const { user, loading } = useAuth();
-
-  const handleSignIn = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      console.error('Error signing in with Google', error);
-    }
-  };
 
   const handleSignOut = async () => {
     try {
@@ -67,11 +53,13 @@ export function LoginButton() {
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">
-                {user.displayName}
+                {user.displayName || user.email}
               </p>
-              <p className="text-xs leading-none text-muted-foreground">
-                {user.email}
-              </p>
+               {user.displayName && (
+                <p className="text-xs leading-none text-muted-foreground">
+                    {user.email}
+                </p>
+               )}
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -92,8 +80,10 @@ export function LoginButton() {
   }
 
   return (
-    <Button onClick={handleSignIn}>
-      <LogIn className="mr-2 h-4 w-4" /> Login
+    <Button asChild>
+      <Link href="/login">
+        <LogIn className="mr-2 h-4 w-4" /> Login
+      </Link>
     </Button>
   );
 }
