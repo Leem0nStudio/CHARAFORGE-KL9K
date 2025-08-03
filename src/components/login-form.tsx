@@ -32,7 +32,7 @@ const errorMessages: Record<string, string> = {
   "auth/weak-password": "Password should be at least 6 characters.",
   "auth/too-many-requests": "Access to this account has been temporarily disabled due to many failed login attempts. You can try again later.",
   "auth/network-request-failed": "Network error. Please check your internet connection and try again.",
-  // Add other specific Firebase Auth errors as needed.
+  "auth/configuration-not-found": "Authentication configuration failed. Please ensure Email/Password sign-in is enabled in your Firebase console.",
 };
 
 export function LoginForm() {
@@ -44,8 +44,6 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
 
   const handleAuthError = (error: AuthError) => {
-    console.error("[LoginForm] Firebase Auth Error Code:", error.code);
-    console.error("[LoginForm] Firebase Auth Error Message:", error.message);
     const message =
       errorMessages[error.code] ||
       "An unexpected error occurred. Please try again.";
@@ -59,33 +57,23 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    console.log(`[LoginForm] Form submitted. Mode: ${isSignUp ? 'Sign Up' : 'Sign In'}. Email: ${email}`);
-
 
     try {
       if (isSignUp) {
-        console.log("[LoginForm] Attempting to create user...");
         await createUserWithEmailAndPassword(auth, email, password);
-        console.log("[LoginForm] User creation successful.");
         toast({
           title: "Account Created!",
           description: "You have been successfully registered.",
         });
       } else {
-        console.log("[LoginForm] Attempting to sign in user...");
         await signInWithEmailAndPassword(auth, email, password);
-        console.log("[LoginForm] User sign-in successful.");
         toast({
           title: "Login Successful!",
           description: "Welcome back to CharaForge.",
         });
       }
-      // onIdTokenChanged in useAuth will handle redirects.
-      console.log("[LoginForm] Pushing to homepage.");
       router.push("/");
     } catch (error: unknown) {
-        console.error("[LoginForm] An error occurred during form submission:", error);
-        // Safe error handling
         if (error instanceof Error && 'code' in error) {
             handleAuthError(error as AuthError);
         } else {
@@ -96,7 +84,6 @@ export function LoginForm() {
             });
         }
     } finally {
-      console.log("[LoginForm] Setting loading to false.");
       setLoading(false);
     }
   };
