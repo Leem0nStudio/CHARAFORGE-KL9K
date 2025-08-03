@@ -17,20 +17,17 @@ const GenerateCharacterImageInputSchema = z.object({
 export type GenerateCharacterImageInput = z.infer<typeof GenerateCharacterImageInputSchema>;
 
 const GenerateCharacterImageOutputSchema = z.object({
-  imageUrl: z.string().describe('The URL of the generated character image.'),
+  imageUrl: z
+    .string()
+    .describe('The generated image as a data URI, including MIME type and Base64 encoding.'),
 });
 export type GenerateCharacterImageOutput = z.infer<typeof GenerateCharacterImageOutputSchema>;
 
-export async function generateCharacterImage(input: GenerateCharacterImageInput): Promise<GenerateCharacterImageOutput> {
+export async function generateCharacterImage(
+  input: GenerateCharacterImageInput
+): Promise<GenerateCharacterImageOutput> {
   return generateCharacterImageFlow(input);
 }
-
-const prompt = ai.definePrompt({
-  name: 'generateCharacterImagePrompt',
-  input: {schema: GenerateCharacterImageInputSchema},
-  output: {schema: GenerateCharacterImageOutputSchema},
-  prompt: `Generate an image of a character based on the following description: {{{description}}}`,
-});
 
 const generateCharacterImageFlow = ai.defineFlow(
   {
@@ -41,13 +38,13 @@ const generateCharacterImageFlow = ai.defineFlow(
   async input => {
     const {media} = await ai.generate({
       model: 'googleai/gemini-1.5-flash-latest',
-      prompt: input.description,
+      prompt: `Generate a photorealistic portrait of a character based on the following description: ${input.description}`,
       config: {
-        responseModalities: ['TEXT', 'IMAGE'],
+        responseModalities: ['IMAGE'],
       },
     });
 
-    if (!media || !media.url) {
+    if (!media?.url) {
       throw new Error('Failed to generate character image.');
     }
 

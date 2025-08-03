@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -107,7 +106,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // Robust check to ensure 'auth' is a valid Firebase Auth instance
-    if (!auth || typeof auth.onIdTokenChanged !== 'function') {
+    if (!auth) {
+      console.warn("Firebase Auth is not initialized. User authentication will be disabled.");
       setLoading(false);
       return;
     }
