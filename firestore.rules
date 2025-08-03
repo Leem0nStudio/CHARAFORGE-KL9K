@@ -13,67 +13,43 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Note: This requires setting a custom claim on the user's auth token.
-    // This is not implemented in the app yet, but the rule is ready.
-    function isAdmin() {
-      return isAuthenticated() && request.auth.token.admin == true;
+    // Prevents unauthorized fields from being written to documents
+    function hasOnlyAllowedFields(allowedFields) {
+      return request.resource.data.keys().hasOnly(allowedFields);
     }
 
-    // Default deny all reads/writes
-    match /{document=**} {
-      allow read, write: if false;
-    }
-    
-    // USERS COLLECTION
-    // Users can read/write their own data. No one else can.
+    // Users Collection
+    // Users can only read and write their own data.
     match /users/{userId} {
-      allow read, update, delete: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated();
-      
-      // Validation rules for user documents
-      // - Ensure the data types are correct
-      // - Ensure the user ID in the document matches the user's auth UID
-      match /users/{userId} {
-        allow write: if request.resource.data.uid == userId &&
-                        request.resource.data.email is string &&
-                        request.resource.data.displayName is string &&
-                        request.resource.data.createdAt is timestamp;
-      }
+      allow read, update: if isOwner(userId);
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+
+      // Ensure preferences object has the correct structure if it exists
+      allow write: if request.resource.data.preferences.keys().hasAll(['theme', 'notifications', 'privacy'])
+                      && request.resource.data.preferences.theme is string
+                      && request.resource.data.preferences.notifications.keys().hasAll(['email'])
+                      && request.resource.data.preferences.privacy.keys().hasAll(['profileVisibility']);
     }
 
-    // CHARACTERS COLLECTION
-    // - Anyone can read public characters.
-    // - Owners can read their private characters.
-    // - Owners can create, update, and delete their own characters.
+    // Characters Collection
     match /characters/{characterId} {
+      // Anyone can read public characters, but only the owner can read private ones.
       allow read: if resource.data.status == 'public' || isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+
+      // Only authenticated users can create characters.
+      // We validate that the incoming data is from the owner.
+      allow create: if isAuthenticated()
+                    && isOwner(request.resource.data.userId)
+                    && hasOnlyAllowedFields(['userId', 'userName', 'name', 'description', 'biography', 'imageUrl', 'status', 'createdAt'])
+                    && request.resource.data.status in ['private', 'public'];
+      
+      // Only the owner can update or delete their character.
       allow update, delete: if isOwner(resource.data.userId);
 
-      // --- Data Validation ---
-      // On Create:
-      // - userId must match the creator's UID.
-      // - Name must be a non-empty string.
-      // - Status must be 'private' initially.
-      // - createdAt must be a server timestamp.
-      // - biography, description, imageUrl must be strings.
-      allow create: if request.resource.data.name is string &&
-                       request.resource.data.name != '' &&
-                       request.resource.data.description is string &&
-                       request.resource.data.biography is string &&
-                       request.resource.data.imageUrl is string &&
-                       request.resource.data.status == 'private' &&
-                       request.resource.data.createdAt == request.time;
-                       
-      // On Update:
-      // - Cannot change the original owner (userId) or creation date.
-      // - Name must remain a non-empty string.
-      // - Status can only be 'public' or 'private'.
-      allow update: if request.resource.data.userId == resource.data.userId &&
-                       request.resource.data.createdAt == resource.data.createdAt &&
-                       request.resource.data.name is string &&
-                       request.resource.data.name != '' &&
-                       (request.resource.data.status == 'private' || request.resource.data.status == 'public');
+      // When updating, prevent changing the owner or creation date.
+      allow update: if hasOnlyAllowedFields(['name', 'biography', 'status'])
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.createdAt == resource.data.createdAt;
     }
   }
 }

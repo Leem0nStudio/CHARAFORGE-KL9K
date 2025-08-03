@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,14 +23,27 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { updateUserProfile, deleteUserAccount } from './actions';
+import { updateUserProfile, deleteUserAccount, updateUserPreferences } from './actions';
 import { Loader2 } from 'lucide-react';
+import type { UserPreferences } from './actions';
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [preferences, setPreferences] = useState<UserPreferences>({
+    theme: 'system',
+    notifications: { email: false },
+    privacy: { profileVisibility: 'private' },
+  });
+
+  useEffect(() => {
+    // This would typically be fetched from the user's document in a real app
+    // For now, we'll use defaults and let the user save them.
+    // In a full implementation, you'd fetch userDoc.data().preferences
+  }, [user]);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -54,11 +70,36 @@ export default function ProfilePage() {
     const result = await deleteUserAccount();
      if (result.success) {
       toast({ title: 'Account Deleted', description: result.message });
-      router.push('/'); // Redirect to home page after deletion
+      router.push('/');
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
     setIsSubmitting(false);
+  }
+
+  const handlePreferencesChange = (field: keyof UserPreferences, value: any) => {
+    setPreferences(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const handleNestedPreferencesChange = (parent: 'notifications' | 'privacy', field: string, value: any) => {
+      setPreferences(prev => ({
+          ...prev,
+          [parent]: {
+              ...(prev[parent] as any),
+              [field]: value
+          }
+      }));
+  }
+
+  const handleSavePreferences = () => {
+    startTransition(async () => {
+        const result = await updateUserPreferences(preferences);
+        if (result.success) {
+            toast({ title: 'Preferences Saved', description: result.message });
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+        }
+    });
   }
 
   return (
@@ -69,8 +110,8 @@ export default function ProfilePage() {
       <Tabs defaultValue="profile" className="space-y-4">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="prefs">Preferences</TabsTrigger>
           <TabsTrigger value="stats" disabled>Statistics</TabsTrigger>
-          <TabsTrigger value="prefs" disabled>Preferences</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="space-y-4">
@@ -96,6 +137,72 @@ export default function ProfilePage() {
                   Update Profile
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+         <TabsContent value="prefs" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Preferences</CardTitle>
+              <CardDescription>
+                Manage your application settings and personalize your experience.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
+                <div className="space-y-4">
+                    <Label className="text-base font-semibold">Theme</Label>
+                     <RadioGroup 
+                        value={preferences.theme} 
+                        onValueChange={(value: 'light' | 'dark' | 'system') => handlePreferencesChange('theme', value)}
+                        className="flex space-x-4"
+                     >
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="light" id="light" />
+                            <Label htmlFor="light">Light</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="dark" id="dark" />
+                            <Label htmlFor="dark">Dark</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="system" id="system" />
+                            <Label htmlFor="system">System</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+
+                <div className="space-y-4">
+                    <Label className="text-base font-semibold">Notifications</Label>
+                    <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                            <Label>Email Notifications</Label>
+                            <CardDescription>Receive emails about important account activity.</CardDescription>
+                        </div>
+                        <Switch 
+                            checked={preferences.notifications.email}
+                            onCheckedChange={(checked) => handleNestedPreferencesChange('notifications', 'email', checked)}
+                        />
+                    </div>
+                </div>
+
+                 <div className="space-y-4">
+                    <Label className="text-base font-semibold">Privacy</Label>
+                     <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                            <Label>Public Profile</Label>
+                            <CardDescription>Allow other users to see your profile and creations.</CardDescription>
+                        </div>
+                        <Switch
+                           checked={preferences.privacy.profileVisibility === 'public'}
+                           onCheckedChange={(checked) => handleNestedPreferencesChange('privacy', 'profileVisibility', checked ? 'public' : 'private')}
+                        />
+                    </div>
+                </div>
+                
+                 <Button onClick={handleSavePreferences} disabled={isPending}>
+                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Preferences
+                </Button>
             </CardContent>
           </Card>
         </TabsContent>

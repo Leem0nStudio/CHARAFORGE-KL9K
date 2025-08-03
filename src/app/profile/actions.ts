@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -30,7 +31,6 @@ async function verifyAndGetUid() {
   }
 }
 
-// Schema for updating user profile
 const UpdateProfileSchema = z.object({
   displayName: z.string().min(3, 'Display name must be at least 3 characters.').max(30, 'Display name cannot exceed 30 characters.'),
 });
@@ -52,10 +52,8 @@ export async function updateUserProfile(formData: FormData): Promise<ActionRespo
   const { displayName } = validatedFields.data;
 
   try {
-    // Update Firebase Auth
     await getAuth(admin).updateUser(uid, { displayName });
 
-    // Update Firestore
     if(adminDb) {
       const userRef = adminDb.collection('users').doc(uid);
       await userRef.update({ displayName });
@@ -69,13 +67,44 @@ export async function updateUserProfile(formData: FormData): Promise<ActionRespo
   }
 }
 
-// Note: Changing password requires re-authentication on the client, which is complex with server actions.
-// This is a placeholder for a more complete implementation that would handle client-side re-authentication.
-export async function updateUserPassword(password: string): Promise<ActionResponse> {
-     const uid = await verifyAndGetUid();
-     // This is a placeholder. A real implementation needs re-authentication flow.
-     console.log(`Password change requested for user ${uid} to ${password}. Skipping due to complexity.`);
-     return { success: false, message: "Password change is not yet implemented."};
+const UpdatePreferencesSchema = z.object({
+    theme: z.enum(['light', 'dark', 'system']),
+    notifications: z.object({
+        email: z.boolean(),
+    }),
+    privacy: z.object({
+        profileVisibility: z.enum(['public', 'private']),
+    }),
+});
+export type UserPreferences = z.infer<typeof UpdatePreferencesSchema>;
+
+
+export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
+    const uid = await verifyAndGetUid();
+
+    const validatedFields = UpdatePreferencesSchema.safeParse(preferences);
+
+    if (!validatedFields.success) {
+        return {
+            success: false,
+            message: 'Invalid preferences data provided.',
+        };
+    }
+
+    if (!adminDb) {
+        return { success: false, message: 'Database service is unavailable.' };
+    }
+    
+    try {
+        const userRef = adminDb.collection('users').doc(uid);
+        await userRef.set({ preferences: validatedFields.data }, { merge: true });
+
+        revalidatePath('/profile');
+        return { success: true, message: 'Preferences updated successfully.' };
+    } catch (error) {
+        console.error('Error updating user preferences:', error);
+        return { success: false, message: 'Failed to save preferences. Please try again.' };
+    }
 }
 
 
@@ -83,10 +112,8 @@ export async function deleteUserAccount(): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
 
   try {
-     // Delete from Firestore (optional, but good practice)
     if(adminDb) {
       await adminDb.collection('users').doc(uid).delete();
-      // Optional: clean up user's content, e.g., characters
       const charactersSnapshot = await adminDb.collection('characters').where('userId', '==', uid).get();
       const batch = adminDb.batch();
       charactersSnapshot.forEach(doc => {
@@ -95,10 +122,8 @@ export async function deleteUserAccount(): Promise<ActionResponse> {
       await batch.commit();
     }
     
-    // Delete from Firebase Auth
     await getAuth(admin).deleteUser(uid);
     
-    // Clear the cookie by setting it to expire immediately
     cookies().set('firebaseIdToken', '', { maxAge: 0 });
 
     revalidatePath('/');
