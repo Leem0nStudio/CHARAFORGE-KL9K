@@ -17,37 +17,21 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// More robust check for all required client-side variables
-const areClientVarsPresent =
-  firebaseConfig.apiKey &&
-  firebaseConfig.authDomain &&
-  firebaseConfig.projectId &&
-  firebaseConfig.storageBucket &&
-  firebaseConfig.messagingSenderId &&
-  firebaseConfig.appId;
-
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
-if (areClientVarsPresent) {
-  // Initialize Firebase only if config is fully present
+try {
   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
   auth = getAuth(app);
   db = getFirestore(app);
 
-  // Connect to emulators if in development
   if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
     console.log('CLIENT: Connecting to Firebase Emulators');
-    try {
-      // Note: Emulators must be running for this to succeed
-      connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-      connectFirestoreEmulator(db, '127.0.0.1', 8080);
-    } catch (error) {
-      console.error('Error connecting to Firebase Emulators (Client):', error);
-    }
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+    connectFirestoreEmulator(db, '127.0.0.1', 8080);
   }
-} else {
+} catch (error) {
   console.error(
     'Firebase client configuration is missing or incomplete. Make sure NEXT_PUBLIC_FIREBASE_* environment variables are set in your .env file. Client-side Firebase features will be disabled.'
   );
