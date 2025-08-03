@@ -1,5 +1,5 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -11,28 +11,8 @@ const firebaseConfig = {
   "messagingSenderId": "347255894214"
 };
 
-
 // Initialize Firebase
-let app: FirebaseApp;
-let auth: Auth;
-
-// This check is important for Next.js a fast refresh feature.
-if (getApps().length) {
-  app = getApp();
-} else {
-  app = initializeApp(firebaseConfig);
-}
-
-// Check if the app was initialized before getting auth
-// This can sometimes fail in certain environments if not checked
-try {
-  auth = getAuth(app);
-} catch (e) {
-  console.error("Could not get Firebase Auth instance", e);
-  // In a real app, you might want to handle this more gracefully
-  // For now, we'll let it be undefined so the app doesn't crash,
-  // but auth-related features will fail.
-}
-
+const app: FirebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth: Auth = getAuth(app);
 
 export { app, auth };
