@@ -44,9 +44,10 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Redirect if user is already logged in and auth is not loading
+  // This effect correctly handles redirection after the auth state is fully resolved.
   useEffect(() => {
     if (user && !authLoading) {
+      console.log("[LoginForm] User detected and auth is not loading. Redirecting to /");
       router.push("/");
     }
   }, [user, authLoading, router]);
@@ -91,7 +92,7 @@ export function LoginForm() {
           description: "Welcome back to CharaForge. Redirecting...",
         });
       }
-      // The useEffect hook will handle the redirect once the auth state is confirmed.
+      // The useEffect hook will handle the redirect once the auth state is confirmed by useAuth.
     } catch (error: unknown) {
         if (error instanceof Error && 'code' in error) {
             handleAuthError(error as AuthError);
