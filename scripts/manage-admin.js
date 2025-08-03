@@ -14,12 +14,13 @@ try {
 }
 
 const auth = admin.auth();
+const db = admin.firestore();
 
 const grantAdminRole = async (uid) => {
   try {
     await auth.setCustomUserClaims(uid, { admin: true });
     // Also update the role in Firestore
-    await admin.firestore().collection('users').doc(uid).set({ role: 'admin' }, { merge: true });
+    await db.collection('users').doc(uid).set({ role: 'admin' }, { merge: true });
     console.log(`Success! User ${uid} has been granted the admin role.`);
   } catch (error) {
     console.error(`Error granting admin role to ${uid}:`, error.message);
@@ -31,7 +32,7 @@ const revokeAdminRole = async (uid) => {
     // Setting claims to null removes them
     await auth.setCustomUserClaims(uid, { admin: false });
      // Also update the role in Firestore to 'user'
-    await admin.firestore().collection('users').doc(uid).set({ role: 'user' }, { merge: true });
+    await db.collection('users').doc(uid).set({ role: 'user' }, { merge: true });
     console.log(`Success! Admin role has been revoked for user ${uid}.`);
   } catch (error) {
     console.error(`Error revoking admin role for ${uid}:`, error.message);

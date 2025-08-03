@@ -4,18 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 9002",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
+    "genkit:dev": "tsx src/ai/dev.ts",
+    "genkit:watch": "tsx --watch src/ai/dev.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "firebase:setup": "node scripts/firebase-setup.js",
     "firebase:emulators": "firebase emulators:start --only auth,firestore",
-    "admin:grant": "node scripts/manage-admin.js grant",
-    "admin:revoke": "node scripts/manage-admin.js revoke",
-    "admin:check": "node scripts/manage-admin.js check",
-    "admin:list": "node scripts/manage-admin.js list"
+    "admin:grant": "tsx scripts/manage-admin.js grant",
+    "admin:revoke": "tsx scripts/manage-admin.js revoke",
+    "admin:check": "tsx scripts/manage-admin.js check",
+    "admin:list": "tsx scripts/manage-admin.js list"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.14.1",

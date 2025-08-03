@@ -1,14 +1,12 @@
-
 'use client';
 
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, memo, useEffect } from 'react';
 import Image from 'next/image';
 import { BookOpen, Copy, Send, Trash2, Loader2, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -57,8 +55,9 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
   const [isPosting, setIsPosting] = useState(false);
   const [isClientSide, setIsClientSide] = useState(false);
 
-  // Avoid hydration errors with a client-side check
-  useState(() => {
+  // useEffect runs only on the client, so this is a safe way to
+  // prevent hydration mismatches for UI that should only be client-rendered.
+  useEffect(() => {
     setIsClientSide(true);
   }, []);
 
@@ -78,13 +77,12 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
         title: 'Character Deleted',
         description: `${character.name} has been removed from your gallery.`,
       });
-      // The page will revalidate and remove the card
-    } catch (error) {
-      console.error('Error deleting character:', error);
+      // The page will revalidate and remove the card, so no need to manage state here.
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Deletion Failed',
-        description: 'Could not delete the character. Please try again.',
+        description: error instanceof Error ? error.message : 'Could not delete the character. Please try again.',
       });
     } finally {
       setIsDeleting(false);
@@ -99,13 +97,12 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
         title: 'Character Posted!',
         description: `${character.name} is now public.`,
       });
-      // The page will revalidate and update the card status
-    } catch (error) {
-       console.error('Error posting character:', error);
+       // The page will revalidate and update the card status.
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Post Failed',
-        description: 'Could not post the character. Please try again.',
+        description: error instanceof Error ? error.message : 'Could not post the character. Please try again.',
       });
     } finally {
       setIsPosting(false);
@@ -117,15 +114,21 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
   return (
     <Card className="flex flex-col">
       <CardHeader className="p-0 relative">
-        <Image
-          src={character.imageUrl}
-          alt={character.name}
-          width={400}
-          height={400}
-          className="w-full h-auto aspect-square object-cover rounded-t-lg"
-        />
+        {character.imageUrl ? (
+          <Image
+            src={character.imageUrl}
+            alt={character.name}
+            width={400}
+            height={400}
+            className="w-full h-auto aspect-square object-cover rounded-t-lg"
+          />
+        ) : (
+          <div className="w-full aspect-square bg-muted rounded-t-lg flex items-center justify-center">
+            <p className="text-muted-foreground text-sm">No Image</p>
+          </div>
+        )}
         {isPosted && (
-           <div className="absolute top-2 right-2 bg-accent text-accent-foreground text-xs font-bold py-1 px-3 rounded-full">
+           <div className="absolute top-2 right-2 bg-accent text-accent-foreground text-xs font-bold py-1 px-3 rounded-full shadow-lg">
             POSTED
           </div>
         )}

@@ -7,7 +7,7 @@ import {
   useContext,
   ReactNode,
 } from 'react';
-import { User, onIdTokenChanged } from 'firebase/auth';
+import { User, onIdTokenChanged, type Auth } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -47,8 +47,11 @@ async function setCookie(token: string | null) {
       },
       body: JSON.stringify({ token }),
     });
-  } catch (error) {
-    console.error('Failed to set auth cookie:', error);
+  } catch (error: unknown) {
+    // Avoid logging in production
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Failed to set auth cookie:', error);
+    }
   }
 }
 
@@ -82,19 +85,26 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
       });
     } else {
         // Update existing user document with latest auth info
-        await updateDoc(userDocRef, {
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            email: user.email, // email can change in some providers
-        });
+        // This is important if a user changes their display name or profile picture.
+        const updateData: { displayName: string | null; photoURL: string | null; email?: string | null } = {
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        };
+        // Only update email if it has changed.
+        if (user.email !== userDoc.data()?.email) {
+            updateData.email = user.email;
+        }
+        await updateDoc(userDocRef, updateData);
     }
     
     // Return the latest user document data
     const updatedUserDoc = await getDoc(userDocRef);
     return updatedUserDoc.data() || null;
 
-  } catch (error) {
-    console.error("Error ensuring user document exists:", error);
+  } catch (error: unknown) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error("Error ensuring user document exists:", error);
+    }
     return null;
   }
 };
@@ -105,10 +115,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Robust check to ensure 'auth' is a valid Firebase Auth instance
-    // and has the required methods before proceeding.
-    if (!auth || typeof auth.onIdTokenChanged !== 'function') {
-      console.warn("Firebase Auth is not initialized correctly. User authentication will be disabled.");
+    // This robust check ensures that the `auth` object is a valid Firebase Auth instance
+    // before we try to use it, preventing runtime errors.
+    const isAuthReady = auth && typeof (auth as Auth).onIdTokenChanged === 'function';
+
+    if (!isAuthReady) {
       setLoading(false);
       return;
     }

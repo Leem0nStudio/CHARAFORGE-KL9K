@@ -85,9 +85,10 @@ export function CharacterGenerator() {
       return;
     }
     setIsGenerating(true);
-    setCharacterData(null);
+    setCharacterData(null); // Reset previous character data
 
     try {
+      // Promise.all allows both AI calls to run concurrently for faster results.
       const [bioResult, imageResult] = await Promise.all([
         generateCharacterBio({ description: data.description }),
         generateCharacterImage({ description: data.description }),
@@ -103,12 +104,11 @@ export function CharacterGenerator() {
         description: data.description,
       });
 
-    } catch (error) {
-      console.error("Character generation error:", error);
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Generation Failed",
-        description: "There was a problem creating your character. Please try again.",
+        description: error instanceof Error ? error.message : "There was a problem creating your character. Please try again.",
       });
     } finally {
       setIsGenerating(false);
@@ -132,17 +132,16 @@ export function CharacterGenerator() {
         description: `${data.name} has been saved to your private gallery.`,
       });
       
-      // Reset state
+      // Reset all state after successful save
       setCharacterData(null);
       generationForm.reset();
       saveForm.reset();
 
-    } catch (error) {
-      console.error("Save character error:", error);
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Save Failed",
-        description: "Could not save your character. Please try again.",
+        description: error instanceof Error ? error.message : "Could not save your character. Please try again.",
       });
     } finally {
       setIsSaving(false);

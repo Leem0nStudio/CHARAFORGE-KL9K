@@ -24,7 +24,13 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 export async function saveCharacter(input: SaveCharacterInput) {
   const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
-    throw new Error(validation.error.message);
+    // For server actions, it's better to throw a clear error than to return a complex object.
+    throw new Error(`Invalid character data: ${validation.error.message}`);
+  }
+  
+  // This check is crucial for type safety if adminDb can be null.
+  if (!adminDb) {
+    throw new Error('Database service is not available.');
   }
 
   const { name, description, biography, imageUrl, userId, userName } = validation.data;
@@ -43,7 +49,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
             biography,
             imageUrl,
             status: 'private', // 'private' or 'public'
-            createdAt: new Date(),
+            createdAt: FieldValue.serverTimestamp(), // Use server timestamp for consistency
         });
 
         // 2. Atomically increment the user's character count
@@ -54,7 +60,8 @@ export async function saveCharacter(input: SaveCharacterInput) {
 
     return { success: true, characterId: characterRef.id };
   } catch (error) {
+    // Log the detailed error on the server, but return a generic message to the client.
     console.error('Error saving character to Firestore:', error);
-    throw new Error('Could not save character.');
+    throw new Error('Could not save character due to a server error.');
   }
 }

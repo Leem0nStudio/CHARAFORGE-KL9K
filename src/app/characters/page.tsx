@@ -1,23 +1,7 @@
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import { User, Copy, BookOpen, Trash2, Send } from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
+import { User } from 'lucide-react';
 import { admin, adminDb } from '@/lib/firebase/server';
-import { Separator } from '@/components/ui/separator';
 import { CharacterCard } from '@/components/character-card';
 import type { Character } from '@/components/character-card';
 import { redirect } from 'next/navigation';
@@ -25,7 +9,7 @@ import { redirect } from 'next/navigation';
 
 async function getCharactersForUser(userId: string): Promise<Character[]> {
   if (!adminDb) {
-    console.warn("Characters page could not fetch data: Firebase Admin is not initialized.");
+    // If the database isn't available, return an empty array to avoid breaking the page.
     return [];
   }
   try {
@@ -39,21 +23,26 @@ async function getCharactersForUser(userId: string): Promise<Character[]> {
       return [];
     }
 
+    // Map and validate data safely.
     return snapshot.docs.map(doc => {
       const data = doc.data();
+      // Ensure createdAt has a fallback, although Firestore should always provide it.
+      const createdAtDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
       return {
         id: doc.id,
-        name: data.name,
-        description: data.description,
-        biography: data.biography,
-        imageUrl: data.imageUrl,
+        name: data.name || 'Unnamed Character',
+        description: data.description || '',
+        biography: data.biography || '',
+        imageUrl: data.imageUrl || '',
         userId: data.userId,
-        status: data.status,
-        createdAt: data.createdAt.toDate(),
+        status: data.status === 'public' ? 'public' : 'private',
+        createdAt: createdAtDate,
       };
     });
-  } catch (error) {
-    console.error("Error fetching characters:", error);
+  } catch (error: unknown) {
+    if (process.env.NODE_ENV !== 'production') {
+        console.error("Error fetching characters:", error);
+    }
     return [];
   }
 }
@@ -61,21 +50,28 @@ async function getCharactersForUser(userId: string): Promise<Character[]> {
 export default async function CharactersPage() {
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
-  let characters: Character[] = [];
-  let uid: string | null = null;
 
-  if (idToken && admin) {
-    try {
-      const decodedToken = await getAuth(admin).verifyIdToken(idToken);
-      uid = decodedToken.uid;
-      characters = await getCharactersForUser(uid);
-    } catch (error) {
-      console.error('Auth error on characters page, redirecting:', error);
-      redirect('/');
-    }
-  } else if (!idToken) {
-    redirect('/');
+  if (!idToken) {
+    // If there's no token, the user is not logged in. Redirect to the login page.
+    redirect('/login');
   }
+
+  let uid: string;
+  try {
+      if (!admin) {
+          throw new Error("Authentication service is not available.");
+      }
+    const decodedToken = await getAuth(admin).verifyIdToken(idToken);
+    uid = decodedToken.uid;
+  } catch (error: unknown) {
+    if (process.env.NODE_ENV !== 'production') {
+        console.error('Auth error on characters page, redirecting:', error);
+    }
+    // If the token is invalid or expired, redirect to login.
+    redirect('/login');
+  }
+
+  const characters = await getCharactersForUser(uid);
 
   return (
     <div className="flex min-h-screen w-full flex-col">

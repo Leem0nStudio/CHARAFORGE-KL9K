@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -6,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  type Auth,
   type AuthError,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
-// Error mapping for better user feedback
+// A more robust error mapping for better user feedback.
 const errorMessages: Record<string, string> = {
   "auth/invalid-email": "The email address is not valid.",
   "auth/user-not-found": "No account found with this email. Please sign up.",
@@ -31,7 +31,9 @@ const errorMessages: Record<string, string> = {
   "auth/email-already-in-use":
     "This email is already registered. Please log in.",
   "auth/weak-password": "Password should be at least 6 characters.",
-  "auth/too-many-requests": "Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password or you can try again later.",
+  "auth/too-many-requests": "Access to this account has been temporarily disabled due to many failed login attempts. You can try again later.",
+  "auth/network-request-failed": "Network error. Please check your internet connection and try again.",
+  // Add other specific Firebase Auth errors as needed.
 };
 
 export function LoginForm() {
@@ -55,11 +57,12 @@ export function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!auth) {
+    // Check if the auth service is available and properly configured.
+    if (!auth || typeof (auth as Auth).app?.options?.apiKey !== 'string') {
         toast({
             variant: "destructive",
-            title: "Error",
-            description: "Firebase is not configured correctly. Please check your environment variables."
+            title: "Configuration Error",
+            description: "Firebase is not configured correctly. Please check the setup."
         });
         return;
     }
@@ -67,24 +70,31 @@ export function LoginForm() {
 
     try {
       if (isSignUp) {
-        // Handle Sign Up
         await createUserWithEmailAndPassword(auth, email, password);
         toast({
           title: "Account Created!",
           description: "You have been successfully registered.",
         });
       } else {
-        // Handle Sign In
         await signInWithEmailAndPassword(auth, email, password);
         toast({
           title: "Login Successful!",
           description: "Welcome back to CharaForge.",
         });
       }
-      // The onIdTokenChanged listener in useAuth will handle the redirect.
+      // onIdTokenChanged in useAuth will handle redirects.
       router.push("/");
-    } catch (error) {
-      handleAuthError(error as AuthError);
+    } catch (error: unknown) {
+        // Safe error handling
+        if (error instanceof Error && 'code' in error) {
+            handleAuthError(error as AuthError);
+        } else {
+             toast({
+                variant: "destructive",
+                title: "Authentication Failed",
+                description: "An unknown error occurred.",
+            });
+        }
     } finally {
       setLoading(false);
     }
@@ -111,6 +121,7 @@ export function LoginForm() {
               type="email"
               placeholder="m@example.com"
               required
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
@@ -122,6 +133,7 @@ export function LoginForm() {
               id="password"
               type="password"
               required
+              autoComplete={isSignUp ? "new-password" : "current-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
@@ -130,9 +142,7 @@ export function LoginForm() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSignUp ? "Sign Up" : "Sign In"}
           </Button>
           <Button

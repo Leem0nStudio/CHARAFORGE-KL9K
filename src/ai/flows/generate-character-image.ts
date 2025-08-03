@@ -44,10 +44,11 @@ const generateCharacterImageFlow = ai.defineFlow(
       },
     });
 
-    if (!media?.url) {
-      throw new Error('Failed to generate character image.');
+    const imageUrl = media?.url;
+    if (!imageUrl) {
+      throw new Error('Failed to generate character image: No media URL was returned from the AI.');
     }
 
-    return {imageUrl: media.url};
+    return {imageUrl};
   }
 );

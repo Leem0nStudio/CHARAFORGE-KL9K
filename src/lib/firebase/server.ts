@@ -1,75 +1,70 @@
+import { initializeApp, getApps, getApp, App, ServiceAccount, cert } from 'firebase-admin/app';
+import { getAuth, Auth } from 'firebase-admin/auth';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
-import { initializeApp, getApps, getApp, App, ServiceAccount, cert, Credential } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
-
-const createFirebaseAdminApp = () => {
+// This function centralizes the logic for creating the Firebase Admin App.
+// It handles both production (with service account) and emulated environments.
+const createFirebaseAdminApp = (): App | null => {
+  // If the app is already initialized, return it.
   if (getApps().length > 0) {
     return getApp();
   }
   
-  // When running in an emulated environment, we don't need a service account
+  // For emulated environments, we don't need a service account.
+  // The Admin SDK will automatically connect to the emulators if the correct
+  // environment variables are set by the Firebase CLI.
   if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
-     console.log('SERVER: Initializing Firebase Admin SDK for emulators');
-     // These env vars are set by the Firebase CLI
-     if (process.env.FIRESTORE_EMULATOR_HOST) {
-        process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST;
-        console.log(`SERVER: Using Firestore Emulator at ${process.env.FIRESTORE_EMULATOR_HOST}`);
-     }
-     if (process.env.FIREBASE_AUTH_EMULATOR_HOST) {
-        process.env.FIREBASE_AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST;
-         console.log(`SERVER: Using Auth Emulator at ${process.env.FIREBASE_AUTH_EMULATOR_HOST}`);
-     }
      return initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID });
   }
 
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
+  // If the service account key is missing or is the placeholder empty object,
+  // we cannot initialize the admin app. Return null.
   if (!serviceAccountKey || serviceAccountKey === "{}") {
-    console.warn('SERVER: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Server-side Firebase features will be limited.');
     return null;
   }
     
   try {
     const serviceAccount: ServiceAccount = JSON.parse(serviceAccountKey);
-    // Check if the service account is the placeholder empty object
+    // A basic check to see if the parsed service account is valid.
     if (!serviceAccount.projectId) {
-         console.warn('SERVER: FIREBASE_SERVICE_ACCOUNT_KEY is a placeholder. Server-side Firebase features will be limited.');
          return null;
     }
-
-     console.log('SERVER: Initializing Firebase Admin SDK with service account');
     return initializeApp({
       credential: cert(serviceAccount),
     });
-  } catch (error) {
-    console.error('SERVER: Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:', error);
-    throw new Error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it is a valid JSON.');
+  } catch (error: unknown) {
+    // This will catch errors from JSON.parse if the key is malformed.
+    // In production, you'd want to log this to a proper monitoring service.
+    if (process.env.NODE_ENV !== 'production' && error instanceof Error) {
+        console.error('SERVER: Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:', error.message);
+    }
+    return null;
   }
 };
 
 const adminApp = createFirebaseAdminApp();
 
-const getAdminDb = () => {
+// These getter functions ensure that we don't try to get services from a null app.
+const getAdminDb = (): Firestore | null => {
   if (!adminApp) return null;
   try {
     return getFirestore(adminApp);
   } catch (e) {
-    console.error("Failed to get Firestore instance", e)
     return null;
   }
 };
 
-const getAdminAuth = () => {
+const getAdminAuth = (): Auth | null => {
     if (!adminApp) return null;
     try {
         return getAuth(adminApp);
     } catch(e) {
-        console.error("Failed to get Auth instance", e)
         return null;
     }
 }
 
-
-export const admin = adminApp;
-export const adminDb = getAdminDb();
-export const adminAuth = getAdminAuth();
+export const admin: App | null = adminApp;
+export const adminDb: Firestore | null = getAdminDb();
+export const adminAuth: Auth | null = getAdminAuth();

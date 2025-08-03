@@ -11,9 +11,8 @@ import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/components/character-card';
 
 async function getFeaturedCharacters(): Promise<Character[]> {
-  // Gracefully handle cases where adminDb is not available (e.g., in development without service key)
+  // Gracefully handle cases where adminDb is not available
   if (!adminDb) {
-    console.warn("Featured characters could not be fetched: Firebase Admin is not initialized.");
     return [];
   }
   try {
@@ -30,31 +29,34 @@ async function getFeaturedCharacters(): Promise<Character[]> {
 
     return snapshot.docs.map(doc => {
       const data = doc.data();
+      const createdAtDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
       return {
         id: doc.id,
-        name: data.name,
-        description: data.description,
-        biography: data.biography,
-        imageUrl: data.imageUrl,
+        name: data.name || 'Unnamed Character',
+        description: data.description || '',
+        biography: data.biography || '',
+        imageUrl: data.imageUrl || '',
         userId: data.userId,
         status: data.status,
-        createdAt: data.createdAt.toDate(),
+        createdAt: createdAtDate,
         userName: data.userName || 'Anonymous',
       };
     });
-  } catch (error) {
-    console.error("Error fetching featured characters:", error);
+  } catch (error: unknown) {
+    if (process.env.NODE_ENV !== 'production') {
+        console.error("Error fetching featured characters:", error);
+    }
     return [];
   }
 }
 
 
 const topCreators = [
-    { name: 'seraphina', avatar: 'https://placehold.co/100x100.png', creations: 87 },
-    { name: 'cypher', avatar: 'https://placehold.co/100x100.png', creations: 72 },
-    { name: 'mad_max', avatar: 'https://placehold.co/100x100.png', creations: 65 },
-    { name: 'elara', avatar: 'https://placehold.co/100x100.png', creations: 58 },
-    { name: 'nexus', avatar: 'https://placehold.co/100x100.png', creations: 49 },
+    { name: 'seraphina', avatar: 'https://placehold.co/100x100.png', creations: 87, hint: 'female portrait' },
+    { name: 'cypher', avatar: 'https://placehold.co/100x100.png', creations: 72, hint: 'male portrait' },
+    { name: 'mad_max', avatar: 'https://placehold.co/100x100.png', creations: 65, hint: 'male portrait' },
+    { name: 'elara', avatar: 'https://placehold.co/100x100.png', creations: 58, hint: 'female portrait' },
+    { name: 'nexus', avatar: 'https://placehold.co/100x100.png', creations: 49, hint: 'male portrait' },
 ];
 
 const dataPacks = [
@@ -112,7 +114,7 @@ export default async function Home() {
                     width={400}
                     height={400}
                     className="w-full h-auto aspect-square object-cover"
-                    data-ai-hint="fantasy rogue"
+                    data-ai-hint="fantasy character"
                   />
                 </CardHeader>
                 <CardContent className="p-4">
@@ -123,7 +125,8 @@ export default async function Home() {
             ))
             ) : (
                <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[200px] border-2 border-dashed rounded-lg bg-card">
-                  <p className="text-lg font-medium font-headline tracking-wider">No Featured Characters Yet</p>
+                  <User className="h-12 w-12" />
+                  <p className="text-lg font-medium font-headline tracking-wider mt-4">No Featured Characters Yet</p>
                   <p className="text-sm">Be the first to post a public character!</p>
               </div>
             )}
@@ -142,7 +145,7 @@ export default async function Home() {
                     {topCreators.map((creator) => (
                     <div key={creator.name} className="flex flex-col items-center text-center gap-2">
                         <Avatar className="h-24 w-24 border-4 border-primary/50">
-                          <AvatarImage src={creator.avatar} alt={creator.name} data-ai-hint="portrait" />
+                          <AvatarImage src={creator.avatar} alt={creator.name} data-ai-hint={creator.hint} />
                           <AvatarFallback>{creator.name.charAt(0).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <p className="font-semibold text-lg">@{creator.name}</p>
