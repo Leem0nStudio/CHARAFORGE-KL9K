@@ -1,5 +1,5 @@
 'use client';
-import { LogIn, LogOut, User as UserIcon, Users } from 'lucide-react';
+import { LogIn, LogOut, User as UserIcon, Users, Settings } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase/client';
@@ -67,6 +67,12 @@ export function LoginButton() {
             <Link href="/characters">
               <Users className="mr-2 h-4 w-4" />
               <span>My Characters</span>
+            </Link>
+          </DropdownMenuItem>
+           <DropdownMenuItem asChild>
+            <Link href="/profile">
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Profile Settings</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />

@@ -1,6 +1,7 @@
-// Import the functions you need from the SDKs you need
+
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, connectAuthEmulator, Auth } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   "projectId": "charaforge-kl9ck",
@@ -13,7 +14,6 @@ const firebaseConfig = {
 
 // Initialize Firebase
 let app: FirebaseApp;
-// This check is important for Next.js's fast refresh feature.
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
 } else {
@@ -21,5 +21,18 @@ if (!getApps().length) {
 }
 
 const auth: Auth = getAuth(app);
+const db: Firestore = getFirestore(app);
 
-export { app, auth };
+// Connect to emulators in development
+if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && window.location.hostname === "localhost") {
+  console.log("Connecting to Firebase Emulators");
+  try {
+     // Point to the emulators
+    connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
+    connectFirestoreEmulator(db, "localhost", 8080);
+  } catch (error) {
+    console.error("Error connecting to Firebase emulators:", error);
+  }
+}
+
+export { app, auth, db };
