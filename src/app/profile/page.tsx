@@ -78,7 +78,8 @@ export default function ProfilePage() {
     const result = await deleteUserAccount();
      if (result.success) {
       toast({ title: 'Account Deleted', description: result.message });
-      router.push('/');
+      router.refresh(); // Force a refresh to clear server components
+      router.push('/'); // Navigate to home
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     }

@@ -131,9 +131,6 @@ export async function deleteUserAccount(): Promise<ActionResponse> {
     
     await adminAuth.deleteUser(uid);
     
-    // This will signal the client to clear its state
-    cookies().set('firebaseIdToken', '', { maxAge: 0, path: '/' });
-
     revalidatePath('/');
     return { success: true, message: 'Your account has been permanently deleted.' };
   } catch (error) {
