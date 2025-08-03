@@ -1,5 +1,4 @@
-
-import { initializeApp, getApps, getApp, App, ServiceAccount, credential } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp, App, ServiceAccount, Credential } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
@@ -33,7 +32,7 @@ const createFirebaseAdminApp = () => {
     const serviceAccount: ServiceAccount = JSON.parse(serviceAccountKey);
      console.log('SERVER: Initializing Firebase Admin SDK with service account');
     return initializeApp({
-      credential: credential.cert(serviceAccount),
+      credential: Credential.cert(serviceAccount),
     });
   } catch (error) {
     console.error('SERVER: Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:', error);
