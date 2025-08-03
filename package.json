@@ -9,7 +9,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "admin:grant": "node scripts/manage-admin.js grant",
+    "admin:revoke": "node scripts/manage-admin.js revoke",
+    "admin:check": "node scripts/manage-admin.js check",
+    "admin:list": "node scripts/manage-admin.js list"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.14.1",
