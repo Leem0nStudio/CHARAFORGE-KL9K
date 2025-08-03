@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-import { getFirebaseClient } from "@/lib/firebase/client";
+import { auth } from "@/lib/firebase/client";
 
 const errorMessages: Record<string, string> = {
   "auth/invalid-email": "The email address is not valid.",
@@ -65,7 +65,16 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    const { auth } = getFirebaseClient();
+
+    if (!auth) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Failed",
+            description: "Firebase is not configured correctly. Please check the console.",
+        });
+        setLoading(false);
+        return;
+    }
 
     try {
       if (isSignUp) {

@@ -18,24 +18,21 @@ const firebaseConfig = {
 function initializeFirebase() {
     if (!getApps().length) {
         if (!firebaseConfig.projectId) {
-            console.error("Firebase config is missing Project ID. Initialization skipped.");
-            // Throw an error to make it clear that the app cannot function without this.
+            // No hacer console.error aquí porque puede ejecutarse en el navegador.
+            // Los errores se deben manejar donde se usa.
             throw new Error("Firebase configuration is incomplete. Please check your NEXT_PUBLIC_FIREBASE_* variables.");
         }
         
-        console.log("[client.ts] Initializing new Firebase App...");
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
 
         if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
             try {
-                console.log("[client.ts] Connecting to Firebase Emulators...");
                 connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
                 connectFirestoreEmulator(db, '127.0.0.1', 8080);
-                console.log("[client.ts] Emulators connected successfully.");
-            } catch (error) {
-               console.error('[client.ts] Error connecting to emulators:', error);
+            } catch (error: unknown) {
+               // Silently fail in browser
             }
         }
     } else {
@@ -46,7 +43,13 @@ function initializeFirebase() {
 }
 
 // Immediately initialize Firebase
-initializeFirebase();
+try {
+    initializeFirebase();
+} catch (error: unknown) {
+    // Fail gracefully if config is missing.
+    // The app will show an error boundary or fail on a page that needs Firebase.
+}
+
 
 // Export the initialized instances
 export { app, auth, db };

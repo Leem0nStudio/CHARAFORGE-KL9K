@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { User, onIdTokenChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData } from 'firebase/firestore';
-import { getFirebaseClient } from '@/lib/firebase/client';
+import { auth, db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export interface UserProfile extends User {
@@ -47,7 +47,12 @@ async function setCookie(token: string | null): Promise<void> {
 }
 
 const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
-  const { db } = getFirebaseClient();
+  if (!db) {
+     if (process.env.NODE_ENV !== 'production') {
+       console.error("[useAuth] Firestore (db) is not available in ensureUserDocument.");
+     }
+     return null;
+  }
   const userDocRef = doc(db, 'users', user.uid);
   try {
     const userDoc = await getDoc(userDocRef);
@@ -83,7 +88,9 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
     return updatedUserDoc.data() || null;
 
   } catch (error: unknown) {
-    console.error(`[useAuth] Error in ensureUserDocument for ${user.uid}:`, error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(`[useAuth] Error in ensureUserDocument for ${user.uid}:`, error);
+    }
     return null;
   }
 };
@@ -94,7 +101,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { auth } = getFirebaseClient();
+    if (!auth) {
+        setLoading(false);
+        return;
+    }
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (authUser) {
         setLoading(true);
