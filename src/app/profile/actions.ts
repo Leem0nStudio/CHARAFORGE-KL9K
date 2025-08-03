@@ -43,7 +43,7 @@ const UpdateProfileSchema = z.object({
   displayName: z.string().min(3, 'Display name must be at least 3 characters.').max(30, 'Display name cannot exceed 30 characters.'),
 });
 
-// This is the Server Action that will be used with useFormState
+// This is the Server Action that will be used with useActionState
 export async function updateUserProfile(
   prevState: ActionResponse,
   formData: FormData
