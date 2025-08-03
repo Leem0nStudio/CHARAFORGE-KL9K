@@ -12,8 +12,7 @@ import {
   updateProfile,
   type AuthError
 } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase/client";
+import { auth } from "@/lib/firebase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -99,17 +98,11 @@ export function LoginForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
 
-      // Update user profile
+      // Update user profile displayName in Firebase Auth
       await updateProfile(user, { displayName: data.displayName });
       
-      // Create user document in Firestore
-      await setDoc(doc(db, "users", user.uid), {
-          uid: user.uid,
-          displayName: data.displayName,
-          email: user.email,
-          createdAt: serverTimestamp(),
-          role: 'user', // default role
-      });
+      // The logic to create the user document in Firestore has been moved
+      // to the AuthProvider to ensure it runs on every login, not just registration.
 
       toast({
         title: "Registration successful!",

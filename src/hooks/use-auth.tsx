@@ -8,7 +8,8 @@ import {
   ReactNode,
 } from 'react';
 import { User, onIdTokenChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export interface AuthContextType {
@@ -22,7 +23,6 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 async function setCookie(token: string | null) {
-  // Use a server action to set the cookie
   try {
     await fetch('/api/auth/set-cookie', {
       method: 'POST',
@@ -36,12 +36,38 @@ async function setCookie(token: string | null) {
   }
 }
 
+/**
+ * Ensures a user document exists in Firestore.
+ * Creates one if it doesn't.
+ * @param user The Firebase Auth user object.
+ */
+const ensureUserDocument = async (user: User) => {
+  if (!db) return; // Firestore might not be initialized
+  const userDocRef = doc(db, 'users', user.uid);
+  try {
+    const userDoc = await getDoc(userDocRef);
+    if (!userDoc.exists()) {
+      // User document doesn't exist, create it.
+      await setDoc(userDocRef, {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        createdAt: serverTimestamp(),
+        photoURL: user.photoURL,
+        role: 'user',
+      });
+    }
+  } catch (error) {
+    console.error("Error ensuring user document exists:", error);
+  }
+};
+
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // This check prevents the app from crashing if Firebase fails to initialize
     if (!auth) {
       setLoading(false);
       return;
@@ -49,6 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (user) {
+        await ensureUserDocument(user);
         const token = await user.getIdToken();
         await setCookie(token);
         setUser(user);
