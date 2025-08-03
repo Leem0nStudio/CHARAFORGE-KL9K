@@ -15,8 +15,7 @@
     "admin:grant": "node scripts/manage-admin.js grant",
     "admin:revoke": "node scripts/manage-admin.js revoke",
     "admin:check": "node scripts/manage-admin.js check",
-    "admin:list": "node scripts/manage-admin.js list",
-    "postinstall": "patch-package"
+    "admin:list": "node scripts/manage-admin.js list"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.14.1",
@@ -53,7 +52,6 @@
     "lucide-react": "^0.475.0",
     "next": "15.3.3",
     "next-themes": "^0.3.0",
-    "patch-package": "^8.0.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
