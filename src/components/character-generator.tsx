@@ -146,11 +146,20 @@ export function CharacterGenerator() {
 
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Could not save your character. Please try again.";
-      toast({
-        variant: "destructive",
-        title: "Save Failed",
-        description: errorMessage,
-      });
+       if (errorMessage.includes("User session not found")) {
+            console.error("Session error detected, attempting to re-authenticate and retry.");
+             toast({
+                variant: "destructive",
+                title: "Session Expired",
+                description: "Your session has expired. Please log out and log back in.",
+            });
+       } else {
+            toast({
+                variant: "destructive",
+                title: "Save Failed",
+                description: errorMessage,
+            });
+       }
     } finally {
       setIsSaving(false);
     }
