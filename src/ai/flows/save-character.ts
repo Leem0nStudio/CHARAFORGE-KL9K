@@ -22,12 +22,16 @@ const SaveCharacterInputSchema = z.object({
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
-
-async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
+async function getAuthenticatedUser(retryCount = 0): Promise<{uid: string, name: string}> {
   const cookieStore = await cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
   if (!idToken) {
+    // Si es el primer intento y no hay cookie, podría ser un problema de timing
+    if (retryCount === 0) {
+      console.warn('Session cookie not found on first attempt, this might be a timing issue');
+    }
+    
     throw new Error('User session not found. Please log in again.');
   }
   
@@ -37,18 +41,29 @@ async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
 
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
-    const displayName = decodedToken.name || 'Anonymous';
+    const displayName = decodedToken.name || decodedToken.email?.split('@')[0] || 'Anonymous';
     return { uid: decodedToken.uid, name: displayName };
   } catch (error) {
     console.error('Error verifying auth token:', error);
+    
+    // Si el token está expirado o es inválido, dar mensaje más específico
+    if (error instanceof Error) {
+      if (error.message.includes('expired')) {
+        throw new Error('Your session has expired. Please log in again.');
+      }
+      if (error.message.includes('invalid')) {
+        throw new Error('Invalid session. Please log in again.');
+      }
+    }
+    
     throw new Error('Invalid or expired user session. Please log in again.');
   }
 }
 
 export async function saveCharacter(input: SaveCharacterInput) {
+  // Validación de entrada
   const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
-    // For server actions, it's better to throw a clear error than to return a complex object.
     throw new Error(`Invalid character data: ${validation.error.message}`);
   }
   
@@ -58,9 +73,24 @@ export async function saveCharacter(input: SaveCharacterInput) {
 
   const { name, description, biography, imageUrl } = validation.data;
   
-  // Security Validation: Ensure the user ID is derived from the authenticated session.
-  const { uid, name: userName } = await getAuthenticatedUser();
-  const userId = uid;
+  let authUser: {uid: string, name: string};
+  
+  try {
+    // Intentar obtener usuario autenticado con mejor manejo de errores
+    authUser = await getAuthenticatedUser();
+  } catch (error) {
+    // Log detallado para debugging pero mensaje amigable al usuario
+    console.error('Authentication failed in saveCharacter:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString(),
+      input: { nameLength: name.length, hasImage: !!imageUrl }
+    });
+    
+    // Re-lanzar el error original para que el cliente pueda manejarlo
+    throw error;
+  }
+
+  const { uid: userId, name: userName } = authUser;
 
   try {
     const characterRef = adminDb.collection('characters').doc();
@@ -76,11 +106,10 @@ export async function saveCharacter(input: SaveCharacterInput) {
             biography,
             imageUrl,
             status: 'private', // 'private' or 'public'
-            createdAt: FieldValue.serverTimestamp(), // Use server timestamp for consistency
+            createdAt: FieldValue.serverTimestamp(),
         });
 
         // 2. Atomically increment the user's character count
-        // First, ensure the stats object exists.
         const userDoc = await transaction.get(userRef);
         if (!userDoc.exists() || !userDoc.data()?.stats) {
             transaction.set(userRef, { 
@@ -93,10 +122,18 @@ export async function saveCharacter(input: SaveCharacterInput) {
         }
     });
 
+    console.log(`Character saved successfully: ${characterRef.id} for user ${userId}`);
     return { success: true, characterId: characterRef.id };
+    
   } catch (error) {
-    // Log the detailed error on the server, but return a generic message to the client.
-    console.error('Error saving character to Firestore:', error);
-    throw new Error('Could not save character due to a server error.');
+    // Log detallado del error de Firestore
+    console.error('Error saving character to Firestore:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId,
+      characterName: name,
+      timestamp: new Date().toISOString()
+    });
+    
+    throw new Error('Could not save character due to a server error. Please try again.');
   }
 }
