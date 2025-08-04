@@ -21,7 +21,7 @@ async function verifyAndGetUid(): Promise<string> {
   }
 
   // Retrieve the session cookie.
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
   // If no token is found, the user is not authenticated.

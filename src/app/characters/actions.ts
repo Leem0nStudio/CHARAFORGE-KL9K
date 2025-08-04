@@ -9,7 +9,7 @@ import { adminDb, adminAuth } from '@/lib/firebase/server';
 
 
 async function verifyAndGetUid(): Promise<string> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
   if (!idToken) {
