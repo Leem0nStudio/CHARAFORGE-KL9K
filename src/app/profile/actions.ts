@@ -55,7 +55,7 @@ export async function updateUserProfile(
     if (!adminDb || !adminAuth) {
         return { 
             success: false, 
-            message: 'Could not save profile. The server is missing required configuration.' 
+            message: 'Authentication service is unavailable on the server. Please check server configuration.'
         };
     }
     
@@ -99,12 +99,11 @@ export type UserPreferences = z.infer<typeof UpdatePreferencesSchema>;
 
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
     try {
+        if (!adminDb) {
+            return { success: false, message: 'Authentication service is unavailable on the server. Please check server configuration.' };
+        }
         const uid = await verifyAndGetUid();
         
-        if (!adminDb) {
-            return { success: false, message: 'Could not save preferences. The database service is unavailable.' };
-        }
-
         const validatedFields = UpdatePreferencesSchema.safeParse(preferences);
 
         if (!validatedFields.success) {
@@ -131,7 +130,7 @@ export async function deleteUserAccount(): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
 
     if (!adminAuth || !adminDb) {
-      return { success: false, message: 'Cannot delete account. Server services are unavailable.' };
+      return { success: false, message: 'Authentication service is unavailable on the server. Please check server configuration.' };
     }
       
     // Use a transaction to delete the user's data and profile atomically.
