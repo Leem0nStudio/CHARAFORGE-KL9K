@@ -235,17 +235,20 @@ export function CharacterGenerator() {
               {!isGenerating && !characterData && (
                  <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[300px] border-2 border-dashed rounded-lg bg-card">
                   {error ? (
-                    <Alert variant="destructive" className="text-left">
+                    <Alert variant="destructive" className="text-left w-full max-w-sm">
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Generation Error</AlertTitle>
                         <AlertDescription>
-                           {error}
+                           <p className="mb-4">{error}</p>
                            <Button 
-                              variant="link" 
                               onClick={() => onGenerate(generationForm.getValues())} 
-                              className="p-0 h-auto mt-2 block"
+                              className="w-full"
+                              disabled={isGenerating}
                             >
-                              Click here to try again.
+                              {isGenerating ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              ) : null}
+                              Try Again
                            </Button>
                         </AlertDescription>
                     </Alert>

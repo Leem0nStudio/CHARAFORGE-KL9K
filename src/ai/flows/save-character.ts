@@ -9,8 +9,10 @@
  */
 
 import { z } from 'zod';
-import { adminDb } from '@/lib/firebase/server';
+import { adminDb, adminAuth } from '@/lib/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
+import { cookies } from 'next/headers';
+
 
 const SaveCharacterInputSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -22,6 +24,28 @@ const SaveCharacterInputSchema = z.object({
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
+
+async function verifyAndGetUid(): Promise<string> {
+  const cookieStore = await cookies();
+  const idToken = cookieStore.get('firebaseIdToken')?.value;
+
+  if (!idToken) {
+    throw new Error('User session not found. Please log in again.');
+  }
+  
+  if(!adminAuth) {
+    throw new Error('Authentication service is unavailable on the server.');
+  }
+
+  try {
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    return decodedToken.uid;
+  } catch (error) {
+    console.error('Error verifying auth token:', error);
+    throw new Error('Invalid or expired user session. Please log in again.');
+  }
+}
+
 export async function saveCharacter(input: SaveCharacterInput) {
   const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
@@ -29,12 +53,17 @@ export async function saveCharacter(input: SaveCharacterInput) {
     throw new Error(`Invalid character data: ${validation.error.message}`);
   }
   
-  // This check is crucial for type safety if adminDb can be null.
   if (!adminDb) {
     throw new Error('Database service is not available.');
   }
 
   const { name, description, biography, imageUrl, userId, userName } = validation.data;
+  
+  // Security Validation: Ensure the user ID from the input matches the authenticated user.
+  const authenticatedUid = await verifyAndGetUid();
+  if (userId !== authenticatedUid) {
+      throw new Error('Permission denied. User ID mismatch.');
+  }
 
   try {
     const characterRef = adminDb.collection('characters').doc();

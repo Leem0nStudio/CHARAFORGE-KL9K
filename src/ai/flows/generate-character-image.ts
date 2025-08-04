@@ -40,7 +40,8 @@ const generateCharacterImageFlow = ai.defineFlow(
         const {media} = await ai.generate({
         // IMPORTANT: The 'gemini-2.0-flash-preview-image-generation' model is currently specified for image generation.
         model: 'googleai/gemini-2.0-flash-preview-image-generation',
-        prompt: `A photorealistic, digital art-style fantasy character portrait based on the following description: ${input.description}`,
+        // A direct, clear prompt often yields better results with image generation models.
+        prompt: input.description,
         config: {
             // Both TEXT and IMAGE modalities are required for this specific model to work correctly.
             responseModalities: ['TEXT', 'IMAGE'],
