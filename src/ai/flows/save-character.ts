@@ -25,13 +25,12 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
   let idToken;
-  // The 'cookies()' function from 'next/headers' is part of a dynamic API that
-  // requires the surrounding function to be async, but you don't 'await' the
-  // call to 'cookies()' itself. The await was incorrect. The correct pattern
-  // is to call it directly within an async function. The root cause of the
-  // error is subtle interactions within Next.js's server-side rendering.
-  // This implementation is now correct.
+  // Accessing cookies in a server action requires the surrounding function
+  // to be async, and you must call cookies() directly. While you don't
+  // 'await' the cookies() function itself, the surrounding async context
+  // handles the dynamic nature.
   try {
+    // Access the cookies store
     const cookieStore = cookies();
     idToken = cookieStore.get('firebaseIdToken')?.value;
   } catch (error) {
@@ -95,7 +94,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
         // 2. Atomically increment the user's character count
         // First, ensure the stats object exists.
         const userDoc = await transaction.get(userRef);
-        if (!userDoc.exists() || !userDoc.data()?.stats) {
+        if (!userDoc.exists || !userDoc.data()?.stats) {
             transaction.set(userRef, { 
                 stats: { charactersCreated: 1 } 
             }, { merge: true });

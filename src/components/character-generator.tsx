@@ -63,7 +63,7 @@ export function CharacterGenerator() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
@@ -140,8 +140,9 @@ export function CharacterGenerator() {
         description: `${data.name} has been saved to your gallery.`,
       });
       
-      // On successful save, redirect to the user's character gallery
-      router.push('/characters');
+      if (result.success) {
+        router.push('/characters');
+      }
 
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Could not save your character. Please try again.";
@@ -156,6 +157,7 @@ export function CharacterGenerator() {
   }
 
   const isLoading = isGenerating || isSaving;
+  const canInteract = !isLoading && !authLoading && user;
 
   return (
     <section id="generator" className="container my-12">
@@ -182,14 +184,14 @@ export function CharacterGenerator() {
                             placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder. They are haunted by a past betrayal..."
                             className="min-h-[150px] resize-none"
                             {...field}
-                            disabled={isLoading}
+                            disabled={!canInteract}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !user}>
+                  <Button type="submit" size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90" disabled={!canInteract}>
                     {isGenerating ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -202,7 +204,7 @@ export function CharacterGenerator() {
                       </>
                     )}
                   </Button>
-                  {!user && <p className="text-xs text-center text-muted-foreground">You must be logged in to forge a character.</p>}
+                  {!user && !authLoading && <p className="text-xs text-center text-muted-foreground">You must be logged in to forge a character.</p>}
                 </form>
               </Form>
             </CardContent>
@@ -242,7 +244,7 @@ export function CharacterGenerator() {
                            <Button 
                               onClick={() => onGenerate(generationForm.getValues())} 
                               className="w-full"
-                              disabled={isGenerating}
+                              disabled={!canInteract}
                             >
                               {isGenerating ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -288,13 +290,13 @@ export function CharacterGenerator() {
                                   <FormItem>
                                     <FormLabel>Character Name</FormLabel>
                                     <FormControl>
-                                      <Input placeholder="e.g., Captain Kaelen" {...field} disabled={isSaving} />
+                                      <Input placeholder="e.g., Captain Kaelen" {...field} disabled={!canInteract} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
                                 )}
                               />
-                              <Button type="submit" className="w-full" disabled={isSaving}>
+                              <Button type="submit" className="w-full" disabled={!canInteract}>
                                 {isSaving ? (
                                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
                                 ) : (
