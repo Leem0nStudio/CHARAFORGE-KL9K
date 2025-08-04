@@ -115,10 +115,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
   }, []);
 
-  if (loading && !user) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="w-full max-w-md p-8 space-y-4">
+      <div className="flex items-center justify-center h-screen w-full">
+         <div className="w-full max-w-md p-8 space-y-4">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />

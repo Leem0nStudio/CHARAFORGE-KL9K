@@ -15,6 +15,11 @@ export type ActionResponse = {
 
 // This function centralizes the logic for verifying the user's session from the server-side.
 async function verifyAndGetUid(): Promise<string> {
+  // Ensure Firebase Admin services are available before proceeding.
+  if(!adminAuth) {
+    throw new Error('Authentication service is unavailable on the server. Please check server configuration.');
+  }
+
   // Retrieve the session cookie.
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
@@ -22,11 +27,6 @@ async function verifyAndGetUid(): Promise<string> {
   // If no token is found, the user is not authenticated.
   if (!idToken) {
     throw new Error('User session not found. Please log in again.');
-  }
-  
-  // Ensure Firebase Admin services are available before proceeding.
-  if(!adminAuth) {
-    throw new Error('Authentication service is unavailable on the server. Please check server configuration.');
   }
 
   // Verify the token using the Firebase Admin SDK.
@@ -50,15 +50,15 @@ export async function updateUserProfile(
 ): Promise<ActionResponse> {
   
   try {
-    const uid = await verifyAndGetUid();
-
     // Explicitly check for server-side service availability first.
-    if (!adminAuth || !adminDb) {
+    if (!adminDb) {
         return { 
             success: false, 
             message: 'Could not save profile. The server is missing required configuration.' 
         };
     }
+    
+    const uid = await verifyAndGetUid();
 
     const validatedFields = UpdateProfileSchema.safeParse({
       displayName: formData.get('displayName'),
