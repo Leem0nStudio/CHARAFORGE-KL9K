@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import { admin, adminDb } from '@/lib/firebase/server';
+import { adminApp, adminDb } from '@/lib/firebase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Swords, BarChart } from 'lucide-react';
 import { getDashboardStats } from './actions';
@@ -11,12 +11,12 @@ async function getIsAdmin(): Promise<boolean> {
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
-  if (!idToken || !admin || !adminDb) {
+  if (!idToken || !adminApp || !adminDb) {
     return false;
   }
 
   try {
-    const auth = getAuth(admin);
+    const auth = getAuth(adminApp);
     const decodedToken = await auth.verifyIdToken(idToken);
     const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
     

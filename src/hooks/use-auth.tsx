@@ -59,9 +59,10 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
         }
       });
     } else {
-        const updateData: { displayName: string | null; photoURL: string | null; email?: string | null } = {
+        const updateData: { displayName: string | null; photoURL: string | null; email?: string | null; lastLogin?: Timestamp } = {
           displayName: user.displayName,
           photoURL: user.photoURL,
+          lastLogin: serverTimestamp() as Timestamp,
         };
         if (user.email !== userDoc.data()?.email) {
             updateData.email = user.email;
@@ -86,18 +87,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const { auth } = getFirebaseClient();
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
+      setLoading(true);
       if (authUser) {
-        setLoading(true); // Set loading while we sync
         const token = await authUser.getIdToken();
         
-        // Correct, sequential flow:
-        // 1. Set the cookie and wait for it to complete. This establishes the server session.
+        // Sequential flow to prevent race conditions
+        // 1. Establish server session by setting the cookie.
         await setCookie(token);
 
-        // 2. Only after the session is established, ensure the DB document exists.
+        // 2. After server session is confirmed, sync Firestore document.
         const firestoreData = await ensureUserDocument(authUser);
         
-        // 3. Finally, set the user state on the client with all data synced.
+        // 3. Set client state with all available data.
         const userProfile: UserProfile = {
             ...authUser,
             ...firestoreData,
@@ -105,13 +106,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         setUser(userProfile);
-        setLoading(false);
       } else {
         // User logged out, clear everything
         await setCookie(null);
         setUser(null);
-        setLoading(false);
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();

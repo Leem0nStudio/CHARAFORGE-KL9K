@@ -17,6 +17,7 @@ export type ActionResponse = {
 async function verifyAndGetUid(): Promise<string> {
   // Ensure Firebase Admin services are available before proceeding.
   if(!adminAuth) {
+    // This check is critical. If adminAuth is not available, something is wrong with the server-side setup.
     throw new Error('Authentication service is unavailable on the server. Please check server configuration.');
   }
 
@@ -51,7 +52,7 @@ export async function updateUserProfile(
   
   try {
     // Explicitly check for server-side service availability first.
-    if (!adminDb) {
+    if (!adminDb || !adminAuth) {
         return { 
             success: false, 
             message: 'Could not save profile. The server is missing required configuration.' 

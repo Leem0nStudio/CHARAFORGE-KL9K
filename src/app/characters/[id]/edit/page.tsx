@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { adminDb } from '@/lib/firebase/server';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import { admin } from '@/lib/firebase/server';
+import { adminApp } from '@/lib/firebase/server';
 import { updateCharacter } from '@/app/characters/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 async function getCharacterForEdit(characterId: string) {
-  if (!adminDb || !admin) {
+  if (!adminDb || !adminApp) {
      return { error: 'SERVICE_UNAVAILABLE' };
   }
 
@@ -27,7 +27,7 @@ async function getCharacterForEdit(characterId: string) {
 
     let uid;
     try {
-      const auth = getAuth(admin);
+      const auth = getAuth(adminApp);
       const decodedToken = await auth.verifyIdToken(idToken);
       uid = decodedToken.uid;
     } catch (error) {

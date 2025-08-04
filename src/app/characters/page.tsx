@@ -1,7 +1,7 @@
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { User } from 'lucide-react';
-import { admin, adminDb } from '@/lib/firebase/server';
+import { adminApp, adminDb } from '@/lib/firebase/server';
 import { CharacterCard } from '@/components/character-card';
 import { redirect } from 'next/navigation';
 import type { Character } from '@/types/character';
@@ -51,10 +51,10 @@ export default async function CharactersPage() {
 
   let uid: string;
   try {
-      if (!admin) {
+      if (!adminApp) {
           throw new Error("Authentication service is not available.");
       }
-    const auth = getAuth(admin);
+    const auth = getAuth(adminApp);
     const decodedToken = await auth.verifyIdToken(idToken);
     uid = decodedToken.uid;
   } catch (error: unknown) {
