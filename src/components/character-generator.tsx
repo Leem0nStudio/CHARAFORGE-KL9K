@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -63,6 +64,7 @@ export function CharacterGenerator() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const router = useRouter();
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
     resolver: zodResolver(generationFormSchema),
@@ -126,7 +128,7 @@ export function CharacterGenerator() {
 
     setIsSaving(true);
     try {
-      await saveCharacter({
+      const result = await saveCharacter({
         name: data.name,
         description: characterData.description,
         biography: characterData.biography,
@@ -135,14 +137,11 @@ export function CharacterGenerator() {
 
       toast({
         title: "Character Saved!",
-        description: `${data.name} has been saved to your private gallery.`,
+        description: `${data.name} has been saved to your gallery.`,
       });
       
-      // Reset all state after successful save
-      setCharacterData(null);
-      setError(null);
-      generationForm.reset();
-      saveForm.reset();
+      // On successful save, redirect to the user's character gallery
+      router.push('/characters');
 
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Could not save your character. Please try again.";

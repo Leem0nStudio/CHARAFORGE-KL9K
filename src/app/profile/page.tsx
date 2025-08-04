@@ -1,12 +1,12 @@
+
 'use client';
 
 import React, { useEffect, useState, useTransition, useCallback, useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +29,7 @@ import { Loader2, User, Swords, Heart, Package, Gem, Calendar } from 'lucide-rea
 import type { UserPreferences, ActionResponse } from './actions';
 import type { UserProfile, UserStats } from '@/types/user';
 import { format } from 'date-fns';
+import { BackButton } from '@/components/back-button';
 
 // #region Sub-components for each Tab
 
@@ -324,10 +325,10 @@ export default function ProfilePage() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Profile Settings</h2>
-        <Link href="/characters" className={buttonVariants({ variant: "outline" })}>
-          Back to Characters
-        </Link>
+        <div className="flex items-center gap-4">
+          <BackButton />
+          <h2 className="text-3xl font-bold tracking-tight">Profile Settings</h2>
+        </div>
       </div>
       <Tabs defaultValue="profile" className="space-y-4">
         <TabsList>

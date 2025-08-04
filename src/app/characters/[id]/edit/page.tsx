@@ -1,3 +1,4 @@
+
 import { notFound, redirect } from 'next/navigation';
 import { adminDb } from '@/lib/firebase/server';
 import { getAuth } from 'firebase-admin/auth';
@@ -9,8 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { BackButton } from '@/components/back-button';
 
 async function getCharacterForEdit(characterId: string) {
   if (!adminDb || !adminApp) {
@@ -80,10 +82,13 @@ export default async function EditCharacterPage({ params }: { params: { id: stri
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
        <main className="flex-1 p-4 md:p-10">
-        <div className="mx-auto grid w-full max-w-2xl gap-2">
-           <h1 className="text-3xl font-semibold font-headline tracking-wider">Edit Character</h1>
+        <div className="mx-auto grid w-full max-w-2xl gap-4">
+            <div className="flex items-center gap-4">
+                <BackButton />
+                <h1 className="text-3xl font-semibold font-headline tracking-wider">Edit Character</h1>
+            </div>
             <p className="text-muted-foreground">Refine the details of your creation.</p>
-           <Card className="mt-6">
+           <Card className="mt-4">
                 <CardHeader>
                     <CardTitle>{character.name}</CardTitle>
                     <CardDescription>

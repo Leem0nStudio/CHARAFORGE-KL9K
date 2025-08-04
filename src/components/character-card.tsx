@@ -1,7 +1,9 @@
+
 'use client';
 
 import { useState, useCallback, memo } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { BookOpen, Copy, Send, Trash2, Loader2, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -41,6 +43,7 @@ type CharacterCardProps = {
 
 function CharacterCardComponent({ character }: CharacterCardProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
 
@@ -60,6 +63,8 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
         title: 'Character Deleted',
         description: `${character.name} has been removed from your gallery.`,
       });
+      // Force a server-side refetch of the page's data, which updates the UI.
+      router.refresh();
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
@@ -69,7 +74,7 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
     } finally {
       setIsDeleting(false);
     }
-  }, [character.id, character.name, toast]);
+  }, [character.id, character.name, toast, router]);
 
   const handlePost = useCallback(async () => {
     setIsPosting(true);
@@ -79,6 +84,7 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
         title: 'Character Posted!',
         description: `${character.name} is now public.`,
       });
+      router.refresh();
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
@@ -88,7 +94,7 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
     } finally {
       setIsPosting(false);
     }
-  }, [character.id, character.name, toast]);
+  }, [character.id, character.name, toast, router]);
 
   const isPosted = character.status === 'public';
 
