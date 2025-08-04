@@ -11,10 +11,8 @@ config({path: '.env'});
 
 export const ai = genkit({
   plugins: [
-    firebase,
-    googleAI({
-      apiVersion: 'v1beta',
-    }),
+    firebase(),
+    googleAI(),
   ],
   // logSinks: ['firebase'],
   // traceStore: 'firebase',
