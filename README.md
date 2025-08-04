@@ -27,10 +27,15 @@ The project relies on environment variables to connect to Firebase services.
 4.  **Get a Service Account Key (for Admin SDK):**
     *   In your Firebase project, go to **Project Settings** > **Service accounts**.
     *   Click **Generate new private key**. A JSON file will be downloaded.
-    *   Open the JSON file, copy its entire content, and paste it as a single line into the `FIREBASE_SERVICE_ACCOUNT_KEY` variable in your `.env` file. **Important:** Ensure the JSON is a valid, single-line string.
+    *   Open the JSON file, copy its entire content, and paste it as a single line into the `FIREBASE_SERVICE_ACCOUNT_KEY` variable in your `.env` file.
+    *   **CRITICAL:** The entire JSON content must be on a single line. Some text editors might automatically format it to multiple lines. You can use an online "JSON to single line" tool to be sure. The value should start with `{` and end with `}` and have no line breaks in between.
 5.  **(Optional) Enable Emulators:** For local development, set `NEXT_PUBLIC_USE_EMULATORS=true` in your `.env` file. You can then run the Firebase emulators in a separate terminal:
     ```bash
     firebase emulators:start --only auth,firestore
+    ```
+6.  **Validate your setup:** Run the built-in validator to check your environment variables:
+    ```bash
+    npm run firebase:setup
     ```
 
 ### 3. Run the Development Server

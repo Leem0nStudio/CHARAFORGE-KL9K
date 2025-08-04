@@ -7,22 +7,20 @@ let adminAuth: Auth | undefined;
 let adminDb: Firestore | undefined;
 
 try {
-  let serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
     throw new Error('[Firebase Admin] FATAL: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Server features are disabled.');
   }
-
-  // This is the key fix: programmatically escape the newlines in the private key
-  // so the user doesn't have to manually format the .env file.
-  serviceAccountKey = serviceAccountKey.replace(/\\n/g, '\\\\n');
-
+  
+  // No need to replace newlines manually if the JSON is parsed correctly.
   let serviceAccount: ServiceAccount;
   try {
+      // The most robust way is to parse the raw string from the .env file.
       serviceAccount = JSON.parse(serviceAccountKey);
   } catch (e: unknown) {
       // Throw a more specific error if JSON parsing fails.
-      throw new Error(`[Firebase Admin] FATAL: Error parsing FIREBASE_SERVICE_ACCOUNT_KEY. Ensure it's valid, single-line JSON. Details: ${e instanceof Error ? e.message : 'Unknown parsing error.'}`);
+      throw new Error(`[Firebase Admin] FATAL: Error parsing FIREBASE_SERVICE_ACCOUNT_KEY. Ensure it's valid, single-line JSON in your .env file. Details: ${e instanceof Error ? e.message : 'Unknown parsing error.'}`);
   }
   
   if (!getApps().length) {
