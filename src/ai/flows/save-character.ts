@@ -25,17 +25,11 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
   let idToken;
-  // Accessing cookies in a server action requires the surrounding function
-  // to be async, and you must call cookies() directly. While you don't
-  // 'await' the cookies() function itself, the surrounding async context
-  // handles the dynamic nature.
   try {
-    // Access the cookies store
     const cookieStore = cookies();
     idToken = cookieStore.get('firebaseIdToken')?.value;
   } catch (error) {
     console.error('Failed to read cookies on server:', error);
-    // This provides a clearer error message to the client.
     throw new Error('Server could not read the user session. Please try logging out and back in.');
   }
 
@@ -49,10 +43,11 @@ async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
 
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
-    const displayName = decodedToken.name || 'Anonymous';
+    const userRecord = await adminAuth.getUser(decodedToken.uid);
+    const displayName = userRecord.displayName || 'Anonymous';
     return { uid: decodedToken.uid, name: displayName };
   } catch (error) {
-    console.error('Error verifying auth token:', error);
+    console.error('Error verifying auth token or fetching user record:', error);
     throw new Error('Invalid or expired user session. Please log in again.');
   }
 }
@@ -60,7 +55,6 @@ async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
 export async function saveCharacter(input: SaveCharacterInput) {
   const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
-    // For server actions, it's better to throw a clear error than to return a complex object.
     throw new Error(`Invalid character data: ${validation.error.message}`);
   }
   
@@ -70,7 +64,6 @@ export async function saveCharacter(input: SaveCharacterInput) {
 
   const { name, description, biography, imageUrl } = validation.data;
   
-  // Security Validation: Ensure the user ID is derived from the authenticated session.
   const { uid, name: userName } = await getAuthenticatedUser();
   const userId = uid;
 
@@ -79,7 +72,6 @@ export async function saveCharacter(input: SaveCharacterInput) {
     const userRef = adminDb.collection('users').doc(userId);
 
     await adminDb.runTransaction(async (transaction) => {
-        // 1. Create the new character
         transaction.set(characterRef, {
             userId,
             userName,
@@ -87,12 +79,10 @@ export async function saveCharacter(input: SaveCharacterInput) {
             description,
             biography,
             imageUrl,
-            status: 'private', // 'private' or 'public'
-            createdAt: FieldValue.serverTimestamp(), // Use server timestamp for consistency
+            status: 'private',
+            createdAt: FieldValue.serverTimestamp(),
         });
 
-        // 2. Atomically increment the user's character count
-        // First, ensure the stats object exists.
         const userDoc = await transaction.get(userRef);
         if (!userDoc.exists || !userDoc.data()?.stats) {
             transaction.set(userRef, { 
@@ -107,7 +97,6 @@ export async function saveCharacter(input: SaveCharacterInput) {
 
     return { success: true, characterId: characterRef.id };
   } catch (error) {
-    // Log the detailed error on the server, but return a generic message to the client.
     console.error('Error saving character to Firestore:', error);
     throw new Error('Could not save character due to a server error.');
   }
