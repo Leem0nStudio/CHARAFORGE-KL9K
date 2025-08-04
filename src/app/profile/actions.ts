@@ -15,11 +15,6 @@ export type ActionResponse = {
 
 // This function centralizes the logic for verifying the user's session from the server-side.
 async function verifyAndGetUid(): Promise<string> {
-  // Ensure Firebase Admin services are available before proceeding.
-  if(!adminAuth) {
-    throw new Error('Authentication service is unavailable on the server.');
-  }
-
   // Retrieve the session cookie.
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
@@ -27,6 +22,11 @@ async function verifyAndGetUid(): Promise<string> {
   // If no token is found, the user is not authenticated.
   if (!idToken) {
     throw new Error('User session not found. Please log in again.');
+  }
+  
+  // Ensure Firebase Admin services are available before proceeding.
+  if(!adminAuth) {
+    throw new Error('Authentication service is unavailable on the server. Please check server configuration.');
   }
 
   // Verify the token using the Firebase Admin SDK.
@@ -48,16 +48,17 @@ export async function updateUserProfile(
   prevState: ActionResponse,
   formData: FormData
 ): Promise<ActionResponse> {
-  // Explicitly check for server-side service availability first.
-  if (!adminAuth || !adminDb) {
-      return { 
-          success: false, 
-          message: 'Could not save profile. The server is missing required configuration. Please contact support or check server logs.' 
-      };
-  }
   
   try {
     const uid = await verifyAndGetUid();
+
+    // Explicitly check for server-side service availability first.
+    if (!adminAuth || !adminDb) {
+        return { 
+            success: false, 
+            message: 'Could not save profile. The server is missing required configuration.' 
+        };
+    }
 
     const validatedFields = UpdateProfileSchema.safeParse({
       displayName: formData.get('displayName'),
@@ -79,13 +80,6 @@ export async function updateUserProfile(
     return { success: true, message: 'Profile updated successfully!' };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update profile. Please try again.';
-    // Specifically check for the server configuration error message
-    if (message.includes('Authentication service is unavailable')) {
-       return { 
-          success: false, 
-          message: 'Could not save profile. The server is missing required configuration. Please contact support or check server logs.'
-      };
-    }
     return { success: false, message };
   }
 }
@@ -103,11 +97,12 @@ export type UserPreferences = z.infer<typeof UpdatePreferencesSchema>;
 
 
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
-    if (!adminDb) {
-        return { success: false, message: 'Could not save preferences. The database service is unavailable due to server configuration issues.' };
-    }
     try {
         const uid = await verifyAndGetUid();
+        
+        if (!adminDb) {
+            return { success: false, message: 'Could not save preferences. The database service is unavailable.' };
+        }
 
         const validatedFields = UpdatePreferencesSchema.safeParse(preferences);
 
@@ -131,11 +126,12 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
 
 
 export async function deleteUserAccount(): Promise<ActionResponse> {
-  if (!adminAuth || !adminDb) {
-      return { success: false, message: 'Cannot delete account. Server services are unavailable due to a configuration issue.' };
-  }
   try {
     const uid = await verifyAndGetUid();
+
+    if (!adminAuth || !adminDb) {
+      return { success: false, message: 'Cannot delete account. Server services are unavailable.' };
+    }
       
     // Use a transaction to delete the user's data and profile atomically.
     const userRef = adminDb.collection('users').doc(uid);
