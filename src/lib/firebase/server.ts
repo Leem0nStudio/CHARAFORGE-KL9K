@@ -15,7 +15,7 @@ let adminDb: Firestore | undefined;
  * This function should be called at the beginning of any server-side logic that needs Firebase services.
  */
 function initializeAdmin() {
-  if (!adminApp) {
+  if (getApps().length === 0) {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
     if (!serviceAccountKey) {
@@ -24,13 +24,13 @@ function initializeAdmin() {
     }
 
     try {
-      const serviceAccount: ServiceAccount = JSON.parse(serviceAccountKey);
-      
-      const appName = 'firebase-admin-app-' + (getApps().length);
+      // Clean up the key before parsing
+      const cleanedKey = serviceAccountKey.replace(/\\n/g, '\\n');
+      const serviceAccount: ServiceAccount = JSON.parse(cleanedKey);
       
       adminApp = initializeApp({
         credential: cert(serviceAccount),
-      }, appName);
+      });
 
       adminAuth = getAuth(adminApp);
       adminDb = getFirestore(adminApp);
@@ -38,6 +38,10 @@ function initializeAdmin() {
     } catch (e: unknown) {
       console.error('[Firebase Admin] FATAL: Error parsing FIREBASE_SERVICE_ACCOUNT_KEY. Ensure it\'s valid, single-line JSON in your .env file.', e);
     }
+  } else {
+      adminApp = getApps()[0];
+      adminAuth = getAuth(adminApp);
+      adminDb = getFirestore(adminApp);
   }
 }
 
