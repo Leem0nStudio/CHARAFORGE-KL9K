@@ -69,3 +69,18 @@ The application includes a script to manage user roles directly from the command
 *   **UI:** [React](https://react.dev/), [ShadCN UI](https://ui.shadcn.com/), [Tailwind CSS](https://tailwindcss.com/)
 *   **Icons:** [Lucide React](https://lucide.dev/guide/packages/lucide-react)
 *   **Forms:** [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
+
+## 📚 Documentación Completa
+
+Para una guía detallada paso a paso (especialmente para principiantes), consulta:
+
+- **[📖 DOCUMENTACIÓN COMPLETA](./DOCUMENTACION_COMPLETA.md)** - Guía completa con herramientas gratuitas
+- **[⚡ GUÍA RÁPIDA](./GUIA_RAPIDA.md)** - Para desarrolladores experimentados
+- **[⚙️ PLANTILLA .ENV](./.env.template)** - Template para variables de entorno
+
+La documentación incluye:
+- ✅ Herramientas 100% gratuitas
+- ✅ Instalación paso a paso para principiantes
+- ✅ Configuración de Firebase y Google AI
+- ✅ Solución de problemas comunes
+- ✅ Opciones de despliegue gratuitas
