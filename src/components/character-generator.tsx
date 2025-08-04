@@ -240,7 +240,11 @@ export function CharacterGenerator() {
                         <AlertTitle>Generation Error</AlertTitle>
                         <AlertDescription>
                            {error}
-                           <Button variant="link" onClick={() => onGenerate(generationForm.getValues())} className="p-0 h-auto mt-2 block">
+                           <Button 
+                              variant="link" 
+                              onClick={() => onGenerate(generationForm.getValues())} 
+                              className="p-0 h-auto mt-2 block"
+                            >
                               Click here to try again.
                            </Button>
                         </AlertDescription>

@@ -1,9 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    // This allows requests from the specified origin in development.
-    // The wildcard '*' makes it work for any cluster assigned to your workstation.
-    allowedDevOrigins: ["https://*.cloudworkstations.dev"],
+    // This is required to allow the Next.js dev server to accept requests from
+    // the Firebase Studio development environment.
+    allowedDevOrigins: [
+      'https://*.cloudworkstations.dev',
+      'https://*.firebase.studio',
+    ],
   },
 };
 
