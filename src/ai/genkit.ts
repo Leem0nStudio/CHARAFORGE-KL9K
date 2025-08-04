@@ -9,7 +9,7 @@ config({ path: '.env' });
 
 export const ai = genkit({
   plugins: [
-    firebase(),
+    firebase,
     googleAI(),
   ],
 });
