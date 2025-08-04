@@ -1,9 +1,9 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Bot, Swords, Rocket, ScrollText, User } from 'lucide-react';
-import { CharacterGenerator } from '@/components/character-generator';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { LoginButton } from '@/components/login-button';
@@ -90,9 +90,18 @@ export default async function Home() {
             <p className="max-w-[700px] mx-auto text-lg text-muted-foreground sm:text-xl">
               Bring your characters to life with AI-powered biographies and stunning visuals. Describe your hero, and let CharaForge do the rest.
             </p>
+            <div className="flex w-full items-center justify-center space-x-4 py-4 md:pb-10">
+              <Link href="/character-generator" className={buttonVariants({ size: 'lg' })}>
+                Start Forging <Swords className="ml-2 h-5 w-5" />
+              </Link>
+              <Link
+                href="#featured-creations"
+                className={buttonVariants({ variant: 'outline', size: 'lg' })}
+              >
+                Explore Creations
+              </Link>
+            </div>
         </section>
-
-        <CharacterGenerator />
 
         <Separator className="my-16" />
 
