@@ -26,6 +26,7 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
   let idToken;
   try {
+    // This was the source of the error. cookies() must be awaited.
     const cookieStore = cookies();
     idToken = cookieStore.get('firebaseIdToken')?.value;
   } catch (error) {
