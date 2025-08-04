@@ -11,6 +11,6 @@ export const ai = genkit({
       apiVersion: 'v1beta',
     }),
   ],
-  logSinks: ['firebase'],
-  traceStore: 'firebase',
+ // logSinks: ['firebase'],
+ // traceStore: 'firebase',
 });
