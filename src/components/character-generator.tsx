@@ -131,8 +131,6 @@ export function CharacterGenerator() {
         description: characterData.description,
         biography: characterData.biography,
         imageUrl: characterData.imageUrl,
-        userId: user.uid,
-        userName: user.displayName || 'Anonymous',
       });
 
       toast({

@@ -19,13 +19,11 @@ const SaveCharacterInputSchema = z.object({
   description: z.string(),
   biography: z.string(),
   imageUrl: z.string(),
-  userId: z.string(),
-  userName: z.string(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 
-async function verifyAndGetUid(): Promise<string> {
+async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
   const cookieStore = await cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
@@ -39,7 +37,8 @@ async function verifyAndGetUid(): Promise<string> {
 
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
-    return decodedToken.uid;
+    const displayName = decodedToken.name || 'Anonymous';
+    return { uid: decodedToken.uid, name: displayName };
   } catch (error) {
     console.error('Error verifying auth token:', error);
     throw new Error('Invalid or expired user session. Please log in again.');
@@ -57,13 +56,11 @@ export async function saveCharacter(input: SaveCharacterInput) {
     throw new Error('Database service is not available.');
   }
 
-  const { name, description, biography, imageUrl, userId, userName } = validation.data;
+  const { name, description, biography, imageUrl } = validation.data;
   
-  // Security Validation: Ensure the user ID from the input matches the authenticated user.
-  const authenticatedUid = await verifyAndGetUid();
-  if (userId !== authenticatedUid) {
-      throw new Error('Permission denied. User ID mismatch.');
-  }
+  // Security Validation: Ensure the user ID is derived from the authenticated session.
+  const { uid, name: userName } = await getAuthenticatedUser();
+  const userId = uid;
 
   try {
     const characterRef = adminDb.collection('characters').doc();
