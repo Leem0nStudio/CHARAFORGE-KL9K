@@ -87,16 +87,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { auth } = getFirebaseClient();
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (authUser) {
+        setLoading(true); // Set loading while we sync
         const token = await authUser.getIdToken();
         
-        // This is the correct, sequential flow:
-        // 1. Set the cookie and wait for it to complete.
+        // Correct, sequential flow:
+        // 1. Set the cookie and wait for it to complete. This establishes the server session.
         await setCookie(token);
 
-        // 2. Only after the session is established on the server, ensure the DB document exists.
+        // 2. Only after the session is established, ensure the DB document exists.
         const firestoreData = await ensureUserDocument(authUser);
         
-        // 3. Finally, set the user state on the client.
+        // 3. Finally, set the user state on the client with all data synced.
         const userProfile: UserProfile = {
             ...authUser,
             ...firestoreData,
@@ -104,11 +105,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         setUser(userProfile);
+        setLoading(false);
       } else {
+        // User logged out, clear everything
         await setCookie(null);
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
