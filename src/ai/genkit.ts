@@ -1,16 +1,14 @@
 
-'use server';
-
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
-import { firebasePlugin } from '@genkit-ai/firebase';
+import { genkit } from 'genkit'; 
 import { config } from 'dotenv';
+import { enableFirebaseTelemetry } from '@genkit-ai/firebase';
+import { googleAI } from '@genkit-ai/googleai';
 
 config({ path: '.env' });
 
 export const ai = genkit({
   plugins: [
-    firebasePlugin(),
     googleAI(),
   ],
 });
+enableFirebaseTelemetry();

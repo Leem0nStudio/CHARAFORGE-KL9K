@@ -29,6 +29,7 @@ const generateCharacterBioPrompt = ai.definePrompt({
   name: 'generateCharacterBioPrompt',
   input: {schema: GenerateCharacterBioInputSchema},
   output: {schema: GenerateCharacterBioOutputSchema},
+  model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are a professional writer specializing in character biographies.
 
   Based on the provided description, generate a detailed and engaging biography for the character.
