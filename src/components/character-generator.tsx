@@ -114,7 +114,7 @@ export function CharacterGenerator() {
        toast({
         variant: "destructive",
         title: "Generation Failed",
-        description: "There was a problem creating your character. Please try again or adjust your prompt.",
+        description: errorMessage,
       });
     } finally {
       setIsGenerating(false);
