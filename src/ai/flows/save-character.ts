@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -53,9 +54,17 @@ export async function saveCharacter(input: SaveCharacterInput) {
         });
 
         // 2. Atomically increment the user's character count
-        transaction.update(userRef, {
-            'stats.charactersCreated': FieldValue.increment(1)
-        });
+        // First, ensure the stats object exists.
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists() || !userDoc.data()?.stats) {
+            transaction.set(userRef, { 
+                stats: { charactersCreated: 1 } 
+            }, { merge: true });
+        } else {
+            transaction.update(userRef, {
+                'stats.charactersCreated': FieldValue.increment(1)
+            });
+        }
     });
 
     return { success: true, characterId: characterRef.id };

@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -55,7 +54,7 @@ export async function updateUserProfile(
     if (!adminDb || !adminAuth) {
         return { 
             success: false, 
-            message: 'Authentication service is unavailable on the server. Please check server configuration.'
+            message: 'Server is not ready. Please try again in a moment.'
         };
     }
     
