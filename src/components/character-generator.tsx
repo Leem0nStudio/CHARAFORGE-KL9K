@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -5,7 +6,7 @@ import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +32,7 @@ import { generateCharacterBio } from "@/ai/flows/generate-character-bio";
 import { generateCharacterImage } from "@/ai/flows/generate-character-image";
 import { saveCharacter } from "@/ai/flows/save-character";
 import { Skeleton } from "./ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 const generationFormSchema = z.object({
   description: z.string().min(20, {
@@ -58,6 +60,7 @@ export function CharacterGenerator() {
   const [characterData, setCharacterData] = useState<CharacterData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -85,7 +88,8 @@ export function CharacterGenerator() {
       return;
     }
     setIsGenerating(true);
-    setCharacterData(null); // Reset previous character data
+    setCharacterData(null);
+    setError(null);
 
     try {
       // Promise.all allows both AI calls to run concurrently for faster results.
@@ -104,11 +108,13 @@ export function CharacterGenerator() {
         description: data.description,
       });
 
-    } catch (error: unknown) {
-      toast({
+    } catch (err: unknown) {
+       const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during generation.";
+       setError(errorMessage);
+       toast({
         variant: "destructive",
         title: "Generation Failed",
-        description: error instanceof Error ? error.message : "There was a problem creating your character. Please try again.",
+        description: "There was a problem creating your character. Please try again or adjust your prompt.",
       });
     } finally {
       setIsGenerating(false);
@@ -134,14 +140,16 @@ export function CharacterGenerator() {
       
       // Reset all state after successful save
       setCharacterData(null);
+      setError(null);
       generationForm.reset();
       saveForm.reset();
 
-    } catch (error: unknown) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Could not save your character. Please try again.";
       toast({
         variant: "destructive",
         title: "Save Failed",
-        description: error instanceof Error ? error.message : "Could not save your character. Please try again.",
+        description: errorMessage,
       });
     } finally {
       setIsSaving(false);
@@ -225,10 +233,25 @@ export function CharacterGenerator() {
                 </div>
               )}
               {!isGenerating && !characterData && (
-                <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[300px] border-2 border-dashed rounded-lg bg-card">
-                  <Wand2 className="h-12 w-12 mb-4 text-primary" />
-                  <p className="text-lg font-medium font-headline tracking-wider">Your character awaits</p>
-                  <p className="text-sm">Fill out the form to begin the creation process.</p>
+                 <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[300px] border-2 border-dashed rounded-lg bg-card">
+                  {error ? (
+                    <Alert variant="destructive" className="text-left">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Generation Error</AlertTitle>
+                        <AlertDescription>
+                           {error}
+                           <Button variant="link" onClick={() => onGenerate(generationForm.getValues())} className="p-0 h-auto mt-2 block">
+                              Click here to try again.
+                           </Button>
+                        </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <>
+                      <Wand2 className="h-12 w-12 mb-4 text-primary" />
+                      <p className="text-lg font-medium font-headline tracking-wider">Your character awaits</p>
+                      <p className="text-sm">Fill out the form to begin the creation process.</p>
+                    </>
+                  )}
                 </div>
               )}
               {characterData && (

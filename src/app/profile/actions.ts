@@ -15,6 +15,11 @@ export type ActionResponse = {
 
 // This function centralizes the logic for verifying the user's session from the server-side.
 async function verifyAndGetUid(): Promise<string> {
+  // Ensure Firebase Admin services are available before proceeding.
+  if(!adminAuth) {
+    throw new Error('Authentication service is unavailable on the server.');
+  }
+
   // Retrieve the session cookie.
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
@@ -22,11 +27,6 @@ async function verifyAndGetUid(): Promise<string> {
   // If no token is found, the user is not authenticated.
   if (!idToken) {
     throw new Error('User session not found. Please log in again.');
-  }
-
-  // Ensure Firebase Admin services are available before proceeding.
-  if(!adminAuth) {
-    throw new Error('Authentication service is unavailable on the server.');
   }
 
   // Verify the token using the Firebase Admin SDK.
@@ -103,6 +103,9 @@ export type UserPreferences = z.infer<typeof UpdatePreferencesSchema>;
 
 
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
+    if (!adminDb) {
+        return { success: false, message: 'Could not save preferences. The database service is unavailable due to server configuration issues.' };
+    }
     try {
         const uid = await verifyAndGetUid();
 
@@ -113,10 +116,6 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
                 success: false,
                 message: 'Invalid preferences data provided.',
             };
-        }
-
-        if (!adminDb) {
-            return { success: false, message: 'Database service is unavailable.' };
         }
         
         const userRef = adminDb.collection('users').doc(uid);
@@ -132,12 +131,11 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
 
 
 export async function deleteUserAccount(): Promise<ActionResponse> {
+  if (!adminAuth || !adminDb) {
+      return { success: false, message: 'Cannot delete account. Server services are unavailable due to a configuration issue.' };
+  }
   try {
     const uid = await verifyAndGetUid();
-      
-    if (!adminAuth || !adminDb) {
-        return { success: false, message: 'Server services are unavailable to perform deletion.' };
-    }
       
     // Use a transaction to delete the user's data and profile atomically.
     const userRef = adminDb.collection('users').doc(uid);

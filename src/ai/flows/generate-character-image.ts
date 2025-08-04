@@ -36,21 +36,28 @@ const generateCharacterImageFlow = ai.defineFlow(
     outputSchema: GenerateCharacterImageOutputSchema,
   },
   async input => {
-    const {media} = await ai.generate({
-      model: 'googleai/gemini-1.5-flash-latest',
-      prompt: `Generate a photorealistic portrait of a character based on the following description: ${input.description}`,
-       config: {
-        // Note: The 'IMAGE' response modality is often implicitly handled by models that can generate images.
-        // Specifying it can sometimes cause issues with certain model versions.
-        // If issues arise, removing this config or ensuring the model explicitly supports it is a good step.
-      },
-    });
+    try {
+        const {media} = await ai.generate({
+        // IMPORTANT: The 'gemini-2.0-flash-preview-image-generation' model is currently specified for image generation.
+        model: 'googleai/gemini-2.0-flash-preview-image-generation',
+        prompt: `Generate a photorealistic portrait of a character based on the following description: ${input.description}`,
+        config: {
+            // Both TEXT and IMAGE modalities are required for this specific model to work correctly.
+            responseModalities: ['TEXT', 'IMAGE'],
+        },
+        });
 
-    const imageUrl = media?.url;
-    if (!imageUrl) {
-      throw new Error('Failed to generate character image: No media URL was returned from the AI.');
+        const imageUrl = media?.url;
+        if (!imageUrl) {
+          // This error is critical for debugging if the AI model fails to return an image URL.
+          throw new Error('AI model did not return an image. This could be due to safety filters or an API issue.');
+        }
+
+        return {imageUrl};
+    } catch (error) {
+        console.error("Error generating character image:", error);
+        // Re-throwing the error ensures the client-side catch block can handle it.
+        throw new Error("Failed to generate character image. The AI service may be temporarily unavailable or the prompt may have been rejected.");
     }
-
-    return {imageUrl};
   }
 );
