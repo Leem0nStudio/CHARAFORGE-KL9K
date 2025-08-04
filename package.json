@@ -18,9 +18,11 @@
     "admin:list": "node --loader tsx scripts/manage-admin.js list"
   },
   "dependencies": {
+    "@genkit-ai/firebase": "^1.14.1",
     "@genkit-ai/googleai": "^1.14.1",
     "@genkit-ai/next": "^1.14.1",
     "@hookform/resolvers": "^4.1.3",
+    "@opentelemetry/exporter-jaeger": "^1.25.1",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-avatar": "^1.1.3",
@@ -46,8 +48,8 @@
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
-    "firebase": "^10.12.4",
-    "firebase-admin": "^12.3.0",
+    "firebase": "12.0.0",
+    "firebase-admin": "^12.4.0",
     "genkit": "^1.14.1",
     "lucide-react": "^0.475.0",
     "next": "15.3.3",
