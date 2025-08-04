@@ -1,3 +1,5 @@
+'use server';
+
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 import {firebase} from '@genkit-ai/firebase';
@@ -9,7 +11,7 @@ config({path: '.env'});
 
 export const ai = genkit({
   plugins: [
-    firebase(),
+    firebase,
     googleAI({
       apiVersion: 'v1beta',
     }),
