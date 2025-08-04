@@ -51,7 +51,7 @@ const saveFormSchema = z.object({
 });
 
 type CharacterData = {
-  bio: string;
+  biography: string;
   imageUrl: string;
   description: string;
 };
@@ -103,7 +103,7 @@ export function CharacterGenerator() {
       }
 
       setCharacterData({
-        bio: bioResult.biography,
+        biography: bioResult.biography,
         imageUrl: imageResult.imageUrl,
         description: data.description,
       });
@@ -127,8 +127,10 @@ export function CharacterGenerator() {
     setIsSaving(true);
     try {
       await saveCharacter({
-        ...data,
-        ...characterData,
+        name: data.name,
+        description: characterData.description,
+        biography: characterData.biography,
+        imageUrl: characterData.imageUrl,
         userId: user.uid,
         userName: user.displayName || 'Anonymous',
       });
@@ -276,7 +278,7 @@ export function CharacterGenerator() {
                     <div className="md:col-span-3">
                         <h3 className="font-headline text-2xl flex items-center mb-4"><FileText className="w-5 h-5 mr-2 text-primary" /> Biography</h3>
                         <div className="space-y-4 text-muted-foreground mb-6">
-                          {characterData.bio.split('\n').filter(p => p.trim() !== '').map((paragraph, index) => (
+                          {characterData.biography.split('\n').filter(p => p.trim() !== '').map((paragraph, index) => (
                             <p key={index}>{paragraph}</p>
                           ))}
                         </div>
