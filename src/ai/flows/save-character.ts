@@ -24,8 +24,14 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 
 async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
-  const cookieStore = await cookies();
-  const idToken = cookieStore.get('firebaseIdToken')?.value;
+  let idToken;
+  try {
+    const cookieStore = await cookies();
+    idToken = cookieStore.get('firebaseIdToken')?.value;
+  } catch (error) {
+    console.error('Failed to read cookies on server:', error);
+    throw new Error('Server could not read session. Please try again.');
+  }
 
   if (!idToken) {
     throw new Error('User session not found. Please log in again.');
