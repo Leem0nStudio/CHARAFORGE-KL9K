@@ -2,18 +2,25 @@ import { initializeApp, getApps, getApp, App, ServiceAccount, cert } from 'fireb
 import { getAuth, Auth } from 'firebase-admin/auth';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
-let adminApp: App;
-let adminAuth: Auth;
-let adminDb: Firestore;
+let adminApp: App | undefined;
+let adminAuth: Auth | undefined;
+let adminDb: Firestore | undefined;
 
 try {
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Server features requiring admin privileges are disabled.');
+    throw new Error('[Firebase Admin] FATAL: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Server features are disabled.');
   }
 
-  const serviceAccount: ServiceAccount = JSON.parse(serviceAccountKey);
+  let serviceAccount: ServiceAccount;
+  try {
+      serviceAccount = JSON.parse(serviceAccountKey);
+  } catch (e: unknown) {
+      // Throw a more specific error if JSON parsing fails.
+      throw new Error(`[Firebase Admin] FATAL: Error parsing FIREBASE_SERVICE_ACCOUNT_KEY. Ensure it's valid, single-line JSON. Details: ${e instanceof Error ? e.message : 'Unknown parsing error.'}`);
+  }
+  
 
   if (!getApps().length) {
     adminApp = initializeApp({
@@ -27,9 +34,8 @@ try {
   adminDb = getFirestore(adminApp);
 
 } catch (error) {
-  console.error('[Firebase Admin] Initialization failed:', error);
-  // In case of error, we leave the instances as undefined.
-  // The parts of the app using these services should handle this case.
+  // Log the fatal error. The services will remain undefined.
+  console.error(error);
 }
 
 export { adminApp, adminDb, adminAuth };
