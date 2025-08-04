@@ -91,4 +91,4 @@ const getAdminAuth = (): Auth | null => {
 // Export the initialized services. They will be null if something went wrong.
 export const admin: App | null = adminApp;
 export const adminDb: Firestore | null = getAdminDb();
-export const adminAuth: Auth | null = getAdminDb() ? getAdminAuth() : null;
+export const adminAuth: Auth | null = getAdminAuth();
