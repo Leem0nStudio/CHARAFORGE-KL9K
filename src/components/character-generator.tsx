@@ -235,7 +235,7 @@ export function CharacterGenerator() {
               {!isGenerating && !characterData && (
                  <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[300px] border-2 border-dashed rounded-lg bg-card">
                   {error ? (
-                    <Alert variant="destructive" className="text-left w-full max-w-sm">
+                     <Alert variant="destructive" className="text-left w-full max-w-sm">
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Generation Error</AlertTitle>
                         <AlertDescription>

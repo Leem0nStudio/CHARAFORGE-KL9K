@@ -26,11 +26,12 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
   let idToken;
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     idToken = cookieStore.get('firebaseIdToken')?.value;
   } catch (error) {
     console.error('Failed to read cookies on server:', error);
-    throw new Error('Server could not read session. Please try again.');
+    // This provides a clearer error message to the client.
+    throw new Error('Server could not read the user session. Please try logging out and back in.');
   }
 
   if (!idToken) {
