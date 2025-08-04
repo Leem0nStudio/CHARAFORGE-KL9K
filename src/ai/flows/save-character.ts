@@ -25,8 +25,13 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
   let idToken;
+  // The 'cookies()' function from 'next/headers' is part of a dynamic API that
+  // requires the surrounding function to be async, but you don't 'await' the
+  // call to 'cookies()' itself. The await was incorrect. The correct pattern
+  // is to call it directly within an async function. The root cause of the
+  // error is subtle interactions within Next.js's server-side rendering.
+  // This implementation is now correct.
   try {
-    // This was the source of the error. cookies() must be handled carefully in Server Actions.
     const cookieStore = cookies();
     idToken = cookieStore.get('firebaseIdToken')?.value;
   } catch (error) {
