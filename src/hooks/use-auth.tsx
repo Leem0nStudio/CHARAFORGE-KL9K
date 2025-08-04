@@ -9,25 +9,10 @@ import {
   ReactNode,
 } from 'react';
 import { User, onIdTokenChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData, Timestamp } from 'firebase/firestore';
 import { getFirebaseClient } from '@/lib/firebase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-
-export interface UserStats {
-  charactersCreated: number;
-  totalLikes: number;
-  collectionsCreated: number;
-  installedPacks: string[];
-  subscriptionTier: string;
-  memberSince: any; 
-}
-
-export interface UserProfile extends User {
-  stats?: UserStats;
-  role?: 'admin' | 'moderator' | 'user';
-  preferences?: DocumentData;
-}
-
+import type { UserProfile } from '@/types/user';
 
 export interface AuthContextType {
   user: UserProfile | null;

@@ -3,8 +3,8 @@ import { cookies } from 'next/headers';
 import { User } from 'lucide-react';
 import { admin, adminDb } from '@/lib/firebase/server';
 import { CharacterCard } from '@/components/character-card';
-import type { Character } from '@/components/character-card';
 import { redirect } from 'next/navigation';
+import type { Character } from '@/types/character';
 
 
 async function getCharactersForUser(userId: string): Promise<Character[]> {

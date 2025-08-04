@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import React, { useEffect, useState, useTransition, useCallback, useActionState } from 'react';
@@ -28,7 +26,7 @@ import {
 import { updateUserProfile, deleteUserAccount, updateUserPreferences } from './actions';
 import { Loader2, User, Swords, Heart, Package, Gem, Calendar } from 'lucide-react';
 import type { UserPreferences, ActionResponse } from './actions';
-import type { UserProfile, UserStats } from '@/hooks/use-auth';
+import type { UserProfile, UserStats } from '@/types/user';
 import { format } from 'date-fns';
 
 // #region Sub-components for each Tab

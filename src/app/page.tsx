@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import { LoginButton } from '@/components/login-button';
 import { adminDb } from '@/lib/firebase/server';
-import type { Character } from '@/components/character-card';
+import type { Character } from '@/types/character';
 
 async function getFeaturedCharacters(): Promise<Character[]> {
   // Gracefully handle cases where adminDb is not available

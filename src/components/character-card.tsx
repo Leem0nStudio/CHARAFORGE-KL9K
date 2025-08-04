@@ -32,18 +32,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from './ui/alert-dialog';
+import type { Character } from '@/types/character';
 
-export type Character = {
-  id: string;
-  name: string;
-  description: string;
-  biography: string;
-  imageUrl: string;
-  userId: string;
-  status: 'private' | 'public';
-  createdAt: Date;
-  userName?: string;
-};
 
 type CharacterCardProps = {
   character: Character;
