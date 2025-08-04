@@ -3,49 +3,39 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
+    // Helper function to check if a user is an admin
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    function isPublic() {
-      return resource.data.status == 'public';
-    }
-
-    //
     // Rules for the 'users' collection
-    //
     match /users/{userId} {
-      // Anyone authenticated can read a user's profile
-      allow read: if isAuthenticated();
+      // Anyone can read non-sensitive public profile data (e.g., for creator lists)
+      allow read: if request.auth != null;
 
       // Only the user themselves can create their own document
-      allow create: if isOwner(userId);
+      allow create: if request.auth.uid == userId;
 
-      // Only the user themselves can update their document
-      allow update: if isOwner(userId);
-
-      // Users cannot delete their own documents directly through a client request.
-      // Deletions should be handled by a trusted server environment (e.g., Cloud Function or Server Action).
-      allow delete: if false;
+      // The user can update their own document. An admin can also update roles.
+      allow update: if request.auth.uid == userId || isAdmin();
+      
+      // The user can delete their own account.
+      allow delete: if request.auth.uid == userId;
     }
 
-    //
     // Rules for the 'characters' collection
-    //
     match /characters/{characterId} {
-      // Allow read access if the character is public OR if the requesting user is the owner
-      allow read: if isPublic() || (isAuthenticated() && isOwner(resource.data.userId));
+      // Allow reading a character if it is public, or if the user is the owner.
+      allow read: if resource.data.status == 'public' || (request.auth != null && request.auth.uid == resource.data.userId);
 
-      // Allow any authenticated user to create a new character
-      allow create: if isAuthenticated();
+      // Allow creating a character if the user is logged in and the character's userId matches their own.
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
 
-      // Allow update and delete only for the user who owns the character
-      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+      // Allow updating a character if the user is the owner.
+      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
+
+      // Allow deleting a character if the user is the owner.
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }
