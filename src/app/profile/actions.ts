@@ -100,7 +100,7 @@ export type UserPreferences = z.infer<typeof UpdatePreferencesSchema>;
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
     try {
         if (!adminDb) {
-            return { success: false, message: 'Authentication service is unavailable on the server. Please check server configuration.' };
+            return { success: false, message: 'Database service is unavailable. Please check server configuration.' };
         }
         const uid = await verifyAndGetUid();
         
