@@ -23,7 +23,7 @@ const SaveCharacterInputSchema = z.object({
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
-async function getAuthenticatedUser(): Promise<{ uid: string; name: string }> {
+async function getAuthenticatedUser(): Promise<{ uid: string }> {
   if (!adminAuth || !adminDb) {
     throw new Error('Server services are not available. Please try again later.');
   }
@@ -37,9 +37,7 @@ async function getAuthenticatedUser(): Promise<{ uid: string; name: string }> {
 
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
-    const userRecord = await adminAuth.getUser(decodedToken.uid);
-    const userName = userRecord.displayName || 'Anonymous';
-    return { uid: decodedToken.uid, name: userName };
+    return { uid: decodedToken.uid };
   } catch (error) {
     console.error('Error verifying auth token or fetching user record:', error);
     throw new Error('Invalid or expired user session. Please log in again.');
@@ -60,7 +58,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
   const { name, description, biography, imageUrl } = validation.data;
   
   try {
-    const { uid: userId, name: userName } = await getAuthenticatedUser();
+    const { uid: userId } = await getAuthenticatedUser();
 
     const characterRef = adminDb.collection('characters').doc();
     const userRef = adminDb.collection('users').doc(userId);
@@ -70,11 +68,11 @@ export async function saveCharacter(input: SaveCharacterInput) {
 
         transaction.set(characterRef, {
             userId,
-            userName,
             name,
             description,
             biography,
             imageUrl,
+            gallery: [imageUrl],
             status: 'private',
             createdAt: FieldValue.serverTimestamp(),
         });

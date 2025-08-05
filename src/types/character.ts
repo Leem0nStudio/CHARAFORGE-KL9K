@@ -14,5 +14,5 @@ export type Character = {
   userId: string;
   status: 'private' | 'public';
   createdAt: Date; // Use Date object on both server and client for consistency
-  userName?: string;
+  userName?: string; // Optional: May be populated with the creator's display name
 };
