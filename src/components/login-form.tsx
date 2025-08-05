@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   signInWithEmailAndPassword,
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { getFirebaseClient } from "@/lib/firebase/client";
 
 const errorMessages: Record<string, string> = {
@@ -102,8 +103,12 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <form onSubmit={handleSubmit}>
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-headline tracking-wider">
+        <CardHeader className="text-center relative">
+          <Link href="/" className="absolute left-4 top-4 text-sm text-muted-foreground hover:text-foreground flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
+          </Link>
+          <CardTitle className="text-2xl font-headline tracking-wider pt-8">
             {isSignUp ? "Create an Account" : "Welcome Back"}
           </CardTitle>
           <CardDescription>
