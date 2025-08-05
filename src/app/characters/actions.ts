@@ -100,40 +100,54 @@ const UpdateCharacterSchema = z.object({
   biography: z.string().min(1, "Biography is required.").max(5000, "Biography cannot exceed 5000 characters."),
 });
 
-export async function updateCharacter(characterId: string, formData: FormData) {
-  const uid = await verifyAndGetUid();
+export type UpdateCharacterState = {
+    success: boolean;
+    message: string;
+};
 
-  const validatedFields = UpdateCharacterSchema.safeParse({
-    name: formData.get('name'),
-    biography: formData.get('biography'),
-  });
-
-  // If validation fails, redirect back to the edit page with an error query param.
-  if (!validatedFields.success) {
-    const errorMessage = validatedFields.error.flatten().fieldErrors.name?.[0] || validatedFields.error.flatten().fieldErrors.biography?.[0] || 'Invalid data';
-    redirect(`/characters/${characterId}/edit?error=${encodeURIComponent(errorMessage)}`);
-  }
-  
-  const { name, biography } = validatedFields.data;
-  const characterRef = adminDb.collection('characters').doc(characterId);
-  
+export async function updateCharacter(
+    characterId: string, 
+    prevState: UpdateCharacterState, 
+    formData: FormData
+): Promise<UpdateCharacterState> {
   try {
+    const uid = await verifyAndGetUid();
+
+    const validatedFields = UpdateCharacterSchema.safeParse({
+        name: formData.get('name'),
+        biography: formData.get('biography'),
+    });
+
+    if (!validatedFields.success) {
+        const firstError = validatedFields.error.errors[0];
+        return {
+            success: false,
+            message: `Invalid input for ${firstError.path.join('.')}: ${firstError.message}`,
+        };
+    }
+    
+    const { name, biography } = validatedFields.data;
+    const characterRef = adminDb.collection('characters').doc(characterId);
+    
     const characterDoc = await characterRef.get();
 
     // Security check before updating.
     if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
-       throw new Error('Permission denied or character not found.');
+        return { success: false, message: 'Permission denied or character not found.' };
     }
   
     await characterRef.update({ name, biography });
-  } catch (error) {
-    console.error("Error updating character:", error);
-    const errorMessage = error instanceof Error ? error.message : 'Could not update character.';
-    redirect(`/characters/${characterId}/edit?error=${encodeURIComponent(errorMessage)}`);
-  }
 
-  // On success, revalidate and redirect to the main characters page.
-  revalidatePath('/characters');
-  revalidatePath(`/characters/${characterId}/edit`);
-  redirect('/characters');
+    revalidatePath('/characters');
+    revalidatePath(`/characters/${characterId}/edit`);
+    
+    // On success, we don't redirect here. The client will handle it.
+    // Instead, we return a success state.
+    return { success: true, message: 'Character updated successfully!' };
+
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not update character due to a server error.';
+    return { success: false, message };
+  }
 }
+
