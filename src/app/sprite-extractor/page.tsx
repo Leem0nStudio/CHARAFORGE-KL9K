@@ -1,14 +1,96 @@
 'use client';
 
-import { SpriteExtractor } from '@/components/sprite-extractor';
+import { useState } from 'react';
 import { LoginButton } from '@/components/login-button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { BackButton } from '@/components/back-button';
-import { Bot, Scissors } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { SpriteExtractorClient } from '@/components/sprite-extractor';
+import { OptionsPanel } from '@/components/options-panel';
+import { LogPanel } from '@/components/log-panel';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+
+export type ExtractionOptions = {
+    minArea: number;
+    engine: 'sharp' | 'opencv';
+    resampleMode: 'nearest' | 'bilinear';
+};
 
 export default function SpriteExtractorPage() {
+    const [options, setOptions] = useState<ExtractionOptions>({
+        minArea: 100,
+        engine: 'sharp',
+        resampleMode: 'nearest',
+    });
+    const [logs, setLogs] = useState<string[]>([]);
+    const [extractedSprites, setExtractedSprites] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const { authUser } = useAuth();
+    const { toast } = useToast();
+
+    const addLog = (message: string) => {
+        setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+    };
+
+    const handleExtract = async (file: File) => {
+        if (!file) {
+            toast({ variant: 'destructive', title: 'No file selected' });
+            return;
+        }
+        if (!authUser) {
+            toast({ variant: 'destructive', title: 'Authentication Required' });
+            return;
+        }
+
+        setIsLoading(true);
+        setExtractedSprites([]);
+        setLogs([]);
+        setError(null);
+        addLog('Starting extraction process...');
+
+        const formData = new FormData();
+        formData.append('image', file);
+        // TODO: Pass options to API in Phase 2
+        // formData.append('options', JSON.stringify(options));
+        
+        addLog(`Uploading image: ${file.name}`);
+
+        try {
+            const response = await fetch('/api/extract-sprites', {
+                method: 'POST',
+                body: formData,
+            });
+            
+            addLog('Processing on server...');
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'An unknown server error occurred.');
+            }
+            
+            addLog(`Extraction complete! Found ${result.spriteUrls.length} sprites.`);
+            setExtractedSprites(result.spriteUrls);
+            toast({
+                title: 'Extraction Complete!',
+                description: `Successfully extracted ${result.spriteUrls.length} sprites.`,
+            });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to connect to the server.';
+            addLog(`Error: ${message}`);
+            setError(message);
+            toast({ variant: 'destructive', title: 'Extraction Failed', description: message });
+        } finally {
+            setIsLoading(false);
+            addLog('Process finished.');
+        }
+    };
+
+
   return (
      <div className="flex min-h-screen w-full flex-col">
        <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -31,7 +113,7 @@ export default function SpriteExtractorPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-            <div className="mx-auto grid w-full max-w-6xl gap-2 mb-8">
+            <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
                  <div className="flex items-center gap-4">
                     <BackButton />
                     <h1 className="text-3xl font-semibold font-headline tracking-wider">Sprite Extractor</h1>
@@ -40,7 +122,24 @@ export default function SpriteExtractorPage() {
                     Upload a sprite sheet, and let our AI-powered service extract individual sprites for you.
                 </p>
             </div>
-            <SpriteExtractor />
+            
+            <div className="grid lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-3">
+                    <OptionsPanel options={options} setOptions={setOptions} disabled={isLoading} />
+                </div>
+                <div className="lg:col-span-6">
+                    <SpriteExtractorClient 
+                        onExtract={handleExtract}
+                        extractedSprites={extractedSprites}
+                        isLoading={isLoading}
+                        error={error}
+                    />
+                </div>
+                <div className="lg:col-span-3">
+                    <LogPanel logs={logs} />
+                </div>
+            </div>
+
         </motion.main>
      </div>
   );

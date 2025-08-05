@@ -13,14 +13,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Upload, Loader2, Wand2, Grid, AlertCircle, Check, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export function SpriteExtractor() {
+interface SpriteExtractorClientProps {
+    onExtract: (file: File) => void;
+    extractedSprites: string[];
+    isLoading: boolean;
+    error: string | null;
+}
+
+
+export function SpriteExtractorClient({ onExtract, extractedSprites, isLoading, error }: SpriteExtractorClientProps) {
   const { authUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [extractedSprites, setExtractedSprites] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -34,8 +39,6 @@ export function SpriteExtractor() {
         return;
       }
       setSelectedFile(file);
-      setExtractedSprites([]);
-      setError(null);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrl(reader.result as string);
@@ -44,68 +47,25 @@ export function SpriteExtractor() {
     }
   };
 
-  const handleExtract = async () => {
-    if (!selectedFile) {
-      toast({
-        variant: 'destructive',
-        title: 'No file selected',
-        description: 'Please select an image file to extract sprites from.',
-      });
-      return;
+  const handleExtractClick = () => {
+    if (selectedFile) {
+      onExtract(selectedFile);
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'No file selected',
+            description: 'Please select an image file to extract sprites from.',
+        });
     }
-    if (!authUser) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Required',
-        description: 'You must be logged in to use this feature.',
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    setExtractedSprites([]);
-    setError(null);
-
-    const formData = new FormData();
-    formData.append('image', selectedFile);
-
-    try {
-      const response = await fetch('/api/extract-sprites', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'An unknown error occurred.');
-      }
-
-      setExtractedSprites(result.spriteUrls);
-      toast({
-        title: 'Extraction Complete!',
-        description: `Successfully extracted ${result.spriteUrls.length} sprites.`,
-      });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to connect to the server.';
-      setError(message);
-      toast({
-        variant: 'destructive',
-        title: 'Extraction Failed',
-        description: message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }
 
   const canExtract = selectedFile && !isLoading && !authLoading && authUser;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
+    <div className="space-y-8">
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline text-3xl">1. Upload Sprite Sheet</CardTitle>
+          <CardTitle className="font-headline text-2xl">1. Upload Sprite Sheet</CardTitle>
           <CardDescription>Select an image containing the sprites you want to extract.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -118,12 +78,12 @@ export function SpriteExtractor() {
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
               <Label>Preview</Label>
               <div className="mt-2 relative w-full aspect-video rounded-lg border bg-muted overflow-hidden">
-                <Image src={previewUrl} alt="Selected sprite sheet preview" layout="fill" objectFit="contain" />
+                <Image src={previewUrl} alt="Selected sprite sheet preview" fill objectFit="contain" />
               </div>
             </motion.div>
           )}
 
-          <Button onClick={handleExtract} disabled={!canExtract} size="lg" className="w-full font-headline text-lg">
+          <Button onClick={handleExtractClick} disabled={!canExtract} size="lg" className="w-full font-headline text-lg">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -142,7 +102,7 @@ export function SpriteExtractor() {
 
       <Card className="shadow-lg min-h-[400px]">
         <CardHeader>
-          <CardTitle className="font-headline text-3xl">2. Extracted Sprites</CardTitle>
+          <CardTitle className="font-headline text-2xl">2. Extracted Sprites</CardTitle>
           <CardDescription>Review the extracted sprites below. You can save them to your gallery.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -186,7 +146,7 @@ export function SpriteExtractor() {
                     transition={{ delay: index * 0.05 }}
                   >
                     <Card className="overflow-hidden h-full w-full">
-                      <Image src={spriteUrl} alt={`Extracted sprite ${index + 1}`} layout="fill" objectFit="contain" className="p-2" />
+                      <Image src={spriteUrl} alt={`Extracted sprite ${index + 1}`} fill objectFit="contain" className="p-2" />
                     </Card>
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                        <Button size="sm" variant="secondary" onClick={() => toast({ title: 'Coming Soon!', description: 'Saving individual sprites will be implemented in a future update.'})}>
