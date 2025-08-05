@@ -31,7 +31,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { generateCharacterBio } from "@/ai/flows/generate-character-bio";
 import { generateCharacterImage } from "@/ai/flows/generate-character-image";
-import { resizeImage } from "@/ai/flows/resize-image";
 import { saveCharacter } from "@/ai/flows/save-character";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
@@ -159,16 +158,13 @@ export function CharacterGenerator() {
 
     setIsSaving(true);
     try {
-      const { resizedImageUrl } = await resizeImage({ imageUrl: characterData.imageUrl });
-      if (!resizedImageUrl) {
-        throw new Error("Failed to optimize the image for saving.");
-      }
-
+      // The resizeImage call is removed. We now directly pass the large Data URI
+      // to the saveCharacter action, which will handle the upload to Storage.
       await saveCharacter({
         name: data.name,
         description: characterData.description,
         biography: characterData.biography,
-        imageUrl: resizedImageUrl,
+        imageUrl: characterData.imageUrl, // Pass the full Data URI
       });
 
       toast({
@@ -368,5 +364,3 @@ export function CharacterGenerator() {
     </div>
   );
 }
-
-    
