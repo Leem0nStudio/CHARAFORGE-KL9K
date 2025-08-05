@@ -44,7 +44,8 @@ const resizeImageFlow = ai.defineFlow(
       const { media } = await ai.generate({
         model: 'googleai/gemini-1.5-flash-latest', 
         prompt: [
-          { text: "Resize the following image to be exactly 512x512 pixels. Maintain the original aspect ratio by cropping if necessary, focusing on the main subject. Do not add any new elements or change the style. Output only the image." },
+          // A simpler, more direct prompt is more reliable for image manipulation tasks.
+          { text: "Resize the following image to 512x512 pixels." },
           { media: { url: input.imageUrl } },
         ],
         config: {
