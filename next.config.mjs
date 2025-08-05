@@ -8,6 +8,7 @@ const nextConfig = {
   devIndicators: {
     buildActivity: false,
   },
+  transpilePackages: ['framer-motion'],
 };
 
 export default nextConfig;

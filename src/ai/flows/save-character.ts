@@ -43,6 +43,12 @@ export async function saveCharacter(input: SaveCharacterInput) {
     const userRef = adminDb.collection('users').doc(userId);
 
     await adminDb.runTransaction(async (transaction) => {
+        // Firestore Transaction Rule: All reads must be executed before all writes.
+        
+        // 1. READ from the user's document first.
+        const userDoc = await transaction.get(userRef);
+
+        // 2. Now, perform all WRITE operations.
         transaction.set(characterRef, {
             userId,
             userName,
@@ -53,9 +59,8 @@ export async function saveCharacter(input: SaveCharacterInput) {
             status: 'private',
             createdAt: FieldValue.serverTimestamp(),
         });
-
-        const userDoc = await transaction.get(userRef);
-        if (!userDoc.exists || !userDoc.data()?.stats) {
+        
+        if (!userDoc.exists() || !userDoc.data()?.stats) {
             transaction.set(userRef, { 
                 stats: { charactersCreated: 1 } 
             }, { merge: true });

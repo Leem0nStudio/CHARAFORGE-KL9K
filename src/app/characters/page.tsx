@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import { MotionMainWrapper } from '@/components/motion-main-wrapper';
 
 
 function CharacterListSkeleton() {
@@ -98,12 +99,7 @@ export default function CharactersPage() {
   }
 
   return (
-    <motion.main
-        className="flex-1 p-4 md:p-10"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-    >
+    <MotionMainWrapper className="flex-1 p-4 md:p-10">
         <div className="mx-auto grid w-full max-w-6xl gap-2 mb-8">
           <h1 className="text-3xl font-semibold font-headline tracking-wider">My Characters</h1>
           <p className="text-muted-foreground">A gallery of all the characters you have forged.</p>
@@ -135,6 +131,6 @@ export default function CharactersPage() {
                 </Link>
             </div>
         )}
-      </main>
+      </MotionMainWrapper>
   );
 }
