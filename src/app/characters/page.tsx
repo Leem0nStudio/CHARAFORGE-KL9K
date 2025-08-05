@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getAuth } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 import { onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
 import { User, Swords } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -14,6 +14,7 @@ import type { Character } from '@/types/character';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 
 
 function CharacterListSkeleton() {
@@ -31,16 +32,21 @@ function CharacterListSkeleton() {
 }
 
 export default function CharactersPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
+    if (authLoading) {
+      return; // Wait until auth state is resolved
+    }
     if (!user) {
-        setLoading(false);
-        return;
+      router.push('/login');
+      return;
     }
     
+    setLoading(true);
     const { db } = getFirebaseClient();
     const q = query(
       collection(db, 'characters'),
@@ -71,7 +77,7 @@ export default function CharactersPage() {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, authLoading, router]);
   
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -82,6 +88,14 @@ export default function CharactersPage() {
       },
     },
   };
+
+  if (authLoading) {
+     return (
+      <div className="flex items-center justify-center h-screen w-full">
+         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <motion.main
