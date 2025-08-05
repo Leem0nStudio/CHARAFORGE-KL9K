@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useTransition, useActionState } from 'react';
+import { useEffect, useState, useTransition, useActionState, useCallback } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -264,9 +264,9 @@ function ImagesTab({ character }: { character: Character }) {
 export function EditCharacterForm({ character }: { character: Character }) {
     const [characterState, setCharacterState] = useState(character);
 
-    const handleBiographyUpdate = (newBio: string) => {
+    const handleBiographyUpdate = useCallback((newBio: string) => {
         setCharacterState(prevState => ({ ...prevState, biography: newBio }));
-    };
+    }, []);
 
     return (
         <Tabs defaultValue="edit" className="w-full">
@@ -315,3 +315,4 @@ export function EditCharacterForm({ character }: { character: Character }) {
     );
 }
 
+    
