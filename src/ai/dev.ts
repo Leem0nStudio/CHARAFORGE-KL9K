@@ -8,3 +8,4 @@ config();
 import '@/ai/flows/generate-character-bio';
 import '@/ai/flows/generate-character-image';
 import '@/ai/flows/resize-image';
+import '@/ai/flows/translate-text';

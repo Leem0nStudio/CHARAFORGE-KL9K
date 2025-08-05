@@ -23,7 +23,8 @@ async function getCharacterForEdit(characterId: string): Promise<{ character: Ch
     const idToken = cookieStore.get('firebaseIdToken')?.value;
 
     if (!idToken) {
-      return { character: null };
+      // Not logged in, so can't be authorized.
+      return { character: null, error: 'NOT_AUTHENTICATED' };
     }
 
     let uid;
@@ -32,18 +33,20 @@ async function getCharacterForEdit(characterId: string): Promise<{ character: Ch
       const decodedToken = await auth.verifyIdToken(idToken);
       uid = decodedToken.uid;
     } catch (error) {
-      return { character: null };
+       // Token is invalid or expired.
+      return { character: null, error: 'NOT_AUTHENTICATED' };
     }
 
     const characterRef = adminDb.collection('characters').doc(characterId);
     const characterDoc = await characterRef.get();
 
+    // The user must own the character to edit it.
     if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
-      return { character: null };
+      return { character: null, error: 'NOT_AUTHORIZED' };
     }
     
     const data = characterDoc.data();
-    if (!data) return { character: null };
+    if (!data) return { character: null, error: 'NOT_FOUND' };
 
     const character: Character = {
         id: characterDoc.id,
@@ -51,6 +54,7 @@ async function getCharacterForEdit(characterId: string): Promise<{ character: Ch
         description: data.description,
         biography: data.biography,
         imageUrl: data.imageUrl,
+        gallery: data.gallery || [data.imageUrl], // Fallback for old data model
         userId: data.userId,
         status: data.status,
         createdAt: data.createdAt.toDate(),
@@ -59,6 +63,7 @@ async function getCharacterForEdit(characterId: string): Promise<{ character: Ch
 
     return { character };
   } catch (error) {
+    console.error("Error in getCharacterForEdit: ", error);
     return { character: null, error: 'SERVICE_UNAVAILABLE' };
   }
 }
@@ -66,22 +71,10 @@ async function getCharacterForEdit(characterId: string): Promise<{ character: Ch
 export default async function EditCharacterPage({ params }: { params: { id: string } }) {
   const { character, error } = await getCharacterForEdit(params.id);
 
-  if (error === 'SERVICE_UNAVAILABLE') {
-    return (
-       <main className="flex-1 p-4 md:p-10">
-        <div className="mx-auto grid w-full max-w-2xl gap-2">
-           <h1 className="text-3xl font-semibold font-headline tracking-wider">Edit Character</h1>
-             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Service Unavailable</AlertTitle>
-              <AlertDescription>
-                The editing service is currently unavailable due to a server configuration issue. Please try again later.
-              </AlertDescription>
-            </Alert>
-             <Link href="/characters" className="mt-4">Back to My Characters</Link>
-        </div>
-      </main>
-    )
+  if (error) {
+      // Handle all error cases centrally, redirecting to notFound for security.
+      // This prevents leaking information about why access was denied.
+      notFound();
   }
 
   if (!character) {
@@ -91,23 +84,15 @@ export default async function EditCharacterPage({ params }: { params: { id: stri
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
        <main className="flex-1 p-4 md:p-10">
-        <div className="mx-auto grid w-full max-w-2xl gap-4">
+        <div className="mx-auto grid w-full max-w-4xl gap-4">
             <div className="flex items-center gap-4">
                 <BackButton />
                 <h1 className="text-3xl font-semibold font-headline tracking-wider">Edit Character</h1>
             </div>
-            <p className="text-muted-foreground">Refine the details of your creation.</p>
-           <Card className="mt-4">
-                <CardHeader>
-                    <CardTitle>{character.name}</CardTitle>
-                    <CardDescription>
-                        Modify the fields below to update your character. The original description and image cannot be changed.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <EditCharacterForm character={character} />
-                </CardContent>
-           </Card>
+            <p className="text-muted-foreground">Refine the details of your creation, translate its story, or expand its gallery.</p>
+           <div className="mt-4">
+             <EditCharacterForm character={character} />
+           </div>
         </div>
       </main>
     </div>

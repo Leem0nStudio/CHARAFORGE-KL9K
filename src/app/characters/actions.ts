@@ -97,7 +97,7 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
 
 const UpdateCharacterSchema = z.object({
   name: z.string().min(1, "Name is required.").max(100, "Name cannot exceed 100 characters."),
-  biography: z.string().min(1, "Biography is required.").max(5000, "Biography cannot exceed 5000 characters."),
+  biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
 });
 
 export type UpdateCharacterState = {
@@ -107,16 +107,12 @@ export type UpdateCharacterState = {
 
 export async function updateCharacter(
     characterId: string, 
-    prevState: UpdateCharacterState, 
-    formData: FormData
+    data: { name: string, biography: string }
 ): Promise<UpdateCharacterState> {
   try {
     const uid = await verifyAndGetUid();
 
-    const validatedFields = UpdateCharacterSchema.safeParse({
-        name: formData.get('name'),
-        biography: formData.get('biography'),
-    });
+    const validatedFields = UpdateCharacterSchema.safeParse(data);
 
     if (!validatedFields.success) {
         const firstError = validatedFields.error.errors[0];
@@ -141,9 +137,7 @@ export async function updateCharacter(
     revalidatePath('/characters');
     revalidatePath(`/characters/${characterId}/edit`);
     
-    // On success, we don't redirect here. The client will handle it.
-    // Instead, we return a success state.
-    return { success: true, message: 'Character updated successfully!' };
+    return { success: true, message: 'Character details updated successfully!' };
 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not update character due to a server error.';
@@ -151,3 +145,36 @@ export async function updateCharacter(
   }
 }
 
+export async function updateCharacterImages(
+  characterId: string,
+  gallery: string[],
+  primaryImageUrl: string,
+): Promise<UpdateCharacterState> {
+  try {
+     const uid = await verifyAndGetUid();
+     const characterRef = adminDb.collection('characters').doc(characterId);
+     const characterDoc = await characterRef.get();
+     
+     if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+        return { success: false, message: 'Permission denied or character not found.' };
+     }
+
+     if (!gallery.includes(primaryImageUrl)) {
+        return { success: false, message: 'Primary image must be one of the images in the gallery.'}
+     }
+
+     await characterRef.update({ 
+        gallery: gallery,
+        imageUrl: primaryImageUrl,
+      });
+
+     revalidatePath('/characters');
+     revalidatePath(`/characters/${characterId}/edit`);
+
+     return { success: true, message: 'Image gallery updated successfully!' };
+
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not update image gallery due to a server error.';
+    return { success: false, message };
+  }
+}
