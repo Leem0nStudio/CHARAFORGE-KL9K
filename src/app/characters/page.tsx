@@ -1,10 +1,14 @@
+
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import { User } from 'lucide-react';
+import { User, Swords } from 'lucide-react';
 import { adminApp, adminDb } from '@/lib/firebase/server';
 import { CharacterCard } from '@/components/character-card';
 import { redirect } from 'next/navigation';
 import type { Character } from '@/types/character';
+import Link from 'next/link';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 
 async function getCharactersForUser(userId: string): Promise<Character[]> {
@@ -70,19 +74,24 @@ export default async function CharactersPage() {
           <h1 className="text-3xl font-semibold font-headline tracking-wider">My Characters</h1>
           <p className="text-muted-foreground">A gallery of all the characters you have forged.</p>
         </div>
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {characters.length > 0 ? (
-              characters.map((character) => (
+        
+        {characters.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {characters.map((character) => (
                 <CharacterCard key={character.id} character={character} />
-              ))
-            ) : (
-              <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card">
-                  <User className="h-12 w-12 mb-4 text-primary" />
-                  <p className="text-lg font-medium font-headline tracking-wider">No characters yet</p>
-                  <p className="text-sm">Go to the homepage to start creating!</p>
-              </div>
-            )}
-        </div>
+              ))}
+            </div>
+        ) : (
+            <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
+                <User className="h-16 w-16 mb-4 text-primary/70" />
+                <h2 className="text-2xl font-medium font-headline tracking-wider mb-2">Your Gallery is Empty</h2>
+                <p className="max-w-xs mx-auto mb-6">It looks like you haven't forged any characters yet. Let's bring your first legend to life!</p>
+                <Link href="/character-generator" className={cn(buttonVariants({ size: 'lg' }), "bg-accent text-accent-foreground hover:bg-accent/90")}>
+                    <Swords className="mr-2 h-5 w-5" />
+                    Forge a New Character
+                </Link>
+            </div>
+        )}
       </main>
     </div>
   );

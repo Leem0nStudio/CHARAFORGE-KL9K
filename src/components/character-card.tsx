@@ -4,7 +4,7 @@
 import { useState, useCallback, memo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Copy, Send, Trash2, Loader2, Pencil } from 'lucide-react';
+import { BookOpen, Copy, Send, Trash2, Loader2, Pencil, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import {
   Card,
@@ -63,7 +63,6 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
         title: 'Character Deleted',
         description: `${character.name} has been removed from your gallery.`,
       });
-      // Force a server-side refetch of the page's data, which updates the UI.
       router.refresh();
     } catch (error: unknown) {
       toast({
@@ -76,47 +75,51 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
     }
   }, [character.id, character.name, toast, router]);
 
-  const handlePost = useCallback(async () => {
+  const handleToggleStatus = useCallback(async () => {
     setIsPosting(true);
+    const newStatus = character.status === 'public' ? 'private' : 'public';
     try {
-      await updateCharacterStatus(character.id, 'public');
+      await updateCharacterStatus(character.id, newStatus);
        toast({
-        title: 'Character Posted!',
-        description: `${character.name} is now public.`,
+        title: `Character Updated!`,
+        description: `${character.name} is now ${newStatus}.`,
       });
       router.refresh();
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
-        title: 'Post Failed',
-        description: error instanceof Error ? error.message : 'Could not post the character. Please try again.',
+        title: 'Update Failed',
+        description: error instanceof Error ? error.message : 'Could not update the character. Please try again.',
       });
     } finally {
       setIsPosting(false);
     }
-  }, [character.id, character.name, toast, router]);
+  }, [character.id, character.name, character.status, toast, router]);
 
   const isPosted = character.status === 'public';
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col group">
       <CardHeader className="p-0 relative">
-        {character.imageUrl ? (
-          <Image
-            src={character.imageUrl}
-            alt={character.name}
-            width={400}
-            height={400}
-            className="w-full h-auto aspect-square object-cover rounded-t-lg"
-          />
-        ) : (
-          <div className="w-full aspect-square bg-muted rounded-t-lg flex items-center justify-center">
-            <p className="text-muted-foreground text-sm">No Image</p>
-          </div>
-        )}
+        <div className="aspect-square w-full overflow-hidden rounded-t-lg">
+            {character.imageUrl ? (
+            <Image
+                src={character.imageUrl}
+                alt={character.name}
+                width={400}
+                height={400}
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+            ) : (
+            <div className="w-full h-full bg-muted flex items-center justify-center">
+                <p className="text-muted-foreground text-sm">No Image</p>
+            </div>
+            )}
+        </div>
         {isPosted && (
-           <div className="absolute top-2 right-2 bg-accent text-accent-foreground text-xs font-bold py-1 px-3 rounded-full shadow-lg">
-            POSTED
+           <div className="absolute top-3 right-3 bg-accent text-accent-foreground text-xs font-bold py-1 px-3 rounded-full shadow-lg flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3"/>
+            PUBLIC
           </div>
         )}
       </CardHeader>
@@ -149,32 +152,28 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
               Copy
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground italic p-3 bg-muted rounded-md">
+          <p className="text-sm text-muted-foreground italic p-3 bg-secondary/30 rounded-md">
             &quot;{character.description}&quot;
           </p>
         </div>
       </CardContent>
       <CardFooter className="p-4 flex flex-col gap-2">
           <div className='flex w-full gap-2'>
-            <Button variant="outline" className="w-full" onClick={handlePost} disabled={isPosting || isPosted}>
-                {isPosting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                <Send className="h-4 w-4 mr-2" />
-                )}
-                {isPosted ? 'Posted' : 'Post'}
+             <Button variant={isPosted ? "secondary" : "default"} className="w-full" onClick={handleToggleStatus} disabled={isPosting}>
+                {isPosting ? <Loader2 className="animate-spin" /> : <Send />}
+                {isPosted ? 'Make Private' : 'Post Publicly'}
             </Button>
-              <Button variant="secondary" className="w-full" asChild>
+            <Button variant="outline" className="w-full" asChild>
                 <Link href={`/characters/${character.id}/edit`}>
-                    <Pencil className="h-4 w-4 mr-2" />
+                    <Pencil />
                     Edit
                 </Link>
-              </Button>
+            </Button>
           </div>
           <AlertDialog>
               <AlertDialogTrigger asChild>
               <Button variant="destructive" className="w-full" disabled={isDeleting}>
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  {isDeleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
                   Delete
               </Button>
               </AlertDialogTrigger>
