@@ -42,14 +42,16 @@ const resizeImageFlow = ai.defineFlow(
   async (input) => {
     try {
       const { media } = await ai.generate({
-        model: 'googleai/gemini-1.5-flash-latest', 
+        // Using a model specialized for image manipulation tasks improves reliability.
+        model: 'googleai/gemini-2.0-flash-preview-image-generation', 
         prompt: [
           // A simpler, more direct prompt is more reliable for image manipulation tasks.
           { text: "Resize the following image to 512x512 pixels." },
           { media: { url: input.imageUrl } },
         ],
         config: {
-          // Specify output format if needed, though the model typically handles it.
+          // This specific model requires both modalities to be specified.
+          responseModalities: ['TEXT', 'IMAGE'],
         },
       });
 
