@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Bot, Swords, Rocket, ScrollText, User, Star } from 'lucide-react';
@@ -10,6 +11,7 @@ import { LoginButton } from '@/components/login-button';
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 async function getFeaturedCharacters(): Promise<Character[]> {
   if (!adminDb) {
@@ -96,7 +98,12 @@ export default async function Home() {
       <main className="flex-1">
         <section className="relative w-full py-20 md:py-32 lg:py-40 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-background via-transparent to-primary/20 -z-10"></div>
-             <div className="container text-center">
+             <motion.div 
+                className="container text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
                 <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl font-headline bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent drop-shadow-md">
                 Forge Your Legends
                 </h1>
@@ -104,17 +111,21 @@ export default async function Home() {
                 Bring your characters to life with AI-powered biographies and stunning visuals. Describe your hero, and let CharaForge do the rest.
                 </p>
                 <div className="flex w-full items-center justify-center space-x-4 py-8">
-                <Link href="/character-generator" className={cn(buttonVariants({ size: 'lg' }), "bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/20 transition-transform hover:scale-105")}>
-                    Start Forging <Swords className="ml-2 h-5 w-5" />
-                </Link>
-                <Link
-                    href="#featured-creations"
-                    className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), "shadow-md transition-transform hover:scale-105")}
-                >
-                    Explore Creations
-                </Link>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Link href="/character-generator" className={cn(buttonVariants({ size: 'lg' }), "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20")}>
+                        Start Forging <Swords className="ml-2 h-5 w-5" />
+                    </Link>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Link
+                        href="#featured-creations"
+                        className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), "shadow-md")}
+                    >
+                        Explore Creations
+                    </Link>
+                  </motion.div>
                 </div>
-            </div>
+            </motion.div>
         </section>
 
         <section id="featured-creations" className="container space-y-12 py-16">
@@ -139,13 +150,13 @@ export default async function Home() {
                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/0"></div>
                    <CardTitle className="font-headline text-2xl absolute bottom-4 left-4 text-white drop-shadow-lg">{creation.name}</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 bg-secondary/30">
+                <CardContent className="p-4 bg-secondary/10">
                   <CardDescription className='flex items-center gap-2'>by @{creation.userName}</CardDescription>
                 </CardContent>
               </Card>
             ))
             ) : (
-               <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[200px] border-2 border-dashed rounded-lg">
+               <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[200px] border-2 border-dashed rounded-lg bg-card/50">
                   <User className="h-12 w-12" />
                   <p className="text-lg font-medium font-headline tracking-wider mt-4">No Featured Characters Yet</p>
                   <p className="text-sm">Be the first to post a public character!</p>
@@ -154,7 +165,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section id="top-creators" className="w-full bg-secondary/30 dark:bg-card py-16 my-16 border-y">
+        <section id="top-creators" className="w-full bg-card/50 dark:bg-card py-16 my-16 border-y">
             <div className="container">
                 <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center mb-12">
                     <h2 className="font-headline text-3xl leading-[1.1] sm:text-4xl md:text-5xl">Top Creators</h2>
@@ -164,14 +175,19 @@ export default async function Home() {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-8 gap-x-4">
                     {topCreators.map((creator) => (
-                    <div key={creator.name} className="flex flex-col items-center text-center gap-3 transition-transform hover:-translate-y-2">
+                    <motion.div 
+                        key={creator.name} 
+                        className="flex flex-col items-center text-center gap-3"
+                        whileHover={{ y: -8, scale: 1.05}}
+                        transition={{ type: "spring", stiffness: 300 }}
+                    >
                         <Avatar className="h-28 w-28 border-4 border-primary/50 shadow-lg">
                           <AvatarImage src={creator.avatar} alt={creator.name} data-ai-hint={creator.hint} />
                           <AvatarFallback>{creator.name.charAt(0).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <p className="font-semibold text-xl font-headline tracking-wider">@{creator.name}</p>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1"><Star className="w-4 h-4 text-accent"/> {creator.creations} Creations</p>
-                    </div>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1"><Star className="w-4 h-4 text-yellow-400"/> {creator.creations} Creations</p>
+                    </motion.div>
                     ))}
                 </div>
             </div>
@@ -186,7 +202,7 @@ export default async function Home() {
           </div>
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
              {dataPacks.map((pack) => (
-                <Card key={pack.name} className="flex flex-col group hover:border-primary transition-all duration-300">
+                <Card key={pack.name} className="flex flex-col group hover:border-primary transition-all duration-300 hover:shadow-primary/30">
                   <CardHeader className="flex-grow">
                     <div className="flex items-start gap-4">
                        <div className="p-4 bg-primary/10 rounded-lg text-primary transition-colors duration-300 group-hover:bg-primary group-hover:text-primary-foreground">{pack.icon}</div>
@@ -196,8 +212,8 @@ export default async function Home() {
                        </div>
                     </div>
                   </CardHeader>
-                  <CardFooter className="pt-4">
-                    <Button variant="outline" className="w-full transition-colors duration-300 group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-accent">
+                  <CardFooter className="pt-4 mt-auto">
+                    <Button variant="outline" className="w-full transition-colors duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary">
                       Explore Pack
                     </Button>
                   </CardFooter>

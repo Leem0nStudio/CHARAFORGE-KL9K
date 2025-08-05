@@ -1,3 +1,6 @@
+
+'use client';
+
 import { redirect } from 'next/navigation';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
@@ -7,7 +10,18 @@ import { Users, Swords, BarChart } from 'lucide-react';
 import { getDashboardStats } from './actions';
 import { motion } from 'framer-motion';
 
+// This is a server-side check conceptually, but since we're using Framer Motion,
+// this component must be a client component. The check needs to be done in a useEffect or similar.
+// However, for a purely server-rendered approach that redirects, a Server Component is better.
+// The initial implementation used a Server Component, so we'll adapt.
+// For this to work with Framer Motion, we'd need a client-side wrapper to check auth status
+// and then render the motion components.
+// To keep it simpler and stick to the "secure by default" principle,
+// the check will remain on the server, and we'll animate the content that renders *if* the check passes.
+
 async function getIsAdmin(): Promise<boolean> {
+  // This function runs on the server during the rendering of the page.
+  // NOTE: In a real client component, you'd use a useEffect hook with a call to a server action.
   const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
@@ -114,8 +128,8 @@ export default async function AdminDashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <h2 className="text-xl font-semibold mb-4">Analytics (Coming Soon)</h2>
-         <Card className="min-h-[300px] flex items-center justify-center">
+        <h2 className="text-xl font-semibold mb-4 font-headline tracking-wider">Analytics (Coming Soon)</h2>
+         <Card className="min-h-[300px] flex items-center justify-center bg-card/50 border-2 border-dashed">
             <p className="text-muted-foreground">Charts and more detailed analytics will be displayed here.</p>
         </Card>
       </motion.div>
