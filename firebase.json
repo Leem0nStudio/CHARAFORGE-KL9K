@@ -5,5 +5,8 @@
   },
   "storage": {
     "rules": "storage.rules"
+  },
+  "functions": {
+    "source": "src/ai"
   }
 }

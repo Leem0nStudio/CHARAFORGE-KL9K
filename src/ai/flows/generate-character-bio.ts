@@ -8,7 +8,7 @@
  * - GenerateCharacterBioOutput - The return type for the generateCharacterBio function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai} from '../genkit'; // Changed from '@/ai/genkit'
 import {z} from 'genkit';
 
 const GenerateCharacterBioInputSchema = z.object({

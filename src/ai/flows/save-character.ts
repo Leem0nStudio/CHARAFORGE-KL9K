@@ -8,8 +8,8 @@
  * - SaveCharacterInput - The input type for the saveCharacter function.
  */
 
-import { z } from 'zod';
-import { adminDb, adminAuth } from '@/lib/firebase/server';
+import { ZodError, z } from 'zod';
+import { adminDb, adminAuth } from '../utils/firebaseServer'; // Changed import path
 import { FieldValue } from 'firebase-admin/firestore';
 import { cookies } from 'next/headers';
 
@@ -25,12 +25,17 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
   if (!adminAuth || !adminDb) {
+    // This check is redundant now with the check at the start of saveCharacter,
+    // but keeping it here as a fail-safe within this specific function
+    // could be considered good practice if this function were called
+    // independently elsewhere without the initial check. However,
+    // for simplicity and to avoid repetition given the current context,
     throw new Error('Server services are not available. Please try again later.');
   }
 
   let idToken;
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     idToken = cookieStore.get('firebaseIdToken')?.value;
   } catch (error) {
     // This can happen in some server environments.
@@ -56,6 +61,12 @@ async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
 }
 
 export async function saveCharacter(input: SaveCharacterInput) {
+  // Ensure server services are available before proceeding
+  if (!adminDb || !adminAuth) {
+    throw new Error('Server services are not available. Please try again later.');
+  }
+
+  // Validate the input data using Zod
   const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
     // This validation prevents bad data from ever reaching the database.
@@ -69,7 +80,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
 
   try {
     const characterRef = adminDb.collection('characters').doc();
-    const userRef = adminDb.collection('users').doc(userId);
+    const userRef = adminDb.collection('users').doc(userId); // Use the validated userId
 
     // Use a transaction to ensure both writes succeed or fail together.
     await adminDb.runTransaction(async (transaction) => {
@@ -101,7 +112,12 @@ export async function saveCharacter(input: SaveCharacterInput) {
 
     return { success: true, characterId: characterRef.id };
   } catch (error) {
-    console.error('Error saving character to Firestore:', error);
+    // Log different types of errors differently if needed
+    if (error instanceof ZodError) {
+       console.error('Input validation failed:', error.message);
+    } else {
+      console.error('Error saving character to Firestore:', error);
+    }
     // Provide a user-friendly error message.
     throw new Error('Could not save character due to a server error.');
   }
