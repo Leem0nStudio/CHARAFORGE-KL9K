@@ -9,7 +9,7 @@
  */
 
 import { ZodError, z } from 'zod';
-import { adminDb, adminAuth } from '../utils/firebaseServer'; // Changed import path
+import { adminDb, adminAuth } from '@/ai/utils/firebaseServer';
 import { FieldValue } from 'firebase-admin/firestore';
 import { cookies } from 'next/headers';
 

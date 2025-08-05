@@ -8,7 +8,7 @@
  * - GenerateCharacterImageOutput - The return type for the generateCharacterImage function.
  */
 
-import {ai} from '../genkit'; // Changed from '@/ai/genkit'
+import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateCharacterImageInputSchema = z.object({
