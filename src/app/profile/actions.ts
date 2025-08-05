@@ -6,58 +6,49 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { adminDb, adminAuth } from '@/lib/firebase/server';
 
-
 export type ActionResponse = {
   success: boolean;
   message: string;
 }
 
-// This function centralizes the logic for verifying the user's session from the server-side.
+/**
+ * A centralized function to verify user's session from the server-side.
+ * Throws an error if the user is not authenticated or services are unavailable.
+ * @returns {Promise<string>} The authenticated user's UID.
+ */
 async function verifyAndGetUid(): Promise<string> {
-  // Ensure Firebase Admin services are available before proceeding.
-  if(!adminAuth) {
-    // This check is critical. If adminAuth is not available, something is wrong with the server-side setup.
-    throw new Error('Authentication service is unavailable on the server. Please check server configuration.');
+  if (!adminAuth || !adminDb) {
+    throw new Error('Authentication or Database service is unavailable on the server.');
   }
 
-  // Retrieve the session cookie.
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
-  // If no token is found, the user is not authenticated.
   if (!idToken) {
     throw new Error('User session not found. Please log in again.');
   }
 
-  // Verify the token using the Firebase Admin SDK.
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     return decodedToken.uid;
   } catch (error) {
-    // Handle cases where the token is invalid or expired.
+    console.error('Error verifying auth token:', error);
     throw new Error('Invalid or expired user session. Please log in again.');
   }
 }
+
 
 const UpdateProfileSchema = z.object({
   displayName: z.string().min(3, 'Display name must be at least 3 characters.').max(30, 'Display name cannot exceed 30 characters.'),
 });
 
-// This is the Server Action that will be used with useActionState
+// This Server Action uses the recommended useActionState hook for form handling.
 export async function updateUserProfile(
   prevState: ActionResponse,
   formData: FormData
 ): Promise<ActionResponse> {
   
   try {
-    // Explicitly check for server-side service availability first.
-    if (!adminDb || !adminAuth) {
-        return { 
-            success: false, 
-            message: 'Server is not ready. Please try again in a moment.'
-        };
-    }
-    
     const uid = await verifyAndGetUid();
 
     const validatedFields = UpdateProfileSchema.safeParse({
@@ -67,19 +58,21 @@ export async function updateUserProfile(
     if (!validatedFields.success) {
       return {
         success: false,
+        // Return a specific validation error message.
         message: validatedFields.error.flatten().fieldErrors.displayName?.[0] || 'Invalid input.',
       };
     }
   
     const { displayName } = validatedFields.data;
-    // Update both Firebase Auth and Firestore for consistency
+    // Update both Firebase Auth and Firestore for data consistency.
     await adminAuth.updateUser(uid, { displayName });
     await adminDb.collection('users').doc(uid).update({ displayName });
 
-    revalidatePath('/profile'); // Revalidate the profile page to show the new name
+    revalidatePath('/profile'); // Revalidate to show the new name.
     return { success: true, message: 'Profile updated successfully!' };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update profile. Please try again.';
+    // Return a structured error response.
     return { success: false, message };
   }
 }
@@ -98,9 +91,6 @@ export type UserPreferences = z.infer<typeof UpdatePreferencesSchema>;
 
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
     try {
-        if (!adminDb) {
-            return { success: false, message: 'Database service is unavailable. Please check server configuration.' };
-        }
         const uid = await verifyAndGetUid();
         
         const validatedFields = UpdatePreferencesSchema.safeParse(preferences);
@@ -127,29 +117,25 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
 export async function deleteUserAccount(): Promise<ActionResponse> {
   try {
     const uid = await verifyAndGetUid();
-
-    if (!adminAuth || !adminDb) {
-      return { success: false, message: 'Authentication service is unavailable on the server. Please check server configuration.' };
-    }
       
-    // Use a transaction to delete the user's data and profile atomically.
+    // Use a transaction to delete user data atomically, ensuring all or nothing.
     const userRef = adminDb.collection('users').doc(uid);
     const charactersQuery = adminDb.collection('characters').where('userId', '==', uid);
     
     await adminDb.runTransaction(async (transaction) => {
-      // Delete all characters created by the user
+      // Delete all characters created by the user.
       const charactersSnapshot = await transaction.get(charactersQuery);
       charactersSnapshot.forEach(doc => {
         transaction.delete(doc.ref);
       });
-      // Delete the user's profile document
+      // Delete the user's profile document.
       transaction.delete(userRef);
     });
     
-    // Delete the user from Firebase Authentication
+    // After cleaning up Firestore, delete the user from Firebase Authentication.
     await adminAuth.deleteUser(uid);
     
-    revalidatePath('/'); // Revalidate any pages that might show user data
+    revalidatePath('/'); // Revalidate any pages that might show user data.
     return { success: true, message: 'Your account has been permanently deleted.' };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete your account. Please try again.';

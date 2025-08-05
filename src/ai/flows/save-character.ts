@@ -24,11 +24,16 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 
 async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
+  if (!adminAuth || !adminDb) {
+    throw new Error('Server services are not available. Please try again later.');
+  }
+
   let idToken;
   try {
     const cookieStore = cookies();
     idToken = cookieStore.get('firebaseIdToken')?.value;
   } catch (error) {
+    // This can happen in some server environments.
     console.error('Failed to read cookies on server:', error);
     throw new Error('Server could not read the user session. Please try logging out and back in.');
   }
@@ -36,18 +41,16 @@ async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
   if (!idToken) {
     throw new Error('User session not found. Please log in again.');
   }
-  
-  if(!adminAuth) {
-    throw new Error('Authentication service is unavailable on the server.');
-  }
 
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const userRecord = await adminAuth.getUser(decodedToken.uid);
+    // Fallback to a generic name if displayName isn't set
     const displayName = userRecord.displayName || 'Anonymous';
     return { uid: decodedToken.uid, name: displayName };
   } catch (error) {
     console.error('Error verifying auth token or fetching user record:', error);
+    // This is a critical security error, indicating a potentially tampered or expired token.
     throw new Error('Invalid or expired user session. Please log in again.');
   }
 }
@@ -55,13 +58,10 @@ async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
 export async function saveCharacter(input: SaveCharacterInput) {
   const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
+    // This validation prevents bad data from ever reaching the database.
     throw new Error(`Invalid character data: ${validation.error.message}`);
   }
   
-  if (!adminDb) {
-    throw new Error('Database service is not available.');
-  }
-
   const { name, description, biography, imageUrl } = validation.data;
   
   const { uid, name: userName } = await getAuthenticatedUser();
@@ -71,6 +71,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
     const characterRef = adminDb.collection('characters').doc();
     const userRef = adminDb.collection('users').doc(userId);
 
+    // Use a transaction to ensure both writes succeed or fail together.
     await adminDb.runTransaction(async (transaction) => {
         transaction.set(characterRef, {
             userId,
@@ -79,16 +80,19 @@ export async function saveCharacter(input: SaveCharacterInput) {
             description,
             biography,
             imageUrl,
-            status: 'private',
+            status: 'private', // Characters are private by default
             createdAt: FieldValue.serverTimestamp(),
         });
 
+        // Atomically update user stats
         const userDoc = await transaction.get(userRef);
         if (!userDoc.exists || !userDoc.data()?.stats) {
+            // If stats don't exist, create them.
             transaction.set(userRef, { 
                 stats: { charactersCreated: 1 } 
             }, { merge: true });
         } else {
+            // Otherwise, increment the existing counter.
             transaction.update(userRef, {
                 'stats.charactersCreated': FieldValue.increment(1)
             });
@@ -98,6 +102,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
     return { success: true, characterId: characterRef.id };
   } catch (error) {
     console.error('Error saving character to Firestore:', error);
+    // Provide a user-friendly error message.
     throw new Error('Could not save character due to a server error.');
   }
 }
