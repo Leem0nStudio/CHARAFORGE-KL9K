@@ -2,45 +2,22 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { adminDb, adminAuth } from '@/lib/firebase/server';
+import { adminDb } from '@/lib/firebase/server';
+import { verifyAndGetUid } from '@/lib/auth/server';
 
 type ActionResponse = {
     success: boolean;
     message: string;
 };
 
-/**
- * A centralized function to verify user's session from the server-side.
- * Throws an error if the user is not authenticated or services are unavailable.
- * @returns {Promise<string>} The authenticated user's UID.
- */
-async function verifyAndGetUid(): Promise<string> {
-  if (!adminAuth || !adminDb) {
-    throw new Error('Authentication or Database service is unavailable on the server.');
-  }
-
-  const cookieStore = cookies();
-  const idToken = cookieStore.get('firebaseIdToken')?.value;
-
-  if (!idToken) {
-    throw new Error('User session not found. Please log in again.');
-  }
-
-  try {
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    return decodedToken.uid;
-  } catch (error) {
-    console.error('Error verifying auth token:', error);
-    throw new Error('Invalid or expired user session. Please log in again.');
-  }
-}
-
 export async function deleteCharacter(characterId: string) {
   const uid = await verifyAndGetUid();
   if (!characterId) {
     throw new Error('Character ID is required for deletion.');
+  }
+  if (!adminDb) {
+    throw new Error('Database service is unavailable.');
   }
 
   const characterRef = adminDb.collection('characters').doc(characterId);
@@ -75,6 +52,9 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
   const uid = await verifyAndGetUid();
   if (!characterId) {
     throw new Error('Character ID is required for status update.');
+  }
+  if (!adminDb) {
+    throw new Error('Database service is unavailable.');
   }
 
   const characterRef = adminDb.collection('characters').doc(characterId);
@@ -121,6 +101,10 @@ export async function updateCharacter(
         };
     }
     
+    if (!adminDb) {
+      throw new Error('Database service is unavailable.');
+    }
+    
     const { name, biography } = validatedFields.data;
     const characterRef = adminDb.collection('characters').doc(characterId);
     
@@ -151,6 +135,11 @@ export async function updateCharacterImages(
 ): Promise<ActionResponse> {
   try {
      const uid = await verifyAndGetUid();
+
+     if (!adminDb) {
+       throw new Error('Database service is unavailable.');
+     }
+
      const characterRef = adminDb.collection('characters').doc(characterId);
      const characterDoc = await characterRef.get();
      

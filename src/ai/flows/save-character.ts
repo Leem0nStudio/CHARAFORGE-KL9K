@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -7,10 +8,10 @@
  * - SaveCharacterInput - The input type for the saveCharacter function.
  */
 
-import { ZodError, z } from 'zod';
-import { adminDb, adminAuth } from '@/lib/firebase/server';
+import { z } from 'zod';
+import { adminDb } from '@/lib/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
-import { cookies } from 'next/headers';
+import { verifyAndGetUid } from '@/lib/auth/server';
 
 
 const SaveCharacterInputSchema = z.object({
@@ -23,32 +24,8 @@ const SaveCharacterInputSchema = z.object({
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
-async function getAuthenticatedUser(): Promise<{ uid: string }> {
-  if (!adminAuth || !adminDb) {
-    throw new Error('Server services are not available. Please try again later.');
-  }
-
-  const cookieStore = cookies();
-  const idToken = cookieStore.get('firebaseIdToken')?.value;
-
-  if (!idToken) {
-    throw new Error('User session not found. Please log in again.');
-  }
-
-  try {
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    return { uid: decodedToken.uid };
-  } catch (error) {
-    console.error('Error verifying auth token or fetching user record:', error);
-    throw new Error('Invalid or expired user session. Please log in again.');
-  }
-}
 
 export async function saveCharacter(input: SaveCharacterInput) {
-  if (!adminDb || !adminAuth) {
-    throw new Error('Server services are not available. Please try again later.');
-  }
-
   const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
     const firstError = validation.error.errors[0];
@@ -58,7 +35,11 @@ export async function saveCharacter(input: SaveCharacterInput) {
   const { name, description, biography, imageUrl } = validation.data;
   
   try {
-    const { uid: userId } = await getAuthenticatedUser();
+    const userId = await verifyAndGetUid();
+
+    if (!adminDb) {
+      throw new Error('Database service is not available. Please try again later.');
+    }
 
     const characterRef = adminDb.collection('characters').doc();
     const userRef = adminDb.collection('users').doc(userId);

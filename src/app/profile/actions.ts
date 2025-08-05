@@ -2,41 +2,14 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { adminDb, adminAuth } from '@/lib/firebase/server';
+import { verifyAndGetUid } from '@/lib/auth/server';
 
 export type ActionResponse = {
   success: boolean;
   message: string;
 }
-
-/**
- * A centralized function to verify user's session from the server-side.
- * Throws an error if the user is not authenticated or services are unavailable.
- * @returns {Promise<string>} The authenticated user's UID.
- */
-async function verifyAndGetUid(): Promise<string> {
-  if (!adminAuth || !adminDb) {
-    throw new Error('Authentication or Database service is unavailable on the server.');
-  }
-
-  const cookieStore = cookies();
-  const idToken = cookieStore.get('firebaseIdToken')?.value;
-
-  if (!idToken) {
-    throw new Error('User session not found. Please log in again.');
-  }
-
-  try {
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    return decodedToken.uid;
-  } catch (error) {
-    console.error('Error verifying auth token:', error);
-    throw new Error('Invalid or expired user session. Please log in again.');
-  }
-}
-
 
 const UpdateProfileSchema = z.object({
   displayName: z.string().min(3, 'Display name must be at least 3 characters.').max(30, 'Display name cannot exceed 30 characters.'),
@@ -49,6 +22,10 @@ export async function updateUserProfile(
   
   try {
     const uid = await verifyAndGetUid();
+
+    if (!adminDb || !adminAuth) {
+      throw new Error("Server services are not available.");
+    }
 
     const validatedFields = UpdateProfileSchema.safeParse({
       displayName: formData.get('displayName'),
@@ -91,6 +68,10 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
     try {
         const uid = await verifyAndGetUid();
         
+        if (!adminDb) {
+          throw new Error("Database service is not available.");
+        }
+
         const validatedFields = UpdatePreferencesSchema.safeParse(preferences);
 
         if (!validatedFields.success) {
@@ -116,6 +97,10 @@ export async function deleteUserAccount(): Promise<ActionResponse> {
   try {
     const uid = await verifyAndGetUid();
       
+    if (!adminDb || !adminAuth) {
+      throw new Error("Server services are not available.");
+    }
+    
     const userRef = adminDb.collection('users').doc(uid);
     const charactersQuery = adminDb.collection('characters').where('userId', '==', uid);
     

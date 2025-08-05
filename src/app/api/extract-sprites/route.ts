@@ -2,35 +2,12 @@
 'use server';
 
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import sharp from 'sharp';
-import { adminAuth, adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import { randomUUID } from 'crypto';
+import { verifyAndGetUid } from '@/lib/auth/server';
 
 // --- Helper Functions ---
-
-/**
- * Verifies the user's Firebase ID token from cookies.
- * @returns {Promise<string>} The authenticated user's UID.
- * @throws {Error} If the user is not authenticated or services are unavailable.
- */
-async function verifyAndGetUid(): Promise<string> {
-  if (!adminAuth) {
-    throw new Error('Authentication service is unavailable on the server.');
-  }
-  const idToken = cookies().get('firebaseIdToken')?.value;
-  if (!idToken) {
-    throw new Error('User session not found. Please log in.');
-  }
-  try {
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    return decodedToken.uid;
-  } catch (error) {
-    console.error('Error verifying auth token:', error);
-    throw new Error('Invalid or expired user session.');
-  }
-}
 
 /**
  * Calls the external Python service to remove the background from an image.
