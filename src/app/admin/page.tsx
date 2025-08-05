@@ -119,6 +119,6 @@ export default async function AdminDashboardPage() {
             <p className="text-muted-foreground">Charts and more detailed analytics will be displayed here.</p>
         </Card>
       </motion.div>
-    </motion.main>
+    </main>
   );
 }

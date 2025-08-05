@@ -121,6 +121,6 @@ export default function CharactersPage() {
                 </Link>
             </div>
         )}
-      </motion.main>
+      </main>
   );
 }
