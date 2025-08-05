@@ -26,7 +26,14 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
 });
 
+/**
+ * Posts the token to a server-side API route to set an HTTPOnly cookie.
+ * This is a critical step for server-side rendering and actions.
+ * @param token The Firebase ID token, or null to clear the cookie.
+ */
 async function setCookie(token: string | null): Promise<void> {
+  // The fetch request returns a promise. By awaiting it, we ensure this operation
+  // completes before we proceed, solving the race condition.
   await fetch('/api/auth/set-cookie', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -92,10 +99,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onIdTokenChanged(auth, async (newAuthUser) => {
       setLoading(true);
       if (newAuthUser) {
-        setAuthUser(newAuthUser);
         const token = await newAuthUser.getIdToken();
+        // ** THE CRITICAL FIX **
+        // We now `await` the cookie setting operation. This pauses execution
+        // here until the server has confirmed the cookie is set. Only then
+        // do we update the state and render the application.
         await setCookie(token);
 
+        setAuthUser(newAuthUser);
         const firestoreData = await ensureUserDocument(newAuthUser);
         
         setUserProfile({
@@ -110,6 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             ...firestoreData
         });
       } else {
+        // If logging out, we also ensure the cookie is cleared before proceeding.
         await setCookie(null);
         setAuthUser(null);
         setUserProfile(null);

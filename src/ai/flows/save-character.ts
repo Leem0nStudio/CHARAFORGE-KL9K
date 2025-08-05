@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview A server action to save a generated character. This involves two main steps:
- * 1. Uploading the character image to Firebase Storage.
+ * 1. Uploading the character image to a user-specific folder in Firebase Storage.
  * 2. Saving the character data (including the image URL from Storage) to Firestore.
  *
  * - saveCharacter - The main server action called by the frontend.
@@ -17,19 +17,17 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { v4 as uuidv4 } from 'uuid';
 
-// The input schema now expects the full Data URI for the image.
-// The size validation is removed here because we are no longer storing the image in Firestore.
 const SaveCharacterInputSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   description: z.string(),
   biography: z.string(),
-  imageUrl: z.string().startsWith('data:image/'), // Expect a Data URI
+  imageUrl: z.string().startsWith('data:image/'),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 
 /**
- * Uploads an image from a Data URI to Firebase Storage.
+ * Uploads an image from a Data URI to a user-specific folder in Firebase Storage.
  * @param dataUri The image represented as a Data URI string.
  * @param userId The UID of the user uploading the image, for folder organization.
  * @returns The public URL of the uploaded image.
@@ -39,7 +37,6 @@ async function uploadImageToStorage(dataUri: string, userId: string): Promise<st
     const storage = getStorage();
     const bucket = storage.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
 
-    // Extract content type and base64 data from the Data URI
     const match = dataUri.match(/^data:(image\/\w+);base64,(.+)$/);
     if (!match) {
         throw new Error('Invalid Data URI format for image.');
@@ -48,16 +45,14 @@ async function uploadImageToStorage(dataUri: string, userId: string): Promise<st
     const base64Data = match[2];
     const imageBuffer = Buffer.from(base64Data, 'base64');
     
-    // Generate a unique file name
-    const fileName = `${userId}/${uuidv4()}.png`;
+    // Generate a unique file name inside the user-specific folder.
+    const fileName = `usersImg/${userId}/${uuidv4()}.png`;
     const file = bucket.file(fileName);
 
-    // Upload the image buffer
     await file.save(imageBuffer, {
         metadata: { contentType },
     });
 
-    // Return the public URL
     return file.publicUrl();
 }
 
@@ -78,10 +73,8 @@ export async function saveCharacter(input: SaveCharacterInput) {
       throw new Error('Database service is not available. Please try again later.');
     }
 
-    // Step 1: Upload the image to Firebase Storage and get the public URL.
     const publicImageUrl = await uploadImageToStorage(imageDataUri, userId);
 
-    // Step 2: Save the character data to Firestore with the new public image URL.
     const characterRef = adminDb.collection('characters').doc();
     const userRef = adminDb.collection('users').doc(userId);
 
@@ -93,7 +86,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
             name,
             description,
             biography,
-            imageUrl: publicImageUrl, // Storing the public URL, not the Data URI
+            imageUrl: publicImageUrl, 
             gallery: [publicImageUrl],
             status: 'private',
             createdAt: FieldValue.serverTimestamp(),
