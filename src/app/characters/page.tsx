@@ -32,7 +32,7 @@ function CharacterListSkeleton() {
 }
 
 export default function CharactersPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { authUser, loading: authLoading } = useAuth();
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -41,7 +41,7 @@ export default function CharactersPage() {
     if (authLoading) {
       return; // Wait until auth state is resolved
     }
-    if (!user) {
+    if (!authUser) {
       router.push('/login');
       return;
     }
@@ -50,7 +50,7 @@ export default function CharactersPage() {
     const { db } = getFirebaseClient();
     const q = query(
       collection(db, 'characters'),
-      where('userId', '==', user.uid),
+      where('userId', '==', authUser.uid),
       orderBy('createdAt', 'desc')
     );
 
@@ -77,7 +77,7 @@ export default function CharactersPage() {
     });
 
     return () => unsubscribe();
-  }, [user, authLoading, router]);
+  }, [authUser, authLoading, router]);
   
   const containerVariants = {
     hidden: { opacity: 0 },

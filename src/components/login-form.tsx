@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -36,7 +37,7 @@ const errorMessages: Record<string, string> = {
 
 export function LoginForm() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { authUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -44,10 +45,10 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
 
   useEffect(() => {
-    if (user && !authLoading) {
+    if (authUser && !authLoading) {
       router.push("/");
     }
-  }, [user, authLoading, router]);
+  }, [authUser, authLoading, router]);
 
 
   const handleAuthError = (error: AuthError) => {

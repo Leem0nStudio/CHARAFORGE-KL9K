@@ -1,3 +1,4 @@
+
 'use client';
 import { LogIn, LogOut, User as UserIcon, Users, Settings, BarChart } from 'lucide-react';
 import { signOut } from 'firebase/auth';
@@ -16,7 +17,7 @@ import {
 import Link from 'next/link';
 
 export function LoginButton() {
-  const { user, loading } = useAuth();
+  const { userProfile, loading } = useAuth();
 
   const handleSignOut = async () => {
     try {
@@ -31,11 +32,11 @@ export function LoginButton() {
     return <Button variant="ghost" size="icon" className="w-24 h-9" disabled><UserIcon /></Button>;
   }
 
-  if (user) {
-    const isAdmin = user.role === 'admin';
-    const fallbackInitial = user.displayName
-      ? user.displayName.charAt(0).toUpperCase()
-      : user.email?.charAt(0).toUpperCase() || '?';
+  if (userProfile) {
+    const isAdmin = userProfile.role === 'admin';
+    const fallbackInitial = userProfile.displayName
+      ? userProfile.displayName.charAt(0).toUpperCase()
+      : userProfile.email?.charAt(0).toUpperCase() || '?';
 
     return (
       <DropdownMenu>
@@ -43,8 +44,8 @@ export function LoginButton() {
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
             <Avatar className="h-8 w-8">
               <AvatarImage
-                src={user.photoURL ?? undefined}
-                alt={user.displayName ?? 'User avatar'}
+                src={userProfile.photoURL ?? undefined}
+                alt={userProfile.displayName ?? 'User avatar'}
                 data-ai-hint="user avatar"
               />
               <AvatarFallback>
@@ -57,10 +58,10 @@ export function LoginButton() {
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">
-                {user.displayName || 'User'}
+                {userProfile.displayName || 'User'}
               </p>
                <p className="text-xs leading-none text-muted-foreground">
-                   {user.email}
+                   {userProfile.email}
                </p>
             </div>
           </DropdownMenuLabel>

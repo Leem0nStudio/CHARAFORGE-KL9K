@@ -15,12 +15,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { UserProfile } from '@/types/user';
 
 export interface AuthContextType {
-  user: UserProfile | null;
+  authUser: User | null; // The original Firebase Auth User object
+  userProfile: UserProfile | null; // The Firestore user profile data
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: null,
+  authUser: null,
+  userProfile: null,
   loading: true,
 });
 
@@ -81,35 +83,36 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
 
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const { auth } = getFirebaseClient();
-    const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
+    const unsubscribe = onIdTokenChanged(auth, async (newAuthUser) => {
       setLoading(true);
-      if (authUser) {
-        const token = await authUser.getIdToken();
-        
-        // Sequential flow to prevent race conditions
-        // 1. Establish server session by setting the cookie.
+      if (newAuthUser) {
+        setAuthUser(newAuthUser);
+        const token = await newAuthUser.getIdToken();
         await setCookie(token);
 
-        // 2. After server session is confirmed, sync Firestore document.
-        const firestoreData = await ensureUserDocument(authUser);
+        const firestoreData = await ensureUserDocument(newAuthUser);
         
-        // 3. Set client state with all available data.
-        const userProfile: UserProfile = {
-            ...authUser,
-            ...firestoreData,
-            role: firestoreData?.role || 'user',
-        }
-        
-        setUser(userProfile);
+        setUserProfile({
+            uid: newAuthUser.uid,
+            email: newAuthUser.email,
+            displayName: newAuthUser.displayName,
+            photoURL: newAuthUser.photoURL,
+            emailVerified: newAuthUser.emailVerified,
+            isAnonymous: newAuthUser.isAnonymous,
+            metadata: newAuthUser.metadata,
+            providerData: newAuthUser.providerData,
+            ...firestoreData
+        });
       } else {
-        // User logged out, clear everything
         await setCookie(null);
-        setUser(null);
+        setAuthUser(null);
+        setUserProfile(null);
       }
       setLoading(false);
     });
@@ -131,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ authUser, userProfile, loading }}>
       {children}
     </AuthContext.Provider>
   );

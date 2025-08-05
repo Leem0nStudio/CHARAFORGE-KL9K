@@ -1,6 +1,7 @@
+
 'use server';
 
-import type { User } from 'firebase/auth';
+import type { UserInfo, UserMetadata } from 'firebase/auth';
 import type { DocumentData, Timestamp } from 'firebase/firestore';
 
 /**
@@ -16,9 +17,19 @@ export interface UserStats {
 }
 
 /**
- * Extends the base Firebase User with application-specific properties.
+ * Defines a serializable, "plain" user object that combines Firebase Auth info
+ * with our custom Firestore data. This is safe to use in both Server and Client Components.
+ * It intentionally omits methods like `getIdToken`.
  */
-export interface UserProfile extends User {
+export interface UserProfile {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  emailVerified: boolean;
+  isAnonymous: boolean;
+  metadata: UserMetadata;
+  providerData: UserInfo[];
   stats?: UserStats;
   role?: 'admin' | 'moderator' | 'user';
   preferences?: DocumentData;

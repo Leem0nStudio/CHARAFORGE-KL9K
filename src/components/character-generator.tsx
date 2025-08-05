@@ -66,7 +66,7 @@ export function CharacterGenerator() {
   const [imageError, setImageError] = useState<string | null>(null);
 
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
+  const { authUser, loading: authLoading } = useAuth();
   const router = useRouter();
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
@@ -84,7 +84,7 @@ export function CharacterGenerator() {
   });
 
   async function onGenerateBio(data: z.infer<typeof generationFormSchema>) {
-    if (!user) {
+    if (!authUser) {
       toast({
         variant: "destructive",
         title: "Authentication Required",
@@ -152,7 +152,7 @@ export function CharacterGenerator() {
   }
 
   async function onSave(data: z.infer<typeof saveFormSchema>) {
-    if (!characterData || !characterData.imageUrl || !user) {
+    if (!characterData || !characterData.imageUrl || !authUser) {
          toast({
             variant: "destructive",
             title: "Save Failed",
@@ -164,7 +164,7 @@ export function CharacterGenerator() {
     setIsSaving(true);
     try {
       // Get the latest ID token from the authenticated user.
-      const idToken = await user.getIdToken(true);
+      const idToken = await authUser.getIdToken(true);
 
       await saveCharacter({
         name: data.name,
@@ -194,7 +194,7 @@ export function CharacterGenerator() {
   }
 
   const isLoading = isGeneratingBio || isSaving || authLoading;
-  const canInteract = !isLoading && user;
+  const canInteract = !isLoading && authUser;
 
   return (
     <div className="grid gap-8 lg:grid-cols-5">
@@ -240,7 +240,7 @@ export function CharacterGenerator() {
                     </>
                   )}
                 </Button>
-                {!user && !authLoading && <p className="text-xs text-center text-muted-foreground">You must be logged in to forge a character.</p>}
+                {!authUser && !authLoading && <p className="text-xs text-center text-muted-foreground">You must be logged in to forge a character.</p>}
               </form>
             </Form>
           </CardContent>

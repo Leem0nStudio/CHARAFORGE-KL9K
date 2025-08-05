@@ -297,7 +297,7 @@ SecurityTab.displayName = "SecurityTab";
 // #endregion
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { userProfile, loading } = useAuth();
   const router = useRouter();
   
   const defaultPreferences: UserPreferences = {
@@ -307,12 +307,12 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !userProfile) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [userProfile, loading, router]);
   
-  if (loading || !user) {
+  if (loading || !userProfile) {
     return (
       <div className="flex items-center justify-center h-screen w-full">
          <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -320,8 +320,8 @@ export default function ProfilePage() {
     );
   }
   
-  const userPreferences = (user?.preferences as UserPreferences) || defaultPreferences;
-  const userStats = user?.stats;
+  const userPreferences = (userProfile?.preferences as UserPreferences) || defaultPreferences;
+  const userStats = userProfile?.stats;
 
   return (
     <motion.div
@@ -344,7 +344,7 @@ export default function ProfilePage() {
           <TabsTrigger value="security">Security</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="space-y-4">
-          <ProfileForm user={user} />
+          <ProfileForm user={userProfile} />
         </TabsContent>
          <TabsContent value="prefs" className="space-y-4">
            <PreferencesForm initialPreferences={userPreferences} />
