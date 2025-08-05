@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useEffect, useState, useTransition, useCallback } from 'react';
-import { useFormState } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -50,22 +49,22 @@ StatCard.displayName = "StatCard";
 
 function ProfileForm({ user }: { user: UserProfile }) {
   const { toast } = useToast();
-  const initialState: ActionResponse = { success: false, message: '' };
-  
-  // useFormState is the modern hook for handling form submissions with server actions.
-  const [state, formAction] = useFormState(updateUserProfile, initialState);
+  const [displayName, setDisplayName] = useState(user.displayName || '');
   const [isPending, startTransition] = useTransition();
 
-  // Effect to show toast messages based on the form state returned by the server action.
-  useEffect(() => {
-    if (state.message) {
-      toast({
-        title: state.success ? 'Success!' : 'Update Failed',
-        description: state.message,
-        variant: state.success ? 'default' : 'destructive',
-      });
-    }
-  }, [state, toast]);
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    startTransition(async () => {
+        const formData = new FormData(event.currentTarget);
+        const result = await updateUserProfile({success: false, message: ''} , formData);
+        
+        toast({
+            title: result.success ? 'Success!' : 'Update Failed',
+            description: result.message,
+            variant: result.success ? 'default' : 'destructive',
+        });
+    });
+  };
 
   return (
     <Card>
@@ -74,11 +73,15 @@ function ProfileForm({ user }: { user: UserProfile }) {
         <CardDescription>This is how others will see you on the site.</CardDescription>
       </CardHeader>
       <CardContent>
-        {/* The form action is now managed by the useFormState hook */}
-        <form action={(formData) => startTransition(() => formAction(formData))} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="displayName">Display Name</Label>
-            <Input id="displayName" name="displayName" defaultValue={user.displayName || ''} />
+            <Input 
+                id="displayName" 
+                name="displayName" 
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -352,3 +355,5 @@ export default function ProfilePage() {
     </motion.div>
   );
 }
+
+    
