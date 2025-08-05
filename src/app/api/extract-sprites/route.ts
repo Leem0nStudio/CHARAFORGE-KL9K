@@ -1,3 +1,4 @@
+
 'use server';
 
 import { NextResponse } from 'next/server';
@@ -92,10 +93,14 @@ export async function POST(request: Request) {
     const uid = await verifyAndGetUid();
     const formData = await request.formData();
     const imageFile = formData.get('image') as File | null;
+    const optionsString = formData.get('options') as string | null;
 
     if (!imageFile) {
       return NextResponse.json({ error: 'No image file provided.' }, { status: 400 });
     }
+
+    const options = optionsString ? JSON.parse(optionsString) : {};
+    const minArea = options.minArea || 10; // Default to 10 if not provided
 
     const originalImageBuffer = Buffer.from(await imageFile.arrayBuffer());
 
@@ -105,9 +110,7 @@ export async function POST(request: Request) {
     // 2. Use sharp to find connected components (the sprites)
     const { objects } = await sharp(noBgImageBuffer)
       .png()
-      .connectedComponents({
-          threshold: 10, // Adjust this threshold to fine-tune object detection
-      });
+      .connectedComponents();
 
     if (!objects || objects.length === 0) {
         return NextResponse.json({ error: 'No sprites could be detected in the image.' }, { status: 400 });
@@ -118,6 +121,12 @@ export async function POST(request: Request) {
 
     // 3. Process each detected sprite
     for (const obj of objects) {
+      const area = obj.width * obj.height;
+      // Filter out small objects based on minArea option
+      if (area < minArea) {
+          continue;
+      }
+
       // Extract (crop) the sprite using its bounding box
       const spriteBuffer = await sharp(noBgImageBuffer)
         .extract({

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -51,14 +52,14 @@ export default function SpriteExtractorPage() {
         setExtractedSprites([]);
         setLogs([]);
         setError(null);
-        addLog('Starting extraction process...');
+        addLog('Extraction process started...');
+        addLog(`Options: minArea=${options.minArea}, engine=${options.engine}`);
 
         const formData = new FormData();
         formData.append('image', file);
-        // TODO: Pass options to API in Phase 2
-        // formData.append('options', JSON.stringify(options));
+        formData.append('options', JSON.stringify(options));
         
-        addLog(`Uploading image: ${file.name}`);
+        addLog(`Uploading image: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
 
         try {
             const response = await fetch('/api/extract-sprites', {
@@ -66,7 +67,7 @@ export default function SpriteExtractorPage() {
                 body: formData,
             });
             
-            addLog('Processing on server...');
+            addLog('Server is processing the image...');
             const result = await response.json();
 
             if (!response.ok) {
