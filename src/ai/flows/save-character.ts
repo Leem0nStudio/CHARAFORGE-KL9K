@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -17,32 +16,9 @@ const SaveCharacterInputSchema = z.object({
   description: z.string(),
   biography: z.string(),
   imageUrl: z.string(),
-  // Add the token to the schema for validation
   idToken: z.string().min(1, 'Auth token is required.'),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
-
-
-async function getAuthenticatedUser(idToken: string): Promise<{uid: string, name: string}> {
-  if (!adminAuth || !adminDb) {
-    throw new Error('Server services are not available. Please try again later.');
-  }
-
-  if (!idToken) {
-    // This is a fallback, but the Zod schema should catch it first.
-    throw new Error('User session not found. Please log in again.');
-  }
-
-  try {
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    const userRecord = await adminAuth.getUser(decodedToken.uid);
-    const displayName = userRecord.displayName || 'Anonymous';
-    return { uid: decodedToken.uid, name: displayName };
-  } catch (error) {
-    console.error('Error verifying auth token or fetching user record:', error);
-    throw new Error('Invalid or expired user session. Please log in again.');
-  }
-}
 
 export async function saveCharacter(input: SaveCharacterInput) {
   if (!adminDb || !adminAuth) {
@@ -57,9 +33,11 @@ export async function saveCharacter(input: SaveCharacterInput) {
   const { name, description, biography, imageUrl, idToken } = validation.data;
   
   try {
-    // Pass the token to the verification function
-    const { uid, name: userName } = await getAuthenticatedUser(idToken);
-    const userId = uid;
+    // Verify the token and get user data
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const userRecord = await adminAuth.getUser(decodedToken.uid);
+    const userName = userRecord.displayName || 'Anonymous';
+    const userId = decodedToken.uid;
 
     const characterRef = adminDb.collection('characters').doc();
     const userRef = adminDb.collection('users').doc(userId);

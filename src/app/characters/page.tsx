@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
 import { User, Swords } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth'; // This line seems to be out of order based on your request.
 import { getFirebaseClient } from '@/lib/firebase/client';
 import { CharacterCard } from '@/components/character-card';
 import { Skeleton } from '@/components/ui/skeleton';

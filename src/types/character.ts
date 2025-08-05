@@ -1,7 +1,5 @@
 'use server';
 
-import type { Timestamp } from "firebase/firestore";
-
 /**
  * Represents the structure of a Character object throughout the application.
  */
@@ -13,6 +11,6 @@ export type Character = {
   imageUrl: string;
   userId: string;
   status: 'private' | 'public';
-  createdAt: Timestamp | Date; // Firestore Timestamps on server, Date objects on client
+  createdAt: Date; // Use Date object on both server and client for consistency
   userName?: string;
 };
