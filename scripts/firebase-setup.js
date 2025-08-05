@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const chalk = require('chalk');
 
@@ -15,6 +16,9 @@ const requiredClientVars = [
 const requiredServerVars = [
   'FIREBASE_SERVICE_ACCOUNT_KEY',
 ];
+
+// This is now an optional variable for the validator.
+const optionalServerVars = ['GEMINI_API_KEY'];
 
 let allKeysPresent = true;
 let hasPlaceholderValues = false;
@@ -66,10 +70,21 @@ requiredServerVars.forEach(key => {
     }
 });
 
+console.log(chalk.yellow('\nChecking Optional AI Variables...'));
+optionalServerVars.forEach(key => {
+    const value = process.env[key];
+    if (!value || value === 'TU_API_KEY_AQUI') {
+        console.warn(chalk.yellowBright(`[WARN] Optional AI variable ${key} is not set. AI features will not work until this is configured.`));
+    } else {
+        console.log(chalk.green(`[OK] ${key} is set.`));
+    }
+});
+
+
 console.log(chalk.blue.bold('\n--- Validation Summary ---'));
 
 if (allKeysPresent && !hasPlaceholderValues && isServiceAccountValid) {
-  console.log(chalk.green.bold('✅ All Firebase environment variables are correctly configured!'));
+  console.log(chalk.green.bold('✅ All essential Firebase environment variables are correctly configured!'));
 } else {
   console.error(chalk.red.bold('❌ Your Firebase configuration has errors. Please review the messages above.'));
   if (!isServiceAccountValid) {
