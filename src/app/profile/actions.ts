@@ -42,7 +42,6 @@ const UpdateProfileSchema = z.object({
   displayName: z.string().min(3, 'Display name must be at least 3 characters.').max(30, 'Display name cannot exceed 30 characters.'),
 });
 
-// This Server Action uses the recommended useActionState hook for form handling.
 export async function updateUserProfile(
   prevState: ActionResponse,
   formData: FormData
@@ -58,21 +57,20 @@ export async function updateUserProfile(
     if (!validatedFields.success) {
       return {
         success: false,
-        // Return a specific validation error message.
         message: validatedFields.error.flatten().fieldErrors.displayName?.[0] || 'Invalid input.',
       };
     }
   
     const { displayName } = validatedFields.data;
-    // Update both Firebase Auth and Firestore for data consistency.
-    await adminAuth.updateUser(uid, { displayName });
-    await adminDb.collection('users').doc(uid).update({ displayName });
 
-    revalidatePath('/profile'); // Revalidate to show the new name.
+    await adminAuth.updateUser(uid, { displayName });
+    await adminDb.collection('users').doc(uid).set({ displayName }, { merge: true });
+
+    revalidatePath('/profile');
     return { success: true, message: 'Profile updated successfully!' };
+
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update profile. Please try again.';
-    // Return a structured error response.
     return { success: false, message };
   }
 }
@@ -118,24 +116,20 @@ export async function deleteUserAccount(): Promise<ActionResponse> {
   try {
     const uid = await verifyAndGetUid();
       
-    // Use a transaction to delete user data atomically, ensuring all or nothing.
     const userRef = adminDb.collection('users').doc(uid);
     const charactersQuery = adminDb.collection('characters').where('userId', '==', uid);
     
     await adminDb.runTransaction(async (transaction) => {
-      // Delete all characters created by the user.
       const charactersSnapshot = await transaction.get(charactersQuery);
       charactersSnapshot.forEach(doc => {
         transaction.delete(doc.ref);
       });
-      // Delete the user's profile document.
       transaction.delete(userRef);
     });
     
-    // After cleaning up Firestore, delete the user from Firebase Authentication.
     await adminAuth.deleteUser(uid);
     
-    revalidatePath('/'); // Revalidate any pages that might show user data.
+    revalidatePath('/');
     return { success: true, message: 'Your account has been permanently deleted.' };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete your account. Please try again.';

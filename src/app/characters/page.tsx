@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
 import { User, Swords, Bot } from 'lucide-react';
@@ -57,21 +57,54 @@ export default function CharactersPage() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const newCharacters: Character[] = snapshot.docs.map(doc => {
-        const data = doc.data();
-        const createdAtDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
-        return {
-          id: doc.id,
-          name: data.name || 'Unnamed Character',
-          description: data.description || '',
-          biography: data.biography || '',
-          imageUrl: data.imageUrl || '',
-          userId: data.userId,
-          status: data.status === 'public' ? 'public' : 'private',
-          createdAt: createdAtDate,
-        };
+      setCharacters(prevCharacters => {
+        const newCharacters = [...prevCharacters];
+        let hasChanged = false;
+
+        snapshot.docChanges().forEach(change => {
+            const data = change.doc.data();
+            const createdAtDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+            const character: Character = {
+                id: change.doc.id,
+                name: data.name || 'Unnamed Character',
+                description: data.description || '',
+                biography: data.biography || '',
+                imageUrl: data.imageUrl || '',
+                userId: data.userId,
+                status: data.status === 'public' ? 'public' : 'private',
+                createdAt: createdAtDate,
+            };
+
+            if (change.type === "added") {
+                if (!newCharacters.find(c => c.id === character.id)) {
+                    // Find correct position based on createdAt
+                    const index = newCharacters.findIndex(c => c.createdAt < character.createdAt);
+                    if (index === -1) {
+                        newCharacters.push(character);
+                    } else {
+                        newCharacters.splice(index, 0, character);
+                    }
+                    hasChanged = true;
+                }
+            }
+            if (change.type === "modified") {
+                const index = newCharacters.findIndex(c => c.id === character.id);
+                if (index !== -1) {
+                    newCharacters[index] = character;
+                    hasChanged = true;
+                }
+            }
+            if (change.type === "removed") {
+                const index = newCharacters.findIndex(c => c.id === character.id);
+                if (index !== -1) {
+                    newCharacters.splice(index, 1);
+                    hasChanged = true;
+                }
+            }
+        });
+        
+        return hasChanged ? newCharacters : prevCharacters;
       });
-      setCharacters(newCharacters);
       setLoading(false);
     }, (error) => {
       console.error("Error fetching characters:", error);
