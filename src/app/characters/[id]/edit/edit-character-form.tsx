@@ -162,7 +162,7 @@ function ImagesTab({ character }: { character: Character }) {
     },
   });
 
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "images",
   });

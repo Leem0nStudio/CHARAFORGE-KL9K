@@ -46,6 +46,7 @@ async function getCharacterForEdit(characterId: string): Promise<{ character: Ch
     // The user must own the character to edit it.
     if (data.userId !== uid) {
       // As an extra security measure, also check if the user is an admin.
+      const auth = getAuth(adminApp);
       const userRecord = await auth.getUser(uid);
       if (!userRecord.customClaims?.admin) {
         return { character: null, error: 'NOT_AUTHORIZED' };
