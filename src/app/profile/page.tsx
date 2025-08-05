@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useTransition, useCallback } from 'react';
+import { useFormState } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -49,22 +50,22 @@ StatCard.displayName = "StatCard";
 
 function ProfileForm({ user }: { user: UserProfile }) {
   const { toast } = useToast();
+  const initialState: ActionResponse = { success: false, message: '' };
+  
+  // useFormState is the modern hook for handling form submissions with server actions.
+  const [state, formAction] = useFormState(updateUserProfile, initialState);
   const [isPending, startTransition] = useTransition();
 
-  const handleSubmit = (formData: FormData) => {
-    startTransition(async () => {
-      const result = await updateUserProfile(formData);
-      if (result.success) {
-        toast({ title: 'Success', description: result.message });
-      } else {
-        toast({ 
-            variant: 'destructive', 
-            title: 'Error', 
-            description: result.message
-        });
-      }
-    });
-  };
+  // Effect to show toast messages based on the form state returned by the server action.
+  useEffect(() => {
+    if (state.message) {
+      toast({
+        title: state.success ? 'Success!' : 'Update Failed',
+        description: state.message,
+        variant: state.success ? 'default' : 'destructive',
+      });
+    }
+  }, [state, toast]);
 
   return (
     <Card>
@@ -73,7 +74,8 @@ function ProfileForm({ user }: { user: UserProfile }) {
         <CardDescription>This is how others will see you on the site.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={handleSubmit} className="space-y-4">
+        {/* The form action is now managed by the useFormState hook */}
+        <form action={(formData) => startTransition(() => formAction(formData))} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="displayName">Display Name</Label>
             <Input id="displayName" name="displayName" defaultValue={user.displayName || ''} />
