@@ -1,7 +1,7 @@
+
 'use client';
 
-import React, { useEffect, useState, useTransition, useCallback, useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import React, { useEffect, useState, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -49,33 +49,22 @@ StatCard.displayName = "StatCard";
 
 function ProfileForm({ user }: { user: UserProfile }) {
   const { toast } = useToast();
-  const initialState: ActionResponse = { success: false, message: '' };
-  const [state, formAction] = useActionState(updateUserProfile, initialState);
+  const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    if (state.message) {
-      if (state.success) {
-        toast({ title: 'Success', description: state.message });
+  const handleSubmit = (formData: FormData) => {
+    startTransition(async () => {
+      const result = await updateUserProfile(formData);
+      if (result.success) {
+        toast({ title: 'Success', description: result.message });
       } else {
         toast({ 
             variant: 'destructive', 
             title: 'Error', 
-            description: state.message
+            description: result.message
         });
       }
-    }
-  }, [state, toast]);
-
-  function SubmitButton() {
-    const { pending } = useFormStatus();
-    return (
-      <Button type="submit" disabled={pending}>
-        {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Update Profile
-      </Button>
-    );
-  }
-  SubmitButton.displayName = "SubmitButton";
+    });
+  };
 
   return (
     <Card>
@@ -84,7 +73,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
         <CardDescription>This is how others will see you on the site.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={formAction} className="space-y-4">
+        <form action={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="displayName">Display Name</Label>
             <Input id="displayName" name="displayName" defaultValue={user.displayName || ''} />
@@ -93,7 +82,10 @@ function ProfileForm({ user }: { user: UserProfile }) {
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" defaultValue={user.email || ''} disabled />
           </div>
-          <SubmitButton />
+          <Button type="submit" disabled={isPending}>
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Update Profile
+          </Button>
         </form>
       </CardContent>
     </Card>
