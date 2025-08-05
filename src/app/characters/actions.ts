@@ -3,9 +3,13 @@
 
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { adminDb, adminAuth } from '@/lib/firebase/server';
+
+type ActionResponse = {
+    success: boolean;
+    message: string;
+};
 
 /**
  * A centralized function to verify user's session from the server-side.
@@ -100,15 +104,10 @@ const UpdateCharacterSchema = z.object({
   biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
 });
 
-export type UpdateCharacterState = {
-    success: boolean;
-    message: string;
-};
-
 export async function updateCharacter(
     characterId: string, 
     data: { name: string, biography: string }
-): Promise<UpdateCharacterState> {
+): Promise<ActionResponse> {
   try {
     const uid = await verifyAndGetUid();
 
@@ -134,8 +133,8 @@ export async function updateCharacter(
   
     await characterRef.update({ name, biography });
 
-    revalidatePath('/characters');
     revalidatePath(`/characters/${characterId}/edit`);
+    revalidatePath('/characters');
     
     return { success: true, message: 'Character details updated successfully!' };
 
@@ -149,7 +148,7 @@ export async function updateCharacterImages(
   characterId: string,
   gallery: string[],
   primaryImageUrl: string,
-): Promise<UpdateCharacterState> {
+): Promise<ActionResponse> {
   try {
      const uid = await verifyAndGetUid();
      const characterRef = adminDb.collection('characters').doc(characterId);
@@ -162,14 +161,17 @@ export async function updateCharacterImages(
      if (!gallery.includes(primaryImageUrl)) {
         return { success: false, message: 'Primary image must be one of the images in the gallery.'}
      }
+     if (gallery.length > 10) {
+        return { success: false, message: 'You can add a maximum of 10 images.'}
+     }
 
      await characterRef.update({ 
         gallery: gallery,
         imageUrl: primaryImageUrl,
       });
 
-     revalidatePath('/characters');
      revalidatePath(`/characters/${characterId}/edit`);
+     revalidatePath('/characters');
 
      return { success: true, message: 'Image gallery updated successfully!' };
 

@@ -4,10 +4,6 @@ import { adminDb } from '@/lib/firebase/server';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { adminApp } from '@/lib/firebase/server';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Link from 'next/link';
-import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BackButton } from '@/components/back-button';
 import { EditCharacterForm } from './edit-character-form';
 import type { Character } from '@/types/character';
@@ -40,8 +36,12 @@ async function getCharacterForEdit(characterId: string): Promise<{ character: Ch
     const characterRef = adminDb.collection('characters').doc(characterId);
     const characterDoc = await characterRef.get();
 
+    if (!characterDoc.exists) {
+        return { character: null, error: 'NOT_FOUND' };
+    }
+    
     // The user must own the character to edit it.
-    if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+    if (characterDoc.data()?.userId !== uid) {
       return { character: null, error: 'NOT_AUTHORIZED' };
     }
     
@@ -71,14 +71,10 @@ async function getCharacterForEdit(characterId: string): Promise<{ character: Ch
 export default async function EditCharacterPage({ params }: { params: { id: string } }) {
   const { character, error } = await getCharacterForEdit(params.id);
 
-  if (error) {
+  if (error || !character) {
       // Handle all error cases centrally, redirecting to notFound for security.
       // This prevents leaking information about why access was denied.
       notFound();
-  }
-
-  if (!character) {
-    notFound();
   }
   
   return (
@@ -98,4 +94,3 @@ export default async function EditCharacterPage({ params }: { params: { id: stri
     </div>
   );
 }
-

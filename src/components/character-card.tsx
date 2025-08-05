@@ -21,7 +21,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { deleteCharacter, updateCharacterStatus } from '@/app/characters/actions';
 import {
@@ -43,7 +42,6 @@ type CharacterCardProps = {
 
 function CharacterCardComponent({ character }: CharacterCardProps) {
   const { toast } = useToast();
-  const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 

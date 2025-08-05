@@ -1,16 +1,15 @@
 
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useEffect, useState, useTransition, useActionState } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import type { Character } from '@/types/character';
-import { updateCharacter, updateCharacterImages, type UpdateCharacterState } from '@/app/characters/actions';
-import { translateText } from '@/ai/flows/translate-text';
+import { updateCharacter, updateCharacterImages } from '@/app/characters/actions';
+import { translateText, type TranslateTextInput } from '@/ai/flows/translate-text';
 import { useToast } from '@/hooks/use-toast';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -18,13 +17,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Loader2, Pencil, Languages, ImagePlus, Trash2, Star, PlusCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2, Pencil, Languages, ImagePlus, Trash2, Star, PlusCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Image from 'next/image';
 import { Label } from '@/components/ui/label';
 
-
+// #region Schemas and Types
 const UpdateCharacterSchema = z.object({
   name: z.string().min(1, "Name is required.").max(100, "Name cannot exceed 100 characters."),
   biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
@@ -35,16 +33,18 @@ const ImageSchema = z.object({
 });
 
 const UpdateImagesSchema = z.object({
-    images: z.array(ImageSchema).min(1, "At least one image is required."),
-    primaryImageUrl: z.string().url(),
+    images: z.array(ImageSchema).min(1, "At least one image is required.").max(10, "You can add a maximum of 10 images."),
+    primaryImageUrl: z.string().url("A primary image must be selected."),
 });
 
 type UpdateCharacterFormValues = z.infer<typeof UpdateCharacterSchema>;
 type UpdateImagesFormValues = z.infer<typeof UpdateImagesSchema>;
-
+// #endregion
 
 // #region Sub-components
-function EditTab({ character, onUpdate }: { character: Character, onUpdate: (success: boolean, message: string) => void }) {
+function EditTab({ character, onBiographyUpdate }: { character: Character, onBiographyUpdate: (newBio: string) => void }) {
+    const { toast } = useToast();
+    const router = useRouter();
     const [isUpdating, startUpdateTransition] = useTransition();
 
     const form = useForm<UpdateCharacterFormValues>({
@@ -54,11 +54,27 @@ function EditTab({ character, onUpdate }: { character: Character, onUpdate: (suc
             biography: character.biography,
         },
     });
+
+    const bioValue = form.watch('biography');
+    useEffect(() => {
+        onBiographyUpdate(bioValue);
+    }, [bioValue, onBiographyUpdate]);
+
+    useEffect(() => {
+        form.setValue('biography', character.biography);
+    }, [character.biography, form]);
     
     const onSubmit = (data: UpdateCharacterFormValues) => {
         startUpdateTransition(async () => {
             const result = await updateCharacter(character.id, data);
-            onUpdate(result.success, result.message);
+            toast({
+                title: result.success ? 'Success!' : 'Update Failed',
+                description: result.message,
+                variant: result.success ? 'default' : 'destructive',
+            });
+            if (result.success) {
+                router.refresh();
+            }
         });
     };
     
@@ -84,11 +100,10 @@ function EditTab({ character, onUpdate }: { character: Character, onUpdate: (suc
     );
 }
 
-
 function TranslateTab({ currentBiography, onBiographyUpdate }: { currentBiography: string; onBiographyUpdate: (newBio: string) => void }) {
   const { toast } = useToast();
   const [isTranslating, startTranslation] = useTransition();
-  const [targetLanguage, setTargetLanguage] = useState<'Spanish' | 'French' | 'German' | ''>('');
+  const [targetLanguage, setTargetLanguage] = useState<TranslateTextInput['targetLanguage'] | ''>('');
 
   const handleTranslate = () => {
     if (!targetLanguage) {
@@ -99,7 +114,7 @@ function TranslateTab({ currentBiography, onBiographyUpdate }: { currentBiograph
       try {
         const result = await translateText({ text: currentBiography, targetLanguage });
         onBiographyUpdate(result.translatedText);
-        toast({ title: 'Translation Complete!', description: `Biography translated to ${targetLanguage}. Review and save your changes.` });
+        toast({ title: 'Translation Complete!', description: `Biography translated to ${targetLanguage}. Review and save your changes in the 'Edit' tab.` });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
         toast({ variant: 'destructive', title: 'Translation Failed', description: message });
@@ -113,7 +128,7 @@ function TranslateTab({ currentBiography, onBiographyUpdate }: { currentBiograph
             Use AI to translate the current biography. The result will replace the text in the "Edit" tab. Remember to save your changes after translating.
         </p>
         <div className="flex items-center gap-2">
-             <Select onValueChange={(value: 'Spanish' | 'French' | 'German') => setTargetLanguage(value)} value={targetLanguage}>
+             <Select onValueChange={(value: TranslateTextInput['targetLanguage']) => setTargetLanguage(value)} value={targetLanguage}>
                 <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select Language" />
                 </SelectTrigger>
@@ -133,7 +148,9 @@ function TranslateTab({ currentBiography, onBiographyUpdate }: { currentBiograph
   );
 }
 
-function ImagesTab({ character, onUpdate }: { character: Character, onUpdate: (success: boolean, message: string) => void }) {
+function ImagesTab({ character }: { character: Character }) {
+  const { toast } = useToast();
+  const router = useRouter();
   const [isUpdating, startUpdateTransition] = useTransition();
   const [newImageUrl, setNewImageUrl] = useState('');
 
@@ -145,13 +162,12 @@ function ImagesTab({ character, onUpdate }: { character: Character, onUpdate: (s
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "images",
   });
   
   useEffect(() => {
-    // Reset form when character data changes to ensure it's up-to-date
     form.reset({
       images: character.gallery?.map(url => ({ url })) || [{ url: character.imageUrl }],
       primaryImageUrl: character.imageUrl,
@@ -162,10 +178,14 @@ function ImagesTab({ character, onUpdate }: { character: Character, onUpdate: (s
   const handleAddImage = () => {
     const result = ImageSchema.safeParse({ url: newImageUrl });
     if (result.success) {
+      if (fields.length >= 10) {
+        toast({ variant: 'destructive', title: 'Gallery Full', description: 'You cannot add more than 10 images.' });
+        return;
+      }
       append({ url: newImageUrl });
       setNewImageUrl('');
     } else {
-        form.setError('images', { type: 'manual', message: 'Please enter a valid image URL.' });
+        toast({ variant: 'destructive', title: 'Invalid URL', description: 'Please enter a valid image URL.' });
     }
   };
 
@@ -176,7 +196,14 @@ function ImagesTab({ character, onUpdate }: { character: Character, onUpdate: (s
   const onSubmit = (data: UpdateImagesFormValues) => {
     startUpdateTransition(async () => {
       const result = await updateCharacterImages(character.id, data.images.map(img => img.url), data.primaryImageUrl);
-      onUpdate(result.success, result.message);
+      toast({
+            title: result.success ? 'Success!' : 'Update Failed',
+            description: result.message,
+            variant: result.success ? 'default' : 'destructive',
+      });
+      if (result.success) {
+        router.refresh();
+      }
     });
   };
 
@@ -235,35 +262,14 @@ function ImagesTab({ character, onUpdate }: { character: Character, onUpdate: (s
 
 
 export function EditCharacterForm({ character }: { character: Character }) {
-    const { toast } = useToast();
-    const router = useRouter();
-    const [currentBiography, setCurrentBiography] = useState(character.biography);
-    const [activeTab, setActiveTab] = useState("edit");
+    const [characterState, setCharacterState] = useState(character);
 
-    const handleUpdate = (success: boolean, message: string) => {
-        toast({
-            title: success ? 'Success!' : 'Update Failed',
-            description: message,
-            variant: success ? 'default' : 'destructive',
-        });
-        if (success) {
-            router.refresh(); // Re-fetch server data to reflect changes
-        }
-    };
-
-    // This is a key part: when switching to the 'translate' tab,
-    // we need to make sure it has the latest version of the biography
-    // from the 'edit' tab, in case the user made changes without saving.
-    const handleTabChange = (newTab: string) => {
-        if (newTab === 'translate') {
-            // How to get latest bio from EditTab's form state?
-            // For now, let's assume we need to manage it in this parent component.
-        }
-        setActiveTab(newTab);
+    const handleBiographyUpdate = (newBio: string) => {
+        setCharacterState(prevState => ({ ...prevState, biography: newBio }));
     };
 
     return (
-        <Tabs defaultValue="edit" className="w-full" onValueChange={handleTabChange} value={activeTab}>
+        <Tabs defaultValue="edit" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="edit"><Pencil className="mr-2" />Edit Details</TabsTrigger>
                 <TabsTrigger value="translate"><Languages className="mr-2" />Translate Bio</TabsTrigger>
@@ -276,7 +282,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
                         <CardDescription>Modify the fields below to update your character.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <EditTab character={character} onUpdate={handleUpdate} />
+                        <EditTab character={characterState} onBiographyUpdate={handleBiographyUpdate} />
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -288,14 +294,8 @@ export function EditCharacterForm({ character }: { character: Character }) {
                     </CardHeader>
                     <CardContent>
                        <TranslateTab 
-                           currentBiography={character.biography} 
-                           onBiographyUpdate={(newBio) => {
-                             // This is tricky. We need to update the form state in the EditTab.
-                             // A better approach would be to lift state up or use a context.
-                             // For now, let's just show an alert.
-                             alert("Translated text has been prepared. Please paste it into the biography field in the 'Edit' tab and save.");
-                             console.log(newBio);
-                           }} 
+                           currentBiography={characterState.biography} 
+                           onBiographyUpdate={handleBiographyUpdate}
                        />
                     </CardContent>
                 </Card>
@@ -307,10 +307,11 @@ export function EditCharacterForm({ character }: { character: Character }) {
                         <CardDescription>Add or remove images, and set a primary image for your character.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ImagesTab character={character} onUpdate={handleUpdate} />
+                        <ImagesTab character={characterState} />
                     </CardContent>
                 </Card>
             </TabsContent>
         </Tabs>
     );
 }
+
