@@ -6,6 +6,7 @@ import { LoginButton } from '@/components/login-button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { BackButton } from '@/components/back-button';
 import { Bot } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function CharacterGeneratorPage() {
   return (
@@ -24,7 +25,12 @@ export default function CharacterGeneratorPage() {
            </div>
          </div>
        </header>
-        <main className="flex-1 p-4 md:p-10">
+        <motion.main
+          className="flex-1 p-4 md:p-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
             <div className="mx-auto grid w-full max-w-6xl gap-2 mb-8">
                  <div className="flex items-center gap-4">
                     <BackButton />
@@ -35,7 +41,7 @@ export default function CharacterGeneratorPage() {
                 </p>
             </div>
             <CharacterGenerator />
-        </main>
+        </motion.main>
      </div>
   );
 }

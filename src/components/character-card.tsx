@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState, useCallback, memo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Copy, Send, Trash2, Loader2, Pencil, ShieldCheck } from 'lucide-react';
+import { BookOpen, Copy, Trash2, Loader2, Pencil, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -37,7 +36,6 @@ import {
 } from './ui/alert-dialog';
 import type { Character } from '@/types/character';
 
-
 type CharacterCardProps = {
   character: Character;
 };
@@ -64,9 +62,7 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
         title: 'Character Deleted',
         description: `${character.name} has been removed from your gallery.`,
       });
-      // Note: We don't call router.refresh() here because the parent component
-      // which renders the list should handle removing the item from its state.
-      // This avoids a full page reload and allows for a smoother animated exit.
+      // The parent component will handle removing the item from the UI
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
@@ -87,7 +83,7 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
         title: `Character Updated!`,
         description: `${character.name} is now ${newStatus}.`,
       });
-      router.refresh(); // We need to refresh here to update the public/private status indicator
+      router.refresh(); 
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
@@ -107,10 +103,10 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
   };
 
   return (
-    <motion.div variants={cardVariants}>
-      <Card className="flex flex-col group h-full">
+    <motion.div variants={cardVariants} initial="hidden" animate="visible" exit="hidden" layout>
+      <Card className="flex flex-col group h-full overflow-hidden">
         <CardHeader className="p-0 relative">
-          <div className="aspect-square w-full overflow-hidden rounded-t-lg">
+          <div className="aspect-square w-full overflow-hidden">
               {character.imageUrl ? (
               <Image
                   src={character.imageUrl}
@@ -166,7 +162,7 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
             </p>
           </div>
         </CardContent>
-        <CardFooter className="p-4 flex flex-col gap-2 mt-auto">
+        <CardFooter className="p-4 flex flex-col gap-2 mt-auto bg-card border-t">
             <div className='flex w-full gap-2'>
               <Button 
                   variant={isPosted ? "secondary" : "default"} 

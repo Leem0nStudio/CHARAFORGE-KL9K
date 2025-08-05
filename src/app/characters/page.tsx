@@ -1,86 +1,115 @@
 
-import { getAuth } from 'firebase-admin/auth';
-import { cookies } from 'next/headers';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getAuth } from 'firebase/auth';
+import { onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
 import { User, Swords } from 'lucide-react';
-import { adminApp, adminDb } from '@/lib/firebase/server';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useAuth } from '@/hooks/use-auth';
+import { getFirebaseClient } from '@/lib/firebase/client';
 import { CharacterCard } from '@/components/character-card';
-import { redirect } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Character } from '@/types/character';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 
-async function getCharactersForUser(userId: string): Promise<Character[]> {
-  if (!adminDb) {
-    return [];
-  }
-  try {
-    const snapshot = await adminDb
-      .collection('characters')
-      .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
-      .get();
-
-    if (snapshot.empty) {
-      return [];
-    }
-
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      const createdAtDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
-      return {
-        id: doc.id,
-        name: data.name || 'Unnamed Character',
-        description: data.description || '',
-        biography: data.biography || '',
-        imageUrl: data.imageUrl || '',
-        userId: data.userId,
-        status: data.status === 'public' ? 'public' : 'private',
-        createdAt: createdAtDate,
-      };
-    });
-  } catch (error: unknown) {
-    return [];
-  }
+function CharacterListSkeleton() {
+    return (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-auto w-full aspect-square rounded-lg" />
+            <Skeleton className="h-8 w-2/3" />
+            <Skeleton className="h-6 w-full" />
+          </div>
+        ))}
+      </div>
+    );
 }
 
-export default async function CharactersPage() {
-  const cookieStore = cookies();
-  const idToken = cookieStore.get('firebaseIdToken')?.value;
+export default function CharactersPage() {
+  const { user } = useAuth();
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (!idToken) {
-    redirect('/login');
-  }
+  useEffect(() => {
+    if (!user) {
+        setLoading(false);
+        return;
+    }
+    
+    const { db } = getFirebaseClient();
+    const q = query(
+      collection(db, 'characters'),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
 
-  let uid: string;
-  try {
-      if (!adminApp) {
-          throw new Error("Authentication service is not available.");
-      }
-    const auth = getAuth(adminApp);
-    const decodedToken = await auth.verifyIdToken(idToken);
-    uid = decodedToken.uid;
-  } catch (error: unknown) {
-    redirect('/login');
-  }
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newCharacters: Character[] = snapshot.docs.map(doc => {
+        const data = doc.data();
+        const createdAtDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+        return {
+          id: doc.id,
+          name: data.name || 'Unnamed Character',
+          description: data.description || '',
+          biography: data.biography || '',
+          imageUrl: data.imageUrl || '',
+          userId: data.userId,
+          status: data.status === 'public' ? 'public' : 'private',
+          createdAt: createdAtDate,
+        };
+      });
+      setCharacters(newCharacters);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching characters:", error);
+      setLoading(false);
+    });
 
-  const characters = await getCharactersForUser(uid);
+    return () => unsubscribe();
+  }, [user]);
+  
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <main className="flex-1 p-4 md:p-10">
+    <motion.main
+        className="flex-1 p-4 md:p-10"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+    >
         <div className="mx-auto grid w-full max-w-6xl gap-2 mb-8">
           <h1 className="text-3xl font-semibold font-headline tracking-wider">My Characters</h1>
           <p className="text-muted-foreground">A gallery of all the characters you have forged.</p>
         </div>
         
-        {characters.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {characters.map((character) => (
-                <CharacterCard key={character.id} character={character} />
-              ))}
-            </div>
+        {loading ? (
+            <CharacterListSkeleton />
+        ) : characters.length > 0 ? (
+            <motion.div 
+                className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+              <AnimatePresence>
+                {characters.map((character) => (
+                  <CharacterCard key={character.id} character={character} />
+                ))}
+              </AnimatePresence>
+            </motion.div>
         ) : (
             <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
                 <User className="h-16 w-16 mb-4 text-primary/70" />
@@ -92,7 +121,6 @@ export default async function CharactersPage() {
                 </Link>
             </div>
         )}
-      </main>
-    </div>
+      </motion.main>
   );
 }

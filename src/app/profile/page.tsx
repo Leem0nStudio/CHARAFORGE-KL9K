@@ -30,6 +30,7 @@ import type { UserPreferences, ActionResponse } from './actions';
 import type { UserProfile, UserStats } from '@/types/user';
 import { format } from 'date-fns';
 import { BackButton } from '@/components/back-button';
+import { motion } from 'framer-motion';
 
 // #region Sub-components for each Tab
 
@@ -323,7 +324,12 @@ export default function ProfilePage() {
   const userStats = user?.stats;
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+    <motion.div
+        className="flex-1 space-y-4 p-4 md:p-8 pt-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+    >
       <div className="flex items-center justify-between space-y-2">
         <div className="flex items-center gap-4">
           <BackButton />
@@ -350,6 +356,6 @@ export default function ProfilePage() {
            <SecurityTab />
         </TabsContent>
       </Tabs>
-    </div>
+    </motion.div>
   );
 }
