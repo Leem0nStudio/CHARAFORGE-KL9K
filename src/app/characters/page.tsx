@@ -58,7 +58,7 @@ export default function CharactersPage() {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setCharacters(prevCharacters => {
-        const newCharacters = [...prevCharacters];
+        let newCharacters = [...prevCharacters];
         let hasChanged = false;
 
         snapshot.docChanges().forEach(change => {
@@ -70,32 +70,33 @@ export default function CharactersPage() {
                 description: data.description || '',
                 biography: data.biography || '',
                 imageUrl: data.imageUrl || '',
+                gallery: data.gallery || [data.imageUrl],
                 userId: data.userId,
                 status: data.status === 'public' ? 'public' : 'private',
                 createdAt: createdAtDate,
             };
 
+            const index = newCharacters.findIndex(c => c.id === change.doc.id);
+
             if (change.type === "added") {
-                if (!newCharacters.find(c => c.id === character.id)) {
-                    // Find correct position based on createdAt
-                    const index = newCharacters.findIndex(c => c.createdAt < character.createdAt);
-                    if (index === -1) {
-                        newCharacters.push(character);
+                if (index === -1) {
+                    // Find correct position to insert based on createdAt
+                    const insertIndex = newCharacters.findIndex(c => c.createdAt < character.createdAt);
+                    if (insertIndex === -1) {
+                        newCharacters.push(character); // Add to end if newest
                     } else {
-                        newCharacters.splice(index, 0, character);
+                        newCharacters.splice(insertIndex, 0, character);
                     }
                     hasChanged = true;
                 }
             }
             if (change.type === "modified") {
-                const index = newCharacters.findIndex(c => c.id === character.id);
                 if (index !== -1) {
                     newCharacters[index] = character;
                     hasChanged = true;
                 }
             }
             if (change.type === "removed") {
-                const index = newCharacters.findIndex(c => c.id === character.id);
                 if (index !== -1) {
                     newCharacters.splice(index, 1);
                     hasChanged = true;
