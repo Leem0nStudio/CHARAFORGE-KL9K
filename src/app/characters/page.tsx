@@ -5,8 +5,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
 import { User, Swords } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { useAuth } from '@/hooks/use-auth'; // This line seems to be out of order based on your request.
+// Removed framer-motion import for diagnostic purposes
+import { useAuth } from '@/hooks/use-auth';
 import { getFirebaseClient } from '@/lib/firebase/client';
 import { CharacterCard } from '@/components/character-card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import { MotionMainWrapper } from '@/components/motion-main-wrapper';
+// Removed MotionMainWrapper import for diagnostic purposes
 
 
 function CharacterListSkeleton() {
@@ -99,7 +99,7 @@ export default function CharactersPage() {
   }
 
   return (
-    <MotionMainWrapper className="flex-1 p-4 md:p-10">
+    <main className="flex-1 p-4 md:p-10">
         <div className="mx-auto grid w-full max-w-6xl gap-2 mb-8">
           <h1 className="text-3xl font-semibold font-headline tracking-wider">My Characters</h1>
           <p className="text-muted-foreground">A gallery of all the characters you have forged.</p>
@@ -108,18 +108,16 @@ export default function CharactersPage() {
         {loading ? (
             <CharacterListSkeleton />
         ) : characters.length > 0 ? (
-            <motion.div 
+            <div 
                 className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
+                // Removed variants, initial, animate props for diagnostic purposes
             >
-              <AnimatePresence>
+              {/* Removed AnimatePresence for diagnostic purposes */}
                 {characters.map((character) => (
                   <CharacterCard key={character.id} character={character} />
                 ))}
-              </AnimatePresence>
-            </motion.div>
+              {/* Removed AnimatePresence for diagnostic purposes */}
+            </div>
         ) : (
             <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
                 <User className="h-16 w-16 mb-4 text-primary/70" />
@@ -131,6 +129,6 @@ export default function CharactersPage() {
                 </Link>
             </div>
         )}
-      </MotionMainWrapper>
+      </main>
   );
 }

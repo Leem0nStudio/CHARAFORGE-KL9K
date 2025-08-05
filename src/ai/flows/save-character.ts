@@ -60,7 +60,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
             createdAt: FieldValue.serverTimestamp(),
         });
         
-        if (!userDoc.exists() || !userDoc.data()?.stats) {
+        if (!userDoc.exists || !userDoc.data()?.stats) {
             transaction.set(userRef, { 
                 stats: { charactersCreated: 1 } 
             }, { merge: true });
