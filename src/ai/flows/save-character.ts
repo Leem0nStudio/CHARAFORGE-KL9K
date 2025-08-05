@@ -11,34 +11,26 @@
 import { ZodError, z } from 'zod';
 import { adminDb, adminAuth } from '@/lib/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
-import { cookies } from 'next/headers';
-
 
 const SaveCharacterInputSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   description: z.string(),
   biography: z.string(),
   imageUrl: z.string(),
+  // Add the token to the schema for validation
+  idToken: z.string().min(1, 'Auth token is required.'),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 
-async function getAuthenticatedUser(): Promise<{uid: string, name: string}> {
+async function getAuthenticatedUser(idToken: string): Promise<{uid: string, name: string}> {
   if (!adminAuth || !adminDb) {
     throw new Error('Server services are not available. Please try again later.');
   }
 
-  let idToken;
-  try {
-    const cookieStore = cookies();
-    idToken = cookieStore.get('firebaseIdToken')?.value;
-  } catch (error) {
-    console.error('Failed to read cookies on server:', error);
-    throw new Error('Server could not read the user session. Please try logging out and back in.');
-  }
-
   if (!idToken) {
-    throw new Error('User session cookie not found. Please log in again.');
+    // This is a fallback, but the Zod schema should catch it first.
+    throw new Error('User session not found. Please log in again.');
   }
 
   try {
@@ -62,10 +54,11 @@ export async function saveCharacter(input: SaveCharacterInput) {
     throw new Error(`Invalid character data: ${validation.error.message}`);
   }
   
-  const { name, description, biography, imageUrl } = validation.data;
+  const { name, description, biography, imageUrl, idToken } = validation.data;
   
   try {
-    const { uid, name: userName } = await getAuthenticatedUser();
+    // Pass the token to the verification function
+    const { uid, name: userName } = await getAuthenticatedUser(idToken);
     const userId = uid;
 
     const characterRef = adminDb.collection('characters').doc();

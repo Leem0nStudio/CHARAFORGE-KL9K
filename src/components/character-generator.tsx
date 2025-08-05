@@ -92,6 +92,8 @@ export function CharacterGenerator() {
       });
       return;
     }
+    
+    // Reset state for new generation
     setIsGeneratingBio(true);
     setCharacterData(null);
     setBioError(null);
@@ -150,15 +152,26 @@ export function CharacterGenerator() {
   }
 
   async function onSave(data: z.infer<typeof saveFormSchema>) {
-    if (!characterData || !characterData.imageUrl || !user) return;
+    if (!characterData || !characterData.imageUrl || !user) {
+         toast({
+            variant: "destructive",
+            title: "Save Failed",
+            description: "Character data is incomplete or you are not logged in.",
+        });
+        return;
+    }
 
     setIsSaving(true);
     try {
-      const result = await saveCharacter({
+      // Get the latest ID token from the authenticated user.
+      const idToken = await user.getIdToken(true);
+
+      await saveCharacter({
         name: data.name,
         description: characterData.description,
         biography: characterData.biography,
         imageUrl: characterData.imageUrl,
+        idToken: idToken, // Pass the token to the server action
       });
 
       toast({
