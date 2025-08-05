@@ -4,8 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
-import { User, Swords } from 'lucide-react';
-// Removed framer-motion import for diagnostic purposes
+import { User, Swords, Bot } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { getFirebaseClient } from '@/lib/firebase/client';
 import { CharacterCard } from '@/components/character-card';
@@ -15,7 +14,9 @@ import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-// Removed MotionMainWrapper import for diagnostic purposes
+import { LoginButton } from '@/components/login-button';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { BackButton } from '@/components/back-button';
 
 
 function CharacterListSkeleton() {
@@ -80,16 +81,6 @@ export default function CharactersPage() {
     return () => unsubscribe();
   }, [authUser, authLoading, router]);
   
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
   if (authLoading) {
      return (
       <div className="flex items-center justify-center h-screen w-full">
@@ -99,24 +90,39 @@ export default function CharactersPage() {
   }
 
   return (
-    <main className="flex-1 p-4 md:p-10">
-        <div className="mx-auto grid w-full max-w-6xl gap-2 mb-8">
-          <h1 className="text-3xl font-semibold font-headline tracking-wider">My Characters</h1>
-          <p className="text-muted-foreground">A gallery of all the characters you have forged.</p>
+    <div className="flex min-h-screen w-full flex-col">
+       <header className="sticky top-0 z-40 w-full border-b bg-background">
+         <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
+            <Link href="/" className="flex items-center gap-2">
+                <Bot className="h-6 w-6 mr-2 text-primary" />
+                <span className="font-bold font-headline text-2xl tracking-wider">CharaForge</span>
+            </Link>
+           <div className="flex flex-1 items-center justify-end space-x-4">
+             <nav className="flex items-center space-x-1">
+               <LoginButton />
+               <ThemeToggle />
+             </nav>
+           </div>
+         </div>
+       </header>
+       <main className="flex-1 p-4 md:p-10">
+        <div className="mx-auto grid w-full max-w-6xl gap-4 mb-8">
+           <div className="flex items-center gap-4">
+              <BackButton />
+              <div className='flex flex-col'>
+                <h1 className="text-3xl font-semibold font-headline tracking-wider">My Characters</h1>
+                <p className="text-muted-foreground">A gallery of all the characters you have forged.</p>
+              </div>
+          </div>
         </div>
         
         {loading ? (
             <CharacterListSkeleton />
         ) : characters.length > 0 ? (
-            <div 
-                className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                // Removed variants, initial, animate props for diagnostic purposes
-            >
-              {/* Removed AnimatePresence for diagnostic purposes */}
-                {characters.map((character) => (
-                  <CharacterCard key={character.id} character={character} />
-                ))}
-              {/* Removed AnimatePresence for diagnostic purposes */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {characters.map((character) => (
+                <CharacterCard key={character.id} character={character} />
+              ))}
             </div>
         ) : (
             <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
@@ -130,5 +136,6 @@ export default function CharactersPage() {
             </div>
         )}
       </main>
+    </div>
   );
 }
