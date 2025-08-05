@@ -73,7 +73,7 @@ function EditTab({ character, onBiographyUpdate }: { character: Character, onBio
                 variant: result.success ? 'default' : 'destructive',
             });
             if (result.success) {
-                router.refresh();
+                router.push('/characters');
             }
         });
     };
@@ -202,7 +202,7 @@ function ImagesTab({ character }: { character: Character }) {
             variant: result.success ? 'default' : 'destructive',
       });
       if (result.success) {
-        router.refresh();
+        router.push('/characters');
       }
     });
   };
@@ -267,6 +267,10 @@ export function EditCharacterForm({ character }: { character: Character }) {
     const handleBiographyUpdate = useCallback((newBio: string) => {
         setCharacterState(prevState => ({ ...prevState, biography: newBio }));
     }, []);
+    
+    useEffect(() => {
+        setCharacterState(character);
+    }, [character]);
 
     return (
         <Tabs defaultValue="edit" className="w-full">
