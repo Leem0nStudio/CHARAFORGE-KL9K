@@ -13,7 +13,23 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
      throw new Error('Firebase Admin services are not available.');
   }
 
+  // 1. Get Character data first. Exit early if it doesn't exist.
+  const characterRef = adminDb.collection('characters').doc(characterId);
+  const characterDoc = await characterRef.get();
+
+  if (!characterDoc.exists) {
+    notFound();
+  }
+  
+  const characterData = characterDoc.data();
+  if (!characterData) {
+     notFound();
+  }
+
+  // 2. Verify user identity and admin status
   let uid: string | null = null;
+  let isAdmin = false;
+
   try {
     const cookieStore = cookies();
     const idToken = cookieStore.get('firebaseIdToken')?.value;
@@ -22,57 +38,34 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
       const auth = getAuth(adminApp);
       const decodedToken = await auth.verifyIdToken(idToken);
       uid = decodedToken.uid;
+      // Check admin status from the same decoded token if the claim is present
+      isAdmin = decodedToken.admin === true;
     }
   } catch (error) {
+    // If token verification fails, user is treated as unauthenticated and non-admin
     uid = null;
+    isAdmin = false;
   }
   
-  // If no user is logged in, they can't edit anything. Treat it as not found.
-  if (!uid) {
-    notFound();
-  }
-
-  const characterRef = adminDb.collection('characters').doc(characterId);
-  const characterDoc = await characterRef.get();
-
-  if (!characterDoc.exists) {
-    notFound();
-  }
+  // 3. Check for authorization
+  const isOwner = characterData.userId === uid;
   
-  const data = characterDoc.data();
-  if (!data) {
-     notFound();
-  }
-
-  const isOwner = data.userId === uid;
-  let isAdmin = false;
-
-  if (!isOwner) {
-    try {
-        const auth = getAuth(adminApp);
-        const userRecord = await auth.getUser(uid);
-        if (userRecord.customClaims?.admin === true) {
-            isAdmin = true;
-        }
-    } catch(error) {
-        isAdmin = false;
-    }
-  }
-  
+  // User must be the owner OR an admin to proceed.
   if (!isOwner && !isAdmin) {
     notFound();
   }
   
+  // 4. If authorized, build and return the character object
   const character: Character = {
       id: characterDoc.id,
-      name: data.name,
-      description: data.description,
-      biography: data.biography,
-      imageUrl: data.imageUrl,
-      gallery: data.gallery || [data.imageUrl], // Fallback for old data model
-      userId: data.userId,
-      status: data.status,
-      createdAt: data.createdAt.toDate(),
+      name: characterData.name,
+      description: characterData.description,
+      biography: characterData.biography,
+      imageUrl: characterData.imageUrl,
+      gallery: characterData.gallery || [characterData.imageUrl], // Fallback for old data model
+      userId: characterData.userId,
+      status: characterData.status,
+      createdAt: characterData.createdAt.toDate(),
   };
 
   return character;
@@ -99,7 +92,10 @@ export default async function EditCharacterPage({ params }: { params: { id: stri
       </div>
     );
   } catch (error) {
+     // This will catch errors from getCharacterForEdit if it throws an exception
+     // (like Firebase services being down), but not 'notFound()' calls.
      console.error("Failed to render edit page:", error);
+     // Re-throwing is important to let Next.js handle the server error boundary.
      throw error;
   }
 }
