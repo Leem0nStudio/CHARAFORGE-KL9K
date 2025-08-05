@@ -3,10 +3,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
 import { User, Swords, Bot } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { getFirebaseClient } from '@/lib/firebase/client';
+import { getCharactersWithSignedUrls } from './actions';
 import { CharacterCard } from '@/components/character-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Character } from '@/types/character';
@@ -39,6 +38,27 @@ export default function CharactersPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const fetchCharacters = useCallback(async () => {
+    if (!authUser) return;
+    setLoading(true);
+    try {
+      const fetchedCharacters = await getCharactersWithSignedUrls();
+      
+      // Convert Firestore Timestamps to Date objects
+      const sanitizedCharacters = fetchedCharacters.map(char => ({
+          ...char,
+          createdAt: (char.createdAt as any)?.toDate ? (char.createdAt as any).toDate() : new Date(),
+      }));
+
+      setCharacters(sanitizedCharacters);
+    } catch (error) {
+      console.error("Failed to fetch characters:", error);
+      // Optionally, show a toast notification to the user
+    } finally {
+      setLoading(false);
+    }
+  }, [authUser]);
+
   useEffect(() => {
     if (authLoading) {
       return; // Wait until auth state is resolved
@@ -47,73 +67,8 @@ export default function CharactersPage() {
       router.push('/login');
       return;
     }
-    
-    setLoading(true);
-    const { db } = getFirebaseClient();
-    const q = query(
-      collection(db, 'characters'),
-      where('userId', '==', authUser.uid),
-      orderBy('createdAt', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setCharacters(prevCharacters => {
-        let newCharacters = [...prevCharacters];
-        let hasChanged = false;
-
-        snapshot.docChanges().forEach(change => {
-            const data = change.doc.data();
-            const createdAtDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
-            const character: Character = {
-                id: change.doc.id,
-                name: data.name || 'Unnamed Character',
-                description: data.description || '',
-                biography: data.biography || '',
-                imageUrl: data.imageUrl || '',
-                gallery: data.gallery || [data.imageUrl],
-                userId: data.userId,
-                status: data.status === 'public' ? 'public' : 'private',
-                createdAt: createdAtDate,
-            };
-
-            const index = newCharacters.findIndex(c => c.id === change.doc.id);
-
-            if (change.type === "added") {
-                if (index === -1) {
-                    // Find correct position to insert based on createdAt
-                    const insertIndex = newCharacters.findIndex(c => c.createdAt < character.createdAt);
-                    if (insertIndex === -1) {
-                        newCharacters.push(character); // Add to end if newest
-                    } else {
-                        newCharacters.splice(insertIndex, 0, character);
-                    }
-                    hasChanged = true;
-                }
-            }
-            if (change.type === "modified") {
-                if (index !== -1) {
-                    newCharacters[index] = character;
-                    hasChanged = true;
-                }
-            }
-            if (change.type === "removed") {
-                if (index !== -1) {
-                    newCharacters.splice(index, 1);
-                    hasChanged = true;
-                }
-            }
-        });
-        
-        return hasChanged ? newCharacters : prevCharacters;
-      });
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching characters:", error);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [authUser, authLoading, router]);
+    fetchCharacters();
+  }, [authUser, authLoading, router, fetchCharacters]);
   
   if (authLoading) {
      return (
@@ -155,7 +110,7 @@ export default function CharactersPage() {
         ) : characters.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {characters.map((character) => (
-                <CharacterCard key={character.id} character={character} />
+                <CharacterCard key={character.id} character={character} onCharacterDeleted={fetchCharacters} />
               ))}
             </div>
         ) : (

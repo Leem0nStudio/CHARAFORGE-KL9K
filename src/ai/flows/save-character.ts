@@ -28,6 +28,7 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 /**
  * Uploads an image from a Data URI to a user-specific folder in Firebase Storage.
+ * Images are uploaded as PRIVATE by default.
  * @param dataUri The image represented as a Data URI string.
  * @param userId The UID of the user uploading the image, for folder organization.
  * @returns The public URL of the uploaded image.
@@ -51,10 +52,10 @@ async function uploadImageToStorage(dataUri: string, userId: string): Promise<st
 
     await file.save(imageBuffer, {
         metadata: { contentType },
-        public: true, // This is the crucial fix: make the file publicly readable.
+        // By NOT setting `public: true`, the file remains private by default.
     });
 
-    // Use a standard public URL format which is now accessible due to `public: true`.
+    // We still store the standard gs-style URL. Access will be granted via signed URLs.
     return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 }
 
@@ -75,7 +76,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
       throw new Error('Database service is not available. Please try again later.');
     }
 
-    const publicImageUrl = await uploadImageToStorage(imageDataUri, userId);
+    const storageUrl = await uploadImageToStorage(imageDataUri, userId);
 
     const characterRef = adminDb.collection('characters').doc();
     const userRef = adminDb.collection('users').doc(userId);
@@ -88,8 +89,8 @@ export async function saveCharacter(input: SaveCharacterInput) {
             name,
             description,
             biography,
-            imageUrl: publicImageUrl, 
-            gallery: [publicImageUrl],
+            imageUrl: storageUrl, 
+            gallery: [storageUrl],
             status: 'private',
             createdAt: FieldValue.serverTimestamp(),
         });

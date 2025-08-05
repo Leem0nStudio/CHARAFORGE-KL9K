@@ -38,10 +38,12 @@ import type { Character } from '@/types/character';
 
 type CharacterCardProps = {
   character: Character;
+  onCharacterDeleted: () => void;
 };
 
-function CharacterCardComponent({ character }: CharacterCardProps) {
+function CharacterCardComponent({ character, onCharacterDeleted }: CharacterCardProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
@@ -61,7 +63,7 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
         title: 'Character Deleted',
         description: `${character.name} has been removed from your gallery.`,
       });
-      // Parent component's onSnapshot listener will handle removing the card from the UI
+      onCharacterDeleted(); // Callback to refresh the list
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
@@ -71,7 +73,7 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
     } finally {
       setIsDeleting(false);
     }
-  }, [character.id, character.name, toast]);
+  }, [character.id, character.name, toast, onCharacterDeleted]);
 
   const handleToggleStatus = useCallback(async () => {
     setIsUpdatingStatus(true);
@@ -82,7 +84,8 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
         title: `Character Updated!`,
         description: `${character.name} is now ${newStatus}.`,
       });
-      // No need to router.refresh() as the onSnapshot listener will catch the change
+      // Instead of relying on onSnapshot, we can just refresh the page data
+      router.refresh(); 
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
@@ -92,7 +95,7 @@ function CharacterCardComponent({ character }: CharacterCardProps) {
     } finally {
       setIsUpdatingStatus(false);
     }
-  }, [character.id, character.name, character.status, toast]);
+  }, [character.id, character.name, character.status, toast, router]);
 
   const isPublic = character.status === 'public';
 

@@ -4,7 +4,9 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { adminDb } from '@/lib/firebase/server';
+import { getStorage } from 'firebase-admin/storage';
 import { verifyAndGetUid } from '@/lib/auth/server';
+import type { Character } from '@/types/character';
 
 type ActionResponse = {
     success: boolean;
@@ -167,5 +169,62 @@ export async function updateCharacterImages(
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not update image gallery due to a server error.';
     return { success: false, message };
+  }
+}
+
+/**
+ * Fetches characters for the logged-in user and generates signed URLs for their images.
+ * This is the secure way to display private images from Firebase Storage.
+ * @returns {Promise<Character[]>} A promise that resolves to an array of character objects with accessible image URLs.
+ */
+export async function getCharactersWithSignedUrls(): Promise<Character[]> {
+  try {
+    const uid = await verifyAndGetUid();
+    if (!adminDb) {
+      throw new Error('Database service is unavailable.');
+    }
+    
+    const charactersRef = adminDb.collection('characters');
+    const q = charactersRef.where('userId', '==', uid).orderBy('createdAt', 'desc');
+    const snapshot = await q.get();
+
+    if (snapshot.empty) {
+      return [];
+    }
+
+    const charactersData = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    } as Character));
+
+    // Generate signed URLs for each character's image
+    const charactersWithUrls = await Promise.all(
+      charactersData.map(async (character) => {
+        try {
+          const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+          // Extract the file path from the full gs:// URL
+          const filePath = new URL(character.imageUrl).pathname.substring(1).split('/').slice(1).join('/');
+          const file = bucket.file(filePath);
+          
+          const [signedUrl] = await file.getSignedUrl({
+            action: 'read',
+            expires: Date.now() + 60 * 60 * 1000, // 1 hour
+          });
+
+          return { ...character, imageUrl: signedUrl };
+        } catch (urlError) {
+          console.error(`Failed to get signed URL for character ${character.id}:`, urlError);
+          // Return the character with a placeholder or original URL so the app doesn't crash
+          return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
+        }
+      })
+    );
+
+    return charactersWithUrls;
+
+  } catch (error) {
+    console.error("Error fetching characters with signed URLs:", error);
+    // Return an empty array or throw the error, depending on desired client-side handling
+    return [];
   }
 }
