@@ -50,19 +50,20 @@ const saveFormSchema = z.object({
   }),
 });
 
-type CharacterData = {
+interface CharacterData {
+  description: string;
   biography: string;
   imageUrl: string;
-  description: string;
-};
+}
 
 export function CharacterGenerator() {
   const [characterData, setCharacterData] = useState<CharacterData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const { user, refreshSession } = useAuth();
   const { toast } = useToast();
-  const { user } = useAuth();
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
     resolver: zodResolver(generationFormSchema),
@@ -83,35 +84,30 @@ export function CharacterGenerator() {
       toast({
         variant: "destructive",
         title: "Authentication Required",
-        description: "Please log in to generate a character.",
+        description: "Please log in to generate characters.",
       });
       return;
     }
-    setIsGenerating(true);
-    setCharacterData(null);
-    setError(null);
 
+    setIsGenerating(true);
+    setError(null);
+    
     try {
-      // Promise.all allows both AI calls to run concurrently for faster results.
       const [bioResult, imageResult] = await Promise.all([
         generateCharacterBio({ description: data.description }),
         generateCharacterImage({ description: data.description }),
       ]);
 
-      if (!bioResult.biography || !imageResult.imageUrl) {
-        throw new Error("AI generation failed. One or both outputs were empty.");
-      }
-
       setCharacterData({
+        description: data.description,
         biography: bioResult.biography,
         imageUrl: imageResult.imageUrl,
-        description: data.description,
       });
 
     } catch (err: unknown) {
-       const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during generation.";
-       setError(errorMessage);
-       toast({
+      const errorMessage = err instanceof Error ? err.message : "Failed to generate character. Please try again.";
+      setError(errorMessage);
+      toast({
         variant: "destructive",
         title: "Generation Failed",
         description: errorMessage,
@@ -145,7 +141,40 @@ export function CharacterGenerator() {
       saveForm.reset();
 
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Could not save your character. Please try again.";
+      let errorMessage = err instanceof Error ? err.message : "Could not save your character. Please try again.";
+      
+      // Manejo específico de errores de autenticación
+      if (errorMessage.includes('session not found') || errorMessage.includes('expired') || errorMessage.includes('Invalid session')) {
+        // Intentar refrescar la sesión automáticamente
+        try {
+          await refreshSession();
+          
+          // Retry la operación después del refresh
+          await saveCharacter({
+            name: data.name,
+            description: characterData.description,
+            biography: characterData.biography,
+            imageUrl: characterData.imageUrl,
+          });
+
+          toast({
+            title: "Character Saved!",
+            description: `${data.name} has been saved to your private gallery.`,
+          });
+          
+          // Reset all state after successful save
+          setCharacterData(null);
+          setError(null);
+          generationForm.reset();
+          saveForm.reset();
+          
+          return; // Salir exitosamente
+          
+        } catch (retryError) {
+          errorMessage = "Your session has expired. Please refresh the page and log in again.";
+        }
+      }
+      
       toast({
         variant: "destructive",
         title: "Save Failed",
@@ -190,7 +219,7 @@ export function CharacterGenerator() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !user}>
+                  <Button type="submit" className="w-full" disabled={isLoading || !user}>
                     {isGenerating ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

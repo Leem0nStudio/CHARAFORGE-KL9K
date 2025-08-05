@@ -17,19 +17,36 @@ import type { UserProfile } from '@/types/user';
 export interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
+  // Añadir función para forzar refresh de token
+  refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  refreshSession: async () => {},
 });
 
-async function setCookie(token: string | null): Promise<void> {
-  await fetch('/api/auth/set-cookie', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token }),
-  });
+async function setCookie(token: string | null): Promise<boolean> {
+  try {
+    const response = await fetch('/api/auth/set-cookie', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+      // CRÍTICO: Asegurar que las cookies se incluyan en requests
+      credentials: 'same-origin',
+    });
+
+    if (!response.ok) {
+      console.error('Failed to set cookie:', await response.text());
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error setting cookie:', error);
+    return false;
+  }
 }
 
 const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
@@ -84,30 +101,80 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Función para refrescar la sesión manualmente
+  const refreshSession = async () => {
+    const { auth } = getFirebaseClient();
+    const currentUser = auth.currentUser;
+    
+    if (currentUser) {
+      try {
+        // Forzar refresh del token
+        const token = await currentUser.getIdToken(true);
+        const cookieSet = await setCookie(token);
+        
+        if (!cookieSet) {
+          console.error('Failed to set session cookie');
+          throw new Error('Failed to establish server session');
+        }
+        
+        // Actualizar datos del usuario
+        const firestoreData = await ensureUserDocument(currentUser);
+        const userProfile: UserProfile = {
+          ...currentUser,
+          ...firestoreData,
+          role: firestoreData?.role || 'user',
+        }
+        
+        setUser(userProfile);
+      } catch (error) {
+        console.error('Error refreshing session:', error);
+        // En caso de error, limpiar la sesión
+        await setCookie(null);
+        setUser(null);
+      }
+    }
+  };
+
   useEffect(() => {
     const { auth } = getFirebaseClient();
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       setLoading(true);
       if (authUser) {
-        const token = await authUser.getIdToken();
-        
-        // Sequential flow to prevent race conditions
-        // 1. Establish server session by setting the cookie.
-        await setCookie(token);
+        try {
+          const token = await authUser.getIdToken();
+          
+          // CRÍTICO: Esperar a que la cookie se establezca correctamente
+          const cookieSet = await setCookie(token);
+          
+          if (!cookieSet) {
+            console.error('Failed to set session cookie');
+            setUser(null);
+            setLoading(false);
+            return;
+          }
 
-        // 2. After server session is confirmed, sync Firestore document.
-        const firestoreData = await ensureUserDocument(authUser);
-        
-        // 3. Set client state with all available data.
-        const userProfile: UserProfile = {
-            ...authUser,
-            ...firestoreData,
-            role: firestoreData?.role || 'user',
+          // Pequeña pausa para asegurar que la cookie se propague
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          // Después de confirmar que la cookie se estableció, sincronizar Firestore
+          const firestoreData = await ensureUserDocument(authUser);
+          
+          // Establecer estado del cliente con todos los datos disponibles
+          const userProfile: UserProfile = {
+              ...authUser,
+              ...firestoreData,
+              role: firestoreData?.role || 'user',
+          }
+          
+          setUser(userProfile);
+        } catch (error) {
+          console.error('Error during authentication process:', error);
+          // En caso de error, limpiar todo
+          await setCookie(null);
+          setUser(null);
         }
-        
-        setUser(userProfile);
       } else {
-        // User logged out, clear everything
+        // Usuario desconectado, limpiar todo
         await setCookie(null);
         setUser(null);
       }
@@ -131,7 +198,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );
