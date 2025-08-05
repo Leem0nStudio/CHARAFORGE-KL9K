@@ -51,9 +51,11 @@ async function uploadImageToStorage(dataUri: string, userId: string): Promise<st
 
     await file.save(imageBuffer, {
         metadata: { contentType },
+        public: true, // This is the crucial fix: make the file publicly readable.
     });
 
-    return file.publicUrl();
+    // Use a standard public URL format which is now accessible due to `public: true`.
+    return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 }
 
 
