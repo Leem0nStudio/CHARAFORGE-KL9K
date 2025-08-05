@@ -164,14 +164,11 @@ export function CharacterGenerator() {
         throw new Error("Failed to optimize the image for saving.");
       }
 
-      const idToken = await authUser.getIdToken(true);
-
       await saveCharacter({
         name: data.name,
         description: characterData.description,
         biography: characterData.biography,
         imageUrl: resizedImageUrl,
-        idToken: idToken,
       });
 
       toast({
