@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Sparkles } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -159,16 +159,13 @@ export function CharacterGenerator() {
 
     setIsSaving(true);
     try {
-      // Step 1: Resize the image in the background.
       const { resizedImageUrl } = await resizeImage({ imageUrl: characterData.imageUrl });
       if (!resizedImageUrl) {
         throw new Error("Failed to optimize the image for saving.");
       }
 
-      // Step 2: Get the user's ID token for the save operation.
       const idToken = await authUser.getIdToken(true);
 
-      // Step 3: Save the character with the resized image.
       await saveCharacter({
         name: data.name,
         description: characterData.description,
@@ -177,7 +174,6 @@ export function CharacterGenerator() {
         idToken: idToken,
       });
 
-      // Step 4: Provide success feedback and redirect.
       toast({
         title: "Character Saved!",
         description: `${data.name} has been saved to your gallery.`,
@@ -317,7 +313,7 @@ export function CharacterGenerator() {
                                     <AlertTitle>Image Error</AlertTitle>
                                     <AlertDescription>
                                         <p>{imageError}</p>
-                                    </AlerDescription>
+                                    </AlertDescription>
                                 </Alert>
                              ) : (
                                 <p className="text-sm text-muted-foreground">Biography generated. Ready for a portrait.</p>
@@ -375,5 +371,3 @@ export function CharacterGenerator() {
     </div>
   );
 }
-
-    
