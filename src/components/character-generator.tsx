@@ -345,5 +345,3 @@ export function CharacterGenerator() {
     </div>
   );
 }
-
-    
