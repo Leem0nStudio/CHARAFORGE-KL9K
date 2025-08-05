@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Bot, Swords, Rocket, ScrollText, User } from 'lucide-react';
+import { Bot, Swords, Rocket, ScrollText, User, Star } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -9,9 +9,9 @@ import { Separator } from '@/components/ui/separator';
 import { LoginButton } from '@/components/login-button';
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
+import { cn } from '@/lib/utils';
 
 async function getFeaturedCharacters(): Promise<Character[]> {
-  // Gracefully handle cases where adminDb is not available
   if (!adminDb) {
     return [];
   }
@@ -50,7 +50,6 @@ async function getFeaturedCharacters(): Promise<Character[]> {
   }
 }
 
-
 const topCreators = [
     { name: 'seraphina', avatar: 'https://placehold.co/100x100.png', creations: 87, hint: 'female portrait' },
     { name: 'cypher', avatar: 'https://placehold.co/100x100.png', creations: 72, hint: 'male portrait' },
@@ -69,71 +68,84 @@ export default async function Home() {
   const featuredCreations = await getFeaturedCharacters();
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex min-h-screen w-full flex-col bg-background">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 max-w-screen-2xl items-center">
+        <div className="container flex h-16 max-w-screen-2xl items-center">
           <div className="mr-4 flex items-center">
-            <Bot className="h-6 w-6 mr-2 text-primary" />
-            <span className="font-bold font-headline text-2xl tracking-wider">CharaForge</span>
+            <Link href="/" className="flex items-center gap-2">
+                <Bot className="h-7 w-7 text-primary" />
+                <span className="font-bold font-headline text-2xl tracking-wider">CharaForge</span>
+            </Link>
           </div>
           <div className="flex flex-1 items-center justify-end space-x-2">
-            <LoginButton />
-            <ThemeToggle />
+            <nav className="flex items-center">
+              <Link
+                href="/character-generator"
+                className={buttonVariants({
+                  variant: "ghost",
+                })}
+              >
+                Create
+              </Link>
+              <LoginButton />
+              <ThemeToggle />
+            </nav>
           </div>
         </div>
       </header>
       <main className="flex-1">
-        <section className="container grid items-center gap-6 pb-8 pt-10 md:py-16 text-center">
-            <h1 className="text-4xl font-extrabold leading-tight tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl font-headline">
-              <span className="text-primary">Forge</span> Your Legends
-            </h1>
-            <p className="max-w-[700px] mx-auto text-lg text-muted-foreground sm:text-xl">
-              Bring your characters to life with AI-powered biographies and stunning visuals. Describe your hero, and let CharaForge do the rest.
-            </p>
-            <div className="flex w-full items-center justify-center space-x-4 py-4 md:pb-10">
-              <Link href="/character-generator" className={buttonVariants({ size: 'lg' })}>
-                Start Forging <Swords className="ml-2 h-5 w-5" />
-              </Link>
-              <Link
-                href="#featured-creations"
-                className={buttonVariants({ variant: 'outline', size: 'lg' })}
-              >
-                Explore Creations
-              </Link>
+        <section className="relative w-full py-20 md:py-32 lg:py-40 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-background via-transparent to-primary/20 -z-10"></div>
+             <div className="container text-center">
+                <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl font-headline bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent drop-shadow-md">
+                Forge Your Legends
+                </h1>
+                <p className="max-w-[700px] mx-auto text-lg text-muted-foreground sm:text-xl mt-4">
+                Bring your characters to life with AI-powered biographies and stunning visuals. Describe your hero, and let CharaForge do the rest.
+                </p>
+                <div className="flex w-full items-center justify-center space-x-4 py-8">
+                <Link href="/character-generator" className={cn(buttonVariants({ size: 'lg' }), "bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/20 transition-transform hover:scale-105")}>
+                    Start Forging <Swords className="ml-2 h-5 w-5" />
+                </Link>
+                <Link
+                    href="#featured-creations"
+                    className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), "shadow-md transition-transform hover:scale-105")}
+                >
+                    Explore Creations
+                </Link>
+                </div>
             </div>
         </section>
 
-        <Separator className="my-16" />
-
-        <section id="featured-creations" className="container space-y-8 py-8 md:py-12">
+        <section id="featured-creations" className="container space-y-12 py-16">
           <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
-            <h2 className="font-headline text-3xl leading-[1.1] sm:text-3xl md:text-5xl">Featured Creations</h2>
+            <h2 className="font-headline text-3xl leading-[1.1] sm:text-4xl md:text-5xl">Featured Creations</h2>
             <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
               Explore characters crafted by the CharaForge community.
             </p>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {featuredCreations.length > 0 ? (
               featuredCreations.map((creation) => (
-              <Card key={creation.id} className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
-                <CardHeader className="p-0">
+              <Card key={creation.id} className="overflow-hidden group">
+                <CardHeader className="p-0 relative">
                   <Image
                     src={creation.imageUrl}
                     alt={creation.name}
                     width={400}
                     height={400}
-                    className="w-full h-auto aspect-square object-cover"
-                    data-ai-hint="fantasy character"
+                    className="w-full h-auto aspect-square object-cover transition-transform duration-300 group-hover:scale-105"
                   />
+                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/0"></div>
+                   <CardTitle className="font-headline text-2xl absolute bottom-4 left-4 text-white drop-shadow-lg">{creation.name}</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4">
-                  <CardTitle className="text-xl font-headline">{creation.name}</CardTitle>
-                  <CardDescription>by @{creation.userName}</CardDescription>
+                <CardContent className="p-4 bg-secondary/30">
+                  <CardDescription className='flex items-center gap-2'>by @{creation.userName}</CardDescription>
                 </CardContent>
               </Card>
             ))
             ) : (
-               <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[200px] border-2 border-dashed rounded-lg bg-card">
+               <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[200px] border-2 border-dashed rounded-lg">
                   <User className="h-12 w-12" />
                   <p className="text-lg font-medium font-headline tracking-wider mt-4">No Featured Characters Yet</p>
                   <p className="text-sm">Be the first to post a public character!</p>
@@ -142,42 +154,42 @@ export default async function Home() {
           </div>
         </section>
 
-        <section id="top-creators" className="w-full bg-secondary/30 dark:bg-card py-16 my-16">
+        <section id="top-creators" className="w-full bg-secondary/30 dark:bg-card py-16 my-16 border-y">
             <div className="container">
-                <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center mb-8">
-                    <h2 className="font-headline text-3xl leading-[1.1] sm:text-3xl md:text-5xl">Top Creators</h2>
+                <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center mb-12">
+                    <h2 className="font-headline text-3xl leading-[1.1] sm:text-4xl md:text-5xl">Top Creators</h2>
                     <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
                     Meet the masterminds behind the most epic characters.
                     </p>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-8 gap-x-4">
                     {topCreators.map((creator) => (
-                    <div key={creator.name} className="flex flex-col items-center text-center gap-2">
-                        <Avatar className="h-24 w-24 border-4 border-primary/50">
+                    <div key={creator.name} className="flex flex-col items-center text-center gap-3 transition-transform hover:-translate-y-2">
+                        <Avatar className="h-28 w-28 border-4 border-primary/50 shadow-lg">
                           <AvatarImage src={creator.avatar} alt={creator.name} data-ai-hint={creator.hint} />
                           <AvatarFallback>{creator.name.charAt(0).toUpperCase()}</AvatarFallback>
                         </Avatar>
-                        <p className="font-semibold text-lg">@{creator.name}</p>
-                        <p className="text-sm text-muted-foreground">{creator.creations} Creations</p>
+                        <p className="font-semibold text-xl font-headline tracking-wider">@{creator.name}</p>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1"><Star className="w-4 h-4 text-accent"/> {creator.creations} Creations</p>
                     </div>
                     ))}
                 </div>
             </div>
         </section>
 
-        <section id="data-packs" className="container space-y-8 py-8 md:py-12">
+        <section id="data-packs" className="container space-y-12 py-16">
           <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
-            <h2 className="font-headline text-3xl leading-[1.1] sm:text-3xl md:text-5xl">New DataPacks</h2>
+            <h2 className="font-headline text-3xl leading-[1.1] sm:text-4xl md:text-5xl">New DataPacks</h2>
             <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
               Expand your creative universe with new styles, genres, and attributes.
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
              {dataPacks.map((pack) => (
-                <Card key={pack.name} className="flex flex-col transition-all hover:shadow-lg hover:-translate-y-1">
+                <Card key={pack.name} className="flex flex-col group hover:border-primary transition-all duration-300">
                   <CardHeader className="flex-grow">
                     <div className="flex items-start gap-4">
-                       <div className="p-3 bg-primary/10 rounded-lg text-primary">{pack.icon}</div>
+                       <div className="p-4 bg-primary/10 rounded-lg text-primary transition-colors duration-300 group-hover:bg-primary group-hover:text-primary-foreground">{pack.icon}</div>
                        <div className="flex-1">
                          <CardTitle className="font-headline text-2xl mb-1">{pack.name}</CardTitle>
                          <CardDescription>{pack.description}</CardDescription>
@@ -185,7 +197,7 @@ export default async function Home() {
                     </div>
                   </CardHeader>
                   <CardFooter className="pt-4">
-                    <Button variant="secondary" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                    <Button variant="outline" className="w-full transition-colors duration-300 group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-accent">
                       Explore Pack
                     </Button>
                   </CardFooter>
