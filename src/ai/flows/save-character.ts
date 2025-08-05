@@ -15,7 +15,9 @@ const SaveCharacterInputSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   description: z.string(),
   biography: z.string(),
-  imageUrl: z.string(),
+  imageUrl: z.string().refine(val => val.length < 1048487, {
+    message: "Image data is too large for database storage."
+  }),
   idToken: z.string().min(1, 'Auth token is required.'),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
@@ -27,7 +29,9 @@ export async function saveCharacter(input: SaveCharacterInput) {
 
   const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
-    throw new Error(`Invalid character data: ${validation.error.message}`);
+    // Return a more specific error message from Zod's error map
+    const firstError = validation.error.errors[0];
+    throw new Error(`Invalid input for ${firstError.path.join('.')}: ${firstError.message}`);
   }
   
   const { name, description, biography, imageUrl, idToken } = validation.data;
@@ -55,7 +59,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
             name,
             description,
             biography,
-            imageUrl,
+            imageUrl, // This is now the resized image URL
             status: 'private',
             createdAt: FieldValue.serverTimestamp(),
         });

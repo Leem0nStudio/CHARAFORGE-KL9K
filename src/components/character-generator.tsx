@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { generateCharacterBio } from "@/ai/flows/generate-character-bio";
 import { generateCharacterImage } from "@/ai/flows/generate-character-image";
+import { resizeImage } from "@/ai/flows/resize-image";
 import { saveCharacter } from "@/ai/flows/save-character";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
@@ -54,6 +55,7 @@ const saveFormSchema = z.object({
 type CharacterData = {
   biography: string;
   imageUrl: string | null;
+  resizedImageUrl: string | null;
   description: string;
 };
 
@@ -61,6 +63,7 @@ export function CharacterGenerator() {
   const [characterData, setCharacterData] = useState<CharacterData | null>(null);
   const [isGeneratingBio, setIsGeneratingBio] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isResizingImage, setIsResizingImage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [bioError, setBioError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -110,6 +113,7 @@ export function CharacterGenerator() {
       setCharacterData({
         biography: bioResult.biography,
         imageUrl: null,
+        resizedImageUrl: null,
         description: data.description,
       });
 
@@ -131,13 +135,16 @@ export function CharacterGenerator() {
 
     setIsGeneratingImage(true);
     setImageError(null);
-
     try {
         const imageResult = await generateCharacterImage({ description: characterData.description });
         if (!imageResult.imageUrl) {
             throw new Error("AI model did not return an image. This could be due to safety filters or an API issue.");
         }
         setCharacterData(prev => prev ? {...prev, imageUrl: imageResult.imageUrl} : null);
+        
+        // Automatically trigger resize after successful generation
+        await onResizeImage(imageResult.imageUrl);
+
     } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during image generation.";
         setImageError(errorMessage);
@@ -151,12 +158,34 @@ export function CharacterGenerator() {
     }
   }
 
+  async function onResizeImage(imageUrl: string) {
+    setIsResizingImage(true);
+    try {
+      const resizedResult = await resizeImage({ imageUrl });
+      if (!resizedResult.resizedImageUrl) {
+        throw new Error("Failed to get resized image from the AI.");
+      }
+      setCharacterData(prev => prev ? { ...prev, resizedImageUrl: resizedResult.resizedImageUrl } : null);
+    } catch (err: unknown) {
+       const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during image optimization.";
+       setImageError(errorMessage); // Show resize error in the same spot
+       toast({
+            variant: "destructive",
+            title: "Image Optimization Failed",
+            description: errorMessage,
+        });
+    } finally {
+      setIsResizingImage(false);
+    }
+  }
+
+
   async function onSave(data: z.infer<typeof saveFormSchema>) {
-    if (!characterData || !characterData.imageUrl || !authUser) {
+    if (!characterData || !characterData.resizedImageUrl || !authUser) {
          toast({
             variant: "destructive",
             title: "Save Failed",
-            description: "Character data is incomplete or you are not logged in.",
+            description: "Character data is incomplete, image not optimized, or you are not logged in.",
         });
         return;
     }
@@ -170,7 +199,7 @@ export function CharacterGenerator() {
         name: data.name,
         description: characterData.description,
         biography: characterData.biography,
-        imageUrl: characterData.imageUrl,
+        imageUrl: characterData.resizedImageUrl, // Use the resized image
         idToken: idToken, // Pass the token to the server action
       });
 
@@ -195,6 +224,7 @@ export function CharacterGenerator() {
 
   const isLoading = isGeneratingBio || isSaving || authLoading;
   const canInteract = !isLoading && authUser;
+  const isImageReadyForSave = !!characterData?.resizedImageUrl;
 
   return (
     <div className="grid gap-8 lg:grid-cols-5">
@@ -252,7 +282,7 @@ export function CharacterGenerator() {
           <CardHeader>
             <CardTitle className="font-headline text-3xl">2. Generated Character</CardTitle>
             <CardDescription>
-              Review the biography, then generate a portrait. Save your creation once complete.
+              Review the biography, then generate and optimize a portrait. Save your creation once complete.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -287,18 +317,24 @@ export function CharacterGenerator() {
                <div className="grid gap-8 md:grid-cols-5">
                   <div className="md:col-span-2 space-y-4">
                      <h3 className="font-headline text-2xl flex items-center"><ImageIcon className="w-5 h-5 mr-2 text-primary" /> Portrait</h3>
-                     {isGeneratingImage && <Skeleton className="w-full aspect-square rounded-lg" />}
-                     {!isGeneratingImage && characterData.imageUrl && (
-                        <div className="aspect-square relative rounded-lg overflow-hidden border-2 border-primary/20 shadow-lg">
+                     {(isGeneratingImage || (characterData.imageUrl && isResizingImage)) && <Skeleton className="w-full aspect-square rounded-lg" />}
+                     
+                     {!isGeneratingImage && !isResizingImage && characterData.resizedImageUrl && (
+                        <div className="aspect-square relative rounded-lg overflow-hidden border-2 border-green-500 shadow-lg">
                             <Image
-                                src={characterData.imageUrl}
+                                src={characterData.resizedImageUrl}
                                 alt="Generated character portrait"
                                 fill
                                 className="object-cover"
                             />
+                             <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-green-600 text-white text-xs font-bold py-1 px-2 rounded-full shadow">
+                                <Check className="w-3 h-3"/>
+                                Optimized
+                            </div>
                         </div>
                      )}
-                     {!isGeneratingImage && !characterData.imageUrl && (
+
+                     {!characterData.imageUrl && !isGeneratingImage && (
                         <div className="flex flex-col items-center justify-center text-center p-4 min-h-[200px] border-2 border-dashed rounded-lg bg-card/50">
                              {imageError ? (
                                 <Alert variant="destructive" className="text-left w-full text-xs">
@@ -315,6 +351,12 @@ export function CharacterGenerator() {
                                 {isGeneratingImage ? <Loader2 className="animate-spin" /> : "Generate Portrait"}
                             </Button>
                         </div>
+                     )}
+                    
+                     {characterData.imageUrl && !characterData.resizedImageUrl && !isResizingImage && !isGeneratingImage && (
+                        <Button onClick={() => onResizeImage(characterData.imageUrl!)} className="w-full" disabled={true}>
+                          <Loader2 className="animate-spin" /> Retrying Optimization...
+                        </Button>
                      )}
                   </div>
 
@@ -334,19 +376,27 @@ export function CharacterGenerator() {
                                 <FormItem>
                                   <FormLabel>3. Character Name</FormLabel>
                                   <FormControl>
-                                    <Input placeholder="e.g., Captain Kaelen" {...field} disabled={!canInteract || !characterData.imageUrl} />
+                                    <Input placeholder="e.g., Captain Kaelen" {...field} disabled={!canInteract || !isImageReadyForSave} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
-                            <Button type="submit" className="w-full" disabled={!canInteract || isSaving || !characterData.imageUrl}>
+                            <Button type="submit" className="w-full" disabled={!canInteract || isSaving || !isImageReadyForSave}>
                               {isSaving ? (
                                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
                               ) : (
                                 <><Save className="mr-2 h-4 w-4" /> Save to Gallery</>
                               )}
                             </Button>
+                            {isGeneratingImage || isResizingImage ? (
+                               <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-2">
+                                <Loader2 className="h-3 w-3 animate-spin" /> 
+                                {isGeneratingImage ? 'Generating...' : 'Optimizing...'}
+                               </p>
+                            ) : !isImageReadyForSave && characterData.imageUrl ? (
+                               <p className="text-xs text-center text-muted-foreground">Image must be optimized before saving.</p>
+                            ) : null}
                         </form>
                       </Form>
                   </div>

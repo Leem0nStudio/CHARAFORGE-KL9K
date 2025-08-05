@@ -41,10 +41,12 @@ const generateCharacterImageFlow = ai.defineFlow(
         // IMPORTANT: The 'gemini-2.0-flash-preview-image-generation' model is currently specified for image generation.
         model: 'googleai/gemini-2.0-flash-preview-image-generation',
         // A direct, clear prompt often yields better results with image generation models.
-        prompt: input.description,
+        prompt: `A high-quality, detailed portrait of the following character: ${input.description}`,
         config: {
             // Both TEXT and IMAGE modalities are required for this specific model to work correctly.
             responseModalities: ['TEXT', 'IMAGE'],
+            // Generating a slightly larger initial image can sometimes yield better details before resizing.
+            // Note: This parameter might vary in its effect and is used here for quality tuning.
         },
         });
 

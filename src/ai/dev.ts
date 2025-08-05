@@ -1,3 +1,4 @@
+'use server';
 
 import { config } from 'dotenv';
 config();
@@ -6,3 +7,4 @@ config();
 // Server actions like save-character are part of the Next.js framework, not Genkit's flow system.
 import '@/ai/flows/generate-character-bio';
 import '@/ai/flows/generate-character-image';
+import '@/ai/flows/resize-image';
