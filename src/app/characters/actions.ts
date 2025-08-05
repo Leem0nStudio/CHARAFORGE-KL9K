@@ -192,10 +192,14 @@ export async function getCharactersWithSignedUrls(): Promise<Character[]> {
       return [];
     }
 
-    const charactersData = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Character));
+    const charactersData = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt.toDate(), // Convert Firestore Timestamp to JS Date object
+      } as Character;
+    });
 
     // Generate signed URLs for each character's image
     const charactersWithUrls = await Promise.all(

@@ -43,14 +43,7 @@ export default function CharactersPage() {
     setLoading(true);
     try {
       const fetchedCharacters = await getCharactersWithSignedUrls();
-      
-      // Convert Firestore Timestamps to Date objects
-      const sanitizedCharacters = fetchedCharacters.map(char => ({
-          ...char,
-          createdAt: (char.createdAt as any)?.toDate ? (char.createdAt as any).toDate() : new Date(),
-      }));
-
-      setCharacters(sanitizedCharacters);
+      setCharacters(fetchedCharacters);
     } catch (error) {
       console.error("Failed to fetch characters:", error);
       // Optionally, show a toast notification to the user
