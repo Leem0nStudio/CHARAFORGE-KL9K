@@ -16,7 +16,7 @@ export function SiteHeader() {
             <Bot className="h-7 w-7 text-primary" />
             <div className="font-bold font-headline text-2xl tracking-wider">
               <span className="text-foreground">Chara</span>
-              <span className="bg-gradient-to-t from-accent from-70% to-yellow-600/80 bg-clip-text text-transparent">Forge</span>
+              <span className="bg-gradient-to-tr from-accent to-yellow-500 bg-clip-text text-transparent">Forge</span>
             </div>
           </Link>
         </div>
