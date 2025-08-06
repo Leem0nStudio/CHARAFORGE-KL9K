@@ -44,35 +44,29 @@
     --chart-5: 340 75% 55%;
   }
 
+  /* The .dark class is not strictly necessary if dark is the only theme,
+     but it's kept here for potential future light/dark mode switching.
+     The values are the same as :root for now. */
   .dark {
-    --background: 210 5% 12%; /* #1D1F21 */
-    --foreground: 0 0% 100%; /* #FFFFFF */
-
-    --card: 240 2% 23%; /* #3A3A3C */
+    --background: 210 5% 12%;
+    --foreground: 0 0% 100%;
+    --card: 240 2% 23%;
     --card-foreground: 0 0% 100%;
-
     --popover: 210 5% 12%;
     --popover-foreground: 0 0% 100%;
-
-    --primary: 197 100% 47%; /* #00AEEF */
+    --primary: 197 100% 47%;
     --primary-foreground: 210 40% 98%;
-
-    --secondary: 203 65% 40%; /* #2376A9 */
+    --secondary: 203 65% 40%;
     --secondary-foreground: 210 40% 98%;
-
     --muted: 203 65% 40%;
     --muted-foreground: 215 20% 65%;
-
-    --accent: 0 60% 41%; /* #A52A2A */
+    --accent: 0 60% 41%;
     --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 60% 41%; /* #A52A2A */
+    --destructive: 0 60% 41%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 240 2% 30%;
     --input: 240 2% 30%;
-    --ring: 198 70% 34%; /* #1B6F92 */
-    
+    --ring: 198 70% 34%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
