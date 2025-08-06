@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useTransition, useCallback } from 'react';
+import React, { useEffect, useState, useTransition, useCallback, useActionState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -50,21 +50,17 @@ StatCard.displayName = "StatCard";
 function ProfileForm({ user }: { user: UserProfile }) {
   const { toast } = useToast();
   const [displayName, setDisplayName] = useState(user.displayName || '');
-  const [isPending, startTransition] = useTransition();
+  const [state, formAction, isPending] = useActionState(updateUserProfile, { success: false, message: '' });
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    startTransition(async () => {
-        const formData = new FormData(event.currentTarget);
-        const result = await updateUserProfile({success: false, message: ''} , formData);
-        
-        toast({
-            title: result.success ? 'Success!' : 'Update Failed',
-            description: result.message,
-            variant: result.success ? 'default' : 'destructive',
-        });
-    });
-  };
+  useEffect(() => {
+    if (state.message) {
+      toast({
+        title: state.success ? 'Success!' : 'Update Failed',
+        description: state.message,
+        variant: state.success ? 'default' : 'destructive',
+      });
+    }
+  }, [state, toast]);
 
   return (
     <Card>
@@ -73,7 +69,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
         <CardDescription>This is how others will see you on the site.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form action={formAction} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="displayName">Display Name</Label>
             <Input 

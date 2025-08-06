@@ -26,7 +26,7 @@ export async function updateLogo(prevState: ActionResponse, formData: FormData):
             return { success: false, message: 'Invalid file type. Please upload a PNG image.' };
         }
 
-        const bucket = getStorage().bucket();
+        const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
         const file = bucket.file(LOGO_PATH);
 
         const buffer = Buffer.from(await logoFile.arrayBuffer());
@@ -43,6 +43,9 @@ export async function updateLogo(prevState: ActionResponse, formData: FormData):
         const publicUrl = file.publicUrl();
 
         // Save the URL to a config document in Firestore
+        if (!adminDb) {
+            throw new Error('Database service is unavailable.');
+        }
         await adminDb.collection('settings').doc('appDetails').set({
             logoUrl: publicUrl,
         }, { merge: true });
