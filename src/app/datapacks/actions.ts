@@ -30,28 +30,22 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
             type: data.type || 'free',
             price: data.price || 0,
             createdAt: data.createdAt.toDate(),
-            schemaUrl: data.schemaUrl, // Keep the raw storage URL here
+            schemaUrl: data.schemaUrl,
+            schemaPath: data.schemaPath, // Pass the direct path
         } as DataPack;
     });
 
     // Generate signed URLs for each pack's schema
     const packsWithSignedUrls = await Promise.all(
         dataPacksData.map(async (pack) => {
-            if (!pack.schemaUrl) {
-                console.warn(`DataPack ${pack.id} has no schemaUrl.`);
-                return { ...pack, schemaUrl: '' }; // Return an empty string if no schema URL
+            if (!pack.schemaPath) { // Use schemaPath for check
+                console.warn(`DataPack ${pack.id} has no schemaPath in Firestore.`);
+                return { ...pack, schemaUrl: '' }; 
             }
             try {
                 const bucket = getStorage().bucket();
-                // Regex to extract the file path from the full https storage URL
-                const filePathMatch = pack.schemaUrl.match(/o\/(.+)\?alt=media/);
-                const filePath = filePathMatch ? decodeURIComponent(filePathMatch[1]) : null;
-
-                if (!filePath) {
-                    throw new Error('Could not extract file path from URL.');
-                }
+                const file = bucket.file(pack.schemaPath); // Use the direct path
                 
-                const file = bucket.file(filePath);
                 const [signedUrl] = await file.getSignedUrl({
                     action: 'read',
                     expires: Date.now() + 60 * 60 * 1000, // 1 hour validity

@@ -10,6 +10,9 @@ export interface DataPack {
     price: number;
     tags: string[];
     createdAt: Date;
+    // Add paths for robust URL signing
+    schemaPath?: string;
+    coverImagePath?: string;
 }
 
 // Corresponds to PromptBuilder v2 structure
@@ -55,5 +58,3 @@ export interface UpsertDataPack {
     // This is now deprecated in favor of including options directly in the schema.
     options: Record<string, string>; 
 }
-
-    

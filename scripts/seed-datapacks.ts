@@ -54,6 +54,7 @@ async function seedDataPacks() {
             }
 
             let coverImageUrl = null;
+            let coverImagePathInBucket = null;
             try {
                  const coverImageExists = await fs.access(coverImagePath).then(() => true).catch(() => false);
                  if (coverImageExists) {
@@ -63,6 +64,7 @@ async function seedDataPacks() {
                         public: true 
                     });
                     coverImageUrl = bucket.file(destination).publicUrl();
+                    coverImagePathInBucket = destination;
                     console.log(`- Cover image uploaded to ${coverImageUrl}`);
                  } else {
                     console.log('- No cover image found.');
@@ -72,6 +74,7 @@ async function seedDataPacks() {
             }
             
              let schemaUrl = null;
+             let schemaPathInBucket = null;
              try {
                 const schemaExists = await fs.access(schemaPath).then(() => true).catch(() => false);
                  if(schemaExists) {
@@ -81,6 +84,7 @@ async function seedDataPacks() {
                         public: true
                     });
                     schemaUrl = bucket.file(destination).publicUrl();
+                    schemaPathInBucket = destination;
                     console.log(`- Schema.json uploaded to ${schemaUrl}`);
                  } else {
                     console.log('- No schema.json found.');
@@ -97,7 +101,9 @@ async function seedDataPacks() {
                 ...metadata,
                 id: packId,
                 coverImageUrl: coverImageUrl,
+                coverImagePath: coverImagePathInBucket,
                 schemaUrl: schemaUrl,
+                schemaPath: schemaPathInBucket,
                 createdAt: FieldValue.serverTimestamp(),
             };
 
