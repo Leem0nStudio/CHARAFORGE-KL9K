@@ -1,0 +1,40 @@
+
+{
+    "fields": [
+        {
+            "id": "character_type",
+            "label": "Character Type",
+            "type": "select",
+            "optionsSource": "character_type.txt",
+            "required": true
+        },
+        {
+            "id": "art_style",
+            "label": "Art Style",
+            "type": "select",
+            "optionsSource": "art_style.txt",
+            "required": true
+        },
+        {
+            "id": "hair_style",
+            "label": "Hair Style",
+            "type": "select",
+            "optionsSource": "hair_style.txt",
+            "required": true
+        },
+        {
+            "id": "outfit",
+            "label": "Outfit",
+            "type": "select",
+            "optionsSource": "outfit.txt",
+            "required": true
+        },
+        {
+            "id": "location",
+            "label": "Location (Optional)",
+            "type": "text",
+            "placeholder": "e.g., a neon-lit alley"
+        }
+    ],
+    "promptTemplate": "A {{art_style}} portrait of a {{character_type}} with {{hair_style}} hair, wearing a {{outfit}}{{location, ', in a '}}"
+}

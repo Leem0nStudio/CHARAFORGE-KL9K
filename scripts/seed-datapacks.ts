@@ -41,6 +41,13 @@ async function seedDataPacks() {
             const schemaPath = path.join(packPath, 'schema.json');
             const coverImagePath = path.join(packPath, 'cover.png');
             
+            // Check if metadata.json exists before proceeding
+            const metadataExists = await fs.access(metadataPath).then(() => true).catch(() => false);
+            if (!metadataExists) {
+                console.warn(`- Skipping ${packId}: metadata.json not found.`);
+                continue;
+            }
+
             // 1. Upload cover image and get URL
             let coverImageUrl = null;
             try {
