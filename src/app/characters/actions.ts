@@ -173,6 +173,25 @@ export async function updateCharacterImages(
 }
 
 /**
+ * Extracts the file path from a Google Cloud Storage URL.
+ * @param {string} url The full `https://storage.googleapis.com/...` URL.
+ * @returns {string | null} The path to the file in the bucket, or null if the URL is invalid.
+ */
+function getPathFromUrl(url: string): string | null {
+    try {
+        const urlObject = new URL(url);
+        // The pathname will be something like `/<bucket-name>/<file-path>`.
+        // We want to remove the leading slash and the bucket name.
+        const path = urlObject.pathname.substring(1).split('/').slice(1).join('/');
+        return path || null;
+    } catch (e) {
+        console.error(`Invalid GCS URL format: ${url}`);
+        return null;
+    }
+}
+
+
+/**
  * Fetches characters for the logged-in user and generates signed URLs for their images.
  * This is the secure way to display private images from Firebase Storage.
  * @returns {Promise<Character[]>} A promise that resolves to an array of character objects with accessible image URLs.
@@ -204,23 +223,18 @@ export async function getCharactersWithSignedUrls(): Promise<Character[]> {
     // Generate signed URLs for each character's image
     const charactersWithUrls = await Promise.all(
       charactersData.map(async (character) => {
-        // If imageUrl is missing or invalid, return character with a placeholder
-        if (!character.imageUrl || typeof character.imageUrl !== 'string' || character.imageUrl.trim() === '') {
+        if (!character.imageUrl || !character.imageUrl.startsWith('https://storage.googleapis.com/')) {
           console.warn(`Character ${character.id} has an invalid or missing imageUrl. Using placeholder.`);
           return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
         }
 
         try {
           const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-          // Extract the file path from the full gs:// URL
-          // Ensure the URL is valid before proceeding
-          let filePath: string;
-          try {
-            const url = new URL(character.imageUrl);
-            filePath = url.pathname.substring(1).split('/').slice(1).join('/');
-          } catch (urlParseError) {
-            console.error(`Failed to parse URL for character ${character.id}:`, urlParseError);
-            return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
+          const filePath = getPathFromUrl(character.imageUrl);
+          
+          if (!filePath) {
+             console.warn(`Could not extract file path from URL for character ${character.id}: ${character.imageUrl}`);
+             return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
           }
           
           const file = bucket.file(filePath);

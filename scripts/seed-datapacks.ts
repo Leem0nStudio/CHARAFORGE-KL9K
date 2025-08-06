@@ -118,5 +118,6 @@ async function seedDataPacks() {
 }
 
 seedDataPacks().then(() => {
+    // Force exit after completion
     process.exit(0);
 });

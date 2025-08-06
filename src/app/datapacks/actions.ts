@@ -2,9 +2,15 @@
 'use server';
 
 import { adminDb } from '@/lib/firebase/server';
-import { getStorage } from 'firebase-admin/storage';
 import type { DataPack } from '@/types/datapack';
 
+/**
+ * Fetches all public datapacks directly from Firestore.
+ * This version assumes that the URLs stored in Firestore (coverImageUrl, schemaUrl)
+ * are already public and accessible. It removes the need for generating signed URLs,
+ * simplifying the logic and improving performance.
+ * @returns {Promise<DataPack[]>} A promise that resolves to an array of datapack objects.
+ */
 export async function getPublicDataPacks(): Promise<DataPack[]> {
   if (!adminDb) {
     console.error('Database service is unavailable.');
@@ -19,6 +25,7 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
       return [];
     }
 
+    // Map the documents directly to the DataPack type.
     const dataPacksData = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -27,39 +34,18 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
             author: data.author || 'Unknown Author',
             description: data.description || 'No description available.',
             coverImageUrl: data.coverImageUrl || null,
+            schemaUrl: data.schemaUrl || '', // The public URL is used directly.
             type: data.type || 'free',
             price: data.price || 0,
+            tags: data.tags || [],
             createdAt: data.createdAt.toDate(),
-            schemaUrl: data.schemaUrl,
-            schemaPath: data.schemaPath, // Pass the direct path
+            schemaPath: data.schemaPath,
+            coverImagePath: data.coverImagePath,
         } as DataPack;
     });
 
-    // Generate signed URLs for each pack's schema
-    const packsWithSignedUrls = await Promise.all(
-        dataPacksData.map(async (pack) => {
-            if (!pack.schemaPath) { // Use schemaPath for check
-                console.warn(`DataPack ${pack.id} has no schemaPath in Firestore.`);
-                return { ...pack, schemaUrl: '' }; 
-            }
-            try {
-                const bucket = getStorage().bucket();
-                const file = bucket.file(pack.schemaPath); // Use the direct path
-                
-                const [signedUrl] = await file.getSignedUrl({
-                    action: 'read',
-                    expires: Date.now() + 60 * 60 * 1000, // 1 hour validity
-                });
-                return { ...pack, schemaUrl: signedUrl };
-            } catch (error) {
-                console.error(`Failed to get signed URL for DataPack schema ${pack.id}:`, error);
-                return { ...pack, schemaUrl: '' }; // Return empty on error
-            }
-        })
-    );
+    return dataPacksData;
 
-
-    return packsWithSignedUrls;
   } catch (error) {
     console.error("Error fetching public datapacks:", error);
     return [];
