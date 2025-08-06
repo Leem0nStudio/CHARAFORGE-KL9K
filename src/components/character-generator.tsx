@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -35,6 +35,7 @@ import { saveCharacter } from "@/ai/flows/save-character";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import Link from "next/link";
+import { DataPackSelectorModal } from "./datapack-selector-modal";
 
 const generationFormSchema = z.object({
   description: z.string().min(20, {
@@ -66,6 +67,7 @@ export function CharacterGenerator() {
   const [isSaving, setIsSaving] = useState(false);
   const [bioError, setBioError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { toast } = useToast();
   const { authUser, loading: authLoading } = useAuth();
@@ -86,10 +88,19 @@ export function CharacterGenerator() {
     const promptFromUrl = searchParams.get('prompt');
     if (promptFromUrl) {
       generationForm.setValue('description', decodeURIComponent(promptFromUrl));
-      // Optionally, trigger generation automatically
-      // onGenerateBio({ description: decodeURIComponent(promptFromUrl) });
     }
   }, [searchParams, generationForm]);
+  
+  const handlePromptGenerated = useCallback((prompt: string, packId: string) => {
+    generationForm.setValue('description', prompt, { shouldValidate: true });
+    // This is a bit of a hack to pass the packId without a dedicated state
+    // A better approach might be a state object for the generated prompt context
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('packId', packId);
+    router.replace(currentUrl.toString(), { scroll: false });
+    setIsModalOpen(false);
+  }, [generationForm, router]);
+
 
   const saveForm = useForm<z.infer<typeof saveFormSchema>>({
     resolver: zodResolver(saveFormSchema),
@@ -206,6 +217,12 @@ export function CharacterGenerator() {
   const isImageReadyForSave = !!characterData?.imageUrl;
 
   return (
+    <>
+    <DataPackSelectorModal 
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+      onPromptGenerated={handlePromptGenerated}
+    />
     <div className="grid gap-8 lg:grid-cols-5">
       <div className="lg:col-span-2">
         <Card className="sticky top-20 shadow-lg">
@@ -250,11 +267,9 @@ export function CharacterGenerator() {
                         </>
                       )}
                     </Button>
-                    <Button size="lg" className="w-full" asChild variant="secondary">
-                        <Link href="/datapacks">
-                            <Package className="mr-2" />
-                            Select DataPack
-                        </Link>
+                    <Button type="button" size="lg" className="w-full" variant="secondary" onClick={() => setIsModalOpen(true)} disabled={!canInteract}>
+                      <Package className="mr-2" />
+                      Use DataPack
                     </Button>
                 </div>
                 {!authUser && !authLoading && <p className="text-xs text-center text-muted-foreground">You must be logged in to forge a character.</p>}
@@ -385,5 +400,6 @@ export function CharacterGenerator() {
         </Card>
       </div>
     </div>
+    </>
   );
 }

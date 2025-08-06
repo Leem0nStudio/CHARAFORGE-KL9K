@@ -26,7 +26,7 @@ function CharacterGeneratorWrapper() {
                 <div>
                   <h1 className="text-3xl font-semibold font-headline tracking-wider">Character Generator</h1>
                   <p className="text-muted-foreground">
-                      Bring your vision to life. Describe your character, and let our AI do the rest.
+                      Bring your vision to life. Describe your character, or use a DataPack to get started.
                   </p>
                 </div>
             </div>
@@ -48,3 +48,4 @@ export default function CharacterGeneratorPage() {
     </Suspense>
   );
 }
+

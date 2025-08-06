@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { adminDb, adminAuth } from '@/lib/firebase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
+import type { DataPack } from '@/types/datapack';
 
 export type ActionResponse = {
   success: boolean;
@@ -119,5 +120,49 @@ export async function deleteUserAccount(): Promise<ActionResponse> {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete your account. Please try again.';
     return { success: false, message };
+  }
+}
+
+export async function getInstalledDataPacks(): Promise<DataPack[]> {
+  try {
+    const uid = await verifyAndGetUid();
+    if (!adminDb) {
+      throw new Error('Database service is unavailable.');
+    }
+    
+    const userDocRef = adminDb.collection('users').doc(uid);
+    const userDoc = await userDocRef.get();
+
+    if (!userDoc.exists) {
+      return [];
+    }
+
+    const installedPacksIds = userDoc.data()?.stats?.installedPacks || [];
+    if (installedPacksIds.length === 0) {
+      return [];
+    }
+
+    const packPromises = installedPacksIds.map((packId: string) => 
+        adminDb.collection('datapacks').doc(packId).get()
+    );
+    
+    const packSnapshots = await Promise.all(packPromises);
+
+    const installedPacks = packSnapshots
+        .filter(doc => doc.exists)
+        .map(doc => {
+            const data = doc.data()!;
+            return {
+                ...data,
+                id: doc.id,
+                createdAt: data.createdAt.toDate(),
+            } as DataPack;
+        });
+
+    return installedPacks;
+
+  } catch (error) {
+    console.error("Error fetching installed datapacks:", error);
+    return [];
   }
 }
