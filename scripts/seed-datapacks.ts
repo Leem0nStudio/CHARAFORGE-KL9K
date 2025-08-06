@@ -2,7 +2,7 @@
 require('dotenv').config({ path: './.env' });
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -98,7 +98,7 @@ async function seedDataPacks() {
                 id: packId,
                 coverImageUrl: coverImageUrl,
                 schemaUrl: schemaUrl,
-                createdAt: getFirestore().FieldValue.serverTimestamp(),
+                createdAt: FieldValue.serverTimestamp(),
             };
 
             await db.collection('datapacks').doc(packId).set(docData, { merge: true });
