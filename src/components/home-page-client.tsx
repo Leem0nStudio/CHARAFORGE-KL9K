@@ -47,7 +47,7 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
           <div className="mr-4 flex items-center">
             <Link href="/" className="flex items-center gap-2">
                 <Bot className="h-7 w-7 text-primary" />
-                <span className="font-bold font-headline text-2xl tracking-wider">CharaForge</span>
+                <span className="font-bold font-headline text-2xl tracking-wider text-primary">CharaForge</span>
             </Link>
           </div>
           <div className="flex flex-1 items-center justify-end space-x-2">
