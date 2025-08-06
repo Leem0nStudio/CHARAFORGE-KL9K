@@ -130,15 +130,15 @@ export function DataPackForm({ children, dataPackId }: DataPackFormProps) {
             price: data.pack.price,
             tags: data.pack.tags.join(', '),
             promptTemplate: schema.promptTemplate,
-            slots: schema.slots.map(s => ({
+            slots: (schema.slots || []).map(s => ({
               ...s,
-              options: s.options.map(o => ({
+              options: (s.options || []).map(o => ({
                 ...o,
-                exclusions: o.exclusions?.map(e => ({
+                exclusions: (o.exclusions || []).map(e => ({
                   ...e,
                   optionValues: e.optionValues.join(','), // Convert array to string for the form
-                })) || [],
-              })) || [],
+                })),
+              })),
             })),
           });
         }
@@ -175,10 +175,10 @@ export function DataPackForm({ children, dataPackId }: DataPackFormProps) {
               ...s,
               options: s.options.map(o => ({
                   ...o,
-                  exclusions: o.exclusions?.map(e => ({
+                  exclusions: (o.exclusions || []).map(e => ({
                       ...e,
                       optionValues: e.optionValues.split(',').map(v => v.trim()).filter(Boolean),
-                  })) || [],
+                  })),
               }))
           })),
       }
