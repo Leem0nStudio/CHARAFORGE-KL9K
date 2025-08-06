@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertDialog, AlertDialogContent } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
@@ -120,6 +120,12 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
             {selectedCharacter && (
               <AlertDialog open onOpenChange={() => setSelectedCharacter(null)}>
                   <AlertDialogContent className="max-w-4xl max-h-[90vh] flex flex-col md:flex-row p-0 gap-0">
+                      <AlertDialogHeader className="sr-only">
+                        <AlertDialogTitle>{selectedCharacter.name}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Viewing details for the character {selectedCharacter.name}, created by @{selectedCharacter.userName}.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
                      <div className="w-full md:w-1/2 aspect-square md:aspect-auto relative">
                         <Image src={selectedCharacter.imageUrl} alt={selectedCharacter.name} fill className="object-cover rounded-t-lg md:rounded-l-lg md:rounded-tr-none" />
                          <Button variant="ghost" size="icon" className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={() => setSelectedCharacter(null)}>
