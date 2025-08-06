@@ -6,8 +6,6 @@ import Image from "next/image";
 import { Swords, Package } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LoginButton } from "./login-button";
-import { buttonVariants } from "./ui/button";
-import { cn } from "@/lib/utils";
 import { getLogoUrl } from "@/lib/app-config";
 
 
@@ -19,7 +17,7 @@ export async function SiteHeader() {
       <div className="container flex h-16 max-w-screen-2xl items-center">
         <Link href="/" className="mr-6 flex items-center space-x-2">
           {logoUrl && (
-             <Image src={logoUrl} alt="CharaForge Logo" width={40} height={40} className="h-7 w-7 sm:h-8 sm:w-8" />
+             <Image src={logoUrl} alt="CharaForge Logo" width={40} height={40} className="h-7 w-7 sm:h-10 sm:w-10" />
           )}
           <div className="font-bold font-headline text-xl sm:text-2xl tracking-wider">
               <span className="text-foreground">Chara</span>
