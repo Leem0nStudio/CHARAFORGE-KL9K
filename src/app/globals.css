@@ -89,6 +89,7 @@
     @apply bg-background text-foreground;
   }
   .font-headline {
+    font-family: "Quicksand", sans-serif;
     text-transform: uppercase !important;
   }
 }

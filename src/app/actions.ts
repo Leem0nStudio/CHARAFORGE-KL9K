@@ -17,7 +17,7 @@ export async function getPublicCharacters(): Promise<Character[]> {
     }
     
     const charactersRef = adminDb.collection('characters');
-    const q = charactersRef.where('status', '==', 'public').orderBy('createdAt', 'desc').limit(4);
+    const q = charactersRef.where('status', '==', 'public').orderBy('createdAt', 'desc').limit(20);
     const snapshot = await q.get();
 
     if (snapshot.empty) {
