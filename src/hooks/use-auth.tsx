@@ -120,7 +120,7 @@ const AnvilIcon = (props: React.SVGProps<SVGSVGElement>) => (
       fill="none"
     />
     <path
-      d="M21 6.5c1.5 0 2.5-1 2.5-2.5v-1c0-1.5-1-2.5-2.5-2.5h-13C6.5.5 5.5 1.5 5.5 3v1c0 1.5 1 2.5 2.5 2.5"
+      d="M21 6.5c-1.5 0-2.5-1-2.5-2.5v-1c0-1.5-1-2.5-2.5-2.5h-13C6.5.5 5.5 1.5 5.5 3v1c0 1.5 1 2.5 2.5 2.5"
       stroke="url(#anvilGradient)"
       fill="none"
     />
