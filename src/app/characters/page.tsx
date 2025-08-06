@@ -22,9 +22,9 @@ function CharacterListSkeleton() {
     return (
       <div className="flex flex-col gap-8">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="flex flex-col md:flex-row gap-6 p-4 border rounded-lg">
-             <Skeleton className="h-64 w-full md:w-1/3 aspect-square rounded-lg" />
-             <div className="w-full md:w-2/3 space-y-4">
+          <div key={i} className="flex flex-col md:flex-row gap-6 p-4 border rounded-lg overflow-hidden">
+             <Skeleton className="h-64 w-full md:w-2/5 aspect-square rounded-lg" />
+             <div className="w-full md:w-3/5 space-y-4">
                 <Skeleton className="h-8 w-1/2" />
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-full" />
