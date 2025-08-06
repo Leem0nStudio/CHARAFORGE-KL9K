@@ -5,19 +5,19 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 9002 --hostname 0.0.0.0",
-    "genkit:dev": "node --loader tsx src/ai/dev.ts",
-    "genkit:watch": "node --watch --loader tsx src/ai/dev.ts",
+    "genkit:dev": "node --import tsx src/ai/dev.ts",
+    "genkit:watch": "node --watch --import tsx src/ai/dev.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "firebase:setup": "node scripts/firebase-setup.js",
     "firebase:emulators": "firebase emulators:start --only auth,firestore,storage",
-    "admin:grant": "node --loader tsx scripts/manage-admin.js grant",
-    "admin:revoke": "node --loader tsx scripts/manage-admin.js revoke",
-    "admin:check": "node --loader tsx scripts/manage-admin.js check",
-    "admin:list": "node --loader tsx scripts/manage-admin.js list",
-    "datapacks:seed": "tsx scripts/seed-datapacks.ts"
+    "admin:grant": "node --import tsx scripts/manage-admin.js grant",
+    "admin:revoke": "node --import tsx scripts/manage-admin.js revoke",
+    "admin:check": "node --import tsx scripts/manage-admin.js check",
+    "admin:list": "node --import tsx scripts/manage-admin.js list",
+    "datapacks:seed": "node --import tsx scripts/seed-datapacks.ts"
   },
   "dependencies": {
     "@genkit-ai/firebase": "1.14.1",
