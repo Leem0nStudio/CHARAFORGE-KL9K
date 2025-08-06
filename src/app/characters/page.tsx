@@ -220,7 +220,9 @@ export default function CharactersPage() {
          <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
             <Link href="/" className="flex items-center gap-2">
                 <Bot className="h-6 w-6 mr-2 text-primary" />
-                <span className="font-bold font-headline text-2xl tracking-wider">CharaForge</span>
+                 <div className="font-bold font-headline text-2xl tracking-wider">
+                    <span className="text-foreground">Chara</span><span className="text-accent">Forge</span>
+                </div>
             </Link>
            <div className="flex flex-1 items-center justify-end space-x-4">
              <nav className="flex items-center space-x-1">
