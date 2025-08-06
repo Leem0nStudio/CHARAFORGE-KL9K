@@ -221,7 +221,7 @@ export default function CharactersPage() {
             <Link href="/" className="flex items-center gap-2">
                 <Bot className="h-6 w-6 mr-2 text-primary" />
                  <div className="font-bold font-headline text-2xl tracking-wider">
-                    <span className="text-foreground">Chara</span><span className="text-accent">Forge</span>
+                    <span className="text-foreground">Chara</span><span className="bg-gradient-to-tl from-yellow-400 to-accent bg-clip-text text-transparent">Forge</span>
                 </div>
             </Link>
            <div className="flex flex-1 items-center justify-end space-x-4">
