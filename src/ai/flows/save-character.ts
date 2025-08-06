@@ -15,7 +15,7 @@ import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 const SaveCharacterInputSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -47,7 +47,7 @@ async function uploadImageToStorage(dataUri: string, userId: string): Promise<st
     const imageBuffer = Buffer.from(base64Data, 'base64');
     
     // Generate a unique file name inside the user-specific folder.
-    const fileName = `usersImg/${userId}/${uuidv4()}.png`;
+    const fileName = `usersImg/${userId}/${randomUUID()}.png`;
     const file = bucket.file(fileName);
 
     await file.save(imageBuffer, {
