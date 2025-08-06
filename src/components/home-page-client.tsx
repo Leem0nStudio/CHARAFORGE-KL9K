@@ -40,7 +40,7 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
   
   return (
     <>
-        <section className="relative w-full py-20 md:py-32 lg:py-40 overflow-hidden">
+        <section className="relative w-full py-20 md:py-32 lg:py-40 overflow-hidden min-h-screen">
             <div className="absolute inset-0 bg-gradient-to-br from-background via-transparent to-primary/20 -z-10"></div>
              <motion.div 
                 className="container text-center"

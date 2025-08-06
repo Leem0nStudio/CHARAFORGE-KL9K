@@ -11,7 +11,6 @@ import {
 import { User, onIdTokenChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData, Timestamp } from 'firebase/firestore';
 import { getFirebaseClient } from '@/lib/firebase/client';
-import { Skeleton } from '@/components/ui/skeleton';
 import type { UserProfile } from '@/types/user';
 
 export interface AuthContextType {
@@ -88,6 +87,38 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
   }
 };
 
+const AnvilIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <defs>
+      <linearGradient id="anvilGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style={{ stopColor: 'hsl(var(--accent))' }} />
+        <stop offset="100%" style={{ stopColor: '#FBBF24' /* yellow-400 */ }} />
+      </linearGradient>
+    </defs>
+    <path
+      d="M7.7 13.4A4.6 4.6 0 0 0 9 15.5c.3.8.6 1.5.9 2.2a2.3 2.3 0 0 1-2.1 3.4h-1.6a2.3 2.3 0 0 1-2.1-3.4c.3-.7.6-1.4.9-2.2a4.6 4.6 0 0 0 1.3-2.1"
+      stroke="url(#anvilGradient)"
+    />
+    <path
+      d="M17.8 4c-1.3 0-2.3 1-2.3 2.3v3.2c0 .8-.5 1.6-1.2 1.8a2.3 2.3 0 0 0-2.6 2.3v.4a2.3 2.3 0 0 1-2.3 2.3h-1"
+      stroke="url(#anvilGradient)"
+    />
+    <path
+      d="M20 4h-2.2"
+      stroke="url(#anvilGradient)"
+    />
+  </svg>
+);
+
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authUser, setAuthUser] = useState<User | null>(null);
@@ -135,12 +166,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen w-full">
-         <div className="w-full max-w-md p-8 space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-        </div>
+      <div className="flex flex-col items-center justify-center h-screen w-full bg-background">
+         <AnvilIcon className="w-24 h-24 animate-pulse" />
+         <p className="mt-4 text-muted-foreground font-headline tracking-wider animate-pulse">FORGING SESSION...</p>
       </div>
     );
   }
@@ -159,3 +187,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+    
