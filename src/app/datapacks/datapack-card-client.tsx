@@ -52,7 +52,7 @@ export function DataPackCardClient({ pack, children }: { pack: DataPack; childre
             return (
                  <Button asChild className="w-full" variant="secondary">
                     <Link href={`/prompt-wizard?pack=${pack.id}`}>
-                        <Wand2 className="mr-2" /> Use Wizard
+                        <Check className="mr-2" /> Use Wizard
                     </Link>
                 </Button>
             )
