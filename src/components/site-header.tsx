@@ -2,7 +2,7 @@
 'use client';
 
 import Link from "next/link";
-import { Bot, Swords } from "lucide-react";
+import { Bot, Swords, Package } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LoginButton } from "./login-button";
 import { buttonVariants } from "./ui/button";
@@ -20,6 +20,13 @@ export function SiteHeader() {
           </div>
         </Link>
         <div className="flex flex-1 items-center justify-end space-x-2">
+            <Link
+              href="/datapacks"
+              className={cn(buttonVariants({ variant: "ghost" }), "hidden sm:flex")}
+            >
+              <Package className="mr-2" />
+              DataPacks
+            </Link>
            <Link
               href="/character-generator"
               className={cn(buttonVariants(), "bg-primary text-primary-foreground hover:bg-primary/90 hidden sm:flex font-headline")}

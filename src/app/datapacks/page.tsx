@@ -1,0 +1,72 @@
+
+import { getPublicDataPacks } from './actions';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Wand2, User } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+export default async function DataPacksPage() {
+    const dataPacks = await getPublicDataPacks();
+
+    return (
+        <div className="container py-8">
+            <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
+                <div>
+                    <h1 className="text-3xl font-semibold font-headline tracking-wider">DataPacks Catalog</h1>
+                    <p className="text-muted-foreground">
+                        Browse and select a DataPack to start creating with the Prompt Wizard.
+                    </p>
+                </div>
+            </div>
+
+            {dataPacks.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                    {dataPacks.map(pack => (
+                        <Card key={pack.id} className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300">
+                             <CardHeader className="p-0">
+                                <div className="relative aspect-video">
+                                    <Image
+                                        src={pack.coverImageUrl || 'https://placehold.co/600x400.png'}
+                                        alt={pack.name}
+                                        fill
+                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                        data-ai-hint="datapack cover image"
+                                    />
+                                     <Badge className={cn(
+                                         "absolute top-2 right-2 font-bold",
+                                         pack.type === 'premium' && "bg-yellow-500 text-black",
+                                         pack.type === 'free' && "bg-green-500",
+                                         pack.type === 'temporal' && "bg-blue-500"
+                                     )}>{pack.type}</Badge>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-6 flex-grow">
+                                <CardTitle>{pack.name}</CardTitle>
+                                <CardDescription className="mt-2 flex items-center gap-2">
+                                    <User className="h-4 w-4" /> 
+                                    <span>by @{pack.author}</span>
+                                </CardDescription>
+                                <p className="mt-4 text-sm text-muted-foreground">{pack.description}</p>
+                            </CardContent>
+                            <CardFooter>
+                                 <Button asChild className="w-full">
+                                    <Link href={`/prompt-wizard?pack=${pack.id}`}>
+                                        <Wand2 className="mr-2" /> Start Wizard
+                                    </Link>
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    ))}
+                </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50 max-w-7xl mx-auto">
+                    <h2 className="text-2xl font-medium font-headline tracking-wider mb-2">No DataPacks Found</h2>
+                    <p className="max-w-xs mx-auto">It seems there are no DataPacks available at the moment. Please check back later.</p>
+                </div>
+            )}
+        </div>
+    );
+}

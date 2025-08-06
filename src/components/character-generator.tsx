@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -68,6 +68,7 @@ export function CharacterGenerator() {
   const { toast } = useToast();
   const { authUser, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
     resolver: zodResolver(generationFormSchema),
@@ -75,6 +76,16 @@ export function CharacterGenerator() {
       description: "",
     },
   });
+
+  // Effect to read prompt from URL and set it in the form
+  useEffect(() => {
+    const promptFromUrl = searchParams.get('prompt');
+    if (promptFromUrl) {
+      generationForm.setValue('description', decodeURIComponent(promptFromUrl));
+      // Optionally, trigger generation automatically
+      // onGenerateBio({ description: decodeURIComponent(promptFromUrl) });
+    }
+  }, [searchParams, generationForm]);
 
   const saveForm = useForm<z.infer<typeof saveFormSchema>>({
     resolver: zodResolver(saveFormSchema),
@@ -158,13 +169,11 @@ export function CharacterGenerator() {
 
     setIsSaving(true);
     try {
-      // The resizeImage call is removed. We now directly pass the large Data URI
-      // to the saveCharacter action, which will handle the upload to Storage.
       await saveCharacter({
         name: data.name,
         description: characterData.description,
         biography: characterData.biography,
-        imageUrl: characterData.imageUrl, // Pass the full Data URI
+        imageUrl: characterData.imageUrl,
       });
 
       toast({
@@ -197,7 +206,7 @@ export function CharacterGenerator() {
           <CardHeader>
             <CardTitle className="font-headline text-3xl">1. Character Details</CardTitle>
             <CardDescription>
-              Provide a description, and our AI will craft a unique biography for your character.
+              Provide a description, or use the Prompt Wizard to construct one.
             </CardDescription>
           </CardHeader>
           <CardContent>
