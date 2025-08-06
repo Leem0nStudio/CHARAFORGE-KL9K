@@ -76,19 +76,19 @@ export default async function EditCharacterPage({ params }: { params: { id: stri
     const character = await getCharacterForEdit(params.id);
     
     return (
-      <div className="flex min-h-screen w-full flex-col bg-muted/40">
-         <main className="flex-1 p-4 md:p-10">
-          <div className="mx-auto grid w-full max-w-4xl gap-4">
+      <div className="container py-8">
+          <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
               <div className="flex items-center gap-4">
                   <BackButton />
-                  <h1 className="text-3xl font-semibold font-headline tracking-wider">Edit Character</h1>
+                  <div>
+                    <h1 className="text-3xl font-semibold font-headline tracking-wider">Edit Character</h1>
+                    <p className="text-muted-foreground">Refine the details of your creation, translate its story, or expand its gallery.</p>
+                  </div>
               </div>
-              <p className="text-muted-foreground">Refine the details of your creation, translate its story, or expand its gallery.</p>
-             <div className="mt-4">
-               <EditCharacterForm character={character} />
-             </div>
           </div>
-        </main>
+          <div className="max-w-7xl mx-auto">
+            <EditCharacterForm character={character} />
+          </div>
       </div>
     );
   } catch (error) {

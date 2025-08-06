@@ -321,39 +321,42 @@ export default function ProfilePage() {
 
   return (
     <motion.div
-        className="flex-1 space-y-4 p-4 md:p-8 pt-6"
+        className="container py-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
     >
-      <div className="flex items-center justify-between space-y-2">
-        <div className="flex items-center gap-4">
-          <BackButton />
-          <h2 className="text-3xl font-bold tracking-tight">Profile Settings</h2>
-        </div>
+      <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
+          <div className="flex items-center gap-4">
+              <BackButton />
+              <div>
+                  <h1 className="text-3xl font-semibold font-headline tracking-wider">Profile Settings</h1>
+                  <p className="text-muted-foreground">Manage your account, preferences, and more.</p>
+              </div>
+          </div>
       </div>
-      <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="prefs">Preferences</TabsTrigger>
-          <TabsTrigger value="stats">Statistics</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-        </TabsList>
-        <TabsContent value="profile" className="space-y-4">
-          <ProfileForm user={userProfile} />
-        </TabsContent>
-         <TabsContent value="prefs" className="space-y-4">
-           <PreferencesForm initialPreferences={userPreferences} />
-        </TabsContent>
-        <TabsContent value="stats" className="space-y-4">
-           <StatsTab userStats={userStats} />
-        </TabsContent>
-         <TabsContent value="security" className="space-y-4">
-           <SecurityTab />
-        </TabsContent>
-      </Tabs>
+      <div className="max-w-7xl mx-auto">
+        <Tabs defaultValue="profile" className="space-y-4">
+            <TabsList>
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="prefs">Preferences</TabsTrigger>
+            <TabsTrigger value="stats">Statistics</TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
+            </TabsList>
+            <TabsContent value="profile" className="space-y-4">
+            <ProfileForm user={userProfile} />
+            </TabsContent>
+            <TabsContent value="prefs" className="space-y-4">
+            <PreferencesForm initialPreferences={userPreferences} />
+            </TabsContent>
+            <TabsContent value="stats" className="space-y-4">
+            <StatsTab userStats={userStats} />
+            </TabsContent>
+            <TabsContent value="security" className="space-y-4">
+            <SecurityTab />
+            </TabsContent>
+        </Tabs>
+      </div>
     </motion.div>
   );
 }
-
-    

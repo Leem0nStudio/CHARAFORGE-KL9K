@@ -13,14 +13,16 @@ export default function CharacterGeneratorPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-          <div className="mx-auto grid w-full max-w-6xl gap-2 mb-8">
+          <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
                <div className="flex items-center gap-4">
                   <BackButton />
-                  <h1 className="text-3xl font-semibold font-headline tracking-wider">Character Generator</h1>
+                  <div>
+                    <h1 className="text-3xl font-semibold font-headline tracking-wider">Character Generator</h1>
+                    <p className="text-muted-foreground">
+                        Bring your vision to life. Describe your character, and let our AI do the rest.
+                    </p>
+                  </div>
               </div>
-              <p className="text-muted-foreground">
-                  Bring your vision to life. Describe your character, and let our AI do the rest.
-              </p>
           </div>
           <CharacterGenerator />
       </motion.div>

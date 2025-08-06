@@ -215,14 +215,14 @@ export default function CharactersPage() {
       <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
           <div className="flex items-center gap-4">
             <BackButton />
-            <div className='flex flex-col'>
+            <div>
               <h1 className="text-3xl font-semibold font-headline tracking-wider">My Characters</h1>
               <p className="text-muted-foreground">Select a character from your collection to view their details.</p>
             </div>
         </div>
       </div>
       
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
           {loading && characters.length === 0 ? (
              <div className="w-full flex items-center justify-center p-8 min-h-[400px]">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
