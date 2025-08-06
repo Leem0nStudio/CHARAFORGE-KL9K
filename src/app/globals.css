@@ -89,7 +89,17 @@
     @apply bg-background text-foreground;
   }
   .font-headline {
-    font-family: "Quicksand", sans-serif;
+    font-family: "Rowdies", sans-serif;
     text-transform: uppercase !important;
+  }
+  .embla {
+    overflow: hidden;
+  }
+  .embla__container {
+    display: flex;
+  }
+  .embla__slide {
+    flex: 0 0 100%;
+    min-width: 0;
   }
 }

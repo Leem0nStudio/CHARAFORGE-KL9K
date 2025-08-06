@@ -4,120 +4,111 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { User, Expand, X } from 'lucide-react';
+import { User, Expand, X, Star } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Character } from '@/types/character';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from '@/components/ui/alert-dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import useEmblaCarousel from 'embla-carousel-react';
+import { cn } from '@/lib/utils';
+
 
 type HomePageClientProps = {
     featuredCreations: Character[];
 }
 
-export function HomePageClient({ featuredCreations }: HomePageClientProps) {
-  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
-  
-  return (
-    <>
-        <section id="gallery" className="container py-8 md:py-12">
-          <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center mb-12">
-            <h1 className="font-headline text-3xl leading-[1.1] sm:text-4xl md:text-5xl">Explore Creations</h1>
-            <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
-              Discover a universe of characters crafted by the CharaForge community. Click on any creation to see its story.
-            </p>
-          </div>
-          {featuredCreations.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                {featuredCreations.map((creation) => (
-                <motion.div 
-                    key={creation.id} 
-                    layoutId={`character-card-${creation.id}`}
-                    whileHover={{ y: -5, scale: 1.02 }} 
-                    transition={{ type: 'spring', stiffness: 300 }}
-                    onClick={() => setSelectedCharacter(creation)}
-                    className="cursor-pointer"
-                >
-                    <Card className="overflow-hidden group h-full flex flex-col">
-                        <div className="relative w-full aspect-square">
-                            <Image
-                                src={creation.imageUrl}
-                                alt={creation.name}
-                                fill
-                                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-2">
-                                <p className="text-white text-sm font-bold truncate w-full">{creation.name}</p>
-                            </div>
-                        </div>
-                        <CardContent className="p-3 bg-card/80 mt-auto">
-                            <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                    <AvatarImage src="https://placehold.co/100x100.png" alt={`@${creation.userName}`} data-ai-hint="user avatar" />
-                                    <AvatarFallback>{creation.userName?.charAt(0).toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                                <p className="text-xs text-muted-foreground truncate">@{creation.userName}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </motion.div>
-                ))}
-            </div>
-            ) : (
-               <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
-                  <User className="h-16 w-16 mb-4 text-primary/70" />
-                  <h2 className="text-2xl font-medium font-headline tracking-wider mb-2">No Public Characters Yet</h2>
-                  <p className="max-w-xs mx-auto mb-6">The gallery is waiting for its first hero. Be the one to forge a public character!</p>
-              </div>
-            )}
-        </section>
+const topCreators = [
+    { name: 'CyberVance', characters: 128, followers: '12.5k', avatar: 'https://placehold.co/100x100.png', hint: 'cyberpunk creator' },
+    { name: 'MysticScribe', characters: 92, followers: '10.2k', avatar: 'https://placehold.co/100x100.png', hint: 'fantasy creator' },
+    { name: 'AnimeForge', characters: 256, followers: '25.1k', avatar: 'https://placehold.co/100x100.png', hint: 'anime creator' },
+    { name: 'PixelPioneer', characters: 312, followers: '8.9k', avatar: 'https://placehold.co/100x100.png', hint: 'pixel art creator' },
+];
 
-        <AnimatePresence>
-            {selectedCharacter && (
-              <AlertDialog open onOpenChange={() => setSelectedCharacter(null)}>
-                  <AlertDialogContent className="w-[95vw] max-w-4xl max-h-[90vh] flex flex-col md:flex-row p-0 gap-0">
-                      <AlertDialogHeader className="sr-only">
-                        <AlertDialogTitle>{selectedCharacter.name}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Viewing details for the character {selectedCharacter.name}, created by @{selectedCharacter.userName}.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                     <div className="w-full md:w-1/2 h-64 md:h-auto aspect-square md:aspect-auto relative">
-                        <Image src={selectedCharacter.imageUrl} alt={selectedCharacter.name} fill className="object-cover rounded-t-lg md:rounded-l-lg md:rounded-tr-none" />
-                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full z-10" onClick={() => setSelectedCharacter(null)}>
-                            <X className="w-5 h-5"/>
-                            <span className="sr-only">Close</span>
-                         </Button>
-                     </div>
-                     <div className="w-full md:w-1/2 flex flex-col p-6 overflow-hidden">
-                        <div className='flex items-center gap-4 mb-4'>
-                           <Avatar>
-                              <AvatarImage src="https://placehold.co/100x100.png" alt={`@${selectedCharacter.userName}`} data-ai-hint="user avatar" />
-                              <AvatarFallback>{selectedCharacter.userName?.charAt(0).toUpperCase()}</AvatarFallback>
-                           </Avatar>
-                           <div className="flex-grow">
-                              <p className="font-bold">@{selectedCharacter.userName}</p>
-                              <p className="text-sm text-muted-foreground">Creator</p>
-                           </div>
-                           <Button variant="outline" asChild>
-                             <Link href={`/characters/${selectedCharacter.id}/edit`}>Edit</Link>
-                           </Button>
-                        </div>
-                        <Separator />
-                        <div className="flex-grow mt-4 overflow-hidden flex flex-col">
-                          <h3 className="text-2xl font-bold font-headline tracking-wider mb-2">{selectedCharacter.name}</h3>
-                          <ScrollArea className="flex-grow pr-4 -mr-4">
-                              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedCharacter.biography}</p>
-                          </ScrollArea>
-                        </div>
-                     </div>
-                  </AlertDialogContent>
-              </AlertDialog>
-            )}
-        </AnimatePresence>
-    </>
+
+export function HomePageClient({ featuredCreations }: HomePageClientProps) {
+  const [emblaRef] = useEmblaCarousel({ loop: true });
+
+  return (
+    <div className="flex flex-col min-h-screen">
+        <main className="flex-1">
+             {/* Hero Section with Carousel */}
+            <section className="w-full h-[60vh] md:h-[70vh] relative overflow-hidden">
+                <div className="embla h-full" ref={emblaRef}>
+                    <div className="embla__container h-full">
+                        {featuredCreations.map((creation) => (
+                            <div key={creation.id} className="embla__slide relative h-full">
+                                <Image
+                                    src={creation.imageUrl}
+                                    alt={creation.name}
+                                    fill
+                                    className="object-cover"
+                                    priority
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-8 md:p-12 text-white">
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.5, delay: 0.2 }}
+                                    >
+                                        <h1 className="font-headline text-4xl md:text-6xl lg:text-7xl leading-tight tracking-wider drop-shadow-2xl">
+                                            {creation.name}
+                                        </h1>
+                                        <div className="flex items-center gap-4 mt-4">
+                                            <Avatar>
+                                                 <AvatarImage src="https://placehold.co/100x100.png" alt={`@${creation.userName}`} data-ai-hint="user avatar" />
+                                                <AvatarFallback>{creation.userName?.charAt(0).toUpperCase()}</AvatarFallback>
+                                            </Avatar>
+                                            <p className="text-lg md:text-xl font-semibold drop-shadow-lg">@{creation.userName}</p>
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+            
+            <section id="top-creators" className="container py-12 md:py-16">
+                 <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center mb-12">
+                    <h2 className="font-headline text-3xl leading-[1.1] sm:text-4xl md:text-5xl">Top Creators</h2>
+                    <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
+                      Meet the master forgers shaping new worlds.
+                    </p>
+                </div>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {topCreators.map((creator, index) => (
+                         <motion.div
+                            key={creator.name}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                         >
+                            <Card className="text-center p-6 hover:bg-card/80 transition-colors duration-300 shadow-md hover:shadow-primary/20">
+                                <Avatar className="h-20 w-20 mx-auto mb-4 border-4 border-primary/50">
+                                    <AvatarImage src={creator.avatar} alt={creator.name} data-ai-hint={creator.hint} />
+                                    <AvatarFallback>{creator.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <h3 className="text-xl font-bold">{creator.name}</h3>
+                                <p className="text-muted-foreground text-sm mb-4">{`@${creator.name.toLowerCase()}`}</p>
+                                <div className="flex justify-around">
+                                    <div className="text-center">
+                                        <p className="font-bold text-lg">{creator.characters}</p>
+                                        <p className="text-xs text-muted-foreground">Creations</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="font-bold text-lg">{creator.followers}</p>
+                                        <p className="text-xs text-muted-foreground">Followers</p>
+                                    </div>
+                                </div>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </div>
+            </section>
+
+        </main>
+    </div>
   );
 }
