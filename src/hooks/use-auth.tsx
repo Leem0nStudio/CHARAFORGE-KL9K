@@ -99,22 +99,23 @@ const AnvilIcon = (props: React.SVGProps<SVGSVGElement>) => (
     strokeLinejoin="round"
   >
     <defs>
-      <linearGradient id="anvilGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+       <linearGradient id="anvilGradient" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" style={{ stopColor: 'hsl(var(--accent))' }} />
-        <stop offset="100%" style={{ stopColor: '#FBBF24' /* yellow-400 */ }} />
+        <stop offset="100%" style={{ stopColor: 'hsl(36 91% 52%)' }} />
       </linearGradient>
     </defs>
-    <path
-      d="M7.7 13.4A4.6 4.6 0 0 0 9 15.5c.3.8.6 1.5.9 2.2a2.3 2.3 0 0 1-2.1 3.4h-1.6a2.3 2.3 0 0 1-2.1-3.4c.3-.7.6-1.4.9-2.2a4.6 4.6 0 0 0 1.3-2.1"
-      stroke="url(#anvilGradient)"
+    <path 
+        d="M20 8h-4c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2v-2c0-1.1-.9-2-2-2z" 
+        stroke="url(#anvilGradient)"
     />
     <path
-      d="M17.8 4c-1.3 0-2.3 1-2.3 2.3v3.2c0 .8-.5 1.6-1.2 1.8a2.3 2.3 0 0 0-2.6 2.3v.4a2.3 2.3 0 0 1-2.3 2.3h-1"
-      stroke="url(#anvilGradient)"
+        d="M4 14H2c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h2c1.1 0 2-.9 2-2v-2c0-1.1-.9-2-2-2z"
+        stroke="url(#anvilGradient)"
     />
-    <path
-      d="M20 4h-2.2"
-      stroke="url(#anvilGradient)"
+    <path 
+        d="M14 14l-3.5-3.5C9.6 9.6 8.4 9 7 9H7c-1.4 0-2.6.6-3.5 1.5L2 12"
+        transform="translate(4, -1)"
+        stroke="url(#anvilGradient)"
     />
   </svg>
 );
@@ -187,5 +188,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-    
