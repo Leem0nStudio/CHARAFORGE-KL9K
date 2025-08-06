@@ -94,7 +94,7 @@ const AnvilIcon = (props: React.SVGProps<SVGSVGElement>) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
@@ -105,21 +105,21 @@ const AnvilIcon = (props: React.SVGProps<SVGSVGElement>) => (
       </linearGradient>
     </defs>
     <path 
-        d="M20 8h-4c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2v-2c0-1.1-.9-2-2-2z" 
-        stroke="url(#anvilGradient)"
-    />
-    <path
-        d="M4 14H2c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h2c1.1 0 2-.9 2-2v-2c0-1.1-.9-2-2-2z"
-        stroke="url(#anvilGradient)"
+      d="M5,15.5 C4.3,15.5 3.5,15.7 3.5,16.5 L3.5,19.5 C3.5,20.3 4.3,20.5 5,20.5 L7,20.5 C7.7,20.5 8.5,20.3 8.5,19.5 L8.5,16.5 C8.5,15.7 7.7,15.5 7,15.5 L5,15.5 z"
+      stroke="url(#anvilGradient)"
+      fill="url(#anvilGradient)"
     />
     <path 
-        d="M14 14l-3.5-3.5C9.6 9.6 8.4 9 7 9H7c-1.4 0-2.6.6-3.5 1.5L2 12"
-        transform="translate(4, -1)"
-        stroke="url(#anvilGradient)"
+      d="M3.5,16.5 L20.5,9.5"
+      stroke="url(#anvilGradient)"
+    />
+    <path 
+      d="M20.5,9.5 C21.5,9.5 22.5,9 22.5,8 L22.5,6 C22.5,5 21.5,4.5 20.5,4.5 L9.5,4.5 C8.5,4.5 7.5,5 7.5,6 L7.5,8 C7.5,9 8.5,9.5 9.5,9.5 L20.5,9.5 z"
+      stroke="url(#anvilGradient)"
+      fill="url(#anvilGradient)"
     />
   </svg>
 );
-
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authUser, setAuthUser] = useState<User | null>(null);
@@ -132,10 +132,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       if (newAuthUser) {
         const token = await newAuthUser.getIdToken();
-        // ** THE CRITICAL FIX **
-        // We now `await` the cookie setting operation. This pauses execution
-        // here until the server has confirmed the cookie is set. Only then
-        // do we update the state and render the application.
         await setCookie(token);
 
         setAuthUser(newAuthUser);
@@ -153,7 +149,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             ...firestoreData
         });
       } else {
-        // If logging out, we also ensure the cookie is cleared before proceeding.
         await setCookie(null);
         setAuthUser(null);
         setUserProfile(null);
