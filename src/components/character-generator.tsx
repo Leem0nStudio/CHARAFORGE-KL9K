@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +34,7 @@ import { generateCharacterImage } from "@/ai/flows/generate-character-image";
 import { saveCharacter } from "@/ai/flows/save-character";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import Link from "next/link";
 
 const generationFormSchema = z.object({
   description: z.string().min(20, {
@@ -211,7 +212,7 @@ export function CharacterGenerator() {
           <CardHeader>
             <CardTitle className="font-headline text-3xl">1. Character Details</CardTitle>
             <CardDescription>
-              Provide a description, or use the Prompt Wizard to construct one.
+              Provide a description, or select a DataPack to build one.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -235,19 +236,27 @@ export function CharacterGenerator() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90 transition-transform hover:scale-105" disabled={!canInteract}>
-                  {isGeneratingBio ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Forging Biography...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="mr-2 h-4 w-4" />
-                      Forge Biography
-                    </>
-                  )}
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <Button type="submit" size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90 transition-transform hover:scale-105" disabled={!canInteract}>
+                      {isGeneratingBio ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Forging...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="mr-2 h-4 w-4" />
+                          Forge Bio
+                        </>
+                      )}
+                    </Button>
+                    <Button size="lg" className="w-full" asChild variant="secondary">
+                        <Link href="/datapacks">
+                            <Package className="mr-2" />
+                            Select DataPack
+                        </Link>
+                    </Button>
+                </div>
                 {!authUser && !authLoading && <p className="text-xs text-center text-muted-foreground">You must be logged in to forge a character.</p>}
               </form>
             </Form>

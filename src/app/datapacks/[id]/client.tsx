@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useTransition } from 'react';
@@ -32,6 +31,10 @@ export function DataPackClient({ pack }: { pack: DataPack; }) {
                 description: result.message,
                 variant: result.success ? 'default' : 'destructive',
             });
+            if (result.success) {
+                // Force a page refresh to get the latest user profile and update the button state
+                router.refresh();
+            }
         });
     };
 
@@ -78,7 +81,7 @@ export function DataPackClient({ pack }: { pack: DataPack; }) {
     };
     
     return (
-        <div className="mt-6 flex gap-4">
+        <div className="mt-6 flex items-center gap-4">
            {renderButtons()}
             {isInstalled && (
                  <div className="flex items-center gap-2 text-green-500 font-semibold">
