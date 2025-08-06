@@ -70,7 +70,7 @@ export function LoginButton() {
              <DropdownMenuItem asChild>
                 <Link href="/admin">
                   <BarChart className="mr-2 h-4 w-4" />
-                  <span>Admin Dashboard</span>
+                  <span>Admin Panel</span>
                 </Link>
               </DropdownMenuItem>
             )}
