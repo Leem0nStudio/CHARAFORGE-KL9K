@@ -204,10 +204,25 @@ export async function getCharactersWithSignedUrls(): Promise<Character[]> {
     // Generate signed URLs for each character's image
     const charactersWithUrls = await Promise.all(
       charactersData.map(async (character) => {
+        // If imageUrl is missing or invalid, return character with a placeholder
+        if (!character.imageUrl || typeof character.imageUrl !== 'string' || character.imageUrl.trim() === '') {
+          console.warn(`Character ${character.id} has an invalid or missing imageUrl. Using placeholder.`);
+          return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
+        }
+
         try {
           const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
           // Extract the file path from the full gs:// URL
-          const filePath = new URL(character.imageUrl).pathname.substring(1).split('/').slice(1).join('/');
+          // Ensure the URL is valid before proceeding
+          let filePath: string;
+          try {
+            const url = new URL(character.imageUrl);
+            filePath = url.pathname.substring(1).split('/').slice(1).join('/');
+          } catch (urlParseError) {
+            console.error(`Failed to parse URL for character ${character.id}:`, urlParseError);
+            return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
+          }
+          
           const file = bucket.file(filePath);
           
           const [signedUrl] = await file.getSignedUrl({

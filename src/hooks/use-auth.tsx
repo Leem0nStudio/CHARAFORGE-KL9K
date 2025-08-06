@@ -104,19 +104,30 @@ const AnvilIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <stop offset="100%" style={{ stopColor: 'hsl(36 91% 52%)' }} />
       </linearGradient>
     </defs>
-    <path 
-      d="M5,15.5 C4.3,15.5 3.5,15.7 3.5,16.5 L3.5,19.5 C3.5,20.3 4.3,20.5 5,20.5 L7,20.5 C7.7,20.5 8.5,20.3 8.5,19.5 L8.5,16.5 C8.5,15.7 7.7,15.5 7,15.5 L5,15.5 z"
+     <path
+      d="M5 15.5c-1.5 0-2.5 1-2.5 2.5v2c0 1.5 1 2.5 2.5 2.5h2.5"
       stroke="url(#anvilGradient)"
-      fill="url(#anvilGradient)"
+      fill="none"
     />
-    <path 
-      d="M3.5,16.5 L20.5,9.5"
+    <path
+      d="M7.5 22.5c1.5 0 2.5-1 2.5-2.5v-2c0-1.5-1-2.5-2.5-2.5"
       stroke="url(#anvilGradient)"
+      fill="none"
     />
-    <path 
-      d="M20.5,9.5 C21.5,9.5 22.5,9 22.5,8 L22.5,6 C22.5,5 21.5,4.5 20.5,4.5 L9.5,4.5 C8.5,4.5 7.5,5 7.5,6 L7.5,8 C7.5,9 8.5,9.5 9.5,9.5 L20.5,9.5 z"
+    <path
+      d="M3 15.5l18-9"
       stroke="url(#anvilGradient)"
-      fill="url(#anvilGradient)"
+      fill="none"
+    />
+    <path
+      d="M21 6.5c1.5 0 2.5-1 2.5-2.5v-1c0-1.5-1-2.5-2.5-2.5h-13C6.5.5 5.5 1.5 5.5 3v1c0 1.5 1 2.5 2.5 2.5"
+      stroke="url(#anvilGradient)"
+      fill="none"
+    />
+    <path
+      d="M9 6.5l12-6"
+      stroke="url(#anvilGradient)"
+      fill="none"
     />
   </svg>
 );
