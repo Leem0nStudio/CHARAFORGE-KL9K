@@ -1,9 +1,9 @@
 
 require('dotenv').config({ path: './.env' });
-const admin = require('firebase-admin');
-const { getStorage } = require('firebase-admin/storage');
-const fs = require('fs').promises;
-const path = require('path');
+import { admin } from 'firebase-admin';
+import { getStorage } from 'firebase-admin/storage';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
 
@@ -41,14 +41,12 @@ async function seedDataPacks() {
             const schemaPath = path.join(packPath, 'schema.json');
             const coverImagePath = path.join(packPath, 'cover.png');
             
-            // Check if metadata.json exists before proceeding
             const metadataExists = await fs.access(metadataPath).then(() => true).catch(() => false);
             if (!metadataExists) {
                 console.warn(`- Skipping ${packId}: metadata.json not found.`);
                 continue;
             }
 
-            // 1. Upload cover image and get URL
             let coverImageUrl = null;
             try {
                  const coverImageExists = await fs.access(coverImagePath).then(() => true).catch(() => false);
@@ -67,7 +65,6 @@ async function seedDataPacks() {
                 console.error(`- Error uploading cover image for ${packId}:`, e);
             }
             
-            // 2. Upload schema.json and get URL
              let schemaUrl = null;
              try {
                 const schemaExists = await fs.access(schemaPath).then(() => true).catch(() => false);
@@ -87,7 +84,6 @@ async function seedDataPacks() {
              }
 
 
-            // 3. Read metadata
             const metadataContent = await fs.readFile(metadataPath, 'utf-8');
             const metadata = JSON.parse(metadataContent);
 
@@ -99,7 +95,6 @@ async function seedDataPacks() {
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
             };
 
-            // 4. Save metadata to Firestore
             await db.collection('datapacks').doc(packId).set(docData, { merge: true });
             console.log(`- Metadata for ${packId} saved to Firestore.`);
         }

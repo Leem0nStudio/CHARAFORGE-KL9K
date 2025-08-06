@@ -15,7 +15,7 @@ export default async function DataPacksPage() {
         <div className="container py-8">
             <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
                 <div>
-                    <h1 className="text-3xl font-semibold font-headline tracking-wider">DataPacks Catalog</h1>
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">DataPacks Catalog</h1>
                     <p className="text-muted-foreground">
                         Browse and select a DataPack to start creating with the Prompt Wizard.
                     </p>
@@ -64,7 +64,7 @@ export default async function DataPacksPage() {
             ) : (
                 <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50 max-w-7xl mx-auto">
                     <h2 className="text-2xl font-medium font-headline tracking-wider mb-2">No DataPacks Found</h2>
-                    <p className="max-w-xs mx-auto">It seems there are no DataPacks available at the moment. Please check back later.</p>
+                    <p className="max-w-xs mx-auto">It seems there are no DataPacks available at the moment. Please check back later or run the seeding script.</p>
                 </div>
             )}
         </div>

@@ -1,3 +1,4 @@
+
 export interface DataPack {
     id: string;
     name: string;
@@ -11,21 +12,36 @@ export interface DataPack {
     createdAt: Date;
 }
 
-export interface DataPackSchemaField {
-    id: string;
-    label: string;
-    type: 'select' | 'text' | 'textarea';
-    optionsSource?: string; // Filename like "hair_styles.txt"
+// Corresponds to PromptBuilder v2 structure
+
+export interface Exclusion {
+    slotId: string;       // The slot to affect e.g. "neck"
+    optionValues: string[]; // The option values to disable e.g. ["cape", "high_collar"]
+}
+
+export interface Option {
+    label: string;      // "Demonic Wings"
+    value: string;      // "demonic_wings"
+    exclusions?: Exclusion[]; // Rules to apply if this option is selected
+}
+
+export interface Slot {
+    id: string;         // e.g. "back"
+    label: string;      // "Back Item"
+    options: Option[];
+    defaultOption?: string;
     placeholder?: string;
-    required?: boolean;
 }
 
 export interface DataPackSchema {
-    fields: DataPackSchemaField[];
+    name: string; // e.g. "Dark Fantasy Character Builder"
+    version: string;
+    slots: Slot[];
     promptTemplate: string;
 }
 
-// Type for the form and server action
+
+// Type for the admin form and server action
 export interface UpsertDataPack {
     id?: string; // Present when updating
     name: string;

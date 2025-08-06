@@ -1,40 +1,127 @@
 
 {
-    "fields": [
+    "name": "Cyberpunk Character Builder",
+    "version": "1.0",
+    "promptTemplate": "A {style} portrait of a {gender} {base_type} with {face}, wearing {headgear} on their head, a {neck} on their neck, and a {torso} on their torso. Their back has {back}. They have {arms} and {hands}. Their expression is {expression}. --ar 16:9",
+    "slots": [
         {
-            "id": "character_type",
-            "label": "Character Type",
-            "type": "select",
-            "optionsSource": "character_type.txt",
-            "required": true
-        },
-        {
-            "id": "art_style",
+            "id": "style",
             "label": "Art Style",
-            "type": "select",
-            "optionsSource": "art_style.txt",
-            "required": true
+            "defaultOption": "detailed cinematic illustration",
+            "options": [
+                { "label": "Cinematic Illustration", "value": "detailed cinematic illustration" },
+                { "label": "Pixel Art", "value": "pixel art" },
+                { "label": "Anime", "value": "anime" },
+                { "label": "Photorealistic", "value": "photorealistic" }
+            ]
         },
         {
-            "id": "hair_style",
-            "label": "Hair Style",
-            "type": "select",
-            "optionsSource": "hair_style.txt",
-            "required": true
+            "id": "gender",
+            "label": "Gender",
+            "defaultOption": "female",
+            "options": [
+                { "label": "Female", "value": "female" },
+                { "label": "Male", "value": "male" },
+                { "label": "Non-binary", "value": "non-binary" }
+            ]
         },
         {
-            "id": "outfit",
-            "label": "Outfit",
-            "type": "select",
-            "optionsSource": "outfit.txt",
-            "required": true
+            "id": "base_type",
+            "label": "Base Type",
+            "defaultOption": "cyborg",
+            "options": [
+                { "label": "Cyborg", "value": "cyborg" },
+                { "label": "Netrunner", "value": "netrunner" },
+                { "label": "Street Samurai", "value": "street samurai" }
+            ]
         },
         {
-            "id": "location",
-            "label": "Location (Optional)",
-            "type": "text",
-            "placeholder": "e.g., a neon-lit alley"
+            "id": "headgear",
+            "label": "Headgear",
+            "placeholder": "Select headgear...",
+            "options": [
+                { "label": "None", "value": "" },
+                { "label": "Cybernetic Visor", "value": "cybernetic visor" },
+                { "label": "Holographic Hood", "value": "holographic hood" },
+                { "label": "Baseball Cap", "value": "baseball cap" }
+            ]
+        },
+        {
+            "id": "face",
+            "label": "Face Details",
+            "placeholder": "Select face details...",
+            "options": [
+                 { "label": "None", "value": "" },
+                { "label": "Facial Tattoos", "value": "facial tattoos" },
+                { "label": "Scanner Lines", "value": "glowing scanner lines across the face" },
+                { "label": "Cybernetic Eye", "value": "a cybernetic eye" }
+            ]
+        },
+        {
+            "id": "neck",
+            "label": "Neckwear",
+            "placeholder": "Select neckwear...",
+            "options": [
+                 { "label": "None", "value": "" },
+                { "label": "Spiked Choker", "value": "spiked choker" },
+                { "label": "High-tech Collar", "value": "high-tech collar" },
+                { "label": "Turtleneck", "value": "a high turtleneck" },
+                { "label": "Flowing Cape", "value": "a long flowing cape" }
+            ]
+        },
+        {
+            "id": "torso",
+            "label": "Torso",
+            "placeholder": "Select torso wear...",
+            "options": [
+                { "label": "Leather Jacket", "value": "leather jacket" },
+                { "label": "Armor Plating", "value": "armor plating" },
+                { "label": "Harness", "value": "a leather harness" }
+            ]
+        },
+        {
+            "id": "back",
+            "label": "Back Item",
+            "placeholder": "Select back item...",
+            "options": [
+                { "label": "None", "value": "" },
+                { 
+                  "label": "Demonic Wings", 
+                  "value": "large demonic wings",
+                  "exclusions": [
+                    { "slotId": "neck", "optionValues": ["cape"] }
+                  ]
+                },
+                { "label": "Jetpack", "value": "a small jetpack" }
+            ]
+        },
+        {
+            "id": "arms",
+            "label": "Arms",
+            "options": [
+                 { "label": "None", "value": "" },
+                { "label": "Cybernetic Arms", "value": "cybernetic arms" },
+                { "label": "Tattooed Arms", "value": "tattooed arms" }
+            ]
+        },
+        {
+            "id": "hands",
+            "label": "Hands",
+            "options": [
+                 { "label": "None", "value": "" },
+                { "label": "Clawed Gloves", "value": "clawed gloves" },
+                { "label": "Fingerless Gloves", "value": "fingerless gloves" }
+            ]
+        },
+        {
+            "id": "expression",
+            "label": "Expression",
+            "defaultOption": "neutral",
+            "options": [
+                { "label": "Neutral", "value": "a neutral expression" },
+                { "label": "Fierce", "value": "a fierce expression" },
+                { "label": "Smiling", "value": "a slight smile" }
+            ]
         }
-    ],
-    "promptTemplate": "A {{art_style}} portrait of a {{character_type}} with {{hair_style}} hair, wearing a {{outfit}}{{location, ', in a '}}"
+    ]
 }
