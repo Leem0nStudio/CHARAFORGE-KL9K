@@ -1,9 +1,12 @@
+
 'use client';
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, BarChart, Package, Shield, Home, Settings } from "lucide-react";
+import { BarChart, Package, Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { AnvilIcon } from "@/hooks/use-auth";
 
 const navItems = [
     { href: '/admin', label: 'Dashboard', icon: BarChart },
@@ -14,12 +17,15 @@ const navItems = [
 export function AdminSidebar() {
     const pathname = usePathname();
 
+    // In a real app, you might fetch this URL or have it in a context
+    const logoUrl = null; // Placeholder
+
     return (
          <div className="hidden border-r bg-muted/40 md:block">
             <div className="flex h-full max-h-screen flex-col gap-2">
                 <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
                     <Link href="/" className="flex items-center gap-2 font-semibold">
-                         <Bot className="h-6 w-6 text-primary" />
+                         <AnvilIcon className="h-8 w-8" />
                          <span className="font-headline text-lg">CharaForge</span>
                     </Link>
                 </div>
