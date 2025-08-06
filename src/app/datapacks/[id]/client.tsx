@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useTransition } from 'react';
@@ -52,11 +53,10 @@ export function DataPackClient({ pack }: { pack: DataPack; }) {
     const renderButtons = () => {
         if (isInstalled) {
             return (
-                 <Button asChild className="w-full md:w-auto" size="lg">
-                    <Link href={`/prompt-wizard?pack=${pack.id}`}>
-                        <Wand2 className="mr-2" /> Use Wizard
-                    </Link>
-                </Button>
+                 <div className="flex items-center gap-2 text-green-500 font-semibold">
+                    <Check />
+                    <span>Installed</span>
+                </div>
             )
         }
 
@@ -83,12 +83,11 @@ export function DataPackClient({ pack }: { pack: DataPack; }) {
     return (
         <div className="mt-6 flex items-center gap-4">
            {renderButtons()}
-            {isInstalled && (
-                 <div className="flex items-center gap-2 text-green-500 font-semibold">
-                    <Check />
-                    <span>Installed</span>
-                </div>
-            )}
+           <Button asChild className="w-full md:w-auto" size="lg" variant="secondary">
+                <Link href="/character-generator">
+                    <Wand2 className="mr-2" /> Go to Generator
+                </Link>
+            </Button>
         </div>
     )
 }

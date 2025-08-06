@@ -23,13 +23,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { updateUserProfile, deleteUserAccount, updateUserPreferences } from './actions';
-import { Loader2, User, Swords, Heart, Package, Gem, Calendar } from 'lucide-react';
+import { updateUserProfile, deleteUserAccount, updateUserPreferences, getInstalledDataPacks } from './actions';
+import { Loader2, User, Swords, Heart, Package, Gem, Calendar, Wand2 } from 'lucide-react';
 import type { UserPreferences, ActionResponse } from './actions';
 import type { UserProfile, UserStats } from '@/types/user';
+import type { DataPack } from '@/types/datapack';
 import { format } from 'date-fns';
 import { BackButton } from '@/components/back-button';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 // #region Sub-components for each Tab
 
@@ -215,6 +217,62 @@ function StatsTab({ userStats }: { userStats?: UserStats }) {
 }
 StatsTab.displayName = "StatsTab";
 
+function DataPacksTab() {
+    const [packs, setPacks] = useState<DataPack[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadPacks() {
+            setIsLoading(true);
+            const installedPacks = await getInstalledDataPacks();
+            setPacks(installedPacks);
+            setIsLoading(false);
+        }
+        loadPacks();
+    }, []);
+
+    if (isLoading) {
+        return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Installed DataPacks</CardTitle>
+                <CardDescription>The creative building blocks you've collected. Use them in the Character Generator.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {packs.length > 0 ? (
+                    <div className="grid md:grid-cols-2 gap-4">
+                        {packs.map(pack => (
+                            <div key={pack.id} className="border p-4 rounded-lg flex items-center justify-between">
+                                <div>
+                                    <h3 className="font-semibold">{pack.name}</h3>
+                                    <p className="text-sm text-muted-foreground">by {pack.author}</p>
+                                </div>
+                                <Button asChild variant="secondary" size="sm">
+                                    <Link href="/character-generator">
+                                        <Wand2 className="mr-2 h-4 w-4" /> Use
+                                    </Link>
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                     <div className="text-center text-muted-foreground py-12">
+                        <p className="mb-4">You haven't installed any DataPacks yet.</p>
+                        <Button asChild>
+                            <Link href="/datapacks">Browse Catalog</Link>
+                        </Button>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    )
+}
+DataPacksTab.displayName = "DataPacksTab";
+
+
 function SecurityTab() {
   const { toast } = useToast();
   const router = useRouter();
@@ -334,22 +392,26 @@ export default function ProfilePage() {
       <div className="max-w-7xl mx-auto">
         <Tabs defaultValue="profile" className="space-y-4">
             <TabsList>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="prefs">Preferences</TabsTrigger>
-            <TabsTrigger value="stats">Statistics</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
+                <TabsTrigger value="profile">Profile</TabsTrigger>
+                <TabsTrigger value="datapacks">DataPacks</TabsTrigger>
+                <TabsTrigger value="prefs">Preferences</TabsTrigger>
+                <TabsTrigger value="stats">Statistics</TabsTrigger>
+                <TabsTrigger value="security">Security</TabsTrigger>
             </TabsList>
             <TabsContent value="profile" className="space-y-4">
-            <ProfileForm user={userProfile} />
+                <ProfileForm user={userProfile} />
+            </TabsContent>
+            <TabsContent value="datapacks" className="space-y-4">
+                <DataPacksTab />
             </TabsContent>
             <TabsContent value="prefs" className="space-y-4">
-            <PreferencesForm initialPreferences={userPreferences} />
+                <PreferencesForm initialPreferences={userPreferences} />
             </TabsContent>
             <TabsContent value="stats" className="space-y-4">
-            <StatsTab userStats={userStats} />
+                <StatsTab userStats={userStats} />
             </TabsContent>
             <TabsContent value="security" className="space-y-4">
-            <SecurityTab />
+                <SecurityTab />
             </TabsContent>
         </Tabs>
       </div>

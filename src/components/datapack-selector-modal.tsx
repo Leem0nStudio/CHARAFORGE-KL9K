@@ -19,15 +19,15 @@ import { cn } from '@/lib/utils';
 
 
 // Sub-component for the selection carousel
-function PackSelector({ packs, onSelect, onCancel }: { packs: DataPack[], onSelect: (pack: DataPack) => void, onCancel: () => void }) {
+function PackSelector({ packs, onSelect }: { packs: DataPack[], onSelect: (pack: DataPack) => void }) {
     const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
     const [selectedIndex, setSelectedIndex] = useState(0);
 
     useEffect(() => {
         if (!emblaApi) return;
-        const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
-        emblaApi.on('select', onSelect);
-        return () => { emblaApi.off('select', onSelect) };
+        const onSelectCallback = () => setSelectedIndex(emblaApi.selectedScrollSnap());
+        emblaApi.on('select', onSelectCallback);
+        return () => { emblaApi.off('select', onSelectCallback) };
     }, [emblaApi]);
 
     return (
@@ -38,7 +38,7 @@ function PackSelector({ packs, onSelect, onCancel }: { packs: DataPack[], onSele
                 </DialogTitle>
                 <DialogDescription>Choose one of your installed packs to start building a prompt.</DialogDescription>
             </DialogHeader>
-            <div className="overflow-hidden" ref={emblaRef}>
+            <div className="overflow-hidden mt-4" ref={emblaRef}>
                 <div className="flex -ml-4">
                     {packs.map(pack => (
                         <div key={pack.id} className="flex-[0_0_80%] min-w-0 pl-4">
@@ -214,18 +214,28 @@ export function DataPackSelectorModal({ isOpen, onClose, onPromptGenerated }: { 
     const renderContent = () => {
         if (isLoading) {
             return (
-                <div className="flex items-center justify-center h-64">
+                <div className="flex flex-col items-center justify-center h-64">
+                     <DialogHeader className="text-center mb-4">
+                        <DialogTitle>Loading Your DataPacks...</DialogTitle>
+                        <DialogDescription>Please wait a moment.</DialogDescription>
+                    </DialogHeader>
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
             )
         }
         if (error) {
             return (
-                <Alert variant="destructive">
-                    <X className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
+                <>
+                    <DialogHeader>
+                        <DialogTitle>Error</DialogTitle>
+                        <DialogDescription>An error occurred while fetching your packs.</DialogDescription>
+                    </DialogHeader>
+                    <Alert variant="destructive">
+                        <X className="h-4 w-4" />
+                        <AlertTitle>Could not load packs</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                </>
             );
         }
 
@@ -234,18 +244,24 @@ export function DataPackSelectorModal({ isOpen, onClose, onPromptGenerated }: { 
         }
         
         if (packs.length > 0) {
-            return <PackSelector packs={packs} onSelect={setSelectedPack} onCancel={onClose} />
+            return <PackSelector packs={packs} onSelect={setSelectedPack} />
         }
 
         return (
-             <Alert>
-                <Package className="h-4 w-4" />
-                <AlertTitle>No DataPacks Installed</AlertTitle>
-                <AlertDescription>
-                    You haven't installed any DataPacks yet. Visit the catalog to add some to your collection.
-                    <Button asChild variant="link" className="p-0 h-auto ml-1"><a href="/datapacks">Go to Catalog</a></Button>
-                </AlertDescription>
-            </Alert>
+            <>
+                <DialogHeader>
+                    <DialogTitle>No DataPacks Found</DialogTitle>
+                    <DialogDescription>Install packs from the catalog to use them here.</DialogDescription>
+                </DialogHeader>
+                <Alert>
+                    <Package className="h-4 w-4" />
+                    <AlertTitle>No DataPacks Installed</AlertTitle>
+                    <AlertDescription>
+                        You haven't installed any DataPacks yet. Visit the catalog to add some to your collection.
+                        <Button asChild variant="link" className="p-0 h-auto ml-1"><a href="/datapacks">Go to Catalog</a></Button>
+                    </AlertDescription>
+                </Alert>
+            </>
         )
     };
 
