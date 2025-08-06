@@ -1,9 +1,12 @@
 
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { DataPack, DataPackSchema } from '@/types/datapack';
+import { verifyAndGetUid } from '@/lib/auth/server';
 
 /**
  * Fetches all public datapacks directly from Firestore.
@@ -87,5 +90,45 @@ export async function getDataPackSchema(packId: string): Promise<DataPackSchema 
     } catch (error) {
         console.error(`Failed to fetch and parse schema for DataPack "${packId}":`, error);
         return null;
+    }
+}
+
+
+export async function installDataPack(packId: string): Promise<{success: boolean, message: string}> {
+    try {
+        const uid = await verifyAndGetUid();
+        if (!adminDb) throw new Error("Database service is not available.");
+
+        const packRef = adminDb.collection('datapacks').doc(packId);
+        const userRef = adminDb.collection('users').doc(uid);
+
+        const [packDoc, userDoc] = await Promise.all([packRef.get(), userRef.get()]);
+
+        if (!packDoc.exists) {
+            return { success: false, message: "This DataPack does not exist." };
+        }
+        
+        const packData = packDoc.data() as DataPack;
+        if (packData.type !== 'free') {
+             return { success: false, message: "This DataPack is not free." };
+        }
+
+        const userData = userDoc.data();
+        if (userData?.stats?.installedPacks?.includes(packId)) {
+            return { success: false, message: "You have already installed this DataPack." };
+        }
+
+        await userRef.update({
+            'stats.installedPacks': FieldValue.arrayUnion(packId)
+        });
+
+        revalidatePath('/profile');
+        revalidatePath('/datapacks');
+
+        return { success: true, message: `Successfully installed "${packData.name}"!` };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+        console.error("Install DataPack Error:", message);
+        return { success: false, message: "Failed to install DataPack." };
     }
 }

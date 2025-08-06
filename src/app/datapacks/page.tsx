@@ -1,12 +1,11 @@
 
 import { getPublicDataPacks } from './actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import Link from 'next/link';
-import { Wand2, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { DataPackCardClient } from './datapack-card-client';
 
 export default async function DataPacksPage() {
     const dataPacks = await getPublicDataPacks();
@@ -25,41 +24,39 @@ export default async function DataPacksPage() {
             {dataPacks.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
                     {dataPacks.map(pack => (
-                        <Card key={pack.id} className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300">
-                             <CardHeader className="p-0">
-                                <div className="relative aspect-video">
-                                    <Image
-                                        src={pack.coverImageUrl || 'https://placehold.co/600x400.png'}
-                                        alt={pack.name}
-                                        fill
-                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                        data-ai-hint="datapack cover image"
-                                    />
-                                     <Badge className={cn(
-                                         "absolute top-2 right-2 font-bold",
-                                         pack.type === 'premium' && "bg-yellow-500 text-black",
-                                         pack.type === 'free' && "bg-green-500",
-                                         pack.type === 'temporal' && "bg-blue-500"
-                                     )}>{pack.type}</Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-6 flex-grow">
-                                <CardTitle>{pack.name}</CardTitle>
-                                <CardDescription className="mt-2 flex items-center gap-2">
-                                    <User className="h-4 w-4" /> 
-                                    <span>by @{pack.author}</span>
-                                </CardDescription>
-                                <p className="mt-4 text-sm text-muted-foreground">{pack.description}</p>
-                            </CardContent>
-                            <CardFooter>
-                                 <Button asChild className="w-full">
-                                    <Link href={`/prompt-wizard?pack=${pack.id}`}>
-                                        <Wand2 className="mr-2" /> Start Wizard
-                                    </Link>
-                                </Button>
-                            </CardFooter>
-                        </Card>
+                       <DataPackCardClient key={pack.id} pack={pack}>
+                            <Card className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
+                                <CardHeader className="p-0">
+                                    <div className="relative aspect-video">
+                                        <Image
+                                            src={pack.coverImageUrl || 'https://placehold.co/600x400.png'}
+                                            alt={pack.name}
+                                            fill
+                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                            data-ai-hint="datapack cover image"
+                                        />
+                                        <Badge className={cn(
+                                            "absolute top-2 right-2 font-bold",
+                                            pack.type === 'premium' && "bg-yellow-500 text-black",
+                                            pack.type === 'free' && "bg-green-500",
+                                            pack.type === 'temporal' && "bg-blue-500"
+                                        )}>{pack.type}</Badge>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-6 flex-grow">
+                                    <CardTitle>{pack.name}</CardTitle>
+                                    <CardDescription className="mt-2 flex items-center gap-2">
+                                        <User className="h-4 w-4" /> 
+                                        <span>by @{pack.author}</span>
+                                    </CardDescription>
+                                    <p className="mt-4 text-sm text-muted-foreground">{pack.description}</p>
+                                </CardContent>
+                                <CardFooter>
+                                    {/* The button will be rendered by the client component */}
+                                </CardFooter>
+                            </Card>
+                       </DataPackCardClient>
                     ))}
                 </div>
             ) : (
