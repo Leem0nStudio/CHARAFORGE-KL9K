@@ -43,18 +43,21 @@ async function seedDataPacks() {
 
             console.log(`Processing DataPack: ${packId}`);
 
-            const metadataPath = path.join(packPath, 'metadata.json');
-            const schemaPath = path.join(packPath, 'schema.json');
-            const coverImagePath = path.join(packPath, 'cover.png');
-            
-            const metadataExists = await fs.access(metadataPath).then(() => true).catch(() => false);
-            if (!metadataExists) {
-                console.warn(`- Skipping ${packId}: metadata.json not found.`);
+            // The new source of truth for all pack data is datapack.json
+            const dataPackJsonPath = path.join(packPath, 'datapack.json');
+            const dataPackJsonExists = await fs.access(dataPackJsonPath).then(() => true).catch(() => false);
+
+            if (!dataPackJsonExists) {
+                console.warn(`- Skipping ${packId}: datapack.json not found.`);
                 continue;
             }
 
+            const dataPackContent = await fs.readFile(dataPackJsonPath, 'utf-8');
+            const dataPackData = JSON.parse(dataPackContent);
+
             let coverImageUrl = null;
-            let coverImagePathInBucket = null;
+            const coverImagePath = path.join(packPath, 'cover.png');
+            
             try {
                  const coverImageExists = await fs.access(coverImagePath).then(() => true).catch(() => false);
                  if (coverImageExists) {
@@ -64,7 +67,6 @@ async function seedDataPacks() {
                         public: true 
                     });
                     coverImageUrl = bucket.file(destination).publicUrl();
-                    coverImagePathInBucket = destination;
                     console.log(`- Cover image uploaded to ${coverImageUrl}`);
                  } else {
                     console.log('- No cover image found.');
@@ -73,42 +75,20 @@ async function seedDataPacks() {
                 console.error(`- Error uploading cover image for ${packId}:`, e);
             }
             
-             let schemaUrl = null;
-             let schemaPathInBucket = null;
-             try {
-                const schemaExists = await fs.access(schemaPath).then(() => true).catch(() => false);
-                 if(schemaExists) {
-                    const destination = `datapacks/${packId}/schema.json`;
-                    await bucket.upload(schemaPath, { 
-                        destination,
-                        public: true
-                    });
-                    schemaUrl = bucket.file(destination).publicUrl();
-                    schemaPathInBucket = destination;
-                    console.log(`- Schema.json uploaded to ${schemaUrl}`);
-                 } else {
-                    console.log('- No schema.json found.');
-                 }
-             } catch (e) {
-                console.error(`- Error uploading schema for ${packId}:`, e);
-             }
-
-
-            const metadataContent = await fs.readFile(metadataPath, 'utf-8');
-            const metadata = JSON.parse(metadataContent);
-
+            // The schema is now embedded within datapack.json
             const docData = {
-                ...metadata,
+                ...dataPackData,
                 id: packId,
                 coverImageUrl: coverImageUrl,
-                coverImagePath: coverImagePathInBucket,
-                schemaUrl: schemaUrl,
-                schemaPath: schemaPathInBucket,
                 createdAt: FieldValue.serverTimestamp(),
             };
 
+            // The schema is already part of docData, so no need to handle schemaUrl
+            delete docData.schemaUrl;
+            delete docData.schemaPath;
+
             await db.collection('datapacks').doc(packId).set(docData, { merge: true });
-            console.log(`- Metadata for ${packId} saved to Firestore.`);
+            console.log(`- Data for ${packId} saved to Firestore.`);
         }
         console.log('\n✅ DataPack seeding completed successfully!');
 

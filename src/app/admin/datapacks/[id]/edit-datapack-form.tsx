@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition, useMemo, useEffect } from 'react';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -129,7 +129,10 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
   // Sync top-level name with schema name
   const nameValue = form.watch('name');
   useEffect(() => {
-    form.setValue('schema.name', nameValue, { shouldValidate: true });
+    // Only set the value if it's different to avoid re-renders
+    if (form.getValues('schema.name') !== nameValue) {
+      form.setValue('schema.name', nameValue, { shouldValidate: true });
+    }
   }, [nameValue, form]);
 
 
@@ -389,5 +392,3 @@ function SchemaPreview({ form }: { form: any }) {
         </Card>
     );
 }
-
-    

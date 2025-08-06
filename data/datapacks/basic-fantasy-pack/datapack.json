@@ -1,0 +1,124 @@
+
+{
+    "name": "Basic Fantasy Pack",
+    "author": "CharaForge",
+    "description": "A foundational pack for creating classic fantasy characters. Includes races, classes, and basic equipment.",
+    "type": "free",
+    "price": 0,
+    "tags": ["fantasy", "rpg", "classic", "starter"],
+    "schema": {
+        "name": "Basic Fantasy Character",
+        "version": "1.0",
+        "promptTemplate": "A {style} portrait of a {gender} {race} {class}, with {hair_style} {hair_color} hair. They are wearing a {armor_torso} and {armor_legs}, wielding a {weapon}. The background is a {background_setting}.",
+        "slots": [
+            {
+                "id": "style",
+                "label": "Art Style",
+                "defaultOption": "detailed fantasy illustration",
+                "options": [
+                    { "label": "Fantasy Illustration", "value": "detailed fantasy illustration" },
+                    { "label": "Oil Painting", "value": "oil painting" },
+                    { "label": "Pencil Sketch", "value": "pencil sketch" },
+                    { "label": "Photorealistic", "value": "photorealistic" }
+                ]
+            },
+            {
+                "id": "gender",
+                "label": "Gender",
+                "defaultOption": "female",
+                "options": [
+                    { "label": "Female", "value": "female" },
+                    { "label": "Male", "value": "male" }
+                ]
+            },
+            {
+                "id": "race",
+                "label": "Race",
+                "defaultOption": "human",
+                "options": [
+                    { "label": "Human", "value": "human" },
+                    { "label": "Elf", "value": "elf" },
+                    { "label": "Dwarf", "value": "dwarf" },
+                    { "label": "Orc", "value": "orc" }
+                ]
+            },
+            {
+                "id": "class",
+                "label": "Class",
+                "placeholder": "Select a class...",
+                "defaultOption": "warrior",
+                "options": [
+                    { "label": "Warrior", "value": "warrior" },
+                    { "label": "Mage", "value": "mage" },
+                    { "label": "Rogue", "value": "rogue" },
+                    { "label": "Cleric", "value": "cleric" }
+                ]
+            },
+            {
+                "id": "hair_style",
+                "label": "Hair Style",
+                "defaultOption": "long",
+                "options": [
+                    { "label": "Long", "value": "long" },
+                    { "label": "Short", "value": "short" },
+                    { "label": "Braided", "value": "braided" },
+                    { "label": "Bald", "value": "bald" }
+                ]
+            },
+            {
+                "id": "hair_color",
+                "label": "Hair Color",
+                "defaultOption": "brown",
+                "options": [
+                    { "label": "Brown", "value": "brown" },
+                    { "label": "Blonde", "value": "blonde" },
+                    { "label": "Black", "value": "black" },
+                    { "label": "Red", "value": "red" }
+                ]
+            },
+            {
+                "id": "armor_torso",
+                "label": "Torso Armor",
+                "placeholder": "Select torso armor...",
+                "options": [
+                    { "label": "Leather Tunic", "value": "leather tunic" },
+                    { "label": "Chainmail Shirt", "value": "chainmail shirt" },
+                    { "label": "Steel Breastplate", "value": "steel breastplate" },
+                    { "label": "Simple Robe", "value": "simple robe" }
+                ]
+            },
+            {
+                "id": "armor_legs",
+                "label": "Leg Armor",
+                "placeholder": "Select leg armor...",
+                "options": [
+                    { "label": "Cloth Trousers", "value": "cloth trousers" },
+                    { "label": "Leather Greaves", "value": "leather greaves" },
+                    { "label": "Plate Leggings", "value": "plate leggings" }
+                ]
+            },
+            {
+                "id": "weapon",
+                "label": "Weapon",
+                "placeholder": "Select a weapon...",
+                "options": [
+                    { "label": "Longsword", "value": "longsword" },
+                    { "label": "Bow and Arrow", "value": "bow and arrow" },
+                    { "label": "Magic Staff", "value": "glowing magic staff" },
+                    { "label": "Dagger", "value": "sharp dagger" }
+                ]
+            },
+            {
+                "id": "background_setting",
+                "label": "Background",
+                "defaultOption": "misty forest",
+                "options": [
+                    { "label": "Misty Forest", "value": "misty forest" },
+                    { "label": "Castle Parapet", "value": "castle parapet" },
+                    { "label": "Tavern Interior", "value": "cozy tavern interior" },
+                    { "label": "Mountain Peak", "value": "snowy mountain peak" }
+                ]
+            }
+        ]
+    }
+}
