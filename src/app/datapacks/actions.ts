@@ -30,7 +30,7 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
             type: data.type || 'free',
             price: data.price || 0,
             createdAt: data.createdAt.toDate(),
-            schemaUrl: data.schemaUrl, // Keep the gs:// or https:// URL here
+            schemaUrl: data.schemaUrl, // Keep the raw storage URL here
         } as DataPack;
     });
 
@@ -43,8 +43,9 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
             }
             try {
                 const bucket = getStorage().bucket();
-                // Extract file path from URL (works for gs:// and https:// storage URLs)
-                const filePath = new URL(pack.schemaUrl).pathname.substring(1).split('/').slice(1).join('/');
+                // Regex to extract the file path from the full https storage URL
+                const filePathMatch = pack.schemaUrl.match(/o\/(.+)\?alt=media/);
+                const filePath = filePathMatch ? decodeURIComponent(filePathMatch[1]) : null;
 
                 if (!filePath) {
                     throw new Error('Could not extract file path from URL.');

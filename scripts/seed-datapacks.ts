@@ -1,23 +1,29 @@
 
 require('dotenv').config({ path: './.env' });
-import { admin } from 'firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
+import { getFirestore } from 'firebase-admin/firestore';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
+// Re-initialize admin here to avoid dependency on the main server file
+const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+if (!serviceAccountKey) {
+  throw new Error('FATAL: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
+}
 
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
+const serviceAccount = JSON.parse(serviceAccountKey);
+
+if (!getApps().length) {
+    initializeApp({
+        credential: cert(serviceAccount),
         storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
 }
 
 
-const db = admin.firestore();
-const storage = getStorage();
-const bucket = storage.bucket();
+const db = getFirestore();
+const bucket = getStorage().bucket();
 
 const DATA_PACKS_DIR = path.join(process.cwd(), 'data', 'datapacks');
 
@@ -92,7 +98,7 @@ async function seedDataPacks() {
                 id: packId,
                 coverImageUrl: coverImageUrl,
                 schemaUrl: schemaUrl,
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                createdAt: getFirestore().FieldValue.serverTimestamp(),
             };
 
             await db.collection('datapacks').doc(packId).set(docData, { merge: true });
