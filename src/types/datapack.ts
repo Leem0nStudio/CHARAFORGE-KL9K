@@ -52,5 +52,8 @@ export interface UpsertDataPack {
     tags: string; // Comma-separated string from the form
     schema: string; // Raw JSON string of the schema
     // {[optionsSource]: content} e.g. {"hair_styles.txt": "mohawk\nponytail"}
+    // This is now deprecated in favor of including options directly in the schema.
     options: Record<string, string>; 
 }
+
+    

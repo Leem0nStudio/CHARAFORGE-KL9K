@@ -44,25 +44,22 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
 
         const packId = data.id || adminDb.collection('datapacks').doc().id;
         
-        let schema: DataPackSchema;
+        // The schema is now pre-formatted JSON, so we just validate it
         try {
-            schema = JSON.parse(data.schema);
+            JSON.parse(data.schema);
         } catch (e) {
             return { success: false, message: 'Invalid schema format. Please provide valid JSON.' };
         }
 
-        let coverImageUrl: string | null = null;
+        let coverImageUrl: string | null = data.id ? (await adminDb.collection('datapacks').doc(data.id).get()).data()?.coverImageUrl : null;
+
         if (coverImage) {
             coverImageUrl = await uploadFileToStorage(packId, 'cover.png', coverImage, 'image/png');
         }
 
-        for (const [fileName, content] of Object.entries(data.options)) {
-            await uploadFileToStorage(packId, `options/${fileName}`, content, 'text/plain');
-        }
-
         const schemaUrl = await uploadFileToStorage(packId, 'schema.json', data.schema, 'application/json');
 
-        const docData = {
+        const docData: Omit<Partial<DataPack>, 'id' | 'createdAt'> & { updatedAt: FieldValue, tags: string[], schemaUrl: string } = {
             name: data.name,
             author: data.author,
             description: data.description,
@@ -70,9 +67,12 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
             price: Number(data.price),
             tags: data.tags.split(',').map(tag => tag.trim()).filter(Boolean),
             schemaUrl,
-            ... (coverImageUrl && { coverImageUrl }), // Conditionally add cover image
             updatedAt: FieldValue.serverTimestamp(),
         };
+
+        if (coverImageUrl) {
+            docData.coverImageUrl = coverImageUrl;
+        }
 
         if (data.id) {
             await adminDb.collection('datapacks').doc(packId).update(docData);
@@ -89,6 +89,7 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
 
     } catch(error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+        console.error("Upsert DataPack Error:", message);
         return { success: false, message: 'Operation failed.', error: message };
     }
 }
@@ -130,7 +131,7 @@ export async function getDataPacks(): Promise<DataPack[]> {
     });
 }
 
-export async function getDataPack(packId: string): Promise<{pack: DataPack, schema: string, options: Record<string, string>} | null> {
+export async function getDataPack(packId: string): Promise<{pack: DataPack, schema: string} | null> {
     if (!adminDb) return null;
     const doc = await adminDb.collection('datapacks').doc(packId).get();
     if (!doc.exists) return null;
@@ -138,27 +139,17 @@ export async function getDataPack(packId: string): Promise<{pack: DataPack, sche
     const pack = { ...doc.data(), id: doc.id, createdAt: doc.data()?.createdAt.toDate() } as DataPack;
 
     let schema = '';
-    let options: Record<string, string> = {};
 
     try {
-        const schemaResponse = await fetch(pack.schemaUrl);
-        schema = await schemaResponse.text();
-
-        const schemaJson: DataPackSchema = JSON.parse(schema);
-        const optionFiles = schemaJson.fields
-            .filter(f => f.type === 'select' && f.optionsSource)
-            .map(f => f.optionsSource!);
-            
-        const bucket = getStorage().bucket();
-        for (const fileName of optionFiles) {
-            const file = bucket.file(`datapacks/${packId}/options/${fileName}`);
-            const [content] = await file.download();
-            options[fileName] = content.toString();
+        if (pack.schemaUrl) {
+            const schemaResponse = await fetch(pack.schemaUrl, { cache: 'no-store' });
+            schema = await schemaResponse.text();
         }
-
     } catch (error) {
-        console.error("Failed to fetch DataPack files from storage:", error);
+        console.error("Failed to fetch DataPack schema from storage:", error);
     }
     
-    return { pack, schema, options };
+    return { pack, schema };
 }
+
+    
