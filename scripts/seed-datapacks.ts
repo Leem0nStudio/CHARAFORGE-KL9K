@@ -1,3 +1,4 @@
+
 require('dotenv').config({ path: './.env' });
 const admin = require('firebase-admin');
 const { getStorage } = require('firebase-admin/storage');
@@ -39,7 +40,6 @@ async function seedDataPacks() {
             const metadataPath = path.join(packPath, 'metadata.json');
             const schemaPath = path.join(packPath, 'schema.json');
             const coverImagePath = path.join(packPath, 'cover.png');
-            const optionsPath = path.join(packPath, 'options');
             
             // 1. Upload cover image and get URL
             let coverImageUrl = null;
@@ -47,9 +47,11 @@ async function seedDataPacks() {
                  const coverImageExists = await fs.access(coverImagePath).then(() => true).catch(() => false);
                  if (coverImageExists) {
                     const destination = `datapacks/${packId}/cover.png`;
-                    await bucket.upload(coverImagePath, { destination });
-                    const file = bucket.file(destination);
-                    coverImageUrl = file.publicUrl();
+                    await bucket.upload(coverImagePath, { 
+                        destination,
+                        public: true 
+                    });
+                    coverImageUrl = bucket.file(destination).publicUrl();
                     console.log(`- Cover image uploaded to ${coverImageUrl}`);
                  } else {
                     console.log('- No cover image found.');
@@ -64,7 +66,10 @@ async function seedDataPacks() {
                 const schemaExists = await fs.access(schemaPath).then(() => true).catch(() => false);
                  if(schemaExists) {
                     const destination = `datapacks/${packId}/schema.json`;
-                    await bucket.upload(schemaPath, { destination });
+                    await bucket.upload(schemaPath, { 
+                        destination,
+                        public: true
+                    });
                     schemaUrl = bucket.file(destination).publicUrl();
                     console.log(`- Schema.json uploaded to ${schemaUrl}`);
                  } else {

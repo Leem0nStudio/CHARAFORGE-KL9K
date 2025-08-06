@@ -16,7 +16,8 @@
     "admin:grant": "node --loader tsx scripts/manage-admin.js grant",
     "admin:revoke": "node --loader tsx scripts/manage-admin.js revoke",
     "admin:check": "node --loader tsx scripts/manage-admin.js check",
-    "admin:list": "node --loader tsx scripts/manage-admin.js list"
+    "admin:list": "node --loader tsx scripts/manage-admin.js list",
+    "datapacks:seed": "tsx scripts/seed-datapacks.ts"
   },
   "dependencies": {
     "@genkit-ai/firebase": "1.14.1",
