@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { BackButton } from '@/components/back-button';
-import type { DataPack, DataPackSchema, Slot, Option } from '@/types/datapack';
+import type { DataPackSchema, Slot, Option } from '@/types/datapack';
 import { getDataPackSchema } from '../datapacks/actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -35,18 +35,13 @@ function PromptWizardComponent() {
                 return;
             }
             try {
-                // Fetch the schema using the secure server action
                 const schemaData = await getDataPackSchema(packId);
-
                 if (!schemaData) {
                     throw new Error(`DataPack with ID "${packId}" not found or has no valid schema.`);
                 }
-
-                // Initialize form with default values from schema
                 for (const slot of schemaData.slots) {
                     setValue(slot.id, slot.defaultOption || '');
                 }
-
                 setSchema(schemaData);
             } catch (err: any) {
                 setError(err.message);
@@ -62,7 +57,6 @@ function PromptWizardComponent() {
         
         const disabled: Record<string, string[]> = {};
         
-        // For each slot, find the selected option
         for (const slotId in formValues) {
             const selectedOptionValue = formValues[slotId];
             if (!selectedOptionValue) continue;
@@ -70,13 +64,14 @@ function PromptWizardComponent() {
             const slot = schema.slots.find(s => s.id === slotId);
             const selectedOption = slot?.options.find(o => o.value === selectedOptionValue);
             
-            // If the selected option has exclusions, process them
             if (selectedOption?.exclusions) {
                 for (const exclusion of selectedOption.exclusions) {
                     if (!disabled[exclusion.slotId]) {
                         disabled[exclusion.slotId] = [];
                     }
-                    disabled[exclusion.slotId].push(...exclusion.optionValues);
+                    // Ensure we handle both array and string formats from older schemas
+                    const values = Array.isArray(exclusion.optionValues) ? exclusion.optionValues : [exclusion.optionValues];
+                    disabled[exclusion.slotId].push(...values);
                 }
             }
         }
@@ -89,10 +84,9 @@ function PromptWizardComponent() {
         let prompt = schema.promptTemplate;
         for (const key in data) {
             const placeholder = `{${key}}`;
-            prompt = prompt.replace(placeholder, data[key] || '');
+            prompt = prompt.replace(new RegExp(placeholder, 'g'), data[key] || '');
         }
-        // Clean up any remaining/empty placeholders
-        prompt = prompt.replace(/\{[a-zA-Z_]+\}/g, '').replace(/,\s*,/g, ',').replace(/, ,/g,',').trim();
+        prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/(\s*,\s*)+/g, ', ').replace(/^,|,$/g, '').trim();
         router.push(`/character-generator?prompt=${encodeURIComponent(prompt)}`);
     };
 
@@ -149,7 +143,7 @@ function PromptWizardComponent() {
                                     render={({ field }) => (
                                         <Select 
                                             onValueChange={field.onChange} 
-                                            defaultValue={field.value}
+                                            value={field.value}
                                         >
                                             <SelectTrigger><SelectValue placeholder={slot.placeholder || "Select..."} /></SelectTrigger>
                                             <SelectContent>

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, PlusCircle, Trash2, Wand2, ArrowRight, Eye, AlertCircle } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Wand2, Eye } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   AlertDialog,
@@ -277,7 +277,7 @@ function SlotForm({ slotIndex, control, register, removeSlot }: any) {
         <AccordionItem value={`slot-${slotIndex}`} className="bg-muted/50 p-4 rounded-lg border">
             <div className="flex items-center justify-between w-full">
                 <AccordionTrigger className="flex-grow font-semibold text-primary">Slot #{slotIndex + 1}</AccordionTrigger>
-                <Button type="button" variant="ghost" size="icon" onClick={() => removeSlot(slotIndex)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSlot(slotIndex);}}><Trash2 className="w-4 h-4 text-destructive" /></Button>
             </div>
             <AccordionContent className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -339,7 +339,8 @@ function SchemaPreview({ form }: { form: any }) {
         for (const key in previewSelections) {
             prompt = prompt.replace(`{${key}}`, previewSelections[key] || '');
         }
-        return prompt.replace(/\{[a-zA-Z_]+\}/g, '').replace(/,\s*,/g, ',').replace(/, ,/g,',').trim();
+        // This regex cleans up remaining placeholders and handles extra commas/spaces
+        return prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/(\s*,\s*)+/g, ', ').replace(/^,|,$/g, '').trim();
     }, [previewSelections, promptTemplate]);
 
     return (
