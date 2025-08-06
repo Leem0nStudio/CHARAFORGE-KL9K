@@ -22,6 +22,7 @@ const SaveCharacterInputSchema = z.object({
   description: z.string(),
   biography: z.string(),
   imageUrl: z.string().startsWith('data:image/'),
+  dataPackId: z.string().optional().nullable(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
@@ -52,11 +53,12 @@ async function uploadImageToStorage(dataUri: string, userId: string): Promise<st
 
     await file.save(imageBuffer, {
         metadata: { contentType },
-        // By NOT setting `public: true`, the file remains private by default.
+        // By setting public to true, we allow it to be displayed in public galleries.
+        public: true,
     });
 
-    // We still store the standard gs-style URL. Access will be granted via signed URLs.
-    return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+    // Return the public URL for easier access in galleries.
+    return file.publicUrl();
 }
 
 
@@ -67,7 +69,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
     throw new Error(`Invalid input for ${firstError.path.join('.')}: ${firstError.message}`);
   }
   
-  const { name, description, biography, imageUrl: imageDataUri } = validation.data;
+  const { name, description, biography, imageUrl: imageDataUri, dataPackId } = validation.data;
   
   try {
     const userId = await verifyAndGetUid();
@@ -84,16 +86,19 @@ export async function saveCharacter(input: SaveCharacterInput) {
     await adminDb.runTransaction(async (transaction) => {
         const userDoc = await transaction.get(userRef);
 
-        transaction.set(characterRef, {
+        const characterData = {
             userId,
             name,
             description,
             biography,
             imageUrl: storageUrl, 
             gallery: [storageUrl],
-            status: 'private',
+            status: 'private', // Characters are private by default
             createdAt: FieldValue.serverTimestamp(),
-        });
+            dataPackId: dataPackId || null,
+        };
+
+        transaction.set(characterRef, characterData);
         
         if (!userDoc.exists || !userDoc.data()?.stats) {
             transaction.set(userRef, { 

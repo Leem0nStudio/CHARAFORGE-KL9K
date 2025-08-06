@@ -80,14 +80,14 @@ function PromptWizardComponent() {
 
 
     const onSubmit = (data: any) => {
-        if (!schema) return;
+        if (!schema || !packId) return;
         let prompt = schema.promptTemplate;
         for (const key in data) {
             const placeholder = `{${key}}`;
             prompt = prompt.replace(new RegExp(placeholder, 'g'), data[key] || '');
         }
         prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/(\s*,\s*)+/g, ', ').replace(/^,|,$/g, '').trim();
-        router.push(`/character-generator?prompt=${encodeURIComponent(prompt)}`);
+        router.push(`/character-generator?prompt=${encodeURIComponent(prompt)}&packId=${encodeURIComponent(packId)}`);
     };
 
     if (isLoading) {

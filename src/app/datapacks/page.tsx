@@ -2,10 +2,11 @@
 import { getPublicDataPacks } from './actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import Image from 'next/image';
+import Link from 'next/link';
 import { User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { DataPackCardClient } from './datapack-card-client';
+import { DataPackClient } from './[id]/client';
 
 export default async function DataPacksPage() {
     const dataPacks = await getPublicDataPacks();
@@ -24,8 +25,8 @@ export default async function DataPacksPage() {
             {dataPacks.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
                     {dataPacks.map(pack => (
-                       <DataPackCardClient key={pack.id} pack={pack}>
-                            <Card className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
+                        <Card key={pack.id} className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
+                           <Link href={`/datapacks/${pack.id}`} className="flex flex-col h-full">
                                 <CardHeader className="p-0">
                                     <div className="relative aspect-video">
                                         <Image
@@ -50,13 +51,13 @@ export default async function DataPacksPage() {
                                         <User className="h-4 w-4" /> 
                                         <span>by @{pack.author}</span>
                                     </CardDescription>
-                                    <p className="mt-4 text-sm text-muted-foreground">{pack.description}</p>
+                                    <p className="mt-4 text-sm text-muted-foreground line-clamp-3">{pack.description}</p>
                                 </CardContent>
-                                <CardFooter>
-                                    {/* The button will be rendered by the client component */}
+                                <CardFooter className="mt-auto">
+                                   <p className="text-sm text-primary font-semibold">View Details →</p>
                                 </CardFooter>
-                            </Card>
-                       </DataPackCardClient>
+                           </Link>
+                        </Card>
                     ))}
                 </div>
             ) : (

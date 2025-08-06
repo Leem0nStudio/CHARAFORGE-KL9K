@@ -15,4 +15,5 @@ export type Character = {
   status: 'private' | 'public';
   createdAt: Date; // Use Date object on both server and client for consistency
   userName?: string; // Optional: May be populated with the creator's display name
+  dataPackId?: string | null; // Optional: The ID of the DataPack used to generate this character
 };

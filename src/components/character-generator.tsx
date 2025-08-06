@@ -55,6 +55,7 @@ type CharacterData = {
   biography: string;
   imageUrl: string | null;
   description: string;
+  dataPackId?: string | null;
 };
 
 export function CharacterGenerator() {
@@ -76,6 +77,8 @@ export function CharacterGenerator() {
       description: "",
     },
   });
+
+  const dataPackId = searchParams.get('packId');
 
   // Effect to read prompt from URL and set it in the form
   useEffect(() => {
@@ -119,6 +122,7 @@ export function CharacterGenerator() {
         biography: bioResult.biography,
         imageUrl: null,
         description: data.description,
+        dataPackId: dataPackId,
       });
     } catch (err: unknown) {
        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during biography generation.";
@@ -174,6 +178,7 @@ export function CharacterGenerator() {
         description: characterData.description,
         biography: characterData.biography,
         imageUrl: characterData.imageUrl,
+        dataPackId: characterData.dataPackId,
       });
 
       toast({
@@ -373,5 +378,3 @@ export function CharacterGenerator() {
     </div>
   );
 }
-
-    

@@ -6,7 +6,6 @@ export interface DataPack {
     author: string;
     description: string;
     coverImageUrl: string | null;
-    schemaUrl: string;
     type: 'free' | 'premium' | 'temporal';
     price: number;
     tags: string[];

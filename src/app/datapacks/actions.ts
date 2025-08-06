@@ -6,6 +6,7 @@ import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { DataPack, DataPackSchema } from '@/types/datapack';
+import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
 
 /**
@@ -37,7 +38,6 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
             author: data.author || 'Unknown Author',
             description: data.description || 'No description available.',
             coverImageUrl: data.coverImageUrl || null,
-            schemaUrl: data.schemaUrl || '',
             type: data.type || 'free',
             price: data.price || 0,
             tags: data.tags || [],
@@ -53,6 +53,18 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
     console.error("Error fetching public datapacks:", error);
     return [];
   }
+}
+
+export async function getDataPack(packId: string): Promise<{pack: DataPack, schema: DataPackSchema | null} | null> {
+    if (!adminDb) return null;
+    const doc = await adminDb.collection('datapacks').doc(packId).get();
+    if (!doc.exists) return null;
+
+    const pack = { ...doc.data(), id: doc.id, createdAt: doc.data()?.createdAt.toDate() } as DataPack;
+
+    const schema = await getDataPackSchema(packId);
+    
+    return { pack, schema };
 }
 
 
@@ -124,6 +136,8 @@ export async function installDataPack(packId: string): Promise<{success: boolean
 
         revalidatePath('/profile');
         revalidatePath('/datapacks');
+        revalidatePath(`/datapacks/${packId}`);
+
 
         return { success: true, message: `Successfully installed "${packData.name}"!` };
     } catch (error) {
@@ -131,4 +145,56 @@ export async function installDataPack(packId: string): Promise<{success: boolean
         console.error("Install DataPack Error:", message);
         return { success: false, message: "Failed to install DataPack." };
     }
+}
+
+export async function getCreationsForDataPack(packId: string): Promise<Character[]> {
+  if (!adminDb) {
+    console.error('Database service is unavailable.');
+    return [];
+  }
+  
+  try {
+    const charactersRef = adminDb.collection('characters');
+    const q = charactersRef
+        .where('dataPackId', '==', packId)
+        .where('status', '==', 'public')
+        .orderBy('createdAt', 'desc')
+        .limit(20);
+    const snapshot = await q.get();
+
+    if (snapshot.empty) {
+      return [];
+    }
+
+    const charactersData = await Promise.all(snapshot.docs.map(async doc => {
+        const data = doc.data();
+        let userName = 'Anonymous';
+
+        if (data.userId) {
+            try {
+                const userDoc = await adminDb.collection('users').doc(data.userId).get();
+                if (userDoc.exists) {
+                    userName = userDoc.data()?.displayName || 'Anonymous';
+                }
+            } catch (userError) {
+                console.error(`Failed to fetch user ${data.userId} for character ${doc.id}:`, userError);
+            }
+        }
+        
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt.toDate(),
+            userName: userName,
+        } as Character;
+    }));
+    
+    // This assumes the imageUrls are public, which they should be for public characters.
+    // If they were private, we would need to generate signed URLs here.
+    return charactersData;
+
+  } catch (error) {
+    console.error(`Error fetching creations for DataPack ${packId}:`, error);
+    return [];
+  }
 }

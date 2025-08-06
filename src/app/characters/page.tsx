@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { BackButton } from '@/components/back-button';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
-import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 
@@ -74,6 +74,7 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
   }, [character.id, character.name, character.status, toast, onCharacterUpdated]);
 
   const isPublic = character.status === 'public';
+  const wasMadeWithDataPack = !!character.dataPackId;
   
   return (
     <AnimatePresence mode="wait">
@@ -142,10 +143,18 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                 </Card>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button variant="outline" onClick={handleCopyPrompt}><Copy /> Copy Original Prompt</Button>
-                    <Button onClick={handleToggleStatus} disabled={isUpdatingStatus}>
-                        {isUpdatingStatus ? <Loader2 className="animate-spin" /> : (isPublic ? <ShieldOff /> : <ShieldCheck />)}
-                        {isPublic ? "Make Private" : "Make Public"}
-                    </Button>
+                    
+                    {wasMadeWithDataPack ? (
+                       <Button onClick={handleToggleStatus} disabled={isUpdatingStatus}>
+                            {isUpdatingStatus ? <Loader2 className="animate-spin" /> : <Share2 />}
+                            {isPublic ? "Unshare from Gallery" : "Share to DataPack Gallery"}
+                        </Button>
+                    ) : (
+                       <Button onClick={handleToggleStatus} disabled={isUpdatingStatus}>
+                            {isUpdatingStatus ? <Loader2 className="animate-spin" /> : (isPublic ? <ShieldOff /> : <ShieldCheck />)}
+                            {isPublic ? "Make Private" : "Make Public"}
+                        </Button>
+                    )}
                 </div>
             </div>
           </CardContent>
@@ -283,5 +292,3 @@ export default function CharactersPage() {
     </div>
   );
 }
-
-    
