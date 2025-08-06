@@ -1,9 +1,10 @@
 
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Bot, Swords, Rocket, ScrollText, User, Star } from 'lucide-react';
+import { Bot, Swords, Rocket, ScrollText, User, Star, Expand, X } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -11,7 +12,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { LoginButton } from '@/components/login-button';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { AlertDialog, AlertDialogContent, AlertDialogTrigger, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { ScrollArea } from './ui/scroll-area';
 
 
 const topCreators = [
@@ -34,6 +37,8 @@ type HomePageClientProps = {
 }
 
 export function HomePageClient({ featuredCreations }: HomePageClientProps) {
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -97,28 +102,35 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
           <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
             <h2 className="font-headline text-3xl leading-[1.1] sm:text-4xl md:text-5xl">Featured Creations</h2>
             <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
-              Explore characters crafted by the CharaForge community.
+              Explore characters crafted by the CharaForge community. Click on any creation to see its story.
             </p>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:gap-6 grid-cols-2 lg:grid-cols-4">
             {featuredCreations.length > 0 ? (
               featuredCreations.map((creation) => (
-              <Card key={creation.id} className="overflow-hidden group">
-                <CardHeader className="p-0 relative">
-                  <Image
-                    src={creation.imageUrl}
-                    alt={creation.name}
-                    width={400}
-                    height={400}
-                    className="w-full h-auto aspect-square object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/0"></div>
-                   <CardTitle className="font-headline text-2xl absolute bottom-4 left-4 text-white drop-shadow-lg">{creation.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 bg-secondary/10">
-                  <CardDescription className='flex items-center gap-2'>by @{creation.userName}</CardDescription>
-                </CardContent>
-              </Card>
+              <motion.div key={creation.id} whileHover={{ y: -5 }} transition={{ type: 'spring', stiffness: 300 }}>
+                  <Card 
+                    className="overflow-hidden group cursor-pointer"
+                    onClick={() => setSelectedCharacter(creation)}
+                  >
+                    <div className="relative">
+                      <Image
+                        src={creation.imageUrl}
+                        alt={creation.name}
+                        width={400}
+                        height={400}
+                        className="w-full h-auto aspect-square object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <Expand className="w-10 h-10 text-white" />
+                       </div>
+                    </div>
+                     <div className="p-4 bg-card/80">
+                        <p className="font-semibold truncate text-foreground">{creation.name}</p>
+                        <p className="text-sm text-muted-foreground">by @{creation.userName}</p>
+                     </div>
+                  </Card>
+              </motion.div>
             ))
             ) : (
                <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[200px] border-2 border-dashed rounded-lg bg-card/50">
@@ -129,6 +141,42 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
             )}
           </div>
         </section>
+
+        <AnimatePresence>
+            {selectedCharacter && (
+              <AlertDialog open onOpenChange={() => setSelectedCharacter(null)}>
+                  <AlertDialogContent className="max-w-4xl max-h-[90vh] flex flex-col md:flex-row p-0 gap-0">
+                     <div className="w-full md:w-1/2 aspect-square md:aspect-auto relative">
+                        <Image src={selectedCharacter.imageUrl} alt={selectedCharacter.name} fill className="object-cover rounded-t-lg md:rounded-l-lg md:rounded-tr-none" />
+                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={() => setSelectedCharacter(null)}>
+                            <X className="w-5 h-5"/>
+                            <span className="sr-only">Close</span>
+                         </Button>
+                     </div>
+                     <div className="w-full md:w-1/2 flex flex-col p-6">
+                        <div className='flex items-center gap-4 mb-4'>
+                           <Avatar>
+                              <AvatarImage src="https://placehold.co/100x100.png" alt={`@${selectedCharacter.userName}`} data-ai-hint="user avatar" />
+                              <AvatarFallback>{selectedCharacter.userName?.charAt(0).toUpperCase()}</AvatarFallback>
+                           </Avatar>
+                           <div className="flex-grow">
+                              <p className="font-bold">@{selectedCharacter.userName}</p>
+                              <p className="text-sm text-muted-foreground">1.2k Followers</p>
+                           </div>
+                           <Button variant="outline">Follow</Button>
+                        </div>
+                        <Separator />
+                        <div className="flex-grow mt-4 overflow-hidden">
+                          <h3 className="text-2xl font-bold font-headline tracking-wider mb-2">{selectedCharacter.name}</h3>
+                          <ScrollArea className="h-64 pr-4">
+                              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedCharacter.biography}</p>
+                          </ScrollArea>
+                        </div>
+                     </div>
+                  </AlertDialogContent>
+              </AlertDialog>
+            )}
+        </AnimatePresence>
 
         <section id="top-creators" className="w-full bg-card/50 dark:bg-card py-16 my-16 border-y">
             <div className="container">

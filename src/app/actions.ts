@@ -30,9 +30,14 @@ export async function getPublicCharacters(): Promise<Character[]> {
         let userName = 'Anonymous';
 
         if (data.userId) {
-            const userDoc = await adminDb.collection('users').doc(data.userId).get();
-            if (userDoc.exists) {
-                userName = userDoc.data()?.displayName || 'Anonymous';
+            try {
+                const userDoc = await adminDb.collection('users').doc(data.userId).get();
+                if (userDoc.exists) {
+                    userName = userDoc.data()?.displayName || 'Anonymous';
+                }
+            } catch (userError) {
+                console.error(`Failed to fetch user ${data.userId} for character ${doc.id}:`, userError);
+                // Keep userName as 'Anonymous' and continue
             }
         }
         
@@ -50,11 +55,18 @@ export async function getPublicCharacters(): Promise<Character[]> {
         try {
           // This check is important if for some reason an old character doesn't have an image URL
           if (!character.imageUrl || !character.imageUrl.startsWith('https://storage.googleapis.com/')) {
+            console.warn(`Character ${character.id} has an invalid or missing imageUrl.`);
             return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
           }
           const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
           // Extract the file path from the full gs:// URL
           const filePath = new URL(character.imageUrl).pathname.substring(1).split('/').slice(1).join('/');
+          
+          if (!filePath) {
+             console.warn(`Could not extract file path from URL for character ${character.id}: ${character.imageUrl}`);
+             return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
+          }
+          
           const file = bucket.file(filePath);
           
           const [signedUrl] = await file.getSignedUrl({
