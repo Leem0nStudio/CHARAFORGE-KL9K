@@ -13,8 +13,8 @@ export function SiteHeader() {
       <div className="container flex h-16 max-w-screen-2xl items-center">
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2">
-            <Bot className="h-7 w-7 text-primary" />
-            <div className="font-bold font-headline text-2xl tracking-wider">
+            <Bot className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+            <div className="font-bold font-headline text-xl sm:text-2xl tracking-wider">
               <span className="text-foreground">Chara</span>
               <span className="bg-gradient-to-tr from-accent to-yellow-500 bg-clip-text text-transparent">Forge</span>
             </div>
@@ -38,3 +38,5 @@ export function SiteHeader() {
     </header>
   );
 }
+
+    

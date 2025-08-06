@@ -87,7 +87,7 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
       >
         <Card className="h-full bg-card/50 border-0 shadow-none">
           <CardContent className="p-0">
-            <div className="relative aspect-[16/9] w-full rounded-t-lg overflow-hidden">
+            <div className="relative aspect-video sm:aspect-[16/9] w-full rounded-t-lg overflow-hidden">
                 <Image
                     src={character.imageUrl}
                     alt={character.name}
@@ -96,11 +96,11 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                     priority
                 />
                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-                 <div className="absolute bottom-6 left-6 text-white">
-                    <h2 className="text-4xl font-extrabold font-headline tracking-wider drop-shadow-lg">{character.name}</h2>
-                    <p className="text-lg text-primary-foreground/80 drop-shadow-md">{isPublic ? "Public Character" : "Private Character"}</p>
+                 <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 text-white">
+                    <h2 className="text-2xl sm:text-4xl font-extrabold font-headline tracking-wider drop-shadow-lg">{character.name}</h2>
+                    <p className="text-base sm:text-lg text-primary-foreground/80 drop-shadow-md">{isPublic ? "Public Character" : "Private Character"}</p>
                  </div>
-                 <div className="absolute top-4 right-4 flex gap-2">
+                 <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex gap-2">
                     <Button variant="secondary" size="icon" asChild>
                         <Link href={`/characters/${character.id}/edit`}><Pencil /></Link>
                     </Button>
@@ -128,7 +128,7 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                   </AlertDialog>
                  </div>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>Biography</CardTitle>
@@ -140,7 +140,7 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                         </ScrollArea>
                     </CardContent>
                 </Card>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button variant="outline" onClick={handleCopyPrompt}><Copy /> Copy Original Prompt</Button>
                     <Button onClick={handleToggleStatus} disabled={isUpdatingStatus}>
                         {isUpdatingStatus ? <Loader2 className="animate-spin" /> : (isPublic ? <ShieldOff /> : <ShieldCheck />)}
@@ -230,7 +230,7 @@ export default function CharactersPage() {
           ) : characters.length > 0 ? (
               <>
                   <aside className="w-full lg:w-1/4">
-                      <ScrollArea className="h-full max-h-[70vh] pr-4">
+                      <ScrollArea className="h-full max-h-[40vh] lg:max-h-[70vh] pr-4">
                           <div className="space-y-2">
                               {characters.map(character => (
                                   <button
@@ -283,3 +283,5 @@ export default function CharactersPage() {
     </div>
   );
 }
+
+    

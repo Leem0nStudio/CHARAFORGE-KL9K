@@ -119,21 +119,21 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
         <AnimatePresence>
             {selectedCharacter && (
               <AlertDialog open onOpenChange={() => setSelectedCharacter(null)}>
-                  <AlertDialogContent className="max-w-4xl max-h-[90vh] flex flex-col md:flex-row p-0 gap-0">
+                  <AlertDialogContent className="w-[95vw] max-w-4xl max-h-[90vh] flex flex-col md:flex-row p-0 gap-0">
                       <AlertDialogHeader className="sr-only">
                         <AlertDialogTitle>{selectedCharacter.name}</AlertDialogTitle>
                         <AlertDialogDescription>
                           Viewing details for the character {selectedCharacter.name}, created by @{selectedCharacter.userName}.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
-                     <div className="w-full md:w-1/2 aspect-square md:aspect-auto relative">
+                     <div className="w-full md:w-1/2 h-64 md:h-auto aspect-square md:aspect-auto relative">
                         <Image src={selectedCharacter.imageUrl} alt={selectedCharacter.name} fill className="object-cover rounded-t-lg md:rounded-l-lg md:rounded-tr-none" />
                          <Button variant="ghost" size="icon" className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full" onClick={() => setSelectedCharacter(null)}>
                             <X className="w-5 h-5"/>
                             <span className="sr-only">Close</span>
                          </Button>
                      </div>
-                     <div className="w-full md:w-1/2 flex flex-col p-6">
+                     <div className="w-full md:w-1/2 flex flex-col p-6 overflow-hidden">
                         <div className='flex items-center gap-4 mb-4'>
                            <Avatar>
                               <AvatarImage src="https://placehold.co/100x100.png" alt={`@${selectedCharacter.userName}`} data-ai-hint="user avatar" />
@@ -146,9 +146,9 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
                            <Button variant="outline">Follow</Button>
                         </div>
                         <Separator />
-                        <div className="flex-grow mt-4 overflow-hidden">
+                        <div className="flex-grow mt-4 overflow-hidden flex flex-col">
                           <h3 className="text-2xl font-bold font-headline tracking-wider mb-2">{selectedCharacter.name}</h3>
-                          <ScrollArea className="h-64 pr-4">
+                          <ScrollArea className="flex-grow pr-4 -mr-4">
                               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedCharacter.biography}</p>
                           </ScrollArea>
                         </div>
@@ -217,3 +217,5 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
     </>
   );
 }
+
+    
