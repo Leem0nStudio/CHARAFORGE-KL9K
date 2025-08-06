@@ -31,7 +31,7 @@ export async function getPublicCharacters(): Promise<Character[]> {
 
         if (data.userId) {
             const userDoc = await adminDb.collection('users').doc(data.userId).get();
-            if (userDoc.exists()) {
+            if (userDoc.exists) {
                 userName = userDoc.data()?.displayName || 'Anonymous';
             }
         }
