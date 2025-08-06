@@ -47,7 +47,7 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
           <div className="mr-4 flex items-center">
             <Link href="/" className="flex items-center gap-2">
                 <Bot className="h-7 w-7 text-primary" />
-                <span className="font-bold font-headline text-2xl tracking-wider text-primary">CharaForge</span>
+                <span className="font-bold font-headline text-2xl tracking-wider bg-gradient-to-r from-primary to-cyan-400 bg-clip-text text-transparent">CharaForge</span>
             </Link>
           </div>
           <div className="flex flex-1 items-center justify-end space-x-2">
@@ -75,7 +75,7 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl font-headline bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent drop-shadow-md">
+                <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl font-headline text-primary drop-shadow-md">
                 Forge Your Legends
                 </h1>
                 <p className="max-w-[700px] mx-auto text-lg text-muted-foreground sm:text-xl mt-4">

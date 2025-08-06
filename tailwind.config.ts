@@ -16,7 +16,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['"Quicksand"', 'sans-serif'],
-        headline: ['"Changa One"', 'sans-serif'],
+        headline: ['"Rowdies"', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
