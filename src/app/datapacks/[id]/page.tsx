@@ -1,3 +1,4 @@
+
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -84,3 +85,5 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
     </div>
   );
 }
+
+    
