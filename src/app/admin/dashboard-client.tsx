@@ -103,6 +103,6 @@ export function DashboardClient({ stats }: DashboardClientProps) {
             <p className="text-muted-foreground">Charts and more detailed analytics will be displayed here.</p>
         </Card>
       </motion.div>
-    </main>
+    </motion.main>
   );
 }
