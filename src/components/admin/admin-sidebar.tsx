@@ -1,15 +1,14 @@
-
 'use client';
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, BarChart, Package, Shield, Home } from "lucide-react";
+import { Bot, BarChart, Package, Shield, Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
     { href: '/admin', label: 'Dashboard', icon: BarChart },
     { href: '/admin/datapacks', label: 'DataPacks', icon: Package },
-    // Add more admin pages here
+    { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 
 export function AdminSidebar() {

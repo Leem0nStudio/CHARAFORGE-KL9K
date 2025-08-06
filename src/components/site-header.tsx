@@ -1,24 +1,30 @@
-
-'use client';
+'use server';
 
 import Link from "next/link";
+import Image from "next/image";
 import { Swords, Package } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LoginButton } from "./login-button";
 import { buttonVariants } from "./ui/button";
 import { cn } from "@/lib/utils";
-import { Bot } from "lucide-react";
+import { getLogoUrl } from "@/lib/app-config";
 
-export function SiteHeader() {
+
+export async function SiteHeader() {
+  const logoUrl = await getLogoUrl();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center">
         <Link href="/" className="mr-6 flex items-center space-x-2">
-          <Bot className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-          <div className="font-bold font-headline text-xl sm:text-2xl tracking-wider">
-            <span className="text-foreground">Chara</span>
-            <span className="bg-gradient-to-tr from-accent to-yellow-500 bg-clip-text text-transparent">Forge</span>
-          </div>
+          {logoUrl ? (
+             <Image src={logoUrl} alt="CharaForge Logo" width={40} height={40} className="h-7 w-7 sm:h-8 sm:w-8" />
+          ) : (
+            <div className="font-bold font-headline text-xl sm:text-2xl tracking-wider">
+                <span className="text-foreground">Chara</span>
+                <span className="bg-gradient-to-tr from-accent to-yellow-500 bg-clip-text text-transparent">Forge</span>
+            </div>
+          )}
         </Link>
         <div className="flex flex-1 items-center justify-end space-x-2">
             <Link
