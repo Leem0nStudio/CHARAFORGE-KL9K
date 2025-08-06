@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, ArrowRight } from 'lucide-react';
 import { BackButton } from '@/components/back-button';
 import type { DataPack, DataPackSchema, Slot, Option } from '@/types/datapack';
-import { getPublicDataPacks } from '../datapacks/actions';
+import { getDataPackSchema } from '../datapacks/actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
@@ -35,20 +35,12 @@ function PromptWizardComponent() {
                 return;
             }
             try {
-                // In a real app, this would fetch the specific datapack.
-                // For now, we fetch all and find the one.
-                const packs = await getPublicDataPacks();
-                const pack = packs.find(p => p.id === packId);
+                // Fetch the schema using the secure server action
+                const schemaData = await getDataPackSchema(packId);
 
-                if (!pack || !pack.schemaUrl) {
-                    throw new Error(`DataPack with ID "${packId}" not found or has no schema.`);
+                if (!schemaData) {
+                    throw new Error(`DataPack with ID "${packId}" not found or has no valid schema.`);
                 }
-                
-                const response = await fetch(pack.schemaUrl);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch schema from ${pack.schemaUrl}`);
-                }
-                const schemaData: DataPackSchema = await response.json();
 
                 // Initialize form with default values from schema
                 for (const slot of schemaData.slots) {
