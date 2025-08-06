@@ -15,8 +15,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['"Exo 2"', 'sans-serif'],
-        headline: ['"Bebas Neue"', 'sans-serif'],
+        body: ['"Quicksand"', 'sans-serif'],
+        headline: ['"Lilita One"', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
