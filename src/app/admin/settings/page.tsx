@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { updateLogo } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { SubmitButton } from './submit-button';
+import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 
 
 export default function AdminSettingsPage() {
@@ -25,8 +26,7 @@ export default function AdminSettingsPage() {
     }, [state, toast]);
 
     return (
-        <div className="flex-1 space-y-4 p-8 pt-6">
-            <h1 className="text-3xl font-bold tracking-tight font-headline">Site Settings</h1>
+        <AdminPageLayout title="Site Settings">
             <Card>
                 <CardHeader>
                     <CardTitle>Logo Management</CardTitle>
@@ -42,6 +42,6 @@ export default function AdminSettingsPage() {
                     </form>
                 </CardContent>
             </Card>
-        </div>
+        </AdminPageLayout>
     );
 }

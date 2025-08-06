@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getDataPacks } from "./actions";
 import { format } from "date-fns";
 import {
@@ -11,25 +12,22 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { DataPackForm } from "./datapack-form";
+import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 
 export default async function DataPacksAdminPage() {
   const dataPacks = await getDataPacks();
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight font-headline">
-          DataPacks
-        </h1>
-        <div className="flex items-center space-x-2">
-          <DataPackForm>
-             <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add New
-            </Button>
-          </DataPackForm>
-        </div>
-      </div>
+    <AdminPageLayout
+      title="DataPacks"
+      actions={
+        <Button asChild>
+          <Link href="/admin/datapacks/new">
+            <PlusCircle className="mr-2 h-4 w-4" /> Add New
+          </Link>
+        </Button>
+      }
+    >
       <Table>
         <TableHeader>
           <TableRow>
@@ -48,11 +46,11 @@ export default async function DataPacksAdminPage() {
               <TableCell>
                 <Badge variant={pack.type === 'premium' ? 'destructive' : 'secondary'}>{pack.type}</Badge>
               </TableCell>
-              <TableCell>{format(pack.createdAt, "PPP")}</TableCell>
+              <TableCell>{format(new Date(pack.createdAt), "PPP")}</TableCell>
               <TableCell>
-                <DataPackForm dataPackId={pack.id}>
-                    <Button variant="outline" size="sm">Edit</Button>
-                </DataPackForm>
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/admin/datapacks/${pack.id}`}>Edit</Link>
+                </Button>
               </TableCell>
             </TableRow>
           ))}
@@ -63,6 +61,6 @@ export default async function DataPacksAdminPage() {
             No datapacks found.
           </div>
         )}
-    </div>
+    </AdminPageLayout>
   );
 }

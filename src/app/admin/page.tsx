@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { adminApp } from '@/lib/firebase/server';
 import { getDashboardStats } from './actions';
 import { DashboardClient } from './dashboard-client';
+import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 
 async function getIsAdmin(): Promise<boolean> {
   const cookieStore = cookies();
@@ -44,5 +45,9 @@ export default async function AdminDashboardPage() {
   
   const stats = await getDashboardStats();
 
-  return <DashboardClient stats={stats} />;
+  return (
+    <AdminPageLayout title="Dashboard">
+        <DashboardClient stats={stats} />
+    </AdminPageLayout>
+  )
 }

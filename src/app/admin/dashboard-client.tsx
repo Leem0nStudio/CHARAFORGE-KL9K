@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,15 +37,7 @@ export function DashboardClient({ stats }: DashboardClientProps) {
   };
 
   return (
-    <motion.main 
-        className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-    >
-      <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl font-headline tracking-wider">Admin Dashboard</h1>
-      </div>
+    <>
       <motion.div 
         className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3"
         variants={containerVariants}
@@ -103,6 +94,6 @@ export function DashboardClient({ stats }: DashboardClientProps) {
             <p className="text-muted-foreground">Charts and more detailed analytics will be displayed here.</p>
         </Card>
       </motion.div>
-    </motion.main>
+    </>
   );
 }
