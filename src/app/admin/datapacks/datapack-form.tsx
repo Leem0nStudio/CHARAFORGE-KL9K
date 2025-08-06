@@ -366,14 +366,14 @@ function SlotForm({ slotIndex, control, register, removeSlot }: any) {
 
     return (
         <AccordionItem value={`slot-${slotIndex}`} className="bg-card/50 p-4 rounded-lg border">
-            <AccordionTrigger>
-                <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between w-full">
+                <AccordionTrigger className="flex-grow">
                     <span className="font-semibold text-primary">Slot #{slotIndex + 1}</span>
-                    <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSlot(slotIndex);}}>
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                </div>
-            </AccordionTrigger>
+                </AccordionTrigger>
+                <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeSlot(slotIndex);}}>
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+            </div>
             <AccordionContent className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
                     <Input {...register(`slots.${slotIndex}.id`)} placeholder="Slot ID (e.g., 'headgear')" />
@@ -442,4 +442,5 @@ function OptionForm({ slotIndex, optionIndex, control, register, removeOption }:
 }
 
 
+    
     
