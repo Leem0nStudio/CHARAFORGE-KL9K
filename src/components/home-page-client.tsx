@@ -40,8 +40,16 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
     <div className="flex flex-col min-h-screen">
         <main className="flex-1">
              {/* Hero Section with Carousel */}
-            <section className="w-full h-[60vh] md:h-[70vh] relative overflow-hidden">
-                <div className="embla h-full" ref={emblaRef}>
+            <section className="w-full relative overflow-hidden">
+                <div className="container py-12 md:py-16">
+                    <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center mb-12">
+                        <h2 className="font-headline text-3xl leading-[1.1] sm:text-4xl md:text-5xl">Featured Creations</h2>
+                        <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
+                            Discover the latest legendary characters forged by our community.
+                        </p>
+                    </div>
+                </div>
+                <div className="embla h-[60vh] md:h-[70vh]" ref={emblaRef}>
                     <div className="embla__container h-full">
                         {featuredCreations.map((creation) => (
                             <div key={creation.id} className="embla__slide relative h-full">
@@ -97,7 +105,7 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
                                     <AvatarImage src={creator.avatar} alt={creator.name} data-ai-hint={creator.hint} />
                                     <AvatarFallback>{creator.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
-                                <h3 className="text-xl font-bold">{creator.name}</h3>
+                                <h3 className="text-xl font-bold font-headline">{creator.name}</h3>
                                 <p className="text-muted-foreground text-sm mb-4">{`@${creator.name.toLowerCase()}`}</p>
                                 <div className="flex justify-around">
                                     <div className="text-center">
@@ -135,7 +143,7 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
                                     <Image src={pack.image} alt={pack.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" data-ai-hint={pack.hint} />
                                 </div>
                                 <CardContent className="p-4">
-                                    <h3 className="text-lg font-bold truncate">{pack.name}</h3>
+                                    <h3 className="text-lg font-bold truncate font-headline">{pack.name}</h3>
                                     <p className="text-sm text-muted-foreground">by @{pack.author}</p>
                                     <div className="flex justify-between items-center mt-4">
                                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -147,7 +155,7 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
                                             Install
                                         </Button>
                                     </div>
-                                </CardContent>
+                                 </CardContent>
                             </Card>
                         </motion.div>
                     ))}

@@ -22,7 +22,7 @@ export function SiteHeader() {
         <div className="flex flex-1 items-center justify-end space-x-2">
            <Link
               href="/character-generator"
-              className={cn(buttonVariants(), "bg-primary text-primary-foreground hover:bg-primary/90 hidden sm:flex")}
+              className={cn(buttonVariants(), "bg-primary text-primary-foreground hover:bg-primary/90 hidden sm:flex font-headline")}
             >
               <Swords className="mr-2" />
               Create
