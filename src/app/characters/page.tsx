@@ -8,23 +8,19 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { getCharactersWithSignedUrls, deleteCharacter, updateCharacterStatus } from './actions';
 import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { LoginButton } from '@/components/login-button';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { BackButton } from '@/components/back-button';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
-import { Bot, Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 
 function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdated }: { character: Character; onCharacterDeleted: (id: string) => void; onCharacterUpdated: () => void; }) {
   const { toast } = useToast();
-  const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
@@ -206,7 +202,7 @@ export default function CharactersPage() {
     return characters.find(c => c.id === selectedCharacterId);
   }, [characters, selectedCharacterId]);
   
-  if (authLoading || (loading && characters.length === 0)) {
+  if (authLoading || (loading && characters.length === 0 && !authUser)) {
      return (
       <div className="flex items-center justify-center h-screen w-full">
          <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -215,89 +211,75 @@ export default function CharactersPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/20">
-       <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
-         <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
-            <Link href="/" className="flex items-center gap-2">
-                <Bot className="h-6 w-6 mr-2 text-primary" />
-                 <div className="font-bold font-headline text-2xl tracking-wider">
-                    <span className="text-foreground">Chara</span><span className="bg-gradient-to-t from-accent from-70% to-yellow-600/80 bg-clip-text text-transparent">Forge</span>
-                </div>
-            </Link>
-           <div className="flex flex-1 items-center justify-end space-x-4">
-             <nav className="flex items-center space-x-1">
-               <LoginButton />
-               <ThemeToggle />
-             </nav>
-           </div>
-         </div>
-       </header>
-       <main className="flex-1 container py-8">
-        <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
-           <div className="flex items-center gap-4">
-              <BackButton />
-              <div className='flex flex-col'>
-                <h1 className="text-3xl font-semibold font-headline tracking-wider">My Characters</h1>
-                <p className="text-muted-foreground">Select a character from your collection to view their details.</p>
+    <div className="container py-8">
+      <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
+          <div className="flex items-center gap-4">
+            <BackButton />
+            <div className='flex flex-col'>
+              <h1 className="text-3xl font-semibold font-headline tracking-wider">My Characters</h1>
+              <p className="text-muted-foreground">Select a character from your collection to view their details.</p>
+            </div>
+        </div>
+      </div>
+      
+      <div className="flex flex-col lg:flex-row gap-8">
+          {loading && characters.length === 0 ? (
+             <div className="w-full flex items-center justify-center p-8 min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : characters.length > 0 ? (
+              <>
+                  <aside className="w-full lg:w-1/4">
+                      <ScrollArea className="h-full max-h-[70vh] pr-4">
+                          <div className="space-y-2">
+                              {characters.map(character => (
+                                  <button
+                                      key={character.id}
+                                      onClick={() => setSelectedCharacterId(character.id)}
+                                      className={cn(
+                                          "w-full text-left p-2 rounded-lg border-2 border-transparent transition-all duration-200 hover:bg-card/80",
+                                          selectedCharacterId === character.id && "bg-card border-primary shadow-md"
+                                      )}
+                                  >
+                                      <div className="flex items-center gap-4">
+                                          <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0">
+                                              <Image src={character.imageUrl} alt={character.name} fill className="object-cover" />
+                                          </div>
+                                          <div>
+                                              <p className="font-semibold text-card-foreground">{character.name}</p>
+                                              <p className="text-xs text-muted-foreground">{character.status === 'public' ? "Public" : "Private"}</p>
+                                          </div>
+                                      </div>
+                                  </button>
+                              ))}
+                          </div>
+                      </ScrollArea>
+                  </aside>
+                  
+                  {selectedCharacter ? (
+                      <CharacterDetailPanel 
+                          character={selectedCharacter} 
+                          onCharacterDeleted={handleCharacterDeleted}
+                          onCharacterUpdated={fetchCharacters}
+                      />
+                  ) : (
+                        <div className="w-full lg:w-3/4 flex items-center justify-center">
+                          <p className="text-muted-foreground">Select a character to see details.</p>
+                        </div>
+                  )}
+              </>
+          ) : (
+              <div className="col-span-full w-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
+                  <User className="h-16 w-16 mb-4 text-primary/70" />
+                  <h2 className="text-2xl font-medium font-headline tracking-wider mb-2">Your Gallery is Empty</h2>
+                  <p className="max-w-xs mx-auto mb-6">It looks like you haven't forged any characters yet. Let's bring your first legend to life!</p>
+                  <Link href="/character-generator" className={cn(buttonVariants({ size: 'lg' }), "bg-accent text-accent-foreground hover:bg-accent/90")}>
+                      <Swords className="mr-2 h-5 w-5" />
+                      Forge a New Character
+                  </Link>
               </div>
-          </div>
-        </div>
-        
-        <div className="flex flex-col lg:flex-row gap-8">
-            {characters.length > 0 ? (
-                <>
-                    <aside className="w-full lg:w-1/4">
-                        <ScrollArea className="h-full max-h-[70vh] pr-4">
-                            <div className="space-y-2">
-                                {characters.map(character => (
-                                    <button
-                                        key={character.id}
-                                        onClick={() => setSelectedCharacterId(character.id)}
-                                        className={cn(
-                                            "w-full text-left p-2 rounded-lg border-2 border-transparent transition-all duration-200 hover:bg-card/80",
-                                            selectedCharacterId === character.id && "bg-card border-primary shadow-md"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0">
-                                                <Image src={character.imageUrl} alt={character.name} fill className="object-cover" />
-                                            </div>
-                                            <div>
-                                                <p className="font-semibold text-card-foreground">{character.name}</p>
-                                                <p className="text-xs text-muted-foreground">{character.status === 'public' ? "Public" : "Private"}</p>
-                                            </div>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </aside>
-                    
-                    {selectedCharacter ? (
-                        <CharacterDetailPanel 
-                           character={selectedCharacter} 
-                           onCharacterDeleted={handleCharacterDeleted}
-                           onCharacterUpdated={fetchCharacters}
-                        />
-                    ) : (
-                         <div className="w-full lg:w-3/4 flex items-center justify-center">
-                            <p className="text-muted-foreground">Select a character to see details.</p>
-                         </div>
-                    )}
-                </>
-            ) : (
-                <div className="col-span-full w-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
-                    <User className="h-16 w-16 mb-4 text-primary/70" />
-                    <h2 className="text-2xl font-medium font-headline tracking-wider mb-2">Your Gallery is Empty</h2>
-                    <p className="max-w-xs mx-auto mb-6">It looks like you haven't forged any characters yet. Let's bring your first legend to life!</p>
-                    <Link href="/character-generator" className={cn(buttonVariants({ size: 'lg' }), "bg-accent text-accent-foreground hover:bg-accent/90")}>
-                        <Swords className="mr-2 h-5 w-5" />
-                        Forge a New Character
-                    </Link>
-                </div>
-            )}
-        </div>
-      </main>
+          )}
+      </div>
     </div>
   );
 }

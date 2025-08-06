@@ -5,15 +5,13 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Bot, Swords, Rocket, ScrollText, User, Star, Expand, X } from 'lucide-react';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { LoginButton } from '@/components/login-button';
+import { Card, CardContent } from '@/components/ui/card';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogContent } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
@@ -41,34 +39,7 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 max-w-screen-2xl items-center">
-          <div className="mr-4 flex items-center">
-            <Link href="/" className="flex items-center gap-2">
-                <Bot className="h-7 w-7 text-primary" />
-                 <div className="font-bold font-headline text-2xl tracking-wider">
-                    <span className="text-foreground">Chara</span><span className="bg-gradient-to-t from-accent from-70% to-yellow-600/80 bg-clip-text text-transparent">Forge</span>
-                </div>
-            </Link>
-          </div>
-          <div className="flex flex-1 items-center justify-end space-x-2">
-            <nav className="flex items-center">
-              <Link
-                href="/character-generator"
-                className={buttonVariants({
-                  variant: "ghost",
-                })}
-              >
-                Create
-              </Link>
-              <LoginButton />
-              <ThemeToggle />
-            </nav>
-          </div>
-        </div>
-      </header>
-      <main className="flex-1">
+    <>
         <section className="relative w-full py-20 md:py-32 lg:py-40 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-background via-transparent to-primary/20 -z-10"></div>
              <motion.div 
@@ -219,36 +190,24 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
              {dataPacks.map((pack) => (
                 <Card key={pack.name} className="flex flex-col group hover:border-primary transition-all duration-300 hover:shadow-primary/30">
-                  <CardHeader className="flex-grow">
+                  <CardContent className="p-6 flex-grow">
                     <div className="flex items-start gap-4">
                        <div className="p-4 bg-primary/10 rounded-lg text-primary transition-colors duration-300 group-hover:bg-primary group-hover:text-primary-foreground">{pack.icon}</div>
                        <div className="flex-1">
-                         <CardTitle className="font-headline text-2xl mb-1">{pack.name}</CardTitle>
-                         <CardDescription>{pack.description}</CardDescription>
+                         <h3 className="font-headline text-2xl mb-1">{pack.name}</h3>
+                         <p className="text-muted-foreground">{pack.description}</p>
                        </div>
                     </div>
-                  </CardHeader>
-                  <CardFooter className="pt-4 mt-auto">
+                  </CardContent>
+                  <div className="p-6 pt-0 mt-auto">
                     <Button variant="outline" className="w-full transition-colors duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary">
                       Explore Pack
                     </Button>
-                  </CardFooter>
+                  </div>
                 </Card>
             ))}
           </div>
         </section>
-
-      </main>
-      <footer className="py-6 md:px-8 md:py-0 mt-16 border-t">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
-          <div className="flex items-center gap-2">
-             <Bot className="h-5 w-5 text-muted-foreground" />
-            <p className="text-balance text-center text-sm leading-loose text-muted-foreground md:text-left">
-              CharaForge &copy; {new Date().getFullYear()}. Forged with AI.
-            </p>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </>
   );
 }
