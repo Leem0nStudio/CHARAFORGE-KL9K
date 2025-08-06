@@ -6,20 +6,15 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Copy, Trash2, Loader2, Pencil, ShieldCheck, ShieldOff } from 'lucide-react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { deleteCharacter, updateCharacterStatus } from '@/app/characters/actions';
@@ -35,6 +30,7 @@ import {
   AlertDialogTrigger,
 } from './ui/alert-dialog';
 import type { Character } from '@/types/character';
+import { ScrollArea } from './ui/scroll-area';
 
 type CharacterCardProps = {
   character: Character;
@@ -63,7 +59,7 @@ function CharacterCardComponent({ character, onCharacterDeleted }: CharacterCard
         title: 'Character Deleted',
         description: `${character.name} has been removed from your gallery.`,
       });
-      onCharacterDeleted(); // Callback to refresh the list
+      onCharacterDeleted();
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
@@ -84,7 +80,6 @@ function CharacterCardComponent({ character, onCharacterDeleted }: CharacterCard
         title: `Character Updated!`,
         description: `${character.name} is now ${newStatus}.`,
       });
-      // Instead of relying on onSnapshot, we can just refresh the page data
       router.refresh(); 
     } catch (error: unknown) {
       toast({
@@ -98,113 +93,113 @@ function CharacterCardComponent({ character, onCharacterDeleted }: CharacterCard
   }, [character.id, character.name, character.status, toast, router]);
 
   const isPublic = character.status === 'public';
-
   const cardVariants = {
-    hidden: { opacity: 0, y: 20, scale: 0.95 },
-    visible: { opacity: 1, y: 0, scale: 1 },
-    exit: { opacity: 0, y: -20, scale: 0.95 },
+    hidden: { opacity: 0, y: 50 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { type: "spring", stiffness: 100, damping: 15 }
+    },
+    exit: { opacity: 0, x: -50 },
   };
 
   return (
-    <motion.div variants={cardVariants} exit="exit" layout>
-      <Card className="flex flex-col group h-full overflow-hidden">
-        <CardHeader className="p-0 relative">
-          <div className="aspect-square w-full overflow-hidden">
+    <AnimatePresence>
+      <motion.div variants={cardVariants} initial="hidden" animate="visible" exit="exit" layout>
+        <Card className="flex flex-col md:flex-row group w-full overflow-hidden min-h-[450px]">
+          {/* Left Side: Image */}
+          <div className="md:w-2/5 w-full relative">
+            <div className="aspect-square w-full h-full">
               {character.imageUrl ? (
-              <Image
-                  src={character.imageUrl}
-                  alt={character.name}
-                  width={400}
-                  height={400}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  priority={false} // Only prioritize above-the-fold images
-              />
+                <Image
+                    src={character.imageUrl}
+                    alt={character.name}
+                    fill
+                    className="object-cover"
+                    priority={false}
+                />
               ) : (
-              <div className="w-full h-full bg-muted flex items-center justify-center">
-                  <p className="text-muted-foreground text-sm">No Image</p>
-              </div>
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <p className="text-muted-foreground text-sm">No Image</p>
+                </div>
               )}
+            </div>
+             {/* Floating Action Buttons */}
+             <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Button variant="secondary" size="icon" asChild>
+                      <Link href={`/characters/${character.id}/edit`}>
+                          <Pencil />
+                          <span className="sr-only">Edit</span>
+                      </Link>
+                  </Button>
+                   <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon" disabled={isDeleting}>
+                            {isDeleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                            <span className="sr-only">Delete</span>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete your character
+                          and remove their data from our servers.
+                          </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className={buttonVariants({ variant: "destructive" })}>
+                          {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Delete
+                          </AlertDialogAction>
+                      </AlertDialogFooter>
+                      </AlertDialogContent>
+                  </AlertDialog>
+             </div>
+             {isPublic && (
+                <div className="absolute top-3 left-3 bg-primary text-primary-foreground text-xs font-bold py-1 px-3 rounded-full shadow-lg flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3"/>
+                PUBLIC
+                </div>
+            )}
           </div>
-          {isPublic && (
-            <div className="absolute top-3 right-3 bg-primary text-primary-foreground text-xs font-bold py-1 px-3 rounded-full shadow-lg flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3"/>
-              PUBLIC
-            </div>
-          )}
-        </CardHeader>
-        <CardContent className="p-4 flex-grow">
-          <CardTitle className="font-headline text-2xl mb-2">{character.name}</CardTitle>
-          <Accordion type="single" collapsible>
-            <AccordionItem value="item-1" className="border-b-0">
-              <AccordionTrigger>
-                <span className="flex items-center gap-2 text-sm font-semibold">
-                  <BookOpen className="h-4 w-4" /> Biography
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground text-sm space-y-3 py-2">
-                {character.biography
-                  .split('\n')
-                  .filter((p) => p.trim() !== '')
-                  .map((paragraph, index) => (
-                    <p key={index}>{paragraph}</p>
-                  ))}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </CardContent>
-        <CardFooter className="p-4 flex flex-col gap-2 mt-auto bg-card/50 border-t">
-             <div className="flex justify-between items-center mb-2 w-full">
-              <h4 className="text-sm font-semibold flex items-center gap-2">
-                Actions
-              </h4>
-              <Button variant="ghost" size="sm" onClick={handleCopyPrompt}>
-                <Copy className="h-4 w-4 mr-2" />
-                Copy Prompt
-              </Button>
-            </div>
-            <div className='flex w-full gap-2'>
+          
+          {/* Right Side: Content */}
+          <div className="md:w-3/5 w-full flex flex-col p-6">
+            <CardHeader className="p-0">
+               <CardTitle className="font-headline text-4xl mb-2">{character.name}</CardTitle>
+               <CardDescription>Created on {new Date(character.createdAt).toLocaleDateString()}</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0 mt-4 flex-grow flex flex-col">
+              <h4 className="font-headline text-lg mb-2 flex items-center gap-2 text-muted-foreground"><BookOpen/> Biography</h4>
+              <div className="flex-grow relative">
+                <ScrollArea className="absolute inset-0 pr-4">
+                  <p className="text-sm space-y-4 text-muted-foreground">
+                      {character.biography}
+                  </p>
+                </ScrollArea>
+              </div>
+            </CardContent>
+            <CardFooter className="p-0 mt-6 flex flex-col items-start gap-4">
+               <Button variant="ghost" size="sm" onClick={handleCopyPrompt}>
+                  <Copy className="mr-2" />
+                  Copy Original Prompt
+                </Button>
               <Button 
                   variant={isPublic ? "secondary" : "default"} 
                   className="w-full" 
                   onClick={handleToggleStatus} 
                   disabled={isUpdatingStatus}
               >
-                  {isUpdatingStatus ? <Loader2 className="animate-spin" /> : (isPublic ? <ShieldOff/> : <ShieldCheck/>)}
+                  {isUpdatingStatus ? <Loader2 className="animate-spin mr-2" /> : (isPublic ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>)}
                   {isPublic ? 'Make Private' : 'Make Public'}
               </Button>
-              <Button variant="outline" className="w-full" asChild>
-                  <Link href={`/characters/${character.id}/edit`}>
-                      <Pencil />
-                      Edit
-                  </Link>
-              </Button>
-              <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="icon" disabled={isDeleting}>
-                        {isDeleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                  <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete your character
-                      and remove their data from our servers.
-                      </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className={buttonVariants({ variant: "destructive" })}>
-                      {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Delete
-                      </AlertDialogAction>
-                  </AlertDialogFooter>
-                  </AlertDialogContent>
-              </AlertDialog>
-            </div>
-        </CardFooter>
-      </Card>
-    </motion.div>
+            </CardFooter>
+          </div>
+        </Card>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 

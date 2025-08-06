@@ -20,12 +20,16 @@ import { BackButton } from '@/components/back-button';
 
 function CharacterListSkeleton() {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="space-y-2">
-            <Skeleton className="h-auto w-full aspect-square rounded-lg" />
-            <Skeleton className="h-8 w-2/3" />
-            <Skeleton className="h-6 w-full" />
+      <div className="flex flex-col gap-8">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="flex flex-col md:flex-row gap-6 p-4 border rounded-lg">
+             <Skeleton className="h-64 w-full md:w-1/3 aspect-square rounded-lg" />
+             <div className="w-full md:w-2/3 space-y-4">
+                <Skeleton className="h-8 w-1/2" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-4/5" />
+             </div>
           </div>
         ))}
       </div>
@@ -101,7 +105,7 @@ export default function CharactersPage() {
         {loading ? (
             <CharacterListSkeleton />
         ) : characters.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="flex flex-col gap-8">
               {characters.map((character) => (
                 <CharacterCard key={character.id} character={character} onCharacterDeleted={fetchCharacters} />
               ))}
