@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { DataPack, UpsertDataPack, DataPackSchema } from '@/types/datapack';
+import type { DataPack, UpsertDataPack } from '@/types/datapack';
 import { verifyAndGetUid } from '@/lib/auth/server';
 
 export type ActionResponse = {
@@ -18,10 +18,10 @@ export type ActionResponse = {
 async function uploadFileToStorage(
     packId: string, 
     fileName: string, 
-    content: string | Buffer,
+    content: Buffer,
     contentType: string,
 ): Promise<string> {
-    const bucket = getStorage().bucket();
+    const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
     const filePath = `datapacks/${packId}/${fileName}`;
     const file = bucket.file(filePath);
 
@@ -36,7 +36,7 @@ async function uploadFileToStorage(
 
 export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer): Promise<ActionResponse> {
     try {
-        await verifyAndGetUid(); // Ensure user is admin
+        await verifyAndGetUid(); 
         
         if (!adminDb) {
             throw new Error('Database service is unavailable.');
@@ -44,40 +44,36 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
 
         const packId = data.id || adminDb.collection('datapacks').doc().id;
         
-        // The schema is now pre-formatted JSON, so we just validate it
-        try {
-            JSON.parse(data.schema);
-        } catch (e) {
-            return { success: false, message: 'Invalid schema format. Please provide valid JSON.' };
+        let coverImageUrl: string | null = null;
+        if (data.id) {
+            const existingDoc = await adminDb.collection('datapacks').doc(data.id).get();
+            if (existingDoc.exists) {
+                coverImageUrl = existingDoc.data()?.coverImageUrl || null;
+            }
         }
-
-        let coverImageUrl: string | null = data.id ? (await adminDb.collection('datapacks').doc(data.id).get()).data()?.coverImageUrl : null;
 
         if (coverImage) {
             coverImageUrl = await uploadFileToStorage(packId, 'cover.png', coverImage, 'image/png');
         }
 
-        const schemaUrl = await uploadFileToStorage(packId, 'schema.json', data.schema, 'application/json');
-
-        const docData: Omit<Partial<DataPack>, 'id' | 'createdAt'> & { updatedAt: FieldValue, tags: string[], schemaUrl: string } = {
+        const docData = {
             name: data.name,
             author: data.author,
             description: data.description,
             type: data.type,
             price: Number(data.price),
             tags: data.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-            schemaUrl,
+            schema: data.schema, // The schema is now an object
             updatedAt: FieldValue.serverTimestamp(),
+            coverImageUrl: coverImageUrl,
         };
-
-        if (coverImageUrl) {
-            docData.coverImageUrl = coverImageUrl;
-        }
+        
+        const docRef = adminDb.collection('datapacks').doc(packId);
 
         if (data.id) {
-            await adminDb.collection('datapacks').doc(packId).update(docData);
+            await docRef.update(docData);
         } else {
-             await adminDb.collection('datapacks').doc(packId).set({
+             await docRef.set({
                 ...docData,
                 id: packId,
                 createdAt: FieldValue.serverTimestamp(),
@@ -85,6 +81,7 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
         }
         
         revalidatePath('/admin/datapacks');
+        revalidatePath(`/datapacks/${packId}`);
         return { success: true, message: `DataPack "${data.name}" ${data.id ? 'updated' : 'created'} successfully!` };
 
     } catch(error) {
@@ -102,14 +99,13 @@ export async function deleteDataPack(packId: string): Promise<ActionResponse> {
             throw new Error('Database service is unavailable.');
         }
 
-        // Delete Firestore document
         await adminDb.collection('datapacks').doc(packId).delete();
 
-        // Delete all associated files in Storage
-        const bucket = getStorage().bucket();
+        const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
         await bucket.deleteFiles({ prefix: `datapacks/${packId}/` });
         
         revalidatePath('/admin/datapacks');
+        revalidatePath('/datapacks');
         return { success: true, message: 'DataPack deleted successfully.' };
     } catch(error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
@@ -131,25 +127,20 @@ export async function getDataPacks(): Promise<DataPack[]> {
     });
 }
 
-export async function getDataPack(packId: string): Promise<{pack: DataPack, schema: string} | null> {
+export async function getDataPack(packId: string): Promise<DataPack | null> {
     if (!adminDb) return null;
-    const doc = await adminDb.collection('datapacks').doc(packId).get();
+    const docRef = adminDb.collection('datapacks').doc(packId);
+    const doc = await docRef.get();
+
     if (!doc.exists) return null;
 
-    const pack = { ...doc.data(), id: doc.id, createdAt: doc.data()?.createdAt.toDate() } as DataPack;
+    const data = doc.data() as any;
 
-    let schema = '';
-
-    try {
-        if (pack.schemaUrl) {
-            const schemaResponse = await fetch(pack.schemaUrl, { cache: 'no-store' });
-            schema = await schemaResponse.text();
-        }
-    } catch (error) {
-        console.error("Failed to fetch DataPack schema from storage:", error);
-    }
-    
-    return { pack, schema };
+    return {
+        ...data,
+        id: doc.id,
+        createdAt: data.createdAt.toDate(),
+    } as DataPack;
 }
 
     

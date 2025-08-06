@@ -30,9 +30,10 @@ export default async function EditDataPackPage({ params }: EditDataPackPageProps
   return (
     <AdminPageLayout title={title} breadcrumbs={breadcrumbs}>
       <EditDataPackForm
-        initialData={data?.pack || null}
-        initialSchema={data?.schema || null}
+        initialData={data}
       />
     </AdminPageLayout>
   );
 }
+
+    

@@ -11,8 +11,6 @@ import { verifyAndGetUid } from '@/lib/auth/server';
 
 /**
  * Fetches all public datapacks directly from Firestore.
- * This version assumes that the URLs stored in Firestore (coverImageUrl, schemaUrl)
- * are already public and accessible.
  * @returns {Promise<DataPack[]>} A promise that resolves to an array of datapack objects.
  */
 export async function getPublicDataPacks(): Promise<DataPack[]> {
@@ -29,21 +27,12 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
       return [];
     }
 
-    // Map the documents directly to the DataPack type.
     const dataPacksData = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
-            name: data.name || 'Unnamed DataPack',
-            author: data.author || 'Unknown Author',
-            description: data.description || 'No description available.',
-            coverImageUrl: data.coverImageUrl || null,
-            type: data.type || 'free',
-            price: data.price || 0,
-            tags: data.tags || [],
+            ...data,
             createdAt: data.createdAt.toDate(),
-            schemaPath: data.schemaPath,
-            coverImagePath: data.coverImagePath,
         } as DataPack;
     });
 
@@ -55,52 +44,32 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
   }
 }
 
-export async function getDataPack(packId: string): Promise<{pack: DataPack, schema: DataPackSchema | null} | null> {
-    if (!adminDb) return null;
-    const doc = await adminDb.collection('datapacks').doc(packId).get();
-    if (!doc.exists) return null;
-
-    const pack = { ...doc.data(), id: doc.id, createdAt: doc.data()?.createdAt.toDate() } as DataPack;
-
-    const schema = await getDataPackSchema(packId);
-    
-    return { pack, schema };
-}
-
-
 /**
- * Securely fetches a DataPack schema from Firebase Storage using the Admin SDK.
- * This avoids client-side CORS issues by proxying the request through the server.
- * @param {string} packId The ID of the datapack to fetch the schema for.
- * @returns {Promise<DataPackSchema | null>} A promise that resolves to the parsed schema object or null on error.
+ * Fetches a single DataPack from Firestore.
+ * The schema is now embedded in the document, so no extra fetch is needed.
+ * @param {string} packId The ID of the datapack to fetch.
+ * @returns {Promise<DataPack | null>} A promise that resolves to the datapack object or null if not found.
  */
-export async function getDataPackSchema(packId: string): Promise<DataPackSchema | null> {
+export async function getDataPack(packId: string): Promise<DataPack | null> {
     if (!adminDb) {
-        console.error('Database service is unavailable.');
-        return null;
+      console.error('Database service is unavailable.');
+      return null;
     }
     try {
-        const packDoc = await adminDb.collection('datapacks').doc(packId).get();
-        if (!packDoc.exists) {
-            console.error(`DataPack document with ID "${packId}" not found.`);
+        const doc = await adminDb.collection('datapacks').doc(packId).get();
+        if (!doc.exists) {
+            console.warn(`DataPack document with ID "${packId}" not found.`);
             return null;
         }
 
-        const schemaPath = packDoc.data()?.schemaPath;
-        if (!schemaPath) {
-            console.error(`Schema path is not defined for DataPack "${packId}".`);
-            return null;
-        }
-
-        const bucket = getStorage().bucket();
-        const file = bucket.file(schemaPath);
-        const [fileContents] = await file.download();
-        
-        const schema = JSON.parse(fileContents.toString('utf8'));
-        return schema;
-
+        const data = doc.data();
+        return {
+            ...data,
+            id: doc.id,
+            createdAt: data?.createdAt.toDate(),
+        } as DataPack
     } catch (error) {
-        console.error(`Failed to fetch and parse schema for DataPack "${packId}":`, error);
+        console.error(`Failed to fetch DataPack "${packId}":`, error);
         return null;
     }
 }
@@ -198,3 +167,5 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
     return [];
   }
 }
+
+    

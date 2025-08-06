@@ -10,8 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { BackButton } from '@/components/back-button';
-import type { DataPackSchema, Slot, Option } from '@/types/datapack';
-import { getDataPackSchema } from '../datapacks/actions';
+import type { DataPack, Slot, Option } from '@/types/datapack';
+import { getDataPack } from '../datapacks/actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
@@ -20,7 +20,7 @@ function PromptWizardComponent() {
     const searchParams = useSearchParams();
     const packId = searchParams.get('pack');
 
-    const [schema, setSchema] = useState<DataPackSchema | null>(null);
+    const [pack, setPack] = useState<DataPack | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -28,32 +28,36 @@ function PromptWizardComponent() {
     const formValues = watch();
 
     useEffect(() => {
-        async function fetchSchema() {
+        async function fetchPack() {
             if (!packId) {
                 setError("No DataPack ID specified in URL.");
                 setIsLoading(false);
                 return;
             }
             try {
-                const schemaData = await getDataPackSchema(packId);
-                if (!schemaData) {
+                const packData = await getDataPack(packId);
+                if (!packData || !packData.schema) {
                     throw new Error(`DataPack with ID "${packId}" not found or has no valid schema.`);
                 }
-                for (const slot of schemaData.slots) {
-                    setValue(slot.id, slot.defaultOption || '');
+                
+                // Set default values for the form based on the schema
+                for (const slot of packData.schema.slots) {
+                    if (slot.defaultOption) {
+                        setValue(slot.id, slot.defaultOption, { shouldValidate: true });
+                    }
                 }
-                setSchema(schemaData);
+                setPack(packData);
             } catch (err: any) {
                 setError(err.message);
             } finally {
                 setIsLoading(false);
             }
         }
-        fetchSchema();
+        fetchPack();
     }, [packId, setValue]);
 
     const disabledOptions = useMemo(() => {
-        if (!schema) return {};
+        if (!pack?.schema) return {};
         
         const disabled: Record<string, string[]> = {};
         
@@ -61,7 +65,7 @@ function PromptWizardComponent() {
             const selectedOptionValue = formValues[slotId];
             if (!selectedOptionValue) continue;
 
-            const slot = schema.slots.find(s => s.id === slotId);
+            const slot = pack.schema.slots.find(s => s.id === slotId);
             const selectedOption = slot?.options.find(o => o.value === selectedOptionValue);
             
             if (selectedOption?.exclusions) {
@@ -69,19 +73,17 @@ function PromptWizardComponent() {
                     if (!disabled[exclusion.slotId]) {
                         disabled[exclusion.slotId] = [];
                     }
-                    // Ensure we handle both array and string formats from older schemas
-                    const values = Array.isArray(exclusion.optionValues) ? exclusion.optionValues : [exclusion.optionValues];
-                    disabled[exclusion.slotId].push(...values);
+                    disabled[exclusion.slotId].push(...exclusion.optionValues);
                 }
             }
         }
         return disabled;
-    }, [formValues, schema]);
+    }, [formValues, pack]);
 
 
     const onSubmit = (data: any) => {
-        if (!schema || !packId) return;
-        let prompt = schema.promptTemplate;
+        if (!pack?.schema || !packId) return;
+        let prompt = pack.schema.promptTemplate;
         for (const key in data) {
             const placeholder = `{${key}}`;
             prompt = prompt.replace(new RegExp(placeholder, 'g'), data[key] || '');
@@ -108,7 +110,7 @@ function PromptWizardComponent() {
          )
     }
 
-    if (!schema) {
+    if (!pack?.schema) {
         return <p>No schema loaded.</p>
     }
 
@@ -118,7 +120,7 @@ function PromptWizardComponent() {
             <div className="flex items-center gap-4">
                 <BackButton />
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight font-headline">{schema.name}</h1>
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">{pack.name}</h1>
                     <p className="text-muted-foreground">
                        Fill out the fields to construct a detailed character prompt.
                     </p>
@@ -134,12 +136,13 @@ function PromptWizardComponent() {
             <CardContent>
                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {schema.slots.map(slot => (
+                        {pack.schema.slots.map(slot => (
                              <div key={slot.id}>
                                 <Label>{slot.label}</Label>
                                  <Controller
                                     name={slot.id}
                                     control={control}
+                                    defaultValue={slot.defaultOption || ""}
                                     render={({ field }) => (
                                         <Select 
                                             onValueChange={field.onChange} 
@@ -185,3 +188,5 @@ export default function PromptWizardPage() {
         </Suspense>
     );
 }
+
+    

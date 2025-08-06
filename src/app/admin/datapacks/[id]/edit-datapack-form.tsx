@@ -36,11 +36,13 @@ const ExclusionSchema = z.object({
   slotId: z.string().min(1),
   optionValues: z.string().min(1, 'Comma-separated values required'),
 });
+
 const OptionSchema = z.object({
   label: z.string().min(1),
   value: z.string().min(1),
   exclusions: z.array(ExclusionSchema).optional(),
 });
+
 const SlotSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
@@ -48,57 +50,52 @@ const SlotSchema = z.object({
   placeholder: z.string().optional(),
   options: z.array(OptionSchema).min(1, "At least one option is required."),
 });
+
+const DataPackSchemaForForm = z.object({
+  name: z.string().min(1, "Name is required"),
+  version: z.string().optional().default("1.0"),
+  promptTemplate: z.string().min(1, "Prompt template is required"),
+  slots: z.array(SlotSchema),
+});
+
 const FormSchema = z.object({
-  // Metadata
   name: z.string().min(1, 'Name is required'),
   author: z.string().min(1, 'Author is required'),
   description: z.string().min(1, 'Description is required'),
   type: z.enum(['free', 'premium', 'temporal']),
   price: z.number().min(0),
   tags: z.string().optional(),
-  // Schema
-  promptTemplate: z.string().min(1, "Prompt template is required"),
-  slots: z.array(SlotSchema),
+  schema: DataPackSchemaForForm,
 });
+
 type FormValues = z.infer<typeof FormSchema>;
 
-// Helper function to stringify schema with consistent formatting
-const getFormattedSchema = (values: FormValues): string => {
-  const finalSchema: DataPackSchema = {
-    name: values.name,
-    version: "2.0",
-    promptTemplate: values.promptTemplate,
-    slots: values.slots.map(s => ({
+// Helper function to prepare data for submission
+const getFinalSchema = (schemaValues: z.infer<typeof DataPackSchemaForForm>): DataPackSchema => {
+  return {
+    ...schemaValues,
+    slots: schemaValues.slots.map(s => ({
       ...s,
       options: s.options.map(o => ({
         ...o,
         exclusions: (o.exclusions || []).map(e => ({
           ...e,
+          // Convert comma-separated string back to array of strings
           optionValues: e.optionValues.split(',').map(v => v.trim()).filter(Boolean),
         })),
       }))
     })),
   };
-  return JSON.stringify(finalSchema, null, 2);
 };
 
-
 // Main Form Component
-export function EditDataPackForm({ initialData, initialSchema }: { initialData: DataPack | null, initialSchema: string | null }) {
+export function EditDataPackForm({ initialData }: { initialData: DataPack | null }) {
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [coverImage, setCoverImage] = useState<File | null>(null);
 
   const defaultValues = useMemo(() => {
-    let schema: DataPackSchema | null = null;
-    if (initialSchema) {
-      try {
-        schema = JSON.parse(initialSchema);
-      } catch {
-        toast({ variant: 'destructive', title: 'Error parsing initial schema' });
-      }
-    }
     return {
       name: initialData?.name || '',
       author: initialData?.author || 'CharaForge',
@@ -106,21 +103,35 @@ export function EditDataPackForm({ initialData, initialSchema }: { initialData: 
       type: initialData?.type || 'free',
       price: initialData?.price || 0,
       tags: initialData?.tags?.join(', ') || '',
-      promptTemplate: schema?.promptTemplate || 'A {style} portrait of a {gender} {base_type}.',
-      slots: schema?.slots.map(s => ({
-        ...s,
-        options: (s.options || []).map(o => ({
-          ...o,
-          exclusions: (o.exclusions || []).map(e => ({ ...e, optionValues: e.optionValues.join(',') })),
-        })),
-      })) || [],
+      schema: {
+        name: initialData?.schema?.name || initialData?.name || '',
+        version: initialData?.schema?.version || '1.0',
+        promptTemplate: initialData?.schema?.promptTemplate || 'A {style} portrait of a {gender} {base_type}.',
+        slots: initialData?.schema?.slots.map(s => ({
+          ...s,
+          options: (s.options || []).map(o => ({
+            ...o,
+            // Convert array of strings to a single comma-separated string for the form
+            exclusions: (o.exclusions || []).map(e => ({ ...e, optionValues: e.optionValues.join(',') })),
+          })),
+        })) || [],
+      }
     };
-  }, [initialData, initialSchema, toast]);
+  }, [initialData]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues,
+    // The form is complex, so we re-validate on change for a better UX
+    mode: 'onChange',
   });
+  
+  // Sync top-level name with schema name
+  const nameValue = form.watch('name');
+  useEffect(() => {
+    form.setValue('schema.name', nameValue, { shouldValidate: true });
+  }, [nameValue, form]);
+
 
   const onSubmit = (values: FormValues) => {
     startTransition(async () => {
@@ -138,7 +149,8 @@ export function EditDataPackForm({ initialData, initialSchema }: { initialData: 
         type: values.type,
         price: values.price,
         tags: values.tags || '',
-        schema: getFormattedSchema(values),
+        // Convert the form's schema data into the final, clean schema structure
+        schema: getFinalSchema(values.schema),
       };
 
       const result = await upsertDataPack(dataToSave, imageBuffer);
@@ -182,7 +194,7 @@ export function EditDataPackForm({ initialData, initialSchema }: { initialData: 
                          </AlertDialogTrigger>
                          <AlertDialogContent>
                              <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
-                             <AlertDialogDescription>This will permanently delete the DataPack and all its associated files. This action cannot be undone.</AlertDialogDescription>
+                             <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
                              <AlertDialogFooter>
                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
                                  <AlertDialogAction onClick={handleDelete} disabled={isPending}>
@@ -237,9 +249,9 @@ export function EditDataPackForm({ initialData, initialSchema }: { initialData: 
 function SchemaEditor({ form }: { form: any }) {
     const { fields: slots, append: appendSlot, remove: removeSlot } = useFieldArray({
         control: form.control,
-        name: "slots"
+        name: "schema.slots"
     });
-
+    
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -254,15 +266,15 @@ function SchemaEditor({ form }: { form: any }) {
             <CardContent>
                  <div className="space-y-2 mb-6">
                     <Label>Prompt Template</Label>
-                    <Textarea {...form.register('promptTemplate')} className="font-mono text-xs" placeholder="A {style} portrait of a {gender} {base_type}..." />
-                    {form.formState.errors.promptTemplate && <p className="text-destructive text-sm mt-1">{form.formState.errors.promptTemplate.message}</p>}
+                    <Textarea {...form.register('schema.promptTemplate')} className="font-mono text-xs" placeholder="A {style} portrait of a {gender} {base_type}..." />
+                    {form.formState.errors.schema?.promptTemplate && <p className="text-destructive text-sm mt-1">{form.formState.errors.schema.promptTemplate.message}</p>}
                 </div>
                  <Accordion type="multiple" className="space-y-4">
                      {slots.map((slot, slotIndex) => (
                         <SlotForm key={slot.id} slotIndex={slotIndex} removeSlot={removeSlot} control={form.control} register={form.register} />
                      ))}
                 </Accordion>
-                {form.formState.errors.slots && <p className="text-destructive text-sm mt-4">{(form.formState.errors.slots as any).message || 'Error in slots.'}</p>}
+                {form.formState.errors.schema?.slots && <p className="text-destructive text-sm mt-4">{(form.formState.errors.schema.slots as any).message || 'Error in slots.'}</p>}
             </CardContent>
         </Card>
     );
@@ -271,7 +283,7 @@ function SchemaEditor({ form }: { form: any }) {
 // Slot Form
 function SlotForm({ slotIndex, control, register, removeSlot }: any) {
     const { fields: options, append: appendOption, remove: removeOption } = useFieldArray({
-        control, name: `slots.${slotIndex}.options`
+        control, name: `schema.slots.${slotIndex}.options`
     });
     return (
         <AccordionItem value={`slot-${slotIndex}`} className="bg-muted/50 p-4 rounded-lg border">
@@ -281,12 +293,12 @@ function SlotForm({ slotIndex, control, register, removeSlot }: any) {
             </div>
             <AccordionContent className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
-                    <Input {...register(`slots.${slotIndex}.id`)} placeholder="Slot ID (e.g., 'headgear')" />
-                    <Input {...register(`slots.${slotIndex}.label`)} placeholder="Label (e.g., 'Headgear')" />
+                    <Input {...register(`schema.slots.${slotIndex}.id`)} placeholder="Slot ID (e.g., 'headgear')" />
+                    <Input {...register(`schema.slots.${slotIndex}.label`)} placeholder="Label (e.g., 'Headgear')" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                    <Input {...register(`slots.${slotIndex}.defaultOption`)} placeholder="Default Option Value (optional)" />
-                    <Input {...register(`slots.${slotIndex}.placeholder`)} placeholder="Placeholder Text (optional)" />
+                    <Input {...register(`schema.slots.${slotIndex}.defaultOption`)} placeholder="Default Option Value (optional)" />
+                    <Input {...register(`schema.slots.${slotIndex}.placeholder`)} placeholder="Placeholder Text (optional)" />
                 </div>
                 <div className="border-t pt-4 mt-4">
                     <div className="flex items-center justify-between mb-2"><Label>Options</Label><Button type="button" variant="outline" size="sm" onClick={() => appendOption({ label: '', value: '' })}><PlusCircle className="mr-2"/> Add Option</Button></div>
@@ -300,13 +312,13 @@ function SlotForm({ slotIndex, control, register, removeSlot }: any) {
 // Option Form
 function OptionForm({ slotIndex, optionIndex, control, register, removeOption }: any) {
     const { fields: exclusions, append: appendExclusion, remove: removeExclusion } = useFieldArray({
-        control, name: `slots.${slotIndex}.options.${optionIndex}.exclusions`
+        control, name: `schema.slots.${slotIndex}.options.${optionIndex}.exclusions`
     });
     return (
         <div className="border p-3 rounded-md bg-background space-y-3">
             <div className="flex items-center gap-2">
-                <Input {...register(`slots.${slotIndex}.options.${optionIndex}.label`)} placeholder="Label (e.g., 'Cyber Visor')" />
-                <Input {...register(`slots.${slotIndex}.options.${optionIndex}.value`)} placeholder="Value (e.g., 'cyber_visor')" />
+                <Input {...register(`schema.slots.${slotIndex}.options.${optionIndex}.label`)} placeholder="Label (e.g., 'Cyber Visor')" />
+                <Input {...register(`schema.slots.${slotIndex}.options.${optionIndex}.value`)} placeholder="Value (e.g., 'cyber_visor')" />
                 <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(optionIndex)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
             </div>
             <Accordion type="single" collapsible className="w-full">
@@ -314,8 +326,8 @@ function OptionForm({ slotIndex, optionIndex, control, register, removeOption }:
                     <AccordionContent className="space-y-2 pt-2">
                         {exclusions.map((_, exclusionIndex) => (
                             <div key={exclusionIndex} className="flex items-center gap-2">
-                                <Input {...register(`slots.${slotIndex}.options.${optionIndex}.exclusions.${exclusionIndex}.slotId`)} placeholder="Target Slot ID (e.g., 'face')" />
-                                <Input {...register(`slots.${slotIndex}.options.${optionIndex}.exclusions.${exclusionIndex}.optionValues`)} placeholder="Values (e.g., 'mask,goggles')" />
+                                <Input {...register(`schema.slots.${slotIndex}.options.${optionIndex}.exclusions.${exclusionIndex}.slotId`)} placeholder="Target Slot ID (e.g., 'face')" />
+                                <Input {...register(`schema.slots.${slotIndex}.options.${optionIndex}.exclusions.${exclusionIndex}.optionValues`)} placeholder="Values (e.g., 'mask,goggles')" />
                                 <Button type="button" variant="ghost" size="icon" onClick={() => removeExclusion(exclusionIndex)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
                             </div>
                         ))}
@@ -330,8 +342,8 @@ function OptionForm({ slotIndex, optionIndex, control, register, removeOption }:
 // Live Preview Component
 function SchemaPreview({ form }: { form: any }) {
     const { watch } = form;
-    const allFormValues = watch();
-    const { slots = [], promptTemplate = '' } = allFormValues;
+    const schemaValues = watch('schema');
+    const { slots = [], promptTemplate = '' } = schemaValues || {};
     const [previewSelections, setPreviewSelections] = useState<Record<string, string>>({});
 
     const finalPrompt = useMemo(() => {
@@ -375,5 +387,7 @@ function SchemaPreview({ form }: { form: any }) {
                 <div className="w-full p-3 rounded-md bg-muted text-sm font-mono min-h-[80px] text-muted-foreground">{finalPrompt || '...'}</div>
             </CardFooter>
         </Card>
-    )
+    );
 }
+
+    
