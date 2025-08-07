@@ -19,10 +19,22 @@ import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Sh
 import { motion, AnimatePresence } from 'framer-motion';
 
 
-function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdated }: { character: Character; onCharacterDeleted: (id: string) => void; onCharacterUpdated: () => void; }) {
+function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdated }: { character: Character | null; onCharacterDeleted: (id: string) => void; onCharacterUpdated: () => void; }) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  
+  // Render nothing or a placeholder if no character is selected
+  if (!character) {
+    return (
+        <div className="w-full lg:w-3/4 flex items-center justify-center h-full min-h-[600px]">
+            <div className="text-center text-muted-foreground">
+                <User className="h-12 w-12 mx-auto mb-4" />
+                <p>Select a character from the list to see their details.</p>
+            </div>
+        </div>
+    );
+  }
 
   const handleCopyPrompt = useCallback(() => {
     navigator.clipboard.writeText(character.description);
@@ -88,8 +100,9 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
       >
         <Card className="h-full bg-card/50 border-0 shadow-none">
           <CardContent className="p-0">
-            <div className="relative aspect-video sm:aspect-[16/9] w-full rounded-t-lg overflow-hidden">
+            <div className="relative aspect-video sm:aspect-[16/9] w-full rounded-t-lg overflow-hidden bg-muted">
                 <Image
+                    key={character.imageUrl} // Forces re-render when the URL (potentially signed) changes
                     src={character.imageUrl}
                     alt={character.name}
                     fill
@@ -200,15 +213,17 @@ export default function CharactersPage() {
   }, [authUser, authLoading, router, fetchCharacters]);
   
   const handleCharacterDeleted = useCallback((deletedId: string) => {
-    const remainingCharacters = characters.filter(c => c.id !== deletedId);
-    setCharacters(remainingCharacters);
-    if (selectedCharacterId === deletedId) {
-        setSelectedCharacterId(remainingCharacters.length > 0 ? remainingCharacters[0].id : null);
-    }
-  }, [characters, selectedCharacterId]);
+    setCharacters(prev => {
+        const remaining = prev.filter(c => c.id !== deletedId);
+        if (selectedCharacterId === deletedId) {
+            setSelectedCharacterId(remaining.length > 0 ? remaining[0].id : null);
+        }
+        return remaining;
+    });
+  }, [selectedCharacterId]);
   
   const selectedCharacter = useMemo(() => {
-    return characters.find(c => c.id === selectedCharacterId);
+    return characters.find(c => c.id === selectedCharacterId) || null;
   }, [characters, selectedCharacterId]);
   
   if (authLoading || (loading && characters.length === 0 && !authUser)) {
@@ -251,7 +266,7 @@ export default function CharactersPage() {
                                       )}
                                   >
                                       <div className="flex items-center gap-4">
-                                          <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0">
+                                          <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted">
                                               <Image src={character.imageUrl} alt={character.name} fill className="object-cover" />
                                           </div>
                                           <div>
@@ -265,17 +280,12 @@ export default function CharactersPage() {
                       </ScrollArea>
                   </aside>
                   
-                  {selectedCharacter ? (
-                      <CharacterDetailPanel 
-                          character={selectedCharacter} 
-                          onCharacterDeleted={handleCharacterDeleted}
-                          onCharacterUpdated={fetchCharacters}
-                      />
-                  ) : (
-                        <div className="w-full lg:w-3/4 flex items-center justify-center">
-                          <p className="text-muted-foreground">Select a character to see details.</p>
-                        </div>
-                  )}
+                  <CharacterDetailPanel 
+                      character={selectedCharacter} 
+                      onCharacterDeleted={handleCharacterDeleted}
+                      onCharacterUpdated={fetchCharacters}
+                  />
+
               </>
           ) : (
               <div className="col-span-full w-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">

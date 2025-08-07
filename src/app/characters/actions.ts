@@ -79,14 +79,12 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
         await dataPackRef.update({
             coverImageUrl: characterData.imageUrl,
         });
+        revalidatePath(`/datapacks/${characterData.dataPackId}`);
     }
     
     // Revalidate all paths where this character's status matters
     revalidatePath('/characters');
     revalidatePath('/'); // For the main feed
-    if (characterData?.dataPackId) {
-      revalidatePath(`/datapacks/${characterData.dataPackId}`);
-    }
 
     return { success: true };
   } catch (error) {
@@ -188,19 +186,33 @@ export async function updateCharacterImages(
 }
 
 /**
- * Extracts the file path from a Google Cloud Storage URL.
- * @param {string} url The full `https://storage.googleapis.com/...` URL.
+ * A robust function to extract the file path from a Google Cloud Storage URL.
+ * It handles the gs:// and https:// formats.
+ * @param {string} url The full GCS URL.
  * @returns {string | null} The path to the file in the bucket, or null if the URL is invalid.
  */
 function getPathFromUrl(url: string): string | null {
     try {
+        const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+        if (!bucketName) {
+            console.error("Storage bucket name is not configured in environment variables.");
+            return null;
+        }
+
+        const gcsPrefix = `https://storage.googleapis.com/${bucketName}/`;
+        
+        if (url.startsWith(gcsPrefix)) {
+            // Extracts the part of the URL after the bucket name and prefix.
+            return url.substring(gcsPrefix.length);
+        }
+
+        // Fallback for other potential URL formats or direct paths
         const urlObject = new URL(url);
-        // The pathname will be something like `/<bucket-name>/<file-path>`.
-        // We want to remove the leading slash and the bucket name.
         const path = urlObject.pathname.substring(1).split('/').slice(1).join('/');
         return path || null;
+
     } catch (e) {
-        console.error(`Invalid GCS URL format: ${url}`);
+        console.error(`Could not parse GCS URL: ${url}`, e);
         return null;
     }
 }
@@ -238,6 +250,11 @@ export async function getCharactersWithSignedUrls(): Promise<Character[]> {
     // Generate signed URLs for each character's image
     const charactersWithUrls = await Promise.all(
       charactersData.map(async (character) => {
+        // Public characters don't need signed URLs.
+        if (character.status === 'public') {
+            return character;
+        }
+        
         if (!character.imageUrl || !character.imageUrl.startsWith('https://storage.googleapis.com/')) {
           console.warn(`Character ${character.id} has an invalid or missing imageUrl. Using placeholder.`);
           return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
