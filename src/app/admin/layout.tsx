@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import {
@@ -10,6 +11,8 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -41,6 +44,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="left" className="sm:max-w-xs">
+                             <SheetHeader className="mb-4">
+                                <SheetTitle className="sr-only">CharaForge Menu</SheetTitle>
+                            </SheetHeader>
                             <nav className="grid gap-6 text-lg font-medium">
                                 <Link
                                     href="/"
