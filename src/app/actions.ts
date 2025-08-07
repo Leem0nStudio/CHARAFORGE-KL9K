@@ -6,9 +6,9 @@ import { getStorage } from 'firebase-admin/storage';
 import type { Character } from '@/types/character';
 
 /**
- * Fetches public characters and generates signed URLs for their images.
- * This is the secure way to display public images from Firebase Storage.
- * @returns {Promise<Character[]>} A promise that resolves to an array of character objects with accessible image URLs.
+ * Fetches public characters and ensures their image URLs are directly accessible.
+ * Public images in Firebase Storage should have a simple, public URL.
+ * @returns {Promise<Character[]>} A promise that resolves to an array of character objects.
  */
 export async function getPublicCharacters(): Promise<Character[]> {
   try {
@@ -37,10 +37,11 @@ export async function getPublicCharacters(): Promise<Character[]> {
                 }
             } catch (userError) {
                 console.error(`Failed to fetch user ${data.userId} for character ${doc.id}:`, userError);
-                // Keep userName as 'Anonymous' and continue
             }
         }
         
+        // The imageUrl from Firestore for public characters should already be a publicly accessible URL.
+        // No need to generate signed URLs for public content.
         charactersData.push({
             id: doc.id,
             ...data,
@@ -49,45 +50,10 @@ export async function getPublicCharacters(): Promise<Character[]> {
         } as Character);
     }
     
-    // Generate signed URLs for each character's image
-    const charactersWithUrls = await Promise.all(
-      charactersData.map(async (character) => {
-        try {
-          // This check is important if for some reason an old character doesn't have an image URL
-          if (!character.imageUrl || !character.imageUrl.startsWith('https://storage.googleapis.com/')) {
-            console.warn(`Character ${character.id} has an invalid or missing imageUrl.`);
-            return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
-          }
-          const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-          // Extract the file path from the full gs:// URL
-          const filePath = new URL(character.imageUrl).pathname.substring(1).split('/').slice(1).join('/');
-          
-          if (!filePath) {
-             console.warn(`Could not extract file path from URL for character ${character.id}: ${character.imageUrl}`);
-             return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
-          }
-          
-          const file = bucket.file(filePath);
-          
-          const [signedUrl] = await file.getSignedUrl({
-            action: 'read',
-            expires: Date.now() + 60 * 60 * 1000, // 1 hour
-          });
-
-          return { ...character, imageUrl: signedUrl };
-        } catch (urlError) {
-          console.error(`Failed to get signed URL for public character ${character.id}:`, urlError);
-          // Return the character with a placeholder or original URL so the app doesn't crash
-          return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
-        }
-      })
-    );
-
-    return charactersWithUrls;
+    return charactersData;
 
   } catch (error) {
-    console.error("Error fetching public characters with signed URLs:", error);
-    // Return an empty array or throw the error, depending on desired client-side handling
+    console.error("Error fetching public characters:", error);
     return [];
   }
 }

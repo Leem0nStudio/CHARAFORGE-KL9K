@@ -63,6 +63,15 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
 
     await characterRef.update({ status: validation.data });
     
+    // If making a character public AND it was made with a datapack, update the datapack cover.
+    if (validation.data === 'public' && characterData.dataPackId && characterData.imageUrl) {
+        const dataPackRef = adminDb.collection('datapacks').doc(characterData.dataPackId);
+        await dataPackRef.update({
+            coverImageUrl: characterData.imageUrl,
+        });
+        revalidatePath(`/datapacks/${characterData.dataPackId}`);
+    }
+
     revalidatePath('/characters');
     revalidatePath('/'); 
 
@@ -92,28 +101,23 @@ export async function updateCharacterDataPackSharing(characterId: string, isShar
         return { success: false, message: 'This character was not created with a DataPack.' };
     }
 
-    // New logic: If sharing to datapack, also make it public automatically.
-    // Unsharing from datapack does not make it private, that's a separate user action.
-    const updates: { isSharedToDataPack: boolean, status?: 'public' } = { 
+    const updates: { isSharedToDataPack: boolean; status?: 'public' } = { 
         isSharedToDataPack: isShared 
     };
-
     if (isShared) {
         updates.status = 'public';
+        if (characterData.imageUrl) {
+            const dataPackRef = adminDb.collection('datapacks').doc(characterData.dataPackId);
+            await dataPackRef.update({
+                coverImageUrl: characterData.imageUrl,
+            });
+        }
     }
-
     await characterRef.update(updates);
-
-    if (isShared && characterData.imageUrl) {
-        const dataPackRef = adminDb.collection('datapacks').doc(characterData.dataPackId);
-        await dataPackRef.update({
-            coverImageUrl: characterData.imageUrl,
-        });
-    }
-
+    
     revalidatePath('/characters');
     revalidatePath(`/datapacks/${characterData.dataPackId}`);
-    revalidatePath('/'); // Revalidate home page as it might appear on the feed now.
+    revalidatePath('/');
     
     return { success: true, message: `Sharing status for DataPack gallery updated.` };
 
@@ -218,20 +222,17 @@ function getPathFromUrl(url: string): string | null {
     try {
         const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
         if (!bucketName) {
-            console.error("Storage bucket name is not configured in environment variables.");
+            console.error("Storage bucket name is not configured.");
             return null;
         }
 
-        const gcsPrefixHttp = `https://storage.googleapis.com/${bucketName}/`;
-        if (url.startsWith(gcsPrefixHttp)) {
-            // This robustly decodes the path after the bucket name
-            return decodeURIComponent(url.substring(gcsPrefixHttp.length));
+        const prefix = `https://storage.googleapis.com/${bucketName}/`;
+        if (url.startsWith(prefix)) {
+            return decodeURIComponent(url.substring(prefix.length));
         }
         
-        // Fallback for other URL formats, though the above should be standard
-        const urlObject = new URL(url);
-        const path = urlObject.pathname.split('/').slice(2).join('/');
-        return path ? decodeURIComponent(path) : null;
+        console.warn(`URL does not match expected GCS format: ${url}`);
+        return null;
 
     } catch (e) {
         console.error(`Could not parse GCS URL: ${url}`, e);
@@ -266,7 +267,7 @@ export async function getCharactersWithSignedUrls(): Promise<Character[]> {
 
     const charactersWithUrls = await Promise.all(
       charactersData.map(async (character) => {
-        // Public images don't need signed URLs
+        // Public images don't need signed URLs, their URL is already public.
         if (character.status === 'public') {
             return character;
         }
