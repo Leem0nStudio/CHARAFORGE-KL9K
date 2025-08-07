@@ -112,6 +112,7 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
 
         if (data.userId) {
             try {
+                if (!adminDb) throw new Error('Database service is unavailable.');
                 const userDoc = await adminDb.collection('users').doc(data.userId).get();
                 if (userDoc.exists) {
                     userName = userDoc.data()?.displayName || 'Anonymous';

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { adminDb, adminAuth } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
+import { Timestamp } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { DataPack } from '@/types/datapack';
 import type { UserPreferences } from '@/types/user';
@@ -208,7 +209,7 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
                 ...data,
                 id: doc.id,
                 // Explicitly convert Firebase Timestamp fields to JavaScript Date objects for serialization
-                createdAt: data.createdAt instanceof adminDb.firestore.Timestamp ? data.createdAt.toDate() : data.createdAt,
+                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt,
                 updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function' ? data.updatedAt.toDate() : data.updatedAt,
                 // Add other potential Timestamp fields here if they exist in DataPack
             } as DataPack;
