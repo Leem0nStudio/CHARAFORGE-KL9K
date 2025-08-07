@@ -1,10 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    allowedNextBundlerReactRoot: true,
+  },
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'placehold.co',
+        hostname: 'image.civitai.com',
         port: '',
         pathname: '/**',
       },
@@ -14,14 +17,14 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+        port: '',
+        pathname: '/**',
+      },
     ],
-  },
-  experimental: {
-    // This is required to fix an issue with React 19 and the Next.js bundler.
-    allowedNextBundlerReactRoot: true,
   },
 };
 
 export default nextConfig;
-
-// Updated to trigger a rebuild and fix module not found error.
