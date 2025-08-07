@@ -67,15 +67,14 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
         }
       });
     } else {
-        const updateData: { displayName: string | null; photoURL: string | null; email?: string | null; lastLogin?: Timestamp } = {
+        const updateData: { displayName: string | null; photoURL: string | null; email?: string | null } = {
           displayName: user.displayName,
           photoURL: user.photoURL,
-          lastLogin: serverTimestamp() as Timestamp,
         };
         if (user.email !== userDoc.data()?.email) {
             updateData.email = user.email;
         }
-        await updateDoc(userDocRef, updateData);
+        await updateDoc(userDocRef, { ...updateData, lastLogin: serverTimestamp() });
     }
     
     const updatedUserDoc = await getDoc(userDocRef);
@@ -90,6 +89,9 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
         }
         if (data.stats && data.stats.memberSince instanceof Timestamp) {
            data.stats.memberSince = data.stats.memberSince.toDate();
+        }
+        if (data.lastLogin instanceof Timestamp) {
+            data.lastLogin = data.lastLogin.toDate();
         }
     }
     return data || null;
