@@ -24,6 +24,9 @@ export type ActionResponse = {
  * @returns The public, permanent URL of the uploaded avatar.
  */
 async function uploadAvatar(uid: string, file: File): Promise<string> {
+  if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
+    throw new Error('Firebase Storage bucket is not configured.');
+  }
   const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
   const filePath = `avatars/${uid}/avatar.png`;
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -43,7 +46,6 @@ async function uploadAvatar(uid: string, file: File): Promise<string> {
   return gcsFile.publicUrl();
 }
 
-// Schema now only validates fields that are not File objects.
 const UpdateProfileSchema = z.object({
   displayName: z.string().min(3, 'Display name must be at least 3 characters.').max(30, 'Display name cannot exceed 30 characters.'),
   photoUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
@@ -82,7 +84,6 @@ export async function updateUserProfile(
         if (photoFile.size > 5 * 1024 * 1024) { // 5MB limit
             return { success: false, message: 'File is too large. Please select an image smaller than 5MB.' };
         }
-        // Use the standardized public upload function
         newAvatarUrl = await uploadAvatar(uid, photoFile);
     } else if (validatedFields.data.photoUrl) {
         newAvatarUrl = validatedFields.data.photoUrl;

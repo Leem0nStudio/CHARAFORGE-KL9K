@@ -86,11 +86,8 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
         // if it exists, as it's not used by the UI.
         delete data.lastLogin;
 
-        for (const key in data) {
-            if (data[key] instanceof Timestamp) {
-                // Convert to a number (milliseconds since epoch) for serialization
-                data[key] = data[key].toMillis();
-            }
+        if (data.createdAt && data.createdAt instanceof Timestamp) {
+            data.createdAt = data.createdAt.toMillis();
         }
         if (data.stats && data.stats.memberSince instanceof Timestamp) {
            data.stats.memberSince = data.stats.memberSince.toMillis();

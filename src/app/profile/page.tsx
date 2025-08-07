@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useTransition, useCallback, useActionState } from 'react';
@@ -72,8 +73,7 @@ function AvatarUploader({ user }: { user: UserProfile }) {
     const fallback = user.displayName?.charAt(0) || user.email?.charAt(0) || '?';
     
     // Prioritize preview, then user's photoURL. Append timestamp to bust cache.
-    const finalAvatarSrc = preview ? `${preview}?t=${user.avatarUpdatedAt || ''}` : (user.photoURL ? `${user.photoURL}?t=${user.avatarUpdatedAt || ''}` : '');
-    const displaySrc = preview || user.photoURL;
+    const displaySrc = preview ? `${preview}?t=${user.avatarUpdatedAt || ''}` : (user.photoURL ? `${user.photoURL}?t=${user.avatarUpdatedAt || ''}` : '');
 
     return (
         <div className="flex items-center gap-4">
@@ -281,6 +281,7 @@ function StatsTab({ userStats }: { userStats?: UserStats }) {
     const memberSince = userStats?.memberSince;
     let memberSinceDate = 'N/A';
     if (memberSince) {
+      // The value is already a number (milliseconds), safe to use directly
       const date = new Date(memberSince);
       memberSinceDate = format(date, 'PPP');
     }
