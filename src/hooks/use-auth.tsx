@@ -82,10 +82,6 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
 
     // Convert any Timestamps to serializable Dates before returning
     if (data) {
-        // This is the critical fix: remove the problematic field entirely
-        // if it exists, as it's not used by the UI.
-        delete data.lastLogin;
-
         if (data.createdAt && data.createdAt instanceof Timestamp) {
             data.createdAt = data.createdAt.toMillis();
         }
