@@ -15,7 +15,7 @@ const LOGO_PATH = 'app-assets/logo.png';
 
 export async function updateLogo(prevState: ActionResponse, formData: FormData): Promise<ActionResponse> {
     try {
-        await verifyAndGetUid(); // Add your admin verification logic here if needed
+        await verifyAndGetUid();
 
         const logoFile = formData.get('logo') as File;
 
@@ -26,6 +26,9 @@ export async function updateLogo(prevState: ActionResponse, formData: FormData):
             return { success: false, message: 'Invalid file type. Please upload a PNG image.' };
         }
 
+        if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
+            throw new Error("Storage bucket not configured.");
+        }
         const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
         const file = bucket.file(LOGO_PATH);
 
@@ -34,15 +37,13 @@ export async function updateLogo(prevState: ActionResponse, formData: FormData):
         await file.save(buffer, {
             metadata: { 
                 contentType: 'image/png',
-                // Add cache control to ensure browsers fetch the new logo
                 cacheControl: 'no-cache, max-age=0',
             },
-            public: true, // Make the file publicly readable
+            public: true, 
         });
         
         const publicUrl = file.publicUrl();
 
-        // Save the URL to a config document in Firestore
         if (!adminDb) {
             throw new Error('Database service is unavailable.');
         }
@@ -50,7 +51,6 @@ export async function updateLogo(prevState: ActionResponse, formData: FormData):
             logoUrl: publicUrl,
         }, { merge: true });
         
-        // Revalidate all paths to ensure the new logo is fetched
         revalidatePath('/', 'layout');
 
         return { success: true, message: 'Logo updated successfully!' };

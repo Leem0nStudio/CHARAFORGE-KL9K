@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import {
@@ -75,7 +74,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             </nav>
                         </SheetContent>
                     </Sheet>
-                    {/* The breadcrumbs will now be part of AdminPageLayout */}
+                    
                 </header>
                  <main className="flex-1 overflow-auto p-4 sm:px-6 sm:py-0">
                     <ScrollArea className="h-[calc(100vh-56px)]">

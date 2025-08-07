@@ -1,6 +1,5 @@
-
 import Link from 'next/link';
-import { getDataPacks } from "./actions";
+import { getDataPacksForAdmin } from "@/app/actions/datapacks";
 import { format } from "date-fns";
 import {
   Table,
@@ -17,13 +16,11 @@ import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 import { cn } from '@/lib/utils';
 
 export default async function DataPacksAdminPage() {
-  const dataPacks = await getDataPacks();
-  const breadcrumbs = [{ label: 'DataPacks', href: '/admin/datapacks' }];
+  const dataPacks = await getDataPacksForAdmin();
 
   return (
     <AdminPageLayout
       title="DataPacks"
-      breadcrumbs={breadcrumbs}
       actions={
         <Button asChild>
           <Link href="/admin/datapacks/new">

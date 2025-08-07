@@ -37,7 +37,7 @@ export function DashboardClient({ stats }: DashboardClientProps) {
   };
 
   return (
-    <>
+    <div className="space-y-8">
       <motion.div 
         className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
         variants={containerVariants}
@@ -84,7 +84,6 @@ export function DashboardClient({ stats }: DashboardClientProps) {
         </motion.div>
       </motion.div>
       <motion.div 
-        className="mt-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
@@ -94,6 +93,6 @@ export function DashboardClient({ stats }: DashboardClientProps) {
             <p className="text-muted-foreground">Charts and more detailed analytics will be displayed here.</p>
         </Card>
       </motion.div>
-    </>
+    </div>
   );
 }

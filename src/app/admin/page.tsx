@@ -1,8 +1,7 @@
-
 import { redirect } from 'next/navigation';
 import { adminAuth } from '@/lib/firebase/server';
 import { cookies } from 'next/headers';
-import { getDashboardStats } from './actions';
+import { getDashboardStats } from '@/app/actions/admin';
 import { DashboardClient } from './dashboard-client';
 import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 
