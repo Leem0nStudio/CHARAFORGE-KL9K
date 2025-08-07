@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useTransition, useCallback, useActionState } from 'react';
@@ -52,8 +51,8 @@ const StatCard = ({ icon, label, value }: { icon: React.ReactNode, label: string
 StatCard.displayName = "StatCard";
 
 
-function AvatarUploader({ user, onAvatarChange }: { user: UserProfile, onAvatarChange: (newUrl: string) => void }) {
-    const [preview, setPreview] = useState<string | null>(user.photoURL);
+function AvatarUploader({ user }: { user: UserProfile }) {
+    const [preview, setPreview] = useState<string | null>(null);
 
     useEffect(() => {
         setPreview(user.photoURL);
@@ -65,19 +64,21 @@ function AvatarUploader({ user, onAvatarChange }: { user: UserProfile, onAvatarC
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPreview(reader.result as string);
-                onAvatarChange(reader.result as string);
             };
             reader.readAsDataURL(file);
         }
     };
 
     const fallback = user.displayName?.charAt(0) || user.email?.charAt(0) || '?';
-    const finalAvatarUrl = (user.photoURL || preview) ? `${(user.photoURL || preview)}?t=${user.avatarUpdatedAt || ''}` : '';
+    
+    // Prioritize preview, then user's photoURL. Append timestamp to bust cache.
+    const finalAvatarSrc = preview ? `${preview}?t=${user.avatarUpdatedAt || ''}` : (user.photoURL ? `${user.photoURL}?t=${user.avatarUpdatedAt || ''}` : '');
+    const displaySrc = preview || user.photoURL;
 
     return (
         <div className="flex items-center gap-4">
             <Avatar className="w-24 h-24 text-4xl">
-                 <AvatarImage src={finalAvatarUrl} alt={user.displayName || 'User Avatar'} />
+                 <AvatarImage src={displaySrc || undefined} alt={user.displayName || 'User Avatar'} />
                 <AvatarFallback>{fallback}</AvatarFallback>
             </Avatar>
             <div className="grid gap-1.5">
@@ -110,6 +111,10 @@ function ProfileForm({ user }: { user: UserProfile }) {
   const [localUser, setLocalUser] = useState(user);
 
   useEffect(() => {
+    setLocalUser(user);
+  }, [user]);
+
+  useEffect(() => {
     if (state.message) {
       toast({
         title: state.success ? 'Success!' : 'Update Failed',
@@ -130,7 +135,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-6">
-            <AvatarUploader user={localUser} onAvatarChange={() => {}} />
+            <AvatarUploader user={localUser} />
             <div className="space-y-2">
                 <Label htmlFor="displayName">Display Name</Label>
                 <Input 
@@ -276,8 +281,7 @@ function StatsTab({ userStats }: { userStats?: UserStats }) {
     const memberSince = userStats?.memberSince;
     let memberSinceDate = 'N/A';
     if (memberSince) {
-      // The prop might be a Date object or a plain object with _seconds, handle both
-      const date = typeof memberSince === 'number' ? new Date(memberSince) : new Date();
+      const date = new Date(memberSince);
       memberSinceDate = format(date, 'PPP');
     }
     

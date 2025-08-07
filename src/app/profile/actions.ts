@@ -25,9 +25,10 @@ async function uploadAvatar(uid: string, file: File): Promise<string> {
   await gcsFile.save(buffer, {
     metadata: { 
         contentType: file.type,
-        cacheControl: 'public, max-age=300, no-cache' // Cache for 5 minutes, force revalidation
+        // Add cache control to ensure browsers fetch the new logo, but allow caching
+        cacheControl: 'public, max-age=3600',
     },
-    public: true,
+    public: true, // Make the file publicly readable
   });
 
   return gcsFile.publicUrl();
@@ -74,6 +75,7 @@ export async function updateUserProfile(
     }
     
     const authUpdatePayload: { displayName: string, photoURL?: string } = { displayName: newDisplayName };
+    // Only update photoURL if it's new to avoid unnecessary Auth updates
     if (newAvatarUrl) {
         authUpdatePayload.photoURL = newAvatarUrl;
     }
@@ -83,6 +85,7 @@ export async function updateUserProfile(
     const dbUpdatePayload: { displayName: string, photoURL?: string, avatarUpdatedAt?: number } = { displayName: newDisplayName };
     if (newAvatarUrl) {
       dbUpdatePayload.photoURL = newAvatarUrl;
+      // This is the cache-busting timestamp
       dbUpdatePayload.avatarUpdatedAt = now;
     }
 
