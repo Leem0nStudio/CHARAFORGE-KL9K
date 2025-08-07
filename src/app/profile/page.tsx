@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useTransition } from 'react';
+import React, { useEffect, useState, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -33,6 +33,7 @@ import { format } from 'date-fns';
 import { PageHeader } from '@/components/page-header';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useActionState } from 'react';
 
 
 // #region Sub-components for each Tab
@@ -424,7 +425,6 @@ SecurityTab.displayName = "SecurityTab";
 
 export default function ProfilePage() {
   const { userProfile, loading, setUserProfile } = useAuth(); // Use setUserProfile from context
-  const router = useRouter();
   
   const [localUserProfile, setLocalUserProfile] = useState(userProfile);
   
@@ -444,6 +444,7 @@ export default function ProfilePage() {
     privacy: { profileVisibility: 'private' },
   };
 
+  const router = useRouter();
   useEffect(() => {
     if (!loading && !localUserProfile) {
       router.push('/login');
