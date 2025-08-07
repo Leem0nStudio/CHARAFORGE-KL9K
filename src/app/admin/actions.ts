@@ -21,6 +21,7 @@ const zeroStats: DashboardStats = {
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   if (!adminDb) {
+    console.error("Database service is unavailable in getDashboardStats.");
     return zeroStats;
   }
 

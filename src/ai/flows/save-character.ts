@@ -53,16 +53,17 @@ async function uploadImageToStorage(dataUri: string, userId: string): Promise<st
 
     await file.save(imageBuffer, {
         metadata: { contentType },
-        // By setting public to true, we allow it to be displayed in public galleries.
         public: true,
     });
 
-    // Return the public URL for easier access in galleries.
     return file.publicUrl();
 }
 
 
 export async function saveCharacter(input: SaveCharacterInput) {
+  if (!adminDb) {
+    throw new Error('Database service is not available. Please try again later.');
+  }
   const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
     const firstError = validation.error.errors[0];
@@ -73,10 +74,6 @@ export async function saveCharacter(input: SaveCharacterInput) {
   
   try {
     const userId = await verifyAndGetUid();
-
-    if (!adminDb) {
-      throw new Error('Database service is not available. Please try again later.');
-    }
 
     const storageUrl = await uploadImageToStorage(imageDataUri, userId);
 

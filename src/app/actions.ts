@@ -2,7 +2,6 @@
 'use server';
 
 import { adminDb } from '@/lib/firebase/server';
-import { getStorage } from 'firebase-admin/storage';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
 
@@ -12,11 +11,11 @@ import type { UserProfile } from '@/types/user';
  * @returns {Promise<Character[]>} A promise that resolves to an array of character objects.
  */
 export async function getPublicCharacters(): Promise<Character[]> {
+  if (!adminDb) {
+    console.error('Database service is unavailable.');
+    return [];
+  }
   try {
-    if (!adminDb) {
-      throw new Error('Database service is unavailable.');
-    }
-    
     const charactersRef = adminDb.collection('characters');
     const q = charactersRef.where('status', '==', 'public').orderBy('createdAt', 'desc').limit(20);
     const snapshot = await q.get();
@@ -41,8 +40,6 @@ export async function getPublicCharacters(): Promise<Character[]> {
             }
         }
         
-        // The imageUrl from Firestore for public characters should already be a publicly accessible URL.
-        // No need to generate signed URLs for public content.
         charactersData.push({
             id: doc.id,
             ...data,
@@ -65,11 +62,11 @@ export async function getPublicCharacters(): Promise<Character[]> {
  * @returns {Promise<UserProfile[]>} A promise that resolves to an array of user profile objects.
  */
 export async function getTopCreators(): Promise<UserProfile[]> {
+  if (!adminDb) {
+      console.error('Database service is unavailable.');
+      return [];
+  }
   try {
-    if (!adminDb) {
-      throw new Error('Database service is unavailable.');
-    }
-
     const usersRef = adminDb.collection('users');
     const q = usersRef
       .orderBy('stats.charactersCreated', 'desc')
@@ -81,15 +78,12 @@ export async function getTopCreators(): Promise<UserProfile[]> {
       return [];
     }
     
-    // Map to a new, clean object containing only the necessary, serializable data.
-    // This prevents passing complex objects like Timestamps or Date objects to client components.
     const creators = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
             uid: doc.id,
             displayName: data.displayName || null,
             photoURL: data.photoURL || null,
-            // Only include the stats that are actually used by the client component.
             stats: {
                 charactersCreated: data.stats?.charactersCreated || 0,
                 totalLikes: data.stats?.totalLikes || 0,

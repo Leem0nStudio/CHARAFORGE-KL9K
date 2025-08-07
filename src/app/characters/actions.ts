@@ -13,12 +13,12 @@ type ActionResponse = {
 };
 
 export async function deleteCharacter(characterId: string) {
+  if (!adminDb) {
+    throw new Error('Database service is unavailable.');
+  }
   const uid = await verifyAndGetUid();
   if (!characterId) {
     throw new Error('Character ID is required for deletion.');
-  }
-  if (!adminDb) {
-    throw new Error('Database service is unavailable.');
   }
 
   const characterRef = adminDb.collection('characters').doc(characterId);
@@ -42,6 +42,9 @@ export async function deleteCharacter(characterId: string) {
 const UpdateStatusSchema = z.enum(['private', 'public']);
 
 export async function updateCharacterStatus(characterId: string, status: 'private' | 'public'): Promise<ActionResponse> {
+  if (!adminDb) {
+      return { success: false, message: 'Database service is unavailable.' };
+  }
   const validation = UpdateStatusSchema.safeParse(status);
   if (!validation.success) {
       return { success: false, message: 'Invalid status provided.' };
@@ -50,8 +53,6 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
   const uid = await verifyAndGetUid();
   
   try {
-    if (!adminDb) throw new Error('Database service is unavailable.');
-
     const characterRef = adminDb.collection('characters').doc(characterId);
     const characterDoc = await characterRef.get();
     const characterData = characterDoc.data();
@@ -61,7 +62,6 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
 
     await characterRef.update({ status: validation.data });
     
-    // If making a character public AND it was made with a datapack, update the datapack cover.
     if (validation.data === 'public' && characterData.dataPackId && characterData.imageUrl) {
         const dataPackRef = adminDb.collection('datapacks').doc(characterData.dataPackId);
         await dataPackRef.update({
@@ -82,11 +82,12 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
 
 
 export async function updateCharacterDataPackSharing(characterId: string, isShared: boolean): Promise<ActionResponse> {
+  if (!adminDb) {
+    return { success: false, message: 'Database service is unavailable.' };
+  }
   const uid = await verifyAndGetUid();
 
   try {
-    if (!adminDb) throw new Error('Database service is unavailable.');
-    
     const characterRef = adminDb.collection('characters').doc(characterId);
     const characterDoc = await characterRef.get();
     const characterData = characterDoc.data();
@@ -135,6 +136,9 @@ export async function updateCharacter(
     characterId: string, 
     data: { name: string, biography: string }
 ): Promise<ActionResponse> {
+  if (!adminDb) {
+      return { success: false, message: 'Database service is unavailable.' };
+  }
   try {
     const uid = await verifyAndGetUid();
 
@@ -146,10 +150,6 @@ export async function updateCharacter(
             success: false,
             message: `Invalid input for ${firstError.path.join('.')}: ${firstError.message}`,
         };
-    }
-    
-    if (!adminDb) {
-      throw new Error('Database service is unavailable.');
     }
     
     const { name, biography } = validatedFields.data;
@@ -179,12 +179,11 @@ export async function updateCharacterImages(
   gallery: string[],
   primaryImageUrl: string,
 ): Promise<ActionResponse> {
+  if (!adminDb) {
+    return { success: false, message: 'Database service is unavailable.' };
+  }
   try {
      const uid = await verifyAndGetUid();
-
-     if (!adminDb) {
-       throw new Error('Database service is unavailable.');
-     }
 
      const characterRef = adminDb.collection('characters').doc(characterId);
      const characterDoc = await characterRef.get();
@@ -218,11 +217,12 @@ export async function updateCharacterImages(
 
 
 export async function getCharacters(): Promise<Character[]> {
+  if (!adminDb) {
+      console.error('Database service is unavailable.');
+      return [];
+  }
   try {
     const uid = await verifyAndGetUid();
-    if (!adminDb) {
-      throw new Error('Database service is unavailable.');
-    }
     
     const charactersRef = adminDb.collection('characters');
     const q = charactersRef.where('userId', '==', uid).orderBy('createdAt', 'desc');
