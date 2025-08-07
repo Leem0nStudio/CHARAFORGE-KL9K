@@ -22,10 +22,10 @@ export function AdminPageLayout({ title, children, actions, breadcrumbs }: Admin
             transition={{ duration: 0.3 }}
             className="space-y-4"
         >
-            <div className="flex items-center justify-between space-x-4">
+            <div className="flex items-start justify-between space-x-4 flex-col sm:flex-row sm:items-center">
                 <div>
                      {breadcrumbs && breadcrumbs.length > 0 && (
-                        <Breadcrumb className="hidden md:flex mb-2">
+                        <Breadcrumb className="mb-2 hidden sm:flex">
                             <BreadcrumbList>
                                  <BreadcrumbItem>
                                     <BreadcrumbLink asChild>
@@ -51,7 +51,7 @@ export function AdminPageLayout({ title, children, actions, breadcrumbs }: Admin
                      )}
                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">{title}</h1>
                 </div>
-                {actions && <div>{actions}</div>}
+                {actions && <div className="mt-4 sm:mt-0">{actions}</div>}
             </div>
             <div>
                 {children}
