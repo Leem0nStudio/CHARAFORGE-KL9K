@@ -204,7 +204,10 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
             return {
                 ...data,
                 id: doc.id,
-                createdAt: data.createdAt.toDate(),
+                // Explicitly convert Firebase Timestamp fields to JavaScript Date objects for serialization
+                createdAt: data.createdAt instanceof adminDb.firestore.Timestamp ? data.createdAt.toDate() : data.createdAt,
+                updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function' ? data.updatedAt.toDate() : data.updatedAt,
+                // Add other potential Timestamp fields here if they exist in DataPack
             } as DataPack;
         });
 

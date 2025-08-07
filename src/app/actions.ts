@@ -81,13 +81,21 @@ export async function getTopCreators(): Promise<UserProfile[]> {
       return [];
     }
     
+    // Map to a new, clean object containing only the necessary, serializable data.
+    // This prevents passing complex objects like Timestamps or Date objects to client components.
     const creators = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
-            ...data,
             uid: doc.id,
-        } as UserProfile;
-    });
+            displayName: data.displayName || null,
+            photoURL: data.photoURL || null,
+            // Only include the stats that are actually used by the client component.
+            stats: {
+                charactersCreated: data.stats?.charactersCreated || 0,
+                totalLikes: data.stats?.totalLikes || 0,
+            },
+        } as Partial<UserProfile>;
+    }) as UserProfile[];
 
     return creators;
 
