@@ -61,7 +61,7 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
           charactersCreated: 0,
           totalLikes: 0,
           collectionsCreated: 0,
-          installedPacks: ['core_base_styles'],
+          installedPacks: ['basic-fantasy-pack'],
           subscriptionTier: 'free',
           memberSince: serverTimestamp(),
         }
