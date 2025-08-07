@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { UserInfo, UserMetadata } from 'firebase/auth';
@@ -12,7 +13,7 @@ export interface UserStats {
   collectionsCreated: number;
   installedPacks: string[];
   subscriptionTier: string;
-  memberSince: Timestamp;
+  memberSince: number; // Stored as milliseconds since epoch
 }
 
 export type UserPreferences = {

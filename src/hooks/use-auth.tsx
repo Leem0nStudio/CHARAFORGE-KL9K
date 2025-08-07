@@ -88,11 +88,12 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
 
         for (const key in data) {
             if (data[key] instanceof Timestamp) {
-                data[key] = data[key].toDate();
+                // Convert to a number (milliseconds since epoch) for serialization
+                data[key] = data[key].toMillis();
             }
         }
         if (data.stats && data.stats.memberSince instanceof Timestamp) {
-           data.stats.memberSince = data.stats.memberSince.toDate();
+           data.stats.memberSince = data.stats.memberSince.toMillis();
         }
     }
     return data || null;

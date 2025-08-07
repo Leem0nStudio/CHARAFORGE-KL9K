@@ -277,7 +277,7 @@ function StatsTab({ userStats }: { userStats?: UserStats }) {
     let memberSinceDate = 'N/A';
     if (memberSince) {
       // The prop might be a Date object or a plain object with _seconds, handle both
-      const date = memberSince.seconds ? new Date(memberSince.seconds * 1000) : new Date(memberSince);
+      const date = typeof memberSince === 'number' ? new Date(memberSince) : new Date();
       memberSinceDate = format(date, 'PPP');
     }
     
