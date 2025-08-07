@@ -10,10 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Loader2, ArrowRight, Wand2, Package, X, Check } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getInstalledDataPacks } from '@/app/actions/user';
-import type { DataPack, Option } from '@/types/datapack';
+import type { DataPack, Option, Slot } from '@/types/datapack';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
@@ -116,8 +117,12 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
         for (const slotId in formValues) {
             const selectedOptionValue = formValues[slotId];
             if (!selectedOptionValue) continue;
+            
             const slot = pack.schema.slots.find(s => s.id === slotId);
-            const selectedOption = slot?.options.find(o => o.value === selectedOptionValue);
+            if (!slot || slot.type === 'text') continue;
+            
+            const selectedOption = slot.options.find(o => o.value === selectedOptionValue);
+            
             if (selectedOption?.exclusions) {
                 for (const exclusion of selectedOption.exclusions) {
                     if (!disabled[exclusion.slotId]) disabled[exclusion.slotId] = [];
@@ -137,6 +142,46 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
         onPromptGenerated(prompt, pack.id);
     };
 
+    const renderSlot = (slot: Slot) => {
+        if (slot.type === 'text') {
+            return (
+                <Controller
+                    name={slot.id}
+                    control={control}
+                    defaultValue=""
+                    render={({ field }) => (
+                         <Input {...field} placeholder={slot.placeholder || "Enter text..."} />
+                    )}
+                />
+            )
+        }
+        
+        // Default to select
+        return (
+             <Controller
+                name={slot.id}
+                control={control}
+                defaultValue={slot.defaultOption || ""}
+                render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger><SelectValue placeholder={slot.placeholder || "Select..."} /></SelectTrigger>
+                        <SelectContent>
+                            {slot.options && slot.options.map((option: Option) => (
+                                <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                    disabled={disabledOptions[slot.id]?.includes(option.value)}
+                                >
+                                    {option.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
+            />
+        )
+    }
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <DialogHeader>
@@ -150,27 +195,7 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
                     {pack.schema.slots.map(slot => (
                         <div key={slot.id}>
                             <Label>{slot.label}</Label>
-                            <Controller
-                                name={slot.id}
-                                control={control}
-                                defaultValue={slot.defaultOption || ""}
-                                render={({ field }) => (
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <SelectTrigger><SelectValue placeholder={slot.placeholder || "Select..."} /></SelectTrigger>
-                                        <SelectContent>
-                                            {slot.options.map((option: Option) => (
-                                                <SelectItem
-                                                    key={option.value}
-                                                    value={option.value}
-                                                    disabled={disabledOptions[slot.id]?.includes(option.value)}
-                                                >
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
+                            {renderSlot(slot)}
                         </div>
                     ))}
                 </div>

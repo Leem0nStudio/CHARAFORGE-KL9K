@@ -14,7 +14,8 @@ export interface Option {
 export interface Slot {
     id: string;
     label: string;
-    options: Option[];
+    type?: 'text' | 'select';
+    options?: Option[];
     defaultOption?: string;
     placeholder?: string;
 }
