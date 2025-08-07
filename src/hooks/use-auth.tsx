@@ -74,7 +74,7 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
         if (user.email !== userDoc.data()?.email) {
             updateData.email = user.email;
         }
-        await updateDoc(userDocRef, { ...updateData, lastLogin: serverTimestamp() });
+        await updateDoc(userDocRef, { ...updateData });
     }
     
     const updatedUserDoc = await getDoc(userDocRef);
