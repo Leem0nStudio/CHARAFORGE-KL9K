@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -16,10 +17,9 @@ export type ActionResponse = {
   newAvatarUrl?: string | null;
 };
 
-// Simplified schema for text fields only
+// Zod schema for validating text fields from the profile form
 const UpdateProfileSchema = z.object({
   displayName: z.string().min(1, 'Display Name is required').max(50, 'Display Name must be less than 50 characters').optional(),
-  photoUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
 });
 
 
@@ -48,18 +48,17 @@ async function uploadAvatar(userId: string, file: File): Promise<string> {
 }
 
 
-export async function updateUserProfile(formData: FormData): Promise<ActionResponse> {
+export async function updateUserProfile(prevState: any, formData: FormData): Promise<ActionResponse> {
     try {
         const uid = await verifyAndGetUid();
         if (!adminDb || !adminAuth) {
             throw new Error('Server services not available.');
         }
-
+        
         const displayName = formData.get('displayName') as string;
-        const photoUrl = formData.get('photoUrl') as string;
         const photoFile = formData.get('photoFile') as File;
 
-        const validation = UpdateProfileSchema.safeParse({ displayName, photoUrl });
+        const validation = UpdateProfileSchema.safeParse({ displayName });
 
         if (!validation.success) {
             const firstError = validation.error.errors[0];
@@ -68,16 +67,16 @@ export async function updateUserProfile(formData: FormData): Promise<ActionRespo
                 message: `Invalid input for ${firstError.path.join('.')}: ${firstError.message}`,
             };
         }
-
+        
         let finalPhotoUrl: string | null = null;
+        let newAvatarUrlForClient: string | null = null;
 
         if (photoFile && photoFile.size > 0) {
             if (photoFile.size > 5 * 1024 * 1024) { // 5MB limit
                 return { success: false, message: 'File is too large. Please upload an image smaller than 5MB.' };
             }
             finalPhotoUrl = await uploadAvatar(uid, photoFile);
-        } else if (photoUrl) {
-            finalPhotoUrl = photoUrl;
+            newAvatarUrlForClient = finalPhotoUrl;
         }
 
         const userRef = adminDb.collection('users').doc(uid);
@@ -87,12 +86,9 @@ export async function updateUserProfile(formData: FormData): Promise<ActionRespo
             updates.displayName = displayName;
         }
         
-        let newAvatarUrlForClient: string | null = null;
-        
         if (finalPhotoUrl) {
             updates.photoURL = finalPhotoUrl;
             updates.avatarUpdatedAt = FieldValue.serverTimestamp();
-            newAvatarUrlForClient = finalPhotoUrl;
         }
 
         if (Object.keys(updates).length > 0) {
