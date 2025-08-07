@@ -82,6 +82,10 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
 
     // Convert any Timestamps to serializable Dates before returning
     if (data) {
+        // This is the critical fix: remove the problematic field entirely
+        // if it exists, as it's not used by the UI.
+        delete data.lastLogin;
+
         for (const key in data) {
             if (data[key] instanceof Timestamp) {
                 data[key] = data[key].toDate();
@@ -89,9 +93,6 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
         }
         if (data.stats && data.stats.memberSince instanceof Timestamp) {
            data.stats.memberSince = data.stats.memberSince.toDate();
-        }
-        if (data.lastLogin instanceof Timestamp) {
-            data.lastLogin = data.lastLogin.toDate();
         }
     }
     return data || null;

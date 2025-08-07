@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useTransition, useCallback, useActionState } from 'react';
@@ -272,7 +273,14 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
 PreferencesForm.displayName = "PreferencesForm";
 
 function StatsTab({ userStats }: { userStats?: UserStats }) {
-    const memberSinceDate = userStats?.memberSince?.toDate ? format(userStats.memberSince.toDate(), 'PPP') : 'N/A';
+    const memberSince = userStats?.memberSince;
+    let memberSinceDate = 'N/A';
+    if (memberSince) {
+      // The prop might be a Date object or a plain object with _seconds, handle both
+      const date = memberSince.seconds ? new Date(memberSince.seconds * 1000) : new Date(memberSince);
+      memberSinceDate = format(date, 'PPP');
+    }
+    
     return (
         <Card>
             <CardHeader>
