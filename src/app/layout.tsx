@@ -6,6 +6,7 @@ import './globals.css';
 import { AuthProvider } from '@/hooks/use-auth';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
+import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 
 export const metadata: Metadata = {
   title: 'CharaForge',
@@ -34,8 +35,9 @@ export default function RootLayout({
           <AuthProvider>
             <div className="relative flex min-h-screen flex-col">
               <SiteHeader />
-              <div className="flex-1">{children}</div>
+              <div className="flex-1 pb-20 sm:pb-0">{children}</div>
               <SiteFooter />
+              <MobileBottomNav />
             </div>
           </AuthProvider>
           <Toaster />
