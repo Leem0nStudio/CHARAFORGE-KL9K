@@ -1,27 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'storage.googleapis.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
-    ],
-  },
+    images: {
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: 'storage.googleapis.com',
+            },
+            {
+                protocol: 'https',
+                hostname: 'placehold.co',
+            },
+            {
+                protocol: 'https',
+                hostname: 'image.civitai.com',
+            }
+        ]
+    }
 };
 
 export default nextConfig;
