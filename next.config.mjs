@@ -18,9 +18,8 @@ const nextConfig = {
         ],
     },
     experimental: {
-        // This is recommended for optimal performance with the App Router.
         allowedNextBundlerReactRoot: true,
-    },
+    }
 };
 
 export default nextConfig;

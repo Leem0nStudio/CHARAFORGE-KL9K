@@ -262,7 +262,7 @@ function SchemaEditor({ form }: { form: any }) {
                     <CardTitle>Prompt Schema</CardTitle>
                     <CardDescription>Define the building blocks of your prompt.</CardDescription>
                 </div>
-                 <Button type="button" variant="outline" size="sm" onClick={() => appendSlot({ id: '', label: '', options: [{label: '', value: ''}] })}>
+                 <Button type="button" variant="outline" size="sm" onClick={() => appendSlot({ id: 'new_slot', label: 'New Slot', options: [{label: 'New Option', value: 'new_option'}] })}>
                     <PlusCircle className="mr-2"/> Add Slot
                 </Button>
             </CardHeader>
@@ -304,7 +304,7 @@ function SlotForm({ slotIndex, control, register, removeSlot }: any) {
                     <Input {...register(`schema.slots.${slotIndex}.placeholder`)} placeholder="Placeholder Text (optional)" />
                 </div>
                 <div className="border-t pt-4 mt-4">
-                    <div className="flex items-center justify-between mb-2"><Label>Options</Label><Button type="button" variant="outline" size="sm" onClick={() => appendOption({ label: '', value: '' })}><PlusCircle className="mr-2"/> Add Option</Button></div>
+                    <div className="flex items-center justify-between mb-2"><Label>Options</Label><Button type="button" variant="outline" size="sm" onClick={() => appendOption({ label: ' ', value: ' ' })}><PlusCircle className="mr-2"/> Add Option</Button></div>
                     <div className="space-y-3">{options.map((option, optionIndex) => (<OptionForm key={option.id} {...{slotIndex, optionIndex, removeOption, control, register}} />))}</div>
                 </div>
             </AccordionContent>

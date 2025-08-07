@@ -31,7 +31,7 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
   let isAdmin = false;
 
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const idToken = cookieStore.get('firebaseIdToken')?.value;
 
     if (idToken) {

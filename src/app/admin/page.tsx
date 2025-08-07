@@ -7,7 +7,7 @@ import { DashboardClient } from './dashboard-client';
 import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 
 async function getIsAdmin(): Promise<boolean> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
   if (!idToken) {
