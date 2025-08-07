@@ -71,7 +71,7 @@ function AvatarUploader({ user, onAvatarChange }: { user: UserProfile, onAvatarC
     };
 
     const fallback = user.displayName?.charAt(0) || user.email?.charAt(0) || '?';
-    const finalAvatarUrl = (user.photoURL || preview) + (user.avatarUpdatedAt ? `?t=${user.avatarUpdatedAt}` : '');
+    const finalAvatarUrl = (user.photoURL || preview) ? `${(user.photoURL || preview)}?t=${user.avatarUpdatedAt || ''}` : '';
 
     return (
         <div className="flex items-center gap-4">

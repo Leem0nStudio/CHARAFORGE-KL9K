@@ -25,11 +25,11 @@ async function uploadAvatar(uid: string, file: File): Promise<string> {
   await gcsFile.save(buffer, {
     metadata: { 
         contentType: file.type,
-        cacheControl: 'public, max-age=300' // Cache for 5 minutes
+        cacheControl: 'public, max-age=300, no-cache' // Cache for 5 minutes, force revalidation
     },
+    public: true,
   });
 
-  // Return the public URL without signing it, as it's a public avatar
   return gcsFile.publicUrl();
 }
 
@@ -94,7 +94,7 @@ export async function updateUserProfile(
     return { 
         success: true, 
         message: 'Profile updated successfully!',
-        newAvatarUrl: newAvatarUrl ? `${newAvatarUrl}?t=${now}` : null,
+        newAvatarUrl: newAvatarUrl,
     };
 
   } catch (error) {
