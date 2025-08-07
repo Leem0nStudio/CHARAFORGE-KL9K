@@ -63,16 +63,22 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
   
   try {
     const characterDoc = await characterRef.get();
+    const characterData = characterDoc.data();
 
     // Security check: ensure the character belongs to the user.
-    if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+    if (!characterDoc.exists || characterData?.userId !== uid) {
       throw new Error('Permission denied or character not found.');
     }
 
     await characterRef.update({ status: validation.data });
-    // Revalidate multiple paths as status change can affect both pages.
+    
+    // Revalidate all paths where this character's status matters
     revalidatePath('/characters');
     revalidatePath('/');
+    if (characterData?.dataPackId) {
+      revalidatePath(`/datapacks/${characterData.dataPackId}`);
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Error updating character status:", error);
