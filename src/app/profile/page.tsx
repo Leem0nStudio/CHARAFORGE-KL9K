@@ -1,9 +1,8 @@
 
 'use client';
 
-import React, { useEffect, useState, useTransition } from 'react';
+import React, { useEffect, useState, useTransition, useActionState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFormState } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
@@ -108,7 +107,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
   const { setUserProfile } = useAuth();
 
   const initialState: ActionResponse = { success: false, message: '' };
-  const [state, formAction] = useFormState(updateUserProfile, initialState);
+  const [state, formAction] = useActionState(updateUserProfile, initialState);
   
   const formRef = React.useRef<HTMLFormElement>(null);
   
@@ -430,11 +429,11 @@ export default function ProfilePage() {
     setLocalUserProfile(userProfile);
   }, [userProfile]);
 
-  const handleProfileUpdate = (updates: Partial<UserProfile>) => {
+  const handleProfileUpdate = useCallback((updates: Partial<UserProfile>) => {
     const updatedProfile = { ...localUserProfile, ...updates } as UserProfile;
     setLocalUserProfile(updatedProfile);
     setUserProfile(updatedProfile); // Also update the global context
-  };
+  }, [localUserProfile, setUserProfile]);
 
   const defaultPreferences: UserPreferences = {
     theme: 'system',
