@@ -1,12 +1,13 @@
-
 'use client';
 
 import React, { useEffect, useState, useTransition, useCallback, useActionState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,14 +25,15 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { updateUserProfile, deleteUserAccount, updateUserPreferences, getInstalledDataPacks } from './actions';
-import { Loader2, User, Swords, Heart, Package, Gem, Calendar, Wand2 } from 'lucide-react';
-import type { UserPreferences, ActionResponse } from './actions';
-import type { UserProfile, UserStats } from '@/types/user';
+import { Loader2, User, Swords, Heart, Package, Gem, Calendar, Wand2, Upload, Link as LinkIcon, Camera } from 'lucide-react';
+import type { ActionResponse } from './actions';
+import type { UserProfile, UserStats, UserPreferences } from '@/types/user';
 import type { DataPack } from '@/types/datapack';
 import { format } from 'date-fns';
 import { PageHeader } from '@/components/page-header';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 // #region Sub-components for each Tab
 
@@ -49,10 +51,62 @@ const StatCard = ({ icon, label, value }: { icon: React.ReactNode, label: string
 StatCard.displayName = "StatCard";
 
 
+function AvatarUploader({ user, onAvatarChange }: { user: UserProfile, onAvatarChange: (newUrl: string) => void }) {
+    const [preview, setPreview] = useState<string | null>(user.photoURL);
+
+    useEffect(() => {
+        setPreview(user.photoURL);
+    }, [user.photoURL]);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreview(reader.result as string);
+                onAvatarChange(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const fallback = user.displayName?.charAt(0) || user.email?.charAt(0) || '?';
+    const finalAvatarUrl = (user.photoURL || preview) + (user.avatarUpdatedAt ? `?t=${user.avatarUpdatedAt}` : '');
+
+    return (
+        <div className="flex items-center gap-4">
+            <Avatar className="w-24 h-24 text-4xl">
+                 <AvatarImage src={finalAvatarUrl} alt={user.displayName || 'User Avatar'} />
+                <AvatarFallback>{fallback}</AvatarFallback>
+            </Avatar>
+            <div className="grid gap-1.5">
+                <div className="relative">
+                    <Label 
+                        htmlFor="photoFile" 
+                        className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2"
+                    >
+                       <Camera className="mr-2"/> Change Avatar
+                    </Label>
+                     <Input 
+                        id="photoFile" 
+                        name="photoFile" 
+                        type="file" 
+                        className="absolute w-full h-full opacity-0 cursor-pointer top-0 left-0"
+                        accept="image/png, image/jpeg" 
+                        onChange={handleFileChange}
+                     />
+                </div>
+                <p className="text-xs text-muted-foreground">JPG, PNG. 5MB max.</p>
+            </div>
+        </div>
+    );
+}
+
 function ProfileForm({ user }: { user: UserProfile }) {
   const { toast } = useToast();
-  const [displayName, setDisplayName] = useState(user.displayName || '');
   const [state, formAction, isPending] = useActionState(updateUserProfile, { success: false, message: '' });
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [localUser, setLocalUser] = useState(user);
 
   useEffect(() => {
     if (state.message) {
@@ -61,6 +115,9 @@ function ProfileForm({ user }: { user: UserProfile }) {
         description: state.message,
         variant: state.success ? 'default' : 'destructive',
       });
+      if (state.success && state.newAvatarUrl) {
+          setLocalUser(prev => ({...prev, photoURL: state.newAvatarUrl!, avatarUpdatedAt: Date.now()}));
+      }
     }
   }, [state, toast]);
 
@@ -71,24 +128,48 @@ function ProfileForm({ user }: { user: UserProfile }) {
         <CardDescription>This is how others will see you on the site.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={formAction} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="displayName">Display Name</Label>
-            <Input 
-                id="displayName" 
-                name="displayName" 
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" defaultValue={user.email || ''} disabled />
-          </div>
-          <Button type="submit" disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Update Profile
-          </Button>
+        <form action={formAction} className="space-y-6">
+            <AvatarUploader user={localUser} onAvatarChange={() => {}} />
+            <div className="space-y-2">
+                <Label htmlFor="displayName">Display Name</Label>
+                <Input 
+                    id="displayName" 
+                    name="displayName" 
+                    defaultValue={user.displayName || ''}
+                />
+            </div>
+            
+            <Tabs defaultValue="upload">
+                <TabsList>
+                    <TabsTrigger value="upload"><Upload className="mr-2"/>Upload File</TabsTrigger>
+                    <TabsTrigger value="link"><LinkIcon className="mr-2"/>From URL</TabsTrigger>
+                </TabsList>
+                <TabsContent value="upload" className="pt-2">
+                     <p className="text-sm text-muted-foreground">Select a new avatar by clicking "Change Avatar" above. The selected file will be uploaded.</p>
+                </TabsContent>
+                <TabsContent value="link" className="pt-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="photoUrl">Image URL</Label>
+                        <Input 
+                            id="photoUrl" 
+                            name="photoUrl"
+                            placeholder="https://example.com/avatar.png"
+                            value={photoUrl}
+                            onChange={(e) => setPhotoUrl(e.target.value)}
+                        />
+                    </div>
+                </TabsContent>
+            </Tabs>
+
+            <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" defaultValue={user.email || ''} disabled />
+            </div>
+
+            <Button type="submit" disabled={isPending}>
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Profile
+            </Button>
         </form>
       </CardContent>
     </Card>

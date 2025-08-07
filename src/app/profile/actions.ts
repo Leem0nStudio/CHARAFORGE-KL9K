@@ -1,20 +1,44 @@
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { adminDb, adminAuth } from '@/lib/firebase/server';
+import { getStorage } from 'firebase-admin/storage';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { DataPack } from '@/types/datapack';
+import type { UserPreferences } from '@/types/user';
 
 export type ActionResponse = {
   success: boolean;
   message: string;
+  error?: string | null;
+  newAvatarUrl?: string | null;
+}
+
+// Helper to upload avatar and get URL
+async function uploadAvatar(uid: string, file: File): Promise<string> {
+  const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+  const filePath = `avatars/${uid}/avatar.png`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const gcsFile = bucket.file(filePath);
+  await gcsFile.save(buffer, {
+    metadata: { 
+        contentType: file.type,
+        cacheControl: 'public, max-age=300' // Cache for 5 minutes
+    },
+  });
+
+  // Return the public URL without signing it, as it's a public avatar
+  return gcsFile.publicUrl();
 }
 
 const UpdateProfileSchema = z.object({
   displayName: z.string().min(3, 'Display name must be at least 3 characters.').max(30, 'Display name cannot exceed 30 characters.'),
+  photoUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
+  photoFile: z.instanceof(File).optional(),
 });
+
 
 export async function updateUserProfile(
   prevState: ActionResponse,
@@ -23,33 +47,59 @@ export async function updateUserProfile(
   
   try {
     const uid = await verifyAndGetUid();
-
     if (!adminDb || !adminAuth) {
       throw new Error("Server services are not available.");
     }
 
-    const validatedFields = UpdateProfileSchema.safeParse({
-      displayName: formData.get('displayName'),
-    });
+    const displayName = formData.get('displayName') as string;
+    const photoUrl = formData.get('photoUrl') as string;
+    const photoFile = formData.get('photoFile') as File;
+    
+    const validatedFields = UpdateProfileSchema.safeParse({ displayName, photoUrl, photoFile });
 
     if (!validatedFields.success) {
-      return {
-        success: false,
-        message: validatedFields.error.flatten().fieldErrors.displayName?.[0] || 'Invalid input.',
-      };
+      const firstError = validatedFields.error.flatten().fieldErrors;
+      const message = firstError.displayName?.[0] || firstError.photoUrl?.[0] || 'Invalid input.';
+      return { success: false, message };
     }
   
-    const { displayName } = validatedFields.data;
+    const { displayName: newDisplayName } = validatedFields.data;
+    let newAvatarUrl: string | null = null;
+    const now = Date.now();
 
-    await adminAuth.updateUser(uid, { displayName });
-    await adminDb.collection('users').doc(uid).set({ displayName }, { merge: true });
+    if (photoFile && photoFile.size > 0) {
+        newAvatarUrl = await uploadAvatar(uid, photoFile);
+    } else if (photoUrl) {
+        newAvatarUrl = photoUrl;
+    }
+    
+    const authUpdatePayload: { displayName: string, photoURL?: string } = { displayName: newDisplayName };
+    if (newAvatarUrl) {
+        authUpdatePayload.photoURL = newAvatarUrl;
+    }
+    
+    await adminAuth.updateUser(uid, authUpdatePayload);
+    
+    const dbUpdatePayload: { displayName: string, photoURL?: string, avatarUpdatedAt?: number } = { displayName: newDisplayName };
+    if (newAvatarUrl) {
+      dbUpdatePayload.photoURL = newAvatarUrl;
+      dbUpdatePayload.avatarUpdatedAt = now;
+    }
+
+    await adminDb.collection('users').doc(uid).set(dbUpdatePayload, { merge: true });
 
     revalidatePath('/profile');
-    return { success: true, message: 'Profile updated successfully!' };
+    revalidatePath('/', 'layout');
+
+    return { 
+        success: true, 
+        message: 'Profile updated successfully!',
+        newAvatarUrl: newAvatarUrl ? `${newAvatarUrl}?t=${now}` : null,
+    };
 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update profile. Please try again.';
-    return { success: false, message };
+    return { success: false, message, error: message };
   }
 }
 
@@ -62,7 +112,6 @@ const UpdatePreferencesSchema = z.object({
         profileVisibility: z.enum(['public', 'private']),
     }),
 });
-export type UserPreferences = z.infer<typeof UpdatePreferencesSchema>;
 
 
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {

@@ -1,4 +1,3 @@
-
 'use server';
 
 import type { UserInfo, UserMetadata } from 'firebase/auth';
@@ -14,6 +13,16 @@ export interface UserStats {
   installedPacks: string[];
   subscriptionTier: string;
   memberSince: Timestamp;
+}
+
+export type UserPreferences = {
+    theme: 'light' | 'dark' | 'system';
+    notifications: {
+        email: boolean;
+    };
+    privacy: {
+        profileVisibility: 'public' | 'private';
+    };
 }
 
 /**
@@ -32,5 +41,6 @@ export interface UserProfile {
   providerData: UserInfo[];
   stats?: UserStats;
   role?: 'admin' | 'moderator' | 'user';
-  preferences?: DocumentData;
+  preferences?: UserPreferences;
+  avatarUpdatedAt?: number;
 }
