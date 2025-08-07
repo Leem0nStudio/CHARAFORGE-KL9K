@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -16,26 +17,33 @@ export type ActionResponse = {
   newAvatarUrl?: string | null;
 }
 
-// Helper to upload avatar and get URL
+/**
+ * Standardized function to upload a public avatar to Firebase Storage.
+ * @param uid The user's unique ID.
+ * @param file The File object to upload.
+ * @returns The public, permanent URL of the uploaded avatar.
+ */
 async function uploadAvatar(uid: string, file: File): Promise<string> {
   const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
   const filePath = `avatars/${uid}/avatar.png`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const gcsFile = bucket.file(filePath);
+  
+  // Standard way to save a public file
   await gcsFile.save(buffer, {
     metadata: { 
         contentType: file.type,
-        // Add cache control to ensure browsers fetch the new logo, but allow caching
-        cacheControl: 'public, max-age=3600',
+        // Add cache control to ensure browsers fetch the new logo, but allow long-term caching
+        cacheControl: 'public, max-age=31536000', // Cache for 1 year
     },
-    public: true, // Make the file publicly readable
+    public: true,
   });
 
   return gcsFile.publicUrl();
 }
 
-// Zod schema now only validates fields that are not File objects.
+// Schema now only validates fields that are not File objects.
 const UpdateProfileSchema = z.object({
   displayName: z.string().min(3, 'Display name must be at least 3 characters.').max(30, 'Display name cannot exceed 30 characters.'),
   photoUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
@@ -57,6 +65,7 @@ export async function updateUserProfile(
     const photoUrl = formData.get('photoUrl') as string;
     const photoFile = formData.get('photoFile') as File;
     
+    // 1. Validate text-based inputs first
     const validatedFields = UpdateProfileSchema.safeParse({ displayName, photoUrl });
 
     if (!validatedFields.success) {
@@ -67,37 +76,38 @@ export async function updateUserProfile(
   
     const { displayName: newDisplayName } = validatedFields.data;
     let newAvatarUrl: string | null = null;
-    const now = Date.now();
-
-    // Handle file upload separately after validating text fields
+    
+    // 2. Handle file upload separately if a file exists
     if (photoFile && photoFile.size > 0) {
         if (photoFile.size > 5 * 1024 * 1024) { // 5MB limit
             return { success: false, message: 'File is too large. Please select an image smaller than 5MB.' };
         }
+        // Use the standardized public upload function
         newAvatarUrl = await uploadAvatar(uid, photoFile);
     } else if (validatedFields.data.photoUrl) {
         newAvatarUrl = validatedFields.data.photoUrl;
     }
     
+    // 3. Prepare payloads for Auth and Firestore
     const authUpdatePayload: { displayName: string, photoURL?: string } = { displayName: newDisplayName };
-    // Only update photoURL if a new one was actually provided
     if (newAvatarUrl) {
         authUpdatePayload.photoURL = newAvatarUrl;
     }
     
-    await adminAuth.updateUser(uid, authUpdatePayload);
-    
-    const dbUpdatePayload: { displayName: string, photoURL?: string, avatarUpdatedAt?: number } = { displayName: newDisplayName };
+    const dbUpdatePayload: { displayName:string, photoURL?: string, avatarUpdatedAt?: number } = { displayName: newDisplayName };
     if (newAvatarUrl) {
       dbUpdatePayload.photoURL = newAvatarUrl;
-      // This is the cache-busting timestamp
-      dbUpdatePayload.avatarUpdatedAt = now;
+      dbUpdatePayload.avatarUpdatedAt = Date.now(); // Cache-busting timestamp
     }
-
-    await adminDb.collection('users').doc(uid).set(dbUpdatePayload, { merge: true });
+    
+    // 4. Execute updates
+    await Promise.all([
+        adminAuth.updateUser(uid, authUpdatePayload),
+        adminDb.collection('users').doc(uid).set(dbUpdatePayload, { merge: true })
+    ]);
 
     revalidatePath('/profile');
-    revalidatePath('/', 'layout');
+    revalidatePath('/', 'layout'); // Revalidate layout to update header avatar
 
     return { 
         success: true, 
@@ -212,10 +222,8 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
             return {
                 ...data,
                 id: doc.id,
-                // Explicitly convert Firebase Timestamp fields to JavaScript Date objects for serialization
                 createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
                 updatedAt: data.updatedAt && data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt),
-                // Add other potential Timestamp fields here if they exist in DataPack
             } as DataPack;
         });
 

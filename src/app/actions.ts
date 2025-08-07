@@ -31,6 +31,7 @@ export async function getPublicCharacters(): Promise<Character[]> {
 
         if (data.userId) {
             try {
+                if (!adminDb) throw new Error('Database service is unavailable during user fetch.');
                 const userDoc = await adminDb.collection('users').doc(data.userId).get();
                 if (userDoc.exists) {
                     userName = userDoc.data()?.displayName || 'Anonymous';
@@ -78,6 +79,7 @@ export async function getTopCreators(): Promise<UserProfile[]> {
       return [];
     }
     
+    // Map to a clean, serializable object with only the necessary fields
     const creators = snapshot.docs.map(doc => {
         const data = doc.data();
         return {

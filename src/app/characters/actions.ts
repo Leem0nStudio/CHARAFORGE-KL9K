@@ -199,6 +199,7 @@ export async function updateCharacterImages(
         return { success: false, message: 'You can add a maximum of 10 images.'}
      }
 
+     // Ensure imageUrls are public, though they should be by this point
      await characterRef.update({ 
         gallery: gallery,
         imageUrl: primaryImageUrl,
@@ -232,6 +233,7 @@ export async function getCharacters(): Promise<Character[]> {
       return [];
     }
 
+    // Data is already clean from Firestore (public URLs)
     const charactersData = snapshot.docs.map(doc => {
       const data = doc.data();
       return {

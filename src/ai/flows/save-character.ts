@@ -29,7 +29,7 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 /**
  * Uploads an image from a Data URI to a user-specific folder in Firebase Storage.
- * Images are uploaded as PUBLIC by default.
+ * This is the standard function for uploading PUBLIC images.
  * @param dataUri The image represented as a Data URI string.
  * @param userId The UID of the user uploading the image, for folder organization.
  * @returns The public URL of the uploaded image.
@@ -51,8 +51,12 @@ async function uploadImageToStorage(dataUri: string, userId: string): Promise<st
     const fileName = `usersImg/${userId}/${randomUUID()}.png`;
     const file = bucket.file(fileName);
 
+    // Standard way to save a public file
     await file.save(imageBuffer, {
-        metadata: { contentType },
+        metadata: { 
+            contentType,
+            cacheControl: 'public, max-age=31536000', // Cache for 1 year
+        },
         public: true,
     });
 
@@ -75,6 +79,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
   try {
     const userId = await verifyAndGetUid();
 
+    // Use the standardized public upload function
     const storageUrl = await uploadImageToStorage(imageDataUri, userId);
 
     const characterRef = adminDb.collection('characters').doc();
@@ -88,7 +93,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
             name,
             description,
             biography,
-            imageUrl: storageUrl, 
+            imageUrl: storageUrl, // The URL is now public and permanent
             gallery: [storageUrl],
             status: 'private', // Characters are private by default
             createdAt: FieldValue.serverTimestamp(),
