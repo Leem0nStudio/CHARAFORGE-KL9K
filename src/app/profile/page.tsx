@@ -1,8 +1,9 @@
 
 'use client';
 
-import React, { useEffect, useState, useTransition, useCallback } from 'react';
+import React, { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useFormState } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
@@ -33,7 +34,6 @@ import { format } from 'date-fns';
 import { PageHeader } from '@/components/page-header';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useActionState } from 'react';
 
 
 // #region Sub-components for each Tab
@@ -52,7 +52,7 @@ const StatCard = ({ icon, label, value }: { icon: React.ReactNode, label: string
 StatCard.displayName = "StatCard";
 
 
-function AvatarUploader({ user, onAvatarChange }: { user: UserProfile, onAvatarChange: (newUrl: string) => void }) {
+function AvatarUploader({ user }: { user: UserProfile }) {
     const [preview, setPreview] = useState<string | null>(null);
 
     useEffect(() => {
@@ -64,9 +64,7 @@ function AvatarUploader({ user, onAvatarChange }: { user: UserProfile, onAvatarC
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                const newUrl = reader.result as string;
-                setPreview(newUrl);
-                onAvatarChange(newUrl);
+                setPreview(reader.result as string);
             };
             reader.readAsDataURL(file);
         }
@@ -102,26 +100,29 @@ function AvatarUploader({ user, onAvatarChange }: { user: UserProfile, onAvatarC
         </div>
     );
 }
+AvatarUploader.displayName = "AvatarUploader";
 
-function ProfileForm({ user, onProfileUpdate }: { user: UserProfile, onProfileUpdate: (updatedUser: Partial<UserProfile>) => void }) {
+
+function ProfileForm({ user }: { user: UserProfile }) {
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const { setUserProfile } = useAuth();
 
-  const handleAction = async (formData: FormData) => {
-    startTransition(async () => {
-        const result = await updateUserProfile(formData);
-        if (result.success) {
-            toast({ title: 'Success!', description: result.message });
-            if (result.newAvatarUrl) {
-                onProfileUpdate({ photoURL: result.newAvatarUrl, avatarUpdatedAt: Date.now() });
-            } else {
-                 onProfileUpdate({ displayName: formData.get('displayName') as string });
-            }
-        } else {
-            toast({ variant: 'destructive', title: 'Update Failed', description: result.message || 'An unknown error occurred.' });
-        }
-    });
-  };
+  const initialState: ActionResponse = { success: false, message: '' };
+  const [state, formAction] = useFormState(updateUserProfile, initialState);
+  
+  const formRef = React.useRef<HTMLFormElement>(null);
+  
+  useEffect(() => {
+    if (state.success) {
+      toast({ title: "Success!", description: state.message });
+      if (state.newAvatarUrl) {
+         setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl, avatarUpdatedAt: Date.now() } : null);
+      }
+      formRef.current?.reset();
+    } else if (state.message) {
+      toast({ variant: 'destructive', title: 'Update Failed', description: state.message });
+    }
+  }, [state, toast, setUserProfile]);
 
   return (
     <Card>
@@ -130,8 +131,8 @@ function ProfileForm({ user, onProfileUpdate }: { user: UserProfile, onProfileUp
         <CardDescription>This is how others will see you on the site.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={handleAction} className="space-y-6">
-            <AvatarUploader user={user} onAvatarChange={(newUrl) => onProfileUpdate({ photoURL: newUrl, avatarUpdatedAt: Date.now() })} />
+        <form ref={formRef} action={formAction} className="space-y-6">
+            <AvatarUploader user={user} />
             <div className="space-y-2">
                 <Label htmlFor="displayName">Display Name</Label>
                 <Input 
@@ -155,10 +156,7 @@ function ProfileForm({ user, onProfileUpdate }: { user: UserProfile, onProfileUp
                 <Input id="email" type="email" defaultValue={user.email || ''} disabled />
             </div>
 
-            <Button type="submit" disabled={isPending}>
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Update Profile
-            </Button>
+            <Button type="submit">Update Profile</Button>
         </form>
       </CardContent>
     </Card>
@@ -171,11 +169,11 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
   const [preferences, setPreferences] = useState<UserPreferences>(initialPreferences);
   const [isSavingPrefs, startPrefsTransition] = useTransition();
 
-  const handlePreferencesChange = useCallback((field: keyof UserPreferences, value: any) => {
+  const handlePreferencesChange = React.useCallback((field: keyof UserPreferences, value: any) => {
     setPreferences(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const handleNestedPreferencesChange = useCallback((parent: 'notifications' | 'privacy', field: string, value: any) => {
+  const handleNestedPreferencesChange = React.useCallback((parent: 'notifications' | 'privacy', field: string, value: any) => {
     setPreferences(prev => ({
       ...prev,
       [parent]: {
@@ -185,7 +183,7 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
     }));
   }, []);
 
-  const handleSavePreferences = useCallback(() => {
+  const handleSavePreferences = React.useCallback(() => {
     startPrefsTransition(async () => {
       const result = await updateUserPreferences(preferences);
       if (result.success) {
@@ -355,7 +353,7 @@ function SecurityTab() {
   const router = useRouter();
   const [isDeleting, startDeleteTransition] = useTransition();
 
-  const handleDeleteAccount = useCallback(async () => {
+  const handleDeleteAccount = React.useCallback(async () => {
     startDeleteTransition(async () => {
       const result = await deleteUserAccount();
       if (result.success) {
@@ -432,11 +430,11 @@ export default function ProfilePage() {
     setLocalUserProfile(userProfile);
   }, [userProfile]);
 
-  const handleProfileUpdate = useCallback((updates: Partial<UserProfile>) => {
+  const handleProfileUpdate = (updates: Partial<UserProfile>) => {
     const updatedProfile = { ...localUserProfile, ...updates } as UserProfile;
     setLocalUserProfile(updatedProfile);
     setUserProfile(updatedProfile); // Also update the global context
-  }, [localUserProfile, setUserProfile]);
+  };
 
   const defaultPreferences: UserPreferences = {
     theme: 'system',
@@ -483,7 +481,7 @@ export default function ProfilePage() {
                 <TabsTrigger value="security">Security</TabsTrigger>
             </TabsList>
             <TabsContent value="profile" className="space-y-4">
-                <ProfileForm user={localUserProfile} onProfileUpdate={handleProfileUpdate} />
+                <ProfileForm user={localUserProfile} />
             </TabsContent>
             <TabsContent value="datapacks" className="space-y-4">
                 <DataPacksTab />

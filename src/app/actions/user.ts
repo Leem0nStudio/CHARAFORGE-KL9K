@@ -20,6 +20,7 @@ export type ActionResponse = {
 // Zod schema for validating text fields from the profile form
 const UpdateProfileSchema = z.object({
   displayName: z.string().min(1, 'Display Name is required').max(50, 'Display Name must be less than 50 characters').optional(),
+  photoUrl: z.string().url('Invalid URL format').optional().or(z.literal('')),
 });
 
 
@@ -57,8 +58,9 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
         
         const displayName = formData.get('displayName') as string;
         const photoFile = formData.get('photoFile') as File;
+        const photoUrl = formData.get('photoUrl') as string;
 
-        const validation = UpdateProfileSchema.safeParse({ displayName });
+        const validation = UpdateProfileSchema.safeParse({ displayName, photoUrl });
 
         if (!validation.success) {
             const firstError = validation.error.errors[0];
@@ -70,14 +72,21 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
         
         let finalPhotoUrl: string | null = null;
         let newAvatarUrlForClient: string | null = null;
-
+        
+        // Priority 1: Handle file upload
         if (photoFile && photoFile.size > 0) {
             if (photoFile.size > 5 * 1024 * 1024) { // 5MB limit
                 return { success: false, message: 'File is too large. Please upload an image smaller than 5MB.' };
             }
             finalPhotoUrl = await uploadAvatar(uid, photoFile);
             newAvatarUrlForClient = finalPhotoUrl;
+        } 
+        // Priority 2: Handle URL paste (only if no file was uploaded)
+        else if (photoUrl) {
+            finalPhotoUrl = photoUrl;
+            newAvatarUrlForClient = photoUrl;
         }
+
 
         const userRef = adminDb.collection('users').doc(uid);
         const updates: { [key: string]: any } = {};
