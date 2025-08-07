@@ -13,7 +13,7 @@ export type ActionResponse = {
 
 const LOGO_PATH = 'app-assets/logo.png';
 
-export async function updateLogo(prevState: ActionResponse, formData: FormData): Promise<ActionResponse> {
+export async function updateLogo(prevState: any, formData: FormData): Promise<ActionResponse> {
     try {
         await verifyAndGetUid();
 

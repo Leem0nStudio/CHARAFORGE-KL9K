@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -21,6 +22,9 @@ async function uploadFileToStorage(
     content: Buffer,
     contentType: string,
 ): Promise<string> {
+    if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
+        throw new Error("Firebase Storage bucket is not configured.");
+    }
     const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
     const filePath = `datapacks/${packId}/${fileName}`;
     const file = bucket.file(filePath);
@@ -101,6 +105,9 @@ export async function deleteDataPack(packId: string): Promise<ActionResponse> {
 
         await adminDb.collection('datapacks').doc(packId).delete();
 
+        if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
+            throw new Error("Firebase Storage bucket is not configured.");
+        }
         const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
         await bucket.deleteFiles({ prefix: `datapacks/${packId}/` });
         

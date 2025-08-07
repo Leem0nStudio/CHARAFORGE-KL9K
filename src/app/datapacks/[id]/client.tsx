@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { installDataPack } from '../actions';
+import { installDataPack } from '@/app/actions/datapacks';
 import { Wand2, Download, ShoppingCart, Loader2, Check } from 'lucide-react';
 import type { DataPack } from '@/types/datapack';
 

@@ -7,6 +7,8 @@ import {
   useEffect,
   useContext,
   ReactNode,
+  Dispatch,
+  SetStateAction,
 } from 'react';
 import { User, onIdTokenChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData, Timestamp } from 'firebase/firestore';
@@ -16,12 +18,14 @@ import type { UserProfile } from '@/types/user';
 export interface AuthContextType {
   authUser: User | null; // The original Firebase Auth User object
   userProfile: UserProfile | null; // The Firestore user profile data
+  setUserProfile: Dispatch<SetStateAction<UserProfile | null>>; // Allow updating the profile from components
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   authUser: null,
   userProfile: null,
+  setUserProfile: () => {},
   loading: true,
 });
 
@@ -161,7 +165,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ authUser, userProfile, loading }}>
+    <AuthContext.Provider value={{ authUser, userProfile, setUserProfile, loading }}>
       {children}
     </AuthContext.Provider>
   );

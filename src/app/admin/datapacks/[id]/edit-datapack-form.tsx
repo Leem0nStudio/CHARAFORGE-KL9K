@@ -6,7 +6,7 @@ import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { upsertDataPack, deleteDataPack } from '../actions';
+import { upsertDataPack, deleteDataPack } from '@/app/actions/datapacks';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -376,7 +376,7 @@ function SchemaPreview({ form }: { form: any }) {
                                     <SelectTrigger><SelectValue placeholder={slot.placeholder || "Select..."} /></SelectTrigger>
                                     <SelectContent>
                                         {slot.options.map((option: any) => (
-                                            <SelectItem key={option.value} value={option.value}>{option.label || 'Unnamed Option'}</SelectItem>
+                                            <SelectItem key={option.value} value={option.value || ' '}>{option.label || 'Unnamed Option'}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>

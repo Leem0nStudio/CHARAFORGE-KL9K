@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useTransition, useCallback, useActionState } from 'react';
+import React, { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -25,9 +25,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { updateUserProfile, deleteUserAccount, updateUserPreferences, getInstalledDataPacks } from './actions';
+import { updateUserProfile, deleteUserAccount, updateUserPreferences, getInstalledDataPacks, type ActionResponse } from '@/app/actions/user';
 import { Loader2, User, Swords, Heart, Package, Gem, Calendar, Wand2, Upload, Link as LinkIcon, Camera } from 'lucide-react';
-import type { ActionResponse } from './actions';
 import type { UserProfile, UserStats, UserPreferences } from '@/types/user';
 import type { DataPack } from '@/types/datapack';
 import { format } from 'date-fns';
@@ -52,7 +51,7 @@ const StatCard = ({ icon, label, value }: { icon: React.ReactNode, label: string
 StatCard.displayName = "StatCard";
 
 
-function AvatarUploader({ user }: { user: UserProfile }) {
+function AvatarUploader({ user, onAvatarChange }: { user: UserProfile, onAvatarChange: (newUrl: string) => void }) {
     const [preview, setPreview] = useState<string | null>(null);
 
     useEffect(() => {
@@ -64,7 +63,9 @@ function AvatarUploader({ user }: { user: UserProfile }) {
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                setPreview(reader.result as string);
+                const newUrl = reader.result as string;
+                setPreview(newUrl);
+                onAvatarChange(newUrl);
             };
             reader.readAsDataURL(file);
         }
@@ -72,13 +73,10 @@ function AvatarUploader({ user }: { user: UserProfile }) {
 
     const fallback = user.displayName?.charAt(0) || user.email?.charAt(0) || '?';
     
-    // Prioritize preview, then user's photoURL. Append timestamp to bust cache.
-    const displaySrc = preview ? `${preview}?t=${user.avatarUpdatedAt || ''}` : (user.photoURL ? `${user.photoURL}?t=${user.avatarUpdatedAt || ''}` : '');
-
     return (
         <div className="flex items-center gap-4">
             <Avatar className="w-24 h-24 text-4xl">
-                 <AvatarImage src={displaySrc || undefined} alt={user.displayName || 'User Avatar'} />
+                 <AvatarImage src={preview || undefined} alt={user.displayName || 'User Avatar'} key={preview} />
                 <AvatarFallback>{fallback}</AvatarFallback>
             </Avatar>
             <div className="grid gap-1.5">
@@ -104,28 +102,25 @@ function AvatarUploader({ user }: { user: UserProfile }) {
     );
 }
 
-function ProfileForm({ user }: { user: UserProfile }) {
+function ProfileForm({ user, onProfileUpdate }: { user: UserProfile, onProfileUpdate: (updatedUser: Partial<UserProfile>) => void }) {
   const { toast } = useToast();
-  const [state, formAction, isPending] = useActionState(updateUserProfile, { success: false, message: '' });
-  const [photoUrl, setPhotoUrl] = useState('');
-  const [localUser, setLocalUser] = useState(user);
+  const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    setLocalUser(user);
-  }, [user]);
-
-  useEffect(() => {
-    if (state.message) {
-      toast({
-        title: state.success ? 'Success!' : 'Update Failed',
-        description: state.message,
-        variant: state.success ? 'default' : 'destructive',
-      });
-      if (state.success && state.newAvatarUrl) {
-          setLocalUser(prev => ({...prev, photoURL: state.newAvatarUrl!, avatarUpdatedAt: Date.now()}));
-      }
-    }
-  }, [state, toast]);
+  const handleAction = async (formData: FormData) => {
+    startTransition(async () => {
+        const result = await updateUserProfile(formData);
+        if (result.success) {
+            toast({ title: 'Success!', description: result.message });
+            if (result.newAvatarUrl) {
+                onProfileUpdate({ photoURL: result.newAvatarUrl, avatarUpdatedAt: Date.now() });
+            } else {
+                 onProfileUpdate({ displayName: formData.get('displayName') as string });
+            }
+        } else {
+            toast({ variant: 'destructive', title: 'Update Failed', description: result.message || 'An unknown error occurred.' });
+        }
+    });
+  };
 
   return (
     <Card>
@@ -134,8 +129,8 @@ function ProfileForm({ user }: { user: UserProfile }) {
         <CardDescription>This is how others will see you on the site.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={formAction} className="space-y-6">
-            <AvatarUploader user={localUser} />
+        <form action={handleAction} className="space-y-6">
+            <AvatarUploader user={user} onAvatarChange={(newUrl) => onProfileUpdate({ photoURL: newUrl, avatarUpdatedAt: Date.now() })} />
             <div className="space-y-2">
                 <Label htmlFor="displayName">Display Name</Label>
                 <Input 
@@ -145,28 +140,15 @@ function ProfileForm({ user }: { user: UserProfile }) {
                 />
             </div>
             
-            <Tabs defaultValue="upload">
-                <TabsList>
-                    <TabsTrigger value="upload"><Upload className="mr-2"/>Upload File</TabsTrigger>
-                    <TabsTrigger value="link"><LinkIcon className="mr-2"/>From URL</TabsTrigger>
-                </TabsList>
-                <TabsContent value="upload" className="pt-2">
-                     <p className="text-sm text-muted-foreground">Select a new avatar by clicking "Change Avatar" above. The selected file will be uploaded.</p>
-                </TabsContent>
-                <TabsContent value="link" className="pt-2">
-                    <div className="space-y-2">
-                        <Label htmlFor="photoUrl">Image URL</Label>
-                        <Input 
-                            id="photoUrl" 
-                            name="photoUrl"
-                            placeholder="https://example.com/avatar.png"
-                            value={photoUrl}
-                            onChange={(e) => setPhotoUrl(e.target.value)}
-                        />
-                    </div>
-                </TabsContent>
-            </Tabs>
-
+            <div className="space-y-2">
+                <Label htmlFor="photoUrl">Or paste image URL</Label>
+                <Input 
+                    id="photoUrl" 
+                    name="photoUrl"
+                    placeholder="https://example.com/avatar.png"
+                />
+            </div>
+            
             <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" defaultValue={user.email || ''} disabled />
@@ -441,9 +423,21 @@ SecurityTab.displayName = "SecurityTab";
 // #endregion
 
 export default function ProfilePage() {
-  const { userProfile, loading } = useAuth();
+  const { userProfile, loading, setUserProfile } = useAuth(); // Use setUserProfile from context
   const router = useRouter();
   
+  const [localUserProfile, setLocalUserProfile] = useState(userProfile);
+  
+  useEffect(() => {
+    setLocalUserProfile(userProfile);
+  }, [userProfile]);
+
+  const handleProfileUpdate = useCallback((updates: Partial<UserProfile>) => {
+    const updatedProfile = { ...localUserProfile, ...updates } as UserProfile;
+    setLocalUserProfile(updatedProfile);
+    setUserProfile(updatedProfile); // Also update the global context
+  }, [localUserProfile, setUserProfile]);
+
   const defaultPreferences: UserPreferences = {
     theme: 'system',
     notifications: { email: false },
@@ -451,12 +445,12 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    if (!loading && !userProfile) {
+    if (!loading && !localUserProfile) {
       router.push('/login');
     }
-  }, [userProfile, loading, router]);
+  }, [localUserProfile, loading, router]);
   
-  if (loading || !userProfile) {
+  if (loading || !localUserProfile) {
     return (
       <div className="flex items-center justify-center h-screen w-full">
          <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -464,8 +458,8 @@ export default function ProfilePage() {
     );
   }
   
-  const userPreferences = (userProfile?.preferences as UserPreferences) || defaultPreferences;
-  const userStats = userProfile?.stats;
+  const userPreferences = (localUserProfile?.preferences as UserPreferences) || defaultPreferences;
+  const userStats = localUserProfile?.stats;
 
   return (
     <motion.div
@@ -488,7 +482,7 @@ export default function ProfilePage() {
                 <TabsTrigger value="security">Security</TabsTrigger>
             </TabsList>
             <TabsContent value="profile" className="space-y-4">
-                <ProfileForm user={userProfile} />
+                <ProfileForm user={localUserProfile} onProfileUpdate={handleProfileUpdate} />
             </TabsContent>
             <TabsContent value="datapacks" className="space-y-4">
                 <DataPacksTab />

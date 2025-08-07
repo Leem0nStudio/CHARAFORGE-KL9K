@@ -15,8 +15,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['"Quicksand"', 'sans-serif'],
-        headline: ['"Rowdies"', 'sans-serif'],
+        body: ['var(--font-body)', 'sans-serif'],
+        headline: ['var(--font-headline)', 'sans-serif'],
       },
       colors: {
         border: 'hsl(var(--border))',

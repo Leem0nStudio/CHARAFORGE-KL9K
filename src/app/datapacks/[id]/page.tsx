@@ -1,7 +1,7 @@
 
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { getCreationsForDataPack, getPublicDataPacks } from '../actions';
+import { getCreationsForDataPack, getPublicDataPacks } from '@/app/actions/datapacks';
 import { User, GalleryVertical } from 'lucide-react';
 import { DataPackClient } from './client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';

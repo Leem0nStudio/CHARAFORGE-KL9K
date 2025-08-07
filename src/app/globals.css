@@ -4,71 +4,69 @@
 
 @layer base {
   :root {
-    --background: 222 47% 11%; /* Dark Slate Blue */
-    --foreground: 210 40% 98%; /* Almost White */
+    --background: 222.2 84% 4.9%; /* #080D17 -> Equivalent to your #111827 */
+    --foreground: 210 40% 98%;
 
-    --card: 222 47% 14%; /* Slightly lighter Slate Blue */
+    --card: 222.2 84% 6.9%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 47% 11%;
+    --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    /* Bright, electric blue for primary actions */
-    --primary: 217 91% 60%; /* #3B82F6 */
+    /* Corporate Blue */
+    --primary: 221.2 65.3% 32.7%; /* #1E3A8A */
     --primary-foreground: 210 40% 98%;
 
-    /* A more subdued blue for secondary actions */
-    --secondary: 217 33% 50%;
+    --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217 33% 30%;
-    --muted-foreground: 215 20% 65%;
-    
-    /* Vibrant Amber/Orange for accents */
-    --accent: 38 92% 50%; /* #F59E0B */
-    --accent-foreground: 222 47% 11%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
 
-    --destructive: 0 72% 51%; /* #DC2626 */
+    /* Vibrant Amber */
+    --accent: 38.3 91.6% 50.4%; /* #F59E0B */
+    --accent-foreground: 222.2 84% 4.9%;
+
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 33% 25%;
-    --input: 217 33% 25%;
-    --ring: 217 91% 60%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 221.2 83.2% 53.3%;
     
     --radius: 0.5rem;
-
-    --chart-1: 217 91% 60%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 14%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217 33% 50%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 30%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 38 92% 50%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 25%;
-    --input: 217 33% 25%;
-    --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --background: 224 71.4% 4.1%; /* A slightly darker version of #111827 */
+    --foreground: 210 20% 98%;
+
+    --card: 222.2 84% 6.9%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 224 71.4% 4.1%;
+    --popover-foreground: 210 20% 98%;
+
+    /* Corporate Blue */
+    --primary: 221.2 65.3% 32.7%; /* #1E3A8A */
+    --primary-foreground: 210 20% 98%;
+
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+    
+    /* Vibrant Amber */
+    --accent: 38.3 91.6% 50.4%; /* #F59E0B */
+    --accent-foreground: 224 71.4% 4.1%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 221.2 65.3% 32.7%;
   }
 }
 
@@ -80,8 +78,7 @@
     @apply bg-background text-foreground;
   }
   .font-headline {
-    font-family: "Rowdies", sans-serif;
-    text-transform: uppercase !important;
+    font-family: 'Bebas Neue', sans-serif;
   }
   .embla {
     overflow: hidden;

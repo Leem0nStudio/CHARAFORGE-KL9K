@@ -2,7 +2,6 @@
 'use server';
 
 import type { UserInfo, UserMetadata } from 'firebase/auth';
-import type { DocumentData, Timestamp } from 'firebase/firestore';
 
 /**
  * Represents the statistics for a user's activity.

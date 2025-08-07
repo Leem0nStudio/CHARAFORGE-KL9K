@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 
 import type { Character } from '@/types/character';
-import { updateCharacter, updateCharacterImages } from '@/app/characters/actions';
+import { updateCharacter, updateCharacterImages } from '@/app/actions/characters';
 import { translateText, type TranslateTextInput } from '@/ai/flows/translate-text';
 import { useToast } from '@/hooks/use-toast';
 
