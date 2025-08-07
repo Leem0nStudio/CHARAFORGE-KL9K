@@ -7,11 +7,6 @@ import { motion } from 'framer-motion';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 
-
-// Since the page now uses useSearchParams, it must be a Client Component.
-// The data fetching and heavy lifting is in CharacterGenerator, so this is fine.
-// We wrap it in a Suspense boundary to handle the initial render.
-
 function CharacterGeneratorWrapper() {
   return (
     <motion.div
@@ -24,7 +19,7 @@ function CharacterGeneratorWrapper() {
              <div className="flex items-center gap-4">
                 <BackButton />
                 <div>
-                  <h1 className="text-3xl font-semibold font-headline tracking-wider">Character Generator</h1>
+                  <h1 className="text-3xl font-bold font-headline tracking-wider">Character Generator</h1>
                   <p className="text-muted-foreground">
                       Bring your vision to life. Describe your character, or use a DataPack to get started.
                   </p>
@@ -48,4 +43,3 @@ export default function CharacterGeneratorPage() {
     </Suspense>
   );
 }
-

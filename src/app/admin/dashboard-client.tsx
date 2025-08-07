@@ -39,7 +39,7 @@ export function DashboardClient({ stats }: DashboardClientProps) {
   return (
     <>
       <motion.div 
-        className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3"
+        className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -89,7 +89,7 @@ export function DashboardClient({ stats }: DashboardClientProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <h2 className="text-xl font-semibold mb-4 font-headline tracking-wider">Analytics (Coming Soon)</h2>
+        <h2 className="text-xl font-semibold mb-4">Analytics (Coming Soon)</h2>
          <Card className="min-h-[300px] flex items-center justify-center bg-card/50 border-2 border-dashed">
             <p className="text-muted-foreground">Charts and more detailed analytics will be displayed here.</p>
         </Card>
