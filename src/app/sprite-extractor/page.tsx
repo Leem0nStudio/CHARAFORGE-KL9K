@@ -2,14 +2,13 @@
 'use client';
 
 import { useState } from 'react';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { BackButton } from '@/components/back-button';
 import { motion } from 'framer-motion';
 import { SpriteExtractorClient } from '@/components/sprite-extractor';
 import { OptionsPanel } from '@/components/options-panel';
 import { LogPanel } from '@/components/log-panel';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { PageHeader } from '@/components/page-header';
 
 export type ExtractionOptions = {
     minArea: number;
@@ -96,17 +95,10 @@ export default function SpriteExtractorPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
     >
-        <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
-            <div className="flex items-center gap-4">
-                <BackButton />
-                <div>
-                    <h1 className="text-3xl font-semibold font-headline tracking-wider">Sprite Extractor</h1>
-                    <p className="text-muted-foreground">
-                        Upload a sprite sheet, and let our AI-powered service extract individual sprites for you.
-                    </p>
-                </div>
-            </div>
-        </div>
+        <PageHeader 
+            title="Sprite Extractor"
+            description="Upload a sprite sheet, and let our AI-powered service extract individual sprites for you."
+        />
         
         <div className="grid lg:grid-cols-12 gap-8 max-w-7xl mx-auto">
             <div className="lg:col-span-3">
