@@ -1,6 +1,7 @@
 
 'use client';
 
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import Link from 'next/link';
@@ -23,7 +24,7 @@ export function AdminPageLayout({ title, children, actions, breadcrumbs }: Admin
         >
             <div className="flex items-center justify-between space-x-4">
                 <div>
-                     {breadcrumbs && (
+                     {breadcrumbs && breadcrumbs.length > 0 && (
                         <Breadcrumb className="hidden md:flex mb-2">
                             <BreadcrumbList>
                                  <BreadcrumbItem>

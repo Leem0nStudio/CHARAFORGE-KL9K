@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { getDataPacks } from "./actions";
 import { format } from "date-fns";
@@ -16,10 +17,12 @@ import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 
 export default async function DataPacksAdminPage() {
   const dataPacks = await getDataPacks();
+  const breadcrumbs = [{ label: 'DataPacks', href: '/admin/datapacks' }];
 
   return (
     <AdminPageLayout
       title="DataPacks"
+      breadcrumbs={breadcrumbs}
       actions={
         <Button asChild>
           <Link href="/admin/datapacks/new">

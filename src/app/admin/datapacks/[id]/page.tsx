@@ -35,5 +35,3 @@ export default async function EditDataPackPage({ params }: EditDataPackPageProps
     </AdminPageLayout>
   );
 }
-
-    

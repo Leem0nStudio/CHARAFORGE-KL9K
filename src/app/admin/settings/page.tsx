@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState, useEffect } from 'react';
@@ -24,9 +25,11 @@ export default function AdminSettingsPage() {
             });
         }
     }, [state, toast]);
+    
+    const breadcrumbs = [{ label: 'Settings', href: '/admin/settings' }];
 
     return (
-        <AdminPageLayout title="Site Settings">
+        <AdminPageLayout title="Site Settings" breadcrumbs={breadcrumbs}>
             <Card>
                 <CardHeader>
                     <CardTitle>Logo Management</CardTitle>
