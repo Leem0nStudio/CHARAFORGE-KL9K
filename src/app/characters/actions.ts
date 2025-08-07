@@ -4,8 +4,6 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { adminDb } from '@/lib/firebase/server';
-import { getStorage } from 'firebase-admin/storage';
-import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character } from '@/types/character';
 
@@ -218,30 +216,8 @@ export async function updateCharacterImages(
   }
 }
 
-function getPathFromUrl(url: string): string | null {
-    try {
-        const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-        if (!bucketName) {
-            console.error("Storage bucket name is not configured.");
-            return null;
-        }
 
-        const prefix = `https://storage.googleapis.com/${bucketName}/`;
-        if (url.startsWith(prefix)) {
-            return decodeURIComponent(url.substring(prefix.length));
-        }
-        
-        console.warn(`URL does not match expected GCS format: ${url}`);
-        return null;
-
-    } catch (e) {
-        console.error(`Could not parse GCS URL: ${url}`, e);
-        return null;
-    }
-}
-
-
-export async function getCharactersWithSignedUrls(): Promise<Character[]> {
+export async function getCharacters(): Promise<Character[]> {
   try {
     const uid = await verifyAndGetUid();
     if (!adminDb) {
@@ -265,50 +241,14 @@ export async function getCharactersWithSignedUrls(): Promise<Character[]> {
       } as Character;
     });
 
-    const charactersWithUrls = await Promise.all(
-      charactersData.map(async (character) => {
-        // Public images don't need signed URLs, their URL is already public.
-        if (character.status === 'public') {
-            return character;
-        }
-        
-        if (!character.imageUrl || !character.imageUrl.startsWith('https://storage.googleapis.com/')) {
-          console.warn(`Character ${character.id} has an invalid or missing imageUrl. Using placeholder.`);
-          return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
-        }
-
-        try {
-          const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-          const filePath = getPathFromUrl(character.imageUrl);
-          
-          if (!filePath) {
-             console.warn(`Could not extract file path from URL for character ${character.id}: ${character.imageUrl}`);
-             return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
-          }
-          
-          const file = bucket.file(filePath);
-          
-          const [signedUrl] = await file.getSignedUrl({
-            action: 'read',
-            expires: Date.now() + 60 * 60 * 1000, // 1 hour
-          });
-
-          return { ...character, imageUrl: signedUrl };
-        } catch (urlError) {
-          console.error(`Failed to get signed URL for character ${character.id}:`, urlError);
-          return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
-        }
-      })
-    );
-
-    return charactersWithUrls;
+    return charactersData;
 
   } catch (error) {
     if (error instanceof Error && (error.message.includes('User session not found') || error.message.includes('Invalid or expired'))) {
         console.log('User session not found, returning empty character list.');
         return [];
     }
-    console.error("Error fetching characters with signed URLs:", error);
+    console.error("Error fetching characters:", error);
     return [];
   }
 }

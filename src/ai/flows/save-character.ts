@@ -29,7 +29,7 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 /**
  * Uploads an image from a Data URI to a user-specific folder in Firebase Storage.
- * Images are uploaded as PRIVATE by default.
+ * Images are uploaded as PUBLIC by default.
  * @param dataUri The image represented as a Data URI string.
  * @param userId The UID of the user uploading the image, for folder organization.
  * @returns The public URL of the uploaded image.
