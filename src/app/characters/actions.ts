@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
+import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character } from '@/types/character';
 
@@ -55,7 +56,7 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
 
     const characterRef = adminDb.collection('characters').doc(characterId);
     const characterDoc = await characterRef.get();
-    const characterData = characterDoc.data()
+    const characterData = characterDoc.data();
     if (!characterDoc.exists || characterData?.userId !== uid) {
       return { success: false, message: 'Permission denied or character not found.' };
     }
@@ -91,7 +92,17 @@ export async function updateCharacterDataPackSharing(characterId: string, isShar
         return { success: false, message: 'This character was not created with a DataPack.' };
     }
 
-    await characterRef.update({ isSharedToDataPack: isShared });
+    // New logic: If sharing to datapack, also make it public automatically.
+    // Unsharing from datapack does not make it private, that's a separate user action.
+    const updates: { isSharedToDataPack: boolean, status?: 'public' } = { 
+        isSharedToDataPack: isShared 
+    };
+
+    if (isShared) {
+        updates.status = 'public';
+    }
+
+    await characterRef.update(updates);
 
     if (isShared && characterData.imageUrl) {
         const dataPackRef = adminDb.collection('datapacks').doc(characterData.dataPackId);
@@ -102,6 +113,7 @@ export async function updateCharacterDataPackSharing(characterId: string, isShar
 
     revalidatePath('/characters');
     revalidatePath(`/datapacks/${characterData.dataPackId}`);
+    revalidatePath('/'); // Revalidate home page as it might appear on the feed now.
     
     return { success: true, message: `Sharing status for DataPack gallery updated.` };
 
@@ -212,9 +224,11 @@ function getPathFromUrl(url: string): string | null {
 
         const gcsPrefixHttp = `https://storage.googleapis.com/${bucketName}/`;
         if (url.startsWith(gcsPrefixHttp)) {
+            // This robustly decodes the path after the bucket name
             return decodeURIComponent(url.substring(gcsPrefixHttp.length));
         }
         
+        // Fallback for other URL formats, though the above should be standard
         const urlObject = new URL(url);
         const path = urlObject.pathname.split('/').slice(2).join('/');
         return path ? decodeURIComponent(path) : null;
@@ -252,6 +266,7 @@ export async function getCharactersWithSignedUrls(): Promise<Character[]> {
 
     const charactersWithUrls = await Promise.all(
       charactersData.map(async (character) => {
+        // Public images don't need signed URLs
         if (character.status === 'public') {
             return character;
         }

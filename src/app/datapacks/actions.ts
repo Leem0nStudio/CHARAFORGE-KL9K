@@ -3,14 +3,14 @@
 
 import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase/server';
-import { getStorage } from 'firebase-admin/storage';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { DataPack, DataPackSchema } from '@/types/datapack';
+import type { DataPack } from '@/types/datapack';
 import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
 
 /**
  * Fetches all public datapacks directly from Firestore.
+ * This is now the single source of truth for fetching DataPack lists.
  * @returns {Promise<DataPack[]>} A promise that resolves to an array of datapack objects.
  */
 export async function getPublicDataPacks(): Promise<DataPack[]> {
@@ -44,37 +44,6 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
   }
 }
 
-/**
- * Fetches a single DataPack from Firestore.
- * The schema is now embedded in the document, so no extra fetch is needed.
- * @param {string} packId The ID of the datapack to fetch.
- * @returns {Promise<DataPack | null>} A promise that resolves to the datapack object or null if not found.
- */
-export async function getDataPack(packId: string): Promise<DataPack | null> {
-    if (!adminDb) {
-      console.error('Database service is unavailable.');
-      return null;
-    }
-    try {
-        const doc = await adminDb.collection('datapacks').doc(packId).get();
-        if (!doc.exists) {
-            console.warn(`DataPack document with ID "${packId}" not found.`);
-            return null;
-        }
-
-        const data = doc.data();
-        return {
-            ...data,
-            id: doc.id,
-            createdAt: data?.createdAt.toDate(),
-        } as DataPack
-    } catch (error) {
-        console.error(`Failed to fetch DataPack "${packId}":`, error);
-        return null;
-    }
-}
-
-
 export async function installDataPack(packId: string): Promise<{success: boolean, message: string}> {
     try {
         const uid = await verifyAndGetUid();
@@ -99,9 +68,11 @@ export async function installDataPack(packId: string): Promise<{success: boolean
             return { success: false, message: "You have already installed this DataPack." };
         }
 
-        await userRef.update({
-            'stats.installedPacks': FieldValue.arrayUnion(packId)
-        });
+        await userRef.set({
+            stats: { 
+                installedPacks: FieldValue.arrayUnion(packId)
+            }
+        }, { merge: true });
 
         revalidatePath('/profile');
         revalidatePath('/datapacks');
@@ -126,7 +97,7 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
     const charactersRef = adminDb.collection('characters');
     const q = charactersRef
         .where('dataPackId', '==', packId)
-        .where('isSharedToDataPack', '==', true)
+        .where('isSharedToDataPack', '==', true) // Correctly filters by the specific sharing flag
         .orderBy('createdAt', 'desc')
         .limit(20);
     const snapshot = await q.get();

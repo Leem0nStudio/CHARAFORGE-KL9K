@@ -1,7 +1,7 @@
 
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { getCreationsForDataPack, getDataPack } from '../actions';
+import { getCreationsForDataPack, getPublicDataPacks } from '../actions';
 import { User, GalleryVertical } from 'lucide-react';
 import { DataPackClient } from './client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -12,6 +12,13 @@ interface DataPackDetailPageProps {
     id: string;
   };
 }
+
+// Helper function to get a single pack from the full list
+async function getDataPack(packId: string) {
+    const allPacks = await getPublicDataPacks();
+    return allPacks.find(p => p.id === packId) || null;
+}
+
 
 export default async function DataPackDetailPage({ params }: DataPackDetailPageProps) {
   const { id } = params;
