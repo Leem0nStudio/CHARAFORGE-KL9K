@@ -35,11 +35,10 @@ async function uploadAvatar(uid: string, file: File): Promise<string> {
   return gcsFile.publicUrl();
 }
 
+// Zod schema now only validates fields that are not File objects.
 const UpdateProfileSchema = z.object({
   displayName: z.string().min(3, 'Display name must be at least 3 characters.').max(30, 'Display name cannot exceed 30 characters.'),
-  // Both are now optional, as we'll validate that at least one method is used later.
   photoUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
-  photoFile: z.instanceof(File).optional(),
 });
 
 
@@ -58,8 +57,7 @@ export async function updateUserProfile(
     const photoUrl = formData.get('photoUrl') as string;
     const photoFile = formData.get('photoFile') as File;
     
-    // Initial validation of field types
-    const validatedFields = UpdateProfileSchema.safeParse({ displayName, photoUrl, photoFile });
+    const validatedFields = UpdateProfileSchema.safeParse({ displayName, photoUrl });
 
     if (!validatedFields.success) {
       const firstError = validatedFields.error.flatten().fieldErrors;
@@ -71,11 +69,14 @@ export async function updateUserProfile(
     let newAvatarUrl: string | null = null;
     const now = Date.now();
 
-    // Post-validation logic: determine the avatar source
+    // Handle file upload separately after validating text fields
     if (photoFile && photoFile.size > 0) {
+        if (photoFile.size > 5 * 1024 * 1024) { // 5MB limit
+            return { success: false, message: 'File is too large. Please select an image smaller than 5MB.' };
+        }
         newAvatarUrl = await uploadAvatar(uid, photoFile);
-    } else if (photoUrl) {
-        newAvatarUrl = photoUrl;
+    } else if (validatedFields.data.photoUrl) {
+        newAvatarUrl = validatedFields.data.photoUrl;
     }
     
     const authUpdatePayload: { displayName: string, photoURL?: string } = { displayName: newDisplayName };
@@ -212,8 +213,8 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
                 ...data,
                 id: doc.id,
                 // Explicitly convert Firebase Timestamp fields to JavaScript Date objects for serialization
-                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt,
-                updatedAt: data.updatedAt && typeof data.updatedAt.toDate === 'function' ? data.updatedAt.toDate() : data.updatedAt,
+                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
+                updatedAt: data.updatedAt && data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt),
                 // Add other potential Timestamp fields here if they exist in DataPack
             } as DataPack;
         });
