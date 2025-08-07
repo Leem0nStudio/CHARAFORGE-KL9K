@@ -27,17 +27,14 @@ export async function deleteCharacter(characterId: string) {
   try {
     const characterDoc = await characterRef.get();
 
-    // Security check: ensure the character exists and belongs to the user trying to delete it.
     if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
       throw new Error('Permission denied or character not found.');
     }
 
     await characterRef.delete();
-    // Revalidate the path to ensure the UI updates after deletion.
     revalidatePath('/characters');
     return { success: true };
   } catch (error) {
-    // Log the actual error for debugging, but throw a generic one to the client.
     console.error("Error deleting character:", error);
     throw new Error(error instanceof Error ? error.message : 'Could not delete character due to a server error.');
   }
@@ -45,51 +42,72 @@ export async function deleteCharacter(characterId: string) {
 
 const UpdateStatusSchema = z.enum(['private', 'public']);
 
-export async function updateCharacterStatus(characterId: string, status: 'private' | 'public') {
+export async function updateCharacterStatus(characterId: string, status: 'private' | 'public'): Promise<ActionResponse> {
   const validation = UpdateStatusSchema.safeParse(status);
   if (!validation.success) {
-      throw new Error('Invalid status provided.');
+      return { success: false, message: 'Invalid status provided.' };
   }
 
   const uid = await verifyAndGetUid();
-  if (!characterId) {
-    throw new Error('Character ID is required for status update.');
-  }
-  if (!adminDb) {
-    throw new Error('Database service is unavailable.');
-  }
-
-  const characterRef = adminDb.collection('characters').doc(characterId);
   
   try {
-    const characterDoc = await characterRef.get();
-    const characterData = characterDoc.data();
+    if (!adminDb) throw new Error('Database service is unavailable.');
 
-    // Security check: ensure the character belongs to the user.
+    const characterRef = adminDb.collection('characters').doc(characterId);
+    const characterDoc = await characterRef.get();
+    const characterData = characterDoc.data()
     if (!characterDoc.exists || characterData?.userId !== uid) {
-      throw new Error('Permission denied or character not found.');
+      return { success: false, message: 'Permission denied or character not found.' };
     }
 
     await characterRef.update({ status: validation.data });
     
-    // If the character is being made public and belongs to a datapack,
-    // update the datapack's cover image.
-    if (validation.data === 'public' && characterData.dataPackId && characterData.imageUrl) {
+    revalidatePath('/characters');
+    revalidatePath('/'); 
+
+    return { success: true, message: `Character is now ${validation.data}.` };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not update character status.';
+    return { success: false, message };
+  }
+}
+
+
+export async function updateCharacterDataPackSharing(characterId: string, isShared: boolean): Promise<ActionResponse> {
+  const uid = await verifyAndGetUid();
+
+  try {
+    if (!adminDb) throw new Error('Database service is unavailable.');
+    
+    const characterRef = adminDb.collection('characters').doc(characterId);
+    const characterDoc = await characterRef.get();
+    const characterData = characterDoc.data();
+
+    if (!characterDoc.exists || characterData?.userId !== uid) {
+      return { success: false, message: 'Permission denied or character not found.' };
+    }
+    
+    if (!characterData.dataPackId) {
+        return { success: false, message: 'This character was not created with a DataPack.' };
+    }
+
+    await characterRef.update({ isSharedToDataPack: isShared });
+
+    if (isShared && characterData.imageUrl) {
         const dataPackRef = adminDb.collection('datapacks').doc(characterData.dataPackId);
         await dataPackRef.update({
             coverImageUrl: characterData.imageUrl,
         });
-        revalidatePath(`/datapacks/${characterData.dataPackId}`);
     }
-    
-    // Revalidate all paths where this character's status matters
-    revalidatePath('/characters');
-    revalidatePath('/'); // For the main feed
 
-    return { success: true };
+    revalidatePath('/characters');
+    revalidatePath(`/datapacks/${characterData.dataPackId}`);
+    
+    return { success: true, message: `Sharing status for DataPack gallery updated.` };
+
   } catch (error) {
-    console.error("Error updating character status:", error);
-    throw new Error(error instanceof Error ? error.message : 'Could not update character status due to a server error.');
+    const message = error instanceof Error ? error.message : 'Could not update sharing status.';
+    return { success: false, message };
   }
 }
 
@@ -125,7 +143,6 @@ export async function updateCharacter(
     
     const characterDoc = await characterRef.get();
 
-    // Security check before updating.
     if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
         return { success: false, message: 'Permission denied or character not found.' };
     }
@@ -185,12 +202,6 @@ export async function updateCharacterImages(
   }
 }
 
-/**
- * A robust function to extract the file path from a Google Cloud Storage URL.
- * It handles the gs:// and https:// formats.
- * @param {string} url The full GCS URL.
- * @returns {string | null} The path to the file in the bucket, or null if the URL is invalid.
- */
 function getPathFromUrl(url: string): string | null {
     try {
         const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
@@ -199,17 +210,14 @@ function getPathFromUrl(url: string): string | null {
             return null;
         }
 
-        const gcsPrefix = `https://storage.googleapis.com/${bucketName}/`;
-        
-        if (url.startsWith(gcsPrefix)) {
-            // Extracts the part of the URL after the bucket name and prefix.
-            return url.substring(gcsPrefix.length);
+        const gcsPrefixHttp = `https://storage.googleapis.com/${bucketName}/`;
+        if (url.startsWith(gcsPrefixHttp)) {
+            return decodeURIComponent(url.substring(gcsPrefixHttp.length));
         }
-
-        // Fallback for other potential URL formats or direct paths
+        
         const urlObject = new URL(url);
-        const path = urlObject.pathname.substring(1).split('/').slice(1).join('/');
-        return path || null;
+        const path = urlObject.pathname.split('/').slice(2).join('/');
+        return path ? decodeURIComponent(path) : null;
 
     } catch (e) {
         console.error(`Could not parse GCS URL: ${url}`, e);
@@ -218,11 +226,6 @@ function getPathFromUrl(url: string): string | null {
 }
 
 
-/**
- * Fetches characters for the logged-in user and generates signed URLs for their images.
- * This is the secure way to display private images from Firebase Storage.
- * @returns {Promise<Character[]>} A promise that resolves to an array of character objects with accessible image URLs.
- */
 export async function getCharactersWithSignedUrls(): Promise<Character[]> {
   try {
     const uid = await verifyAndGetUid();
@@ -243,14 +246,12 @@ export async function getCharactersWithSignedUrls(): Promise<Character[]> {
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt.toDate(), // Convert Firestore Timestamp to JS Date object
+        createdAt: data.createdAt.toDate(),
       } as Character;
     });
 
-    // Generate signed URLs for each character's image
     const charactersWithUrls = await Promise.all(
       charactersData.map(async (character) => {
-        // Public characters don't need signed URLs.
         if (character.status === 'public') {
             return character;
         }
@@ -279,7 +280,6 @@ export async function getCharactersWithSignedUrls(): Promise<Character[]> {
           return { ...character, imageUrl: signedUrl };
         } catch (urlError) {
           console.error(`Failed to get signed URL for character ${character.id}:`, urlError);
-          // Return the character with a placeholder or original URL so the app doesn't crash
           return { ...character, imageUrl: 'https://placehold.co/400x400.png' };
         }
       })
@@ -288,13 +288,11 @@ export async function getCharactersWithSignedUrls(): Promise<Character[]> {
     return charactersWithUrls;
 
   } catch (error) {
-    // A specific check for authentication errors to return an empty array gracefully.
     if (error instanceof Error && (error.message.includes('User session not found') || error.message.includes('Invalid or expired'))) {
         console.log('User session not found, returning empty character list.');
         return [];
     }
     console.error("Error fetching characters with signed URLs:", error);
-    // Return an empty array or throw the error, depending on desired client-side handling
     return [];
   }
 }

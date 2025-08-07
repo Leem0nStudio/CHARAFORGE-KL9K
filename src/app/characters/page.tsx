@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { getCharactersWithSignedUrls, deleteCharacter, updateCharacterStatus } from './actions';
+import { getCharactersWithSignedUrls, deleteCharacter, updateCharacterStatus, updateCharacterDataPackSharing } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,19 +15,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { BackButton } from '@/components/back-button';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
-import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2 } from 'lucide-react';
+import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2, GalleryHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 
 function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdated }: { character: Character | null; onCharacterDeleted: (id: string) => void; onCharacterUpdated: () => void; }) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   
-  // Render nothing or a placeholder if no character is selected
   if (!character) {
     return (
-        <div className="w-full lg:w-3/4 flex items-center justify-center h-full min-h-[600px]">
+        <div className="w-full lg:w-3/4 flex items-center justify-center h-full min-h-[600px] bg-card/30 rounded-lg border-2 border-dashed">
             <div className="text-center text-muted-foreground">
                 <User className="h-12 w-12 mx-auto mb-4" />
                 <p>Select a character from the list to see their details.</p>
@@ -64,16 +63,16 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
     }
   }, [character.id, character.name, toast, onCharacterDeleted]);
   
-  const handleToggleStatus = useCallback(async () => {
-    setIsUpdatingStatus(true);
+  const handleTogglePublicStatus = useCallback(async () => {
+    setIsUpdating(true);
     const newStatus = character.status === 'public' ? 'private' : 'public';
     try {
-      await updateCharacterStatus(character.id, newStatus);
+      const result = await updateCharacterStatus(character.id, newStatus);
       toast({
-        title: `Character Updated!`,
-        description: `${character.name} is now ${newStatus}.`,
+        title: result.success ? 'Success!' : 'Update Failed',
+        description: result.message,
       });
-      onCharacterUpdated();
+      if (result.success) onCharacterUpdated();
     } catch (error) {
        toast({
         variant: 'destructive',
@@ -81,9 +80,31 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
         description: error instanceof Error ? error.message : 'Could not update the character status.',
       });
     } finally {
-      setIsUpdatingStatus(false);
+      setIsUpdating(false);
     }
-  }, [character.id, character.name, character.status, toast, onCharacterUpdated]);
+  }, [character.id, character.status, toast, onCharacterUpdated]);
+
+  const handleToggleDataPackSharing = useCallback(async () => {
+    setIsUpdating(true);
+    const newSharingStatus = !character.isSharedToDataPack;
+    try {
+      const result = await updateCharacterDataPackSharing(character.id, newSharingStatus);
+       toast({
+        title: result.success ? 'Success!' : 'Update Failed',
+        description: result.message,
+      });
+      if (result.success) onCharacterUpdated();
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: error instanceof Error ? error.message : 'Could not update sharing status.',
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [character.id, character.isSharedToDataPack, toast, onCharacterUpdated]);
+
 
   const isPublic = character.status === 'public';
   const wasMadeWithDataPack = !!character.dataPackId;
@@ -102,7 +123,7 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
           <CardContent className="p-0">
             <div className="relative aspect-video sm:aspect-[16/9] w-full rounded-t-lg overflow-hidden bg-muted">
                 <Image
-                    key={character.imageUrl} // Forces re-render when the URL (potentially signed) changes
+                    key={character.imageUrl}
                     src={character.imageUrl}
                     alt={character.name}
                     fill
@@ -112,7 +133,15 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                  <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 text-white">
                     <h2 className="text-2xl sm:text-4xl font-extrabold font-headline tracking-wider drop-shadow-lg">{character.name}</h2>
-                    <p className="text-base sm:text-lg text-primary-foreground/80 drop-shadow-md">{isPublic ? "Public Character" : "Private Character"}</p>
+                    <div className="flex items-center gap-4 text-base sm:text-lg text-primary-foreground/80 drop-shadow-md">
+                      <p>{isPublic ? "Public Character" : "Private Character"}</p>
+                      {wasMadeWithDataPack && character.isSharedToDataPack && (
+                        <>
+                          <span>•</span>
+                          <p>Shared to Gallery</p>
+                        </>
+                      )}
+                    </div>
                  </div>
                  <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex gap-2">
                     <Button variant="secondary" size="icon" asChild>
@@ -155,17 +184,15 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                     </CardContent>
                 </Card>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Button variant="outline" onClick={handleCopyPrompt}><Copy /> Copy Original Prompt</Button>
-                    
-                    {wasMadeWithDataPack ? (
-                       <Button onClick={handleToggleStatus} disabled={isUpdatingStatus}>
-                            {isUpdatingStatus ? <Loader2 className="animate-spin" /> : <Share2 />}
-                            {isPublic ? "Unshare from Gallery" : "Share to DataPack Gallery"}
-                        </Button>
-                    ) : (
-                       <Button onClick={handleToggleStatus} disabled={isUpdatingStatus}>
-                            {isUpdatingStatus ? <Loader2 className="animate-spin" /> : (isPublic ? <ShieldOff /> : <ShieldCheck />)}
-                            {isPublic ? "Make Private" : "Make Public"}
+                    <Button variant="outline" onClick={handleCopyPrompt}><Copy className="mr-2"/> Copy Original Prompt</Button>
+                    <Button onClick={handleTogglePublicStatus} disabled={isUpdating}>
+                        {isUpdating ? <Loader2 className="animate-spin" /> : (isPublic ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>)}
+                        {isPublic ? "Make Private" : "Make Public"}
+                    </Button>
+                    {wasMadeWithDataPack && (
+                       <Button onClick={handleToggleDataPackSharing} disabled={isUpdating} variant="secondary">
+                            {isUpdating ? <Loader2 className="animate-spin" /> : <GalleryHorizontal className="mr-2"/>}
+                            {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to DataPack Gallery"}
                         </Button>
                     )}
                 </div>

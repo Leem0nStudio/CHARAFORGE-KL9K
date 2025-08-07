@@ -126,7 +126,7 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
     const charactersRef = adminDb.collection('characters');
     const q = charactersRef
         .where('dataPackId', '==', packId)
-        .where('status', '==', 'public')
+        .where('isSharedToDataPack', '==', true)
         .orderBy('createdAt', 'desc')
         .limit(20);
     const snapshot = await q.get();
@@ -158,8 +158,6 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
         } as Character;
     }));
     
-    // This assumes the imageUrls are public, which they should be for public characters.
-    // If they were private, we would need to generate signed URLs here.
     return charactersData;
 
   } catch (error) {
@@ -167,5 +165,3 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
     return [];
   }
 }
-
-    

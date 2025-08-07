@@ -9,11 +9,12 @@ export type Character = {
   name: string;
   description: string;
   biography: string;
-  imageUrl: string; // The primary image for the character card
-  gallery?: string[]; // An array of image URLs for the character's gallery
+  imageUrl: string; 
+  gallery?: string[]; 
   userId: string;
   status: 'private' | 'public';
-  createdAt: Date; // Use Date object on both server and client for consistency
-  userName?: string; // Optional: May be populated with the creator's display name
-  dataPackId?: string | null; // Optional: The ID of the DataPack used to generate this character
+  createdAt: Date; 
+  userName?: string;
+  dataPackId?: string | null;
+  isSharedToDataPack?: boolean; // Controls visibility in DataPack gallery
 };
