@@ -72,9 +72,18 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
 
     await characterRef.update({ status: validation.data });
     
+    // If the character is being made public and belongs to a datapack,
+    // update the datapack's cover image.
+    if (validation.data === 'public' && characterData.dataPackId && characterData.imageUrl) {
+        const dataPackRef = adminDb.collection('datapacks').doc(characterData.dataPackId);
+        await dataPackRef.update({
+            coverImageUrl: characterData.imageUrl,
+        });
+    }
+    
     // Revalidate all paths where this character's status matters
     revalidatePath('/characters');
-    revalidatePath('/');
+    revalidatePath('/'); // For the main feed
     if (characterData?.dataPackId) {
       revalidatePath(`/datapacks/${characterData.dataPackId}`);
     }
@@ -262,6 +271,11 @@ export async function getCharactersWithSignedUrls(): Promise<Character[]> {
     return charactersWithUrls;
 
   } catch (error) {
+    // A specific check for authentication errors to return an empty array gracefully.
+    if (error instanceof Error && (error.message.includes('User session not found') || error.message.includes('Invalid or expired'))) {
+        console.log('User session not found, returning empty character list.');
+        return [];
+    }
     console.error("Error fetching characters with signed URLs:", error);
     // Return an empty array or throw the error, depending on desired client-side handling
     return [];
