@@ -37,6 +37,7 @@ async function uploadAvatar(uid: string, file: File): Promise<string> {
 
 const UpdateProfileSchema = z.object({
   displayName: z.string().min(3, 'Display name must be at least 3 characters.').max(30, 'Display name cannot exceed 30 characters.'),
+  // Both are now optional, as we'll validate that at least one method is used later.
   photoUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
   photoFile: z.instanceof(File).optional(),
 });
@@ -57,11 +58,12 @@ export async function updateUserProfile(
     const photoUrl = formData.get('photoUrl') as string;
     const photoFile = formData.get('photoFile') as File;
     
+    // Initial validation of field types
     const validatedFields = UpdateProfileSchema.safeParse({ displayName, photoUrl, photoFile });
 
     if (!validatedFields.success) {
       const firstError = validatedFields.error.flatten().fieldErrors;
-      const message = firstError.displayName?.[0] || firstError.photoUrl?.[0] || 'Invalid input.';
+      const message = firstError.displayName?.[0] || firstError.photoUrl?.[0] || 'Invalid input provided.';
       return { success: false, message };
     }
   
@@ -69,6 +71,7 @@ export async function updateUserProfile(
     let newAvatarUrl: string | null = null;
     const now = Date.now();
 
+    // Post-validation logic: determine the avatar source
     if (photoFile && photoFile.size > 0) {
         newAvatarUrl = await uploadAvatar(uid, photoFile);
     } else if (photoUrl) {
@@ -76,7 +79,7 @@ export async function updateUserProfile(
     }
     
     const authUpdatePayload: { displayName: string, photoURL?: string } = { displayName: newDisplayName };
-    // Only update photoURL if it's new to avoid unnecessary Auth updates
+    // Only update photoURL if a new one was actually provided
     if (newAvatarUrl) {
         authUpdatePayload.photoURL = newAvatarUrl;
     }
