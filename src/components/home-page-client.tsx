@@ -4,11 +4,12 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { User, Expand, X, Star, Download } from 'lucide-react';
+import { User, Expand, X, Star, Download, Heart, Swords as SwordsIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Character } from '@/types/character';
+import type { UserProfile } from '@/types/user';
 import { motion, AnimatePresence } from 'framer-motion';
 import useEmblaCarousel from 'embla-carousel-react';
 import { cn } from '@/lib/utils';
@@ -16,14 +17,8 @@ import { cn } from '@/lib/utils';
 
 type HomePageClientProps = {
     featuredCreations: Character[];
+    topCreators: UserProfile[];
 }
-
-const topCreators = [
-    { name: 'CyberVance', characters: 128, followers: '12.5k', avatar: 'https://placehold.co/100x100.png', hint: 'cyberpunk creator' },
-    { name: 'MysticScribe', characters: 92, followers: '10.2k', avatar: 'https://placehold.co/100x100.png', hint: 'fantasy creator' },
-    { name: 'AnimeForge', characters: 256, followers: '25.1k', avatar: 'https://placehold.co/100x100.png', hint: 'anime creator' },
-    { name: 'PixelPioneer', characters: 312, followers: '8.9k', avatar: 'https://placehold.co/100x100.png', hint: 'pixel art creator' },
-];
 
 const dataPacks = [
     { name: 'Cyberpunk Neon Styles', author: 'CyberVance', installs: '22.1k', image: 'https://placehold.co/600x400.png', hint: 'cyberpunk city' },
@@ -33,7 +28,7 @@ const dataPacks = [
 ];
 
 
-export function HomePageClient({ featuredCreations }: HomePageClientProps) {
+export function HomePageClient({ featuredCreations, topCreators }: HomePageClientProps) {
   const [emblaRef] = useEmblaCarousel({ loop: true });
 
   return (
@@ -95,26 +90,26 @@ export function HomePageClient({ featuredCreations }: HomePageClientProps) {
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {topCreators.map((creator, index) => (
                          <motion.div
-                            key={creator.name}
+                            key={creator.uid}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
                          >
                             <Card className="text-center p-6 hover:bg-card/80 transition-colors duration-300 shadow-md hover:shadow-primary/20">
                                 <Avatar className="h-20 w-20 mx-auto mb-4 border-4 border-primary/50">
-                                    <AvatarImage src={creator.avatar} alt={creator.name} data-ai-hint={creator.hint} />
-                                    <AvatarFallback>{creator.name.charAt(0)}</AvatarFallback>
+                                    <AvatarImage src={creator.photoURL || undefined} alt={creator.displayName || 'Creator'} data-ai-hint="creator avatar" />
+                                    <AvatarFallback>{creator.displayName?.charAt(0) || 'C'}</AvatarFallback>
                                 </Avatar>
-                                <h3 className="text-xl font-bold font-headline">{creator.name}</h3>
-                                <p className="text-muted-foreground text-sm mb-4">{`@${creator.name.toLowerCase()}`}</p>
+                                <h3 className="text-xl font-bold font-headline">{creator.displayName}</h3>
+                                <p className="text-muted-foreground text-sm mb-4">{`@${creator.displayName?.toLowerCase().replace(/\s+/g, '')}`}</p>
                                 <div className="flex justify-around">
                                     <div className="text-center">
-                                        <p className="font-bold text-lg">{creator.characters}</p>
-                                        <p className="text-xs text-muted-foreground">Creations</p>
+                                        <p className="font-bold text-lg">{creator.stats?.charactersCreated || 0}</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><SwordsIcon className="h-3 w-3" /> Creations</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="font-bold text-lg">{creator.followers}</p>
-                                        <p className="text-xs text-muted-foreground">Followers</p>
+                                        <p className="font-bold text-lg">{creator.stats?.totalLikes || 0}</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Heart className="h-3 w-3" /> Likes</p>
                                     </div>
                                 </div>
                             </Card>

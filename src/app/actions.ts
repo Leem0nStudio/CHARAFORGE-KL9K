@@ -4,6 +4,7 @@
 import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import type { Character } from '@/types/character';
+import type { UserProfile } from '@/types/user';
 
 /**
  * Fetches public characters and ensures their image URLs are directly accessible.
@@ -54,6 +55,44 @@ export async function getPublicCharacters(): Promise<Character[]> {
 
   } catch (error) {
     console.error("Error fetching public characters:", error);
+    return [];
+  }
+}
+
+
+/**
+ * Fetches the top 4 creators based on the number of characters they have created.
+ * @returns {Promise<UserProfile[]>} A promise that resolves to an array of user profile objects.
+ */
+export async function getTopCreators(): Promise<UserProfile[]> {
+  try {
+    if (!adminDb) {
+      throw new Error('Database service is unavailable.');
+    }
+
+    const usersRef = adminDb.collection('users');
+    const q = usersRef
+      .orderBy('stats.charactersCreated', 'desc')
+      .limit(4);
+    
+    const snapshot = await q.get();
+
+    if (snapshot.empty) {
+      return [];
+    }
+    
+    const creators = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            ...data,
+            uid: doc.id,
+        } as UserProfile;
+    });
+
+    return creators;
+
+  } catch (error) {
+    console.error("Error fetching top creators:", error);
     return [];
   }
 }
