@@ -12,7 +12,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { BackButton } from '@/components/back-button';
+import { PageHeader } from '@/components/page-header';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
 import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2, GalleryHorizontal } from 'lucide-react';
@@ -263,15 +263,10 @@ export default function CharactersPage() {
 
   return (
     <div className="container py-8">
-      <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
-          <div className="flex items-center gap-4">
-            <BackButton />
-            <div>
-              <h1 className="text-3xl font-semibold font-headline tracking-wider">My Characters</h1>
-              <p className="text-muted-foreground">Select a character from your collection to view their details.</p>
-            </div>
-        </div>
-      </div>
+        <PageHeader 
+            title="My Characters"
+            description="Select a character from your collection to view their details."
+        />
       
       <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
           {loading && characters.length === 0 ? (

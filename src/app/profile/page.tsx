@@ -29,7 +29,7 @@ import type { UserPreferences, ActionResponse } from './actions';
 import type { UserProfile, UserStats } from '@/types/user';
 import type { DataPack } from '@/types/datapack';
 import { format } from 'date-fns';
-import { BackButton } from '@/components/back-button';
+import { PageHeader } from '@/components/page-header';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
@@ -380,15 +380,10 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
     >
-      <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
-          <div className="flex items-center gap-4">
-              <BackButton />
-              <div>
-                  <h1 className="text-3xl font-semibold font-headline tracking-wider">Profile Settings</h1>
-                  <p className="text-muted-foreground">Manage your account, preferences, and more.</p>
-              </div>
-          </div>
-      </div>
+      <PageHeader
+        title="Profile Settings"
+        description="Manage your account, preferences, and more."
+       />
       <div className="max-w-7xl mx-auto">
         <Tabs defaultValue="profile" className="space-y-4">
             <TabsList>
@@ -418,5 +413,3 @@ export default function ProfilePage() {
     </motion.div>
   );
 }
-
-    

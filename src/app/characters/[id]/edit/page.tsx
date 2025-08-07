@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { adminDb, adminApp } from '@/lib/firebase/server';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import { BackButton } from '@/components/back-button';
+import { PageHeader } from '@/components/page-header';
 import { EditCharacterForm } from './edit-character-form';
 import type { Character } from '@/types/character';
 
@@ -77,15 +77,10 @@ export default async function EditCharacterPage({ params }: { params: { id: stri
     
     return (
       <div className="container py-8">
-          <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
-              <div className="flex items-center gap-4">
-                  <BackButton />
-                  <div>
-                    <h1 className="text-3xl font-semibold font-headline tracking-wider">Edit Character</h1>
-                    <p className="text-muted-foreground">Refine the details of your creation, translate its story, or expand its gallery.</p>
-                  </div>
-              </div>
-          </div>
+          <PageHeader 
+              title="Edit Character"
+              description="Refine the details of your creation, translate its story, or expand its gallery."
+          />
           <div className="max-w-7xl mx-auto">
             <EditCharacterForm character={character} />
           </div>

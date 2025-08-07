@@ -2,7 +2,7 @@
 'use client';
 
 import { CharacterGenerator } from '@/components/character-generator';
-import { BackButton } from '@/components/back-button';
+import { PageHeader } from '@/components/page-header';
 import { motion } from 'framer-motion';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -15,17 +15,10 @@ function CharacterGeneratorWrapper() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-        <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
-             <div className="flex items-center gap-4">
-                <BackButton />
-                <div>
-                  <h1 className="text-3xl font-bold font-headline tracking-wider">Character Generator</h1>
-                  <p className="text-muted-foreground">
-                      Bring your vision to life. Describe your character, or use a DataPack to get started.
-                  </p>
-                </div>
-            </div>
-        </div>
+        <PageHeader 
+            title="Character Generator"
+            description="Bring your vision to life. Describe your character, or use a DataPack to get started."
+        />
         <CharacterGenerator />
     </motion.div>
   )
