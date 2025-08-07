@@ -79,7 +79,20 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
     }
     
     const updatedUserDoc = await getDoc(userDocRef);
-    return updatedUserDoc.data() || null;
+    const data = updatedUserDoc.data();
+
+    // Convert any Timestamps to serializable Dates before returning
+    if (data) {
+        for (const key in data) {
+            if (data[key] instanceof Timestamp) {
+                data[key] = data[key].toDate();
+            }
+        }
+        if (data.stats && data.stats.memberSince instanceof Timestamp) {
+           data.stats.memberSince = data.stats.memberSince.toDate();
+        }
+    }
+    return data || null;
 
   } catch (error: unknown) {
     console.error("Error in ensureUserDocument:", error);
