@@ -21,7 +21,7 @@
                 "options": [
                     { "label": "Netrunner Dominatrix", "value": "netrunner dominatrix with chrome implants" },
                     { "label": "Rogue Enforcer", "value": "rogue enforcer controlling the neon underworld" },
-                    { "label": "Corporate Mistress", "value": "corporate mistress with lethal fashion sense" },
+                    { "label": "Corporate Mistress", " "value": "corporate mistress with lethal fashion sense" },
                     { "label": "AI Cult Leader", "value": "AI cult leader with sensual charisma" },
                     { "label": "Street Samurai Temptress", "value": "street samurai temptress in high-tech armor" }
                 ]
@@ -197,5 +197,3 @@
         ]
     }
 }
-
-    
