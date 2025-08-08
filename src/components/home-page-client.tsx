@@ -151,7 +151,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
                                         <h3 className="font-bold text-lg leading-tight">{creation.name}</h3>
                                         <p className="text-xs text-white/80">by @{creation.userName}</p>
                                      </div>
-                                </Card>
+                                 </Card>
                             </Link>
                          </motion.div>
                      ))}
