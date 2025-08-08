@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ArrowRight, Wand2, Package, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getInstalledDataPacks } from '@/app/actions/user';
+import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import type { DataPack, Option, Slot } from '@/types/datapack';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
@@ -100,7 +100,7 @@ function PackSelector({ packs, onSelect, selectedPackId }: {
 }
 
 
-function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGenerated: (prompt: string, packId: string) => void }) {
+function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGenerated: (prompt: string, packId: string, packName: string) => void }) {
     const { control, handleSubmit, watch } = useForm();
     const formValues = watch();
 
@@ -161,7 +161,7 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
         
         prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/(\s*,\s*)+/g, ', ').replace(/^,|,$/g, '').trim();
         
-        onPromptGenerated(prompt, pack.id);
+        onPromptGenerated(prompt, pack.id, pack.name);
     };
 
     return (
@@ -215,7 +215,7 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
     );
 }
 
-export function DataPackSelectorModal({ isOpen, onClose, onPromptGenerated }: { isOpen: boolean, onClose: () => void, onPromptGenerated: (prompt: string, packId: string) => void }) {
+export function DataPackSelectorModal({ isOpen, onClose, onPromptGenerated }: { isOpen: boolean, onClose: () => void, onPromptGenerated: (prompt: string, packId: string, packName: string) => void }) {
     const [packs, setPacks] = useState<DataPack[]>([]);
     const [selectedPack, setSelectedPack] = useState<DataPack | null>(null);
     const [wizardPack, setWizardPack] = useState<DataPack | null>(null);

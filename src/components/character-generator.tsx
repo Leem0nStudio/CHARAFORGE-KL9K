@@ -80,21 +80,26 @@ export function CharacterGenerator() {
 
 
   useEffect(() => {
+    // This effect is to handle the case where the user lands on the page
+    // with a packId in the URL, but we don't have the name yet.
+    // We only run this if the activePackName is not already set.
     const fetchPackName = async () => {
-      if (dataPackId) {
-        // We need to fetch the installed packs to find the name from the ID.
-        // This is a lightweight operation.
-        const installedPacks = await getInstalledDataPacks();
-        const pack = installedPacks.find((p: DataPack) => p.id === dataPackId);
-        if (pack) {
-          setActivePackName(pack.name);
+      if (dataPackId && !activePackName) {
+        try {
+          const installedPacks = await getInstalledDataPacks();
+          const pack = installedPacks.find((p: DataPack) => p.id === dataPackId);
+          if (pack) {
+            setActivePackName(pack.name);
+          }
+        } catch (error) {
+          console.error("Failed to fetch pack name on load:", error);
         }
-      } else {
+      } else if (!dataPackId) {
         setActivePackName(null);
       }
     };
     fetchPackName();
-  }, [dataPackId]);
+  }, [dataPackId, activePackName]);
 
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
@@ -113,10 +118,10 @@ export function CharacterGenerator() {
     }
   }, [searchParams, generationForm]);
   
-  const handlePromptGenerated = useCallback((prompt: string, packId: string) => {
+  const handlePromptGenerated = useCallback((prompt: string, packId: string, packName: string) => {
     generationForm.setValue('description', prompt, { shouldValidate: true });
-    // This is a bit of a hack to pass the packId without a dedicated state
-    // A better approach might be a state object for the generated prompt context
+    setActivePackName(packName);
+    
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.set('packId', packId);
     currentUrl.searchParams.set('prompt', encodeURIComponent(prompt));
@@ -263,7 +268,7 @@ export function CharacterGenerator() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center mb-2">
                         <FormLabel>Character Description</FormLabel>
                         {activePackName && (
                           <Badge variant="secondary" className="flex items-center gap-1.5">
