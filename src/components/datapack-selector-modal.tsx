@@ -5,15 +5,13 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { useForm, Controller } from 'react-hook-form';
 import * as yaml from 'js-yaml';
-import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ArrowRight, Wand2, Package, X } from 'lucide-react';
+import { Loader2, ArrowRight, Wand2, Package } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import type { DataPack, Option, Slot } from '@/types/datapack';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
@@ -218,37 +216,47 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
     );
 }
 
-export function DataPackSelectorModal({ isOpen, onClose, onPromptGenerated }: { isOpen: boolean, onClose: () => void, onPromptGenerated: (prompt: string, packId: string, packName: string) => void }) {
-    const [packs, setPacks] = useState<DataPack[]>([]);
+interface DataPackSelectorModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onPromptGenerated: (prompt: string, packId: string, packName: string) => void;
+    installedPacks: DataPack[];
+    isLoading: boolean;
+}
+
+
+export function DataPackSelectorModal({ 
+    isOpen, 
+    onClose, 
+    onPromptGenerated,
+    installedPacks: packs,
+    isLoading, 
+}: DataPackSelectorModalProps) {
     const [selectedPack, setSelectedPack] = useState<DataPack | null>(null);
     const [wizardPack, setWizardPack] = useState<DataPack | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isOpen) {
+            // Reset state when modal closes
             setWizardPack(null);
             setSelectedPack(null);
             return;
         }
-
-        async function fetchPacks() {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const installedPacks = await getInstalledDataPacks();
-                setPacks(installedPacks);
-                if (installedPacks.length > 0) {
-                    setSelectedPack(installedPacks[0]);
-                }
-            } catch (err: any) {
-                setError("Could not load your DataPacks. Please try again.");
-            } finally {
-                setIsLoading(false);
-            }
+        
+        // When modal opens and packs are loaded, set the first one as selected
+        if (!isLoading && packs.length > 0) {
+            setSelectedPack(packs[0]);
         }
-        fetchPacks();
-    }, [isOpen]);
+        
+        // If there's an issue loading packs from parent
+        if (!isLoading && packs.length === 0) {
+            setError("You don't have any DataPacks installed.");
+        } else {
+            setError(null);
+        }
+
+    }, [isOpen, isLoading, packs]);
 
     const handlePromptGeneratedAndClose = useCallback((prompt: string, packId: string, packName: string) => {
         onPromptGenerated(prompt, packId, packName);
@@ -264,16 +272,11 @@ export function DataPackSelectorModal({ isOpen, onClose, onPromptGenerated }: { 
                 </div>
             )
         }
-        if (error) {
-            return (
-                <Alert variant="destructive"><X className="h-4 w-4" /><AlertTitle>Could not load packs</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
-            );
-        }
-
+        
         if (wizardPack) {
             return <WizardForm pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} />;
         }
-
+        
         if (packs.length > 0) {
             return (
                 <>

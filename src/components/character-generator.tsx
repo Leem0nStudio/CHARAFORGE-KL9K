@@ -70,6 +70,8 @@ export function CharacterGenerator() {
   const [bioError, setBioError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
+  const [isLoadingPacks, setIsLoadingPacks] = useState(false);
   const [activePackName, setActivePackName] = useState<string | null>(null);
 
   const { toast } = useToast();
@@ -86,8 +88,11 @@ export function CharacterGenerator() {
     const fetchPackName = async () => {
       if (dataPackId && !activePackName) {
         try {
-          const installedPacks = await getInstalledDataPacks();
-          const pack = installedPacks.find((p: DataPack) => p.id === dataPackId);
+          // Packs will be fetched when the modal opens, but if a pack is pre-selected
+          // via URL, we need to ensure its name is loaded for the badge.
+          const packs = await getInstalledDataPacks();
+          setInstalledPacks(packs);
+          const pack = packs.find((p: DataPack) => p.id === dataPackId);
           if (pack) {
             setActivePackName(pack.name);
           }
@@ -100,14 +105,19 @@ export function CharacterGenerator() {
     };
     fetchPackName();
   }, [dataPackId, activePackName]);
-
-
-  const generationForm = useForm<z.infer<typeof generationFormSchema>>({
-    resolver: zodResolver(generationFormSchema),
-    defaultValues: {
-      description: "",
-    },
-  });
+  
+  const handleOpenModal = async () => {
+    setIsLoadingPacks(true);
+    setIsModalOpen(true);
+    try {
+      const packs = await getInstalledDataPacks();
+      setInstalledPacks(packs);
+    } catch(err) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not load your DataPacks.' });
+    } finally {
+      setIsLoadingPacks(false);
+    }
+  };
 
 
   // Effect to read prompt from URL and set it in the form
@@ -128,6 +138,14 @@ export function CharacterGenerator() {
     router.replace(currentUrl.toString(), { scroll: false });
     setIsModalOpen(false);
   }, [generationForm, router]);
+
+
+  const generationForm = useForm<z.infer<typeof generationFormSchema>>({
+    resolver: zodResolver(generationFormSchema),
+    defaultValues: {
+      description: "",
+    },
+  });
 
 
   const saveForm = useForm<z.infer<typeof saveFormSchema>>({
@@ -250,6 +268,8 @@ export function CharacterGenerator() {
       isOpen={isModalOpen}
       onClose={() => setIsModalOpen(false)}
       onPromptGenerated={handlePromptGenerated}
+      installedPacks={installedPacks}
+      isLoading={isLoadingPacks}
     />
     <div className="grid gap-8 lg:grid-cols-5">
       <div className="lg:col-span-2">
@@ -303,7 +323,7 @@ export function CharacterGenerator() {
                         </>
                       )}
                     </Button>
-                    <Button type="button" size="lg" className="w-full" variant="secondary" onClick={() => setIsModalOpen(true)} disabled={!canInteract}>
+                    <Button type="button" size="lg" className="w-full" variant="secondary" onClick={handleOpenModal} disabled={!canInteract}>
                       <Package className="mr-2" />
                       Use DataPack
                     </Button>
