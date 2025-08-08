@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState, useEffect, useRef, useState, type ChangeEvent, type ReactNode, useTransition } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -27,7 +27,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { updateUserProfile, deleteUserAccount, updateUserPreferences } from '@/app/actions/user';
 import { getInstalledDataPacks } from '@/app/actions/datapacks';
-import type { ActionResponse } from '@/app/actions/user';
 import { Loader2, User, Swords, Heart, Package, Gem, Calendar, Wand2, Camera } from 'lucide-react';
 import type { UserProfile, UserPreferences } from '@/types/user';
 import type { DataPack } from '@/types/datapack';
@@ -109,23 +108,18 @@ function ProfileForm({ user }: { user: UserProfile }) {
   const { toast } = useToast();
   const { setUserProfile } = useAuth();
   const formRef = useRef<HTMLFormElement>(null);
-
-  const initialState: ActionResponse = { success: false, message: '' };
-  const [state, formAction] = useActionState(updateUserProfile, initialState);
   
-  useEffect(() => {
-    if (state.message) {
-        if (state.success) {
-            toast({ title: "Success!", description: state.message });
-            if (state.newAvatarUrl) {
-                setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl, avatarUpdatedAt: Date.now() } : null);
-            }
-            formRef.current?.reset();
-        } else {
-            toast({ variant: 'destructive', title: 'Update Failed', description: state.message });
+  const handleAction = async (formData: FormData) => {
+    const result = await updateUserProfile(null, formData);
+    if (result.success) {
+        toast({ title: "Success!", description: result.message });
+        if (result.newAvatarUrl) {
+            setUserProfile(prev => prev ? { ...prev, photoURL: result.newAvatarUrl } : null);
         }
+    } else {
+        toast({ variant: 'destructive', title: 'Update Failed', description: result.message });
     }
-  }, [state, toast, setUserProfile]);
+  };
 
   return (
     <Card>
@@ -134,7 +128,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
         <CardDescription>This is how others will see you on the site.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form ref={formRef} action={formAction} className="space-y-6">
+        <form ref={formRef} action={handleAction} className="space-y-6">
             <AvatarUploader user={user} />
             <div className="space-y-2">
                 <Label htmlFor="displayName">Display Name</Label>
