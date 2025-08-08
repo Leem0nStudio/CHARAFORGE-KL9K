@@ -27,9 +27,9 @@ export default async function DataPacksPage() {
                         <Card key={pack.id} className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
                            <Link href={`/datapacks/${pack.id}`} className="flex flex-col h-full">
                                 <CardHeader className="p-0">
-                                    <div className="relative aspect-video">
+                                    <div className="relative aspect-square">
                                         <Image
-                                            src={pack.coverImageUrl || 'https://placehold.co/600x400.png'}
+                                            src={pack.coverImageUrl || 'https://placehold.co/600x600.png'}
                                             alt={pack.name}
                                             fill
                                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
