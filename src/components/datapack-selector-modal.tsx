@@ -212,7 +212,7 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                             <AccordionItem key={slot.id} value={slot.id}>
                                 <AccordionTrigger>
                                     <div>
-                                        <div className="text-sm font-semibold">{slot.label}</div>
+                                        <div className="text-lg font-logo tracking-wider">{slot.label}</div>
                                         <div className="text-xs text-primary font-medium">{selectedLabel}</div>
                                     </div>
                                 </AccordionTrigger>
@@ -233,7 +233,7 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                                                             size="sm"
                                                             onClick={() => !isDisabled && field.onChange(option.value)}
                                                             disabled={isDisabled}
-                                                            className="rounded-full"
+                                                            className="rounded-full font-body tracking-normal"
                                                         >
                                                             {option.label}
                                                         </Button>
@@ -383,3 +383,5 @@ export function DataPackSelectorModal({
         </Dialog>
     )
 }
+
+    
