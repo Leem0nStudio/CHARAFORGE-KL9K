@@ -88,6 +88,10 @@ export async function saveCharacter(input: SaveCharacterInput) {
     await adminDb.runTransaction(async (transaction) => {
         const userDoc = await transaction.get(userRef);
 
+        const version = 1;
+        const versionName = `v.${version}`;
+        const initialVersion = { id: characterRef.id, name: versionName, version: version };
+
         const characterData = {
             userId,
             name,
@@ -98,6 +102,10 @@ export async function saveCharacter(input: SaveCharacterInput) {
             status: 'private', // Characters are private by default
             createdAt: FieldValue.serverTimestamp(),
             dataPackId: dataPackId || null,
+            version: version,
+            versionName: versionName,
+            baseCharacterId: null,
+            versions: [initialVersion],
         };
 
         transaction.set(characterRef, characterData);

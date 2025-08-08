@@ -68,6 +68,10 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
       createdAt: characterData.createdAt.toDate(),
       isSharedToDataPack: characterData.isSharedToDataPack,
       dataPackId: characterData.dataPackId,
+      version: characterData.version || 1,
+      versionName: characterData.versionName || `v.${characterData.version || 1}`,
+      baseCharacterId: characterData.baseCharacterId || null,
+      versions: characterData.versions || [{ id: characterDoc.id, name: characterData.versionName || 'v.1', version: characterData.version || 1 }],
   };
 
   return character;

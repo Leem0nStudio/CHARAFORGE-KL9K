@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { getCharacters, deleteCharacter, updateCharacterStatus, updateCharacterDataPackSharing } from '../actions/characters';
+import { getCharacters, deleteCharacter, updateCharacterStatus, updateCharacterDataPackSharing, createCharacterVersion } from '../actions/characters';
 import { useToast } from '@/hooks/use-toast';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { PageHeader } from '@/components/page-header';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
-import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2, GalleryHorizontal } from 'lucide-react';
+import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2, GalleryHorizontal, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 
@@ -104,6 +104,27 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
       setIsUpdating(false);
     }
   }, [character.id, character.isSharedToDataPack, toast, onCharacterUpdated]);
+
+  const handleCreateVersion = useCallback(async () => {
+    setIsUpdating(true);
+    try {
+        const result = await createCharacterVersion(character.id);
+        toast({
+            title: result.success ? 'Success!' : 'Versioning Failed',
+            description: result.message,
+            variant: result.success ? 'default' : 'destructive',
+        });
+        if (result.success) onCharacterUpdated();
+    } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Versioning Error',
+            description: error instanceof Error ? error.message : 'An unexpected error occurred.',
+        });
+    } finally {
+        setIsUpdating(false);
+    }
+  }, [character.id, onCharacterUpdated, toast]);
 
 
   const isPublic = character.status === 'public';
@@ -196,6 +217,25 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                         </Button>
                     )}
                 </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Versions</CardTitle>
+                        <CardDescription>Manage different versions of this character.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex items-center gap-2 flex-wrap">
+                        <Button variant="outline" size="icon" onClick={handleCreateVersion} disabled={isUpdating}>
+                            {isUpdating ? <Loader2 className="animate-spin"/> : <Plus />}
+                        </Button>
+                        {character.versions?.sort((a,b) => b.version - a.version).map(v => (
+                            <Button key={v.id} asChild variant={v.id === character.id ? 'default' : 'secondary'}>
+                                <Link href={`/characters?id=${v.id}`}>
+                                    {v.name}
+                                </Link>
+                            </Button>
+                        ))}
+                    </CardContent>
+                </Card>
             </div>
           </CardContent>
         </Card>
@@ -211,6 +251,7 @@ export default function CharactersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const fetchCharacters = useCallback(async () => {
     if (!authUser) return;
@@ -218,7 +259,11 @@ export default function CharactersPage() {
     try {
       const fetchedCharacters = await getCharacters();
       setCharacters(fetchedCharacters);
-      if (fetchedCharacters.length > 0 && !selectedCharacterId) {
+
+      const urlId = searchParams.get('id');
+      if (urlId && fetchedCharacters.some(c => c.id === urlId)) {
+        setSelectedCharacterId(urlId);
+      } else if (fetchedCharacters.length > 0 && !selectedCharacterId) {
         setSelectedCharacterId(fetchedCharacters[0].id);
       } else if (fetchedCharacters.length === 0) {
         setSelectedCharacterId(null);
@@ -228,7 +273,7 @@ export default function CharactersPage() {
     } finally {
       setLoading(false);
     }
-  }, [authUser, selectedCharacterId]);
+  }, [authUser, selectedCharacterId, searchParams]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -248,6 +293,11 @@ export default function CharactersPage() {
         return remaining;
     });
   }, [selectedCharacterId]);
+
+  const selectCharacter = (id: string) => {
+    setSelectedCharacterId(id);
+    router.push(`/characters?id=${id}`, { scroll: false });
+  }
   
   const selectedCharacter = useMemo(() => {
     return characters.find(c => c.id === selectedCharacterId) || null;
@@ -281,7 +331,7 @@ export default function CharactersPage() {
                               {characters.map(character => (
                                   <button
                                       key={character.id}
-                                      onClick={() => setSelectedCharacterId(character.id)}
+                                      onClick={() => selectCharacter(character.id)}
                                       className={cn(
                                           "w-full text-left p-2 rounded-lg border-2 border-transparent transition-all duration-200 hover:bg-card/80",
                                           selectedCharacterId === character.id && "bg-card border-primary shadow-md"
@@ -293,7 +343,7 @@ export default function CharactersPage() {
                                           </div>
                                           <div>
                                               <p className="font-semibold text-card-foreground">{character.name}</p>
-                                              <p className="text-xs text-muted-foreground">{character.status === 'public' ? "Public" : "Private"}</p>
+                                              <p className="text-xs text-muted-foreground">{character.versionName}</p>
                                           </div>
                                       </div>
                                   </button>

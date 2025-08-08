@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -5,11 +6,80 @@ import { z } from 'zod';
 import { adminDb } from '@/lib/firebase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character } from '@/types/character';
+import { FieldValue } from 'firebase-admin/firestore';
 
 type ActionResponse = {
     success: boolean;
     message: string;
 };
+
+export async function createCharacterVersion(characterId: string): Promise<ActionResponse> {
+  if (!adminDb) {
+    return { success: false, message: 'Database service is unavailable.' };
+  }
+  const uid = await verifyAndGetUid();
+
+  try {
+    const originalCharRef = adminDb.collection('characters').doc(characterId);
+    const originalCharDoc = await originalCharRef.get();
+
+    if (!originalCharDoc.exists) {
+      return { success: false, message: 'Character to version not found.' };
+    }
+
+    const originalData = originalCharDoc.data() as Character;
+    if (originalData.userId !== uid) {
+      return { success: false, message: 'Permission denied.' };
+    }
+
+    const baseId = originalData.baseCharacterId || originalData.id;
+    const existingVersions = originalData.versions || [{ id: originalData.id, name: originalData.versionName, version: originalData.version }];
+    const newVersionNumber = Math.max(...existingVersions.map(v => v.version)) + 1;
+
+    const newCharacterRef = adminDb.collection('characters').doc();
+    const newVersionName = `v.${newVersionNumber}`;
+
+    const newCharacterData: Omit<Character, 'id' | 'createdAt'> = {
+      ...originalData,
+      version: newVersionNumber,
+      versionName: newVersionName,
+      baseCharacterId: baseId,
+      versions: [], // This will be updated in the transaction
+      createdAt: new Date(), // This will be overwritten by server timestamp
+    };
+    
+    const newVersionInfo = { id: newCharacterRef.id, name: newVersionName, version: newVersionNumber };
+    const updatedVersionsList = [...existingVersions, newVersionInfo];
+
+    const batch = adminDb.batch();
+
+    // 1. Create the new character version
+    batch.set(newCharacterRef, {
+        ...newCharacterData,
+        versions: updatedVersionsList, // Set the final version list here
+        createdAt: FieldValue.serverTimestamp() 
+    });
+
+    // 2. Update the versions list for all related characters
+    for (const version of updatedVersionsList) {
+        if (version.id !== newCharacterRef.id) { // Don't update the doc we're creating
+           const charRef = adminDb.collection('characters').doc(version.id);
+           batch.update(charRef, { versions: updatedVersionsList });
+        }
+    }
+
+    await batch.commit();
+    
+    revalidatePath('/characters');
+    return { success: true, message: `Created new version: ${newVersionName}` };
+
+  } catch (error) {
+    console.error('Error creating character version:', error);
+    const message = error instanceof Error ? error.message : 'Could not create character version.';
+    return { success: false, message };
+  }
+}
+
 
 export async function deleteCharacter(characterId: string) {
   if (!adminDb) {
@@ -235,10 +305,15 @@ export async function getCharacters(): Promise<Character[]> {
     // Data is already clean from Firestore (public URLs)
     const charactersData = snapshot.docs.map(doc => {
       const data = doc.data();
+      const versions = data.versions || [{ id: doc.id, name: data.versionName || 'v.1', version: data.version || 1 }];
       return {
         id: doc.id,
         ...data,
         createdAt: data.createdAt.toDate(),
+        version: data.version || 1,
+        versionName: data.versionName || `v.${data.version || 1}`,
+        baseCharacterId: data.baseCharacterId || null,
+        versions: versions,
       } as Character;
     });
 

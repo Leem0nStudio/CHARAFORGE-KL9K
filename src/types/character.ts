@@ -17,4 +17,8 @@ export type Character = {
   userName?: string;
   dataPackId?: string | null;
   isSharedToDataPack?: boolean; // Controls visibility in DataPack gallery
+  version: number;
+  versionName: string;
+  baseCharacterId: string | null;
+  versions: { id: string; name: string; version: number }[];
 };
