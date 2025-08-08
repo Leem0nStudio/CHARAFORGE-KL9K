@@ -18,7 +18,7 @@ export async function SiteHeader() {
           {logoUrl && (
              <img src={logoUrl} alt="CharaForge Logo" className="h-7 w-7 sm:h-10 sm:w-10" />
           )}
-          <div className="font-bold font-headline text-xl sm:text-2xl tracking-wider">
+          <div className="font-logo text-xl sm:text-2xl tracking-wider">
               <span className="text-foreground">Chara</span>
               <span className="bg-gradient-to-tr from-accent to-yellow-500 bg-clip-text text-transparent">Forge</span>
           </div>
