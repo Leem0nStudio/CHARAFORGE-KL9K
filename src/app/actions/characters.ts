@@ -43,9 +43,10 @@ export async function createCharacterVersion(characterId: string): Promise<Actio
       ...originalData,
       version: newVersionNumber,
       versionName: newVersionName,
-      baseCharacterId: baseId,
+      baseCharacterId: baseId || null,
       versions: [], // This will be updated in the transaction
       createdAt: new Date(), // This will be overwritten by server timestamp
+      dataPackId: originalData.dataPackId || null, // Ensure null instead of undefined
     };
     
     const newVersionInfo = { id: newCharacterRef.id, name: newVersionName, version: newVersionNumber };
