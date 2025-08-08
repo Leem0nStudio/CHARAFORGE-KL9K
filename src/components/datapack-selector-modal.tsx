@@ -35,15 +35,15 @@ function PackPreview({ pack, onChoose }: { pack: DataPack | null, onChoose: () =
     return (
         <Card className="flex flex-col h-full">
             <CardHeader className="p-0">
-                <div className="relative aspect-video rounded-t-lg overflow-hidden">
+                 <div className="relative rounded-t-lg overflow-hidden bg-black/20 max-h-[400px]">
                     <Image
                         src={pack.coverImageUrl || 'https://placehold.co/600x400.png'}
                         alt={pack.name}
-                        fill
-                        className="object-cover"
+                        width={600}
+                        height={400}
+                        className="w-full h-auto object-contain"
                         data-ai-hint="datapack cover image"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                 </div>
             </CardHeader>
             <CardContent className="p-6 flex-grow flex flex-col">
@@ -132,7 +132,7 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
             const selectedValue = formValues[slot.id];
             if (!selectedValue) return;
 
-            const selectedOption = slot.options.find(opt => opt.value === selectedValue);
+            const selectedOption = slot.options?.find(opt => opt.value === selectedValue);
             if (!selectedOption || !selectedOption.exclusions) return;
 
             selectedOption.exclusions.forEach(exclusion => {
