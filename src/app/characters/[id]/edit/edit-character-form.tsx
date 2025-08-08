@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState, useTransition, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
@@ -162,10 +162,10 @@ function ImagesTab({ character }: { character: Character }) {
     },
   });
 
-  const { fields, append, remove } = useForm<UpdateImagesFormValues>({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "images",
-  }).control.register("images")._f;
+  });
   
   useEffect(() => {
     form.reset({
@@ -215,17 +215,17 @@ function ImagesTab({ character }: { character: Character }) {
           {fields.map((field, index) => (
              <Card key={field.id} className="group relative overflow-hidden">
                  <div className="relative w-full aspect-square bg-muted/20">
-                    <Image src={field.url} alt={`Character image ${index + 1}`} fill className="w-full object-contain" />
+                    <Image src={(field as {url: string}).url} alt={`Character image ${index + 1}`} fill className="w-full object-contain" />
                  </div>
                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2 gap-1">
-                    <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary(field.url)} disabled={primaryImageUrl === field.url}>
-                        <Star className="mr-2" /> {primaryImageUrl === field.url ? 'Primary' : 'Set Primary'}
+                    <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary((field as {url: string}).url)} disabled={primaryImageUrl === (field as {url: string}).url}>
+                        <Star className="mr-2" /> {primaryImageUrl === (field as {url: string}).url ? 'Primary' : 'Set Primary'}
                     </Button>
                     <Button type="button" variant="destructive" size="sm" className="w-full" onClick={() => remove(index)} disabled={fields.length <= 1}>
                         <Trash2 className="mr-2" /> Remove
                     </Button>
                 </div>
-                {primaryImageUrl === field.url && (
+                {primaryImageUrl === (field as {url: string}).url && (
                     <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1.5 text-xs shadow-lg">
                         <Star className="w-3 h-3 fill-current" />
                     </div>
