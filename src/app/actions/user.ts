@@ -19,8 +19,7 @@ export type ActionResponse = {
 
 // Zod schema for validating text fields from the profile form
 const UpdateProfileSchema = z.object({
-  displayName: z.string().min(1, 'Display Name is required').max(50, 'Display Name must be less than 50 characters').optional(),
-  photoUrl: z.string().url('Invalid URL format').optional().or(z.literal('')),
+  displayName: z.string().min(1, 'Display Name is required').max(50, 'Display Name must be less than 50 characters'),
 });
 
 
@@ -57,10 +56,9 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
         }
         
         const displayName = formData.get('displayName') as string;
-        const photoFile = formData.get('photoFile') as File;
-        const photoUrl = formData.get('photoUrl') as string;
+        const photoFile = formData.get('photoFile') as File | null;
 
-        const validation = UpdateProfileSchema.safeParse({ displayName, photoUrl });
+        const validation = UpdateProfileSchema.safeParse({ displayName });
 
         if (!validation.success) {
             const firstError = validation.error.errors[0];
@@ -71,7 +69,6 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
         }
         
         let finalPhotoUrl: string | null = null;
-        let newAvatarUrlForClient: string | null = null;
         
         // Priority 1: Handle file upload
         if (photoFile && photoFile.size > 0) {
@@ -79,21 +76,12 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
                 return { success: false, message: 'File is too large. Please upload an image smaller than 5MB.' };
             }
             finalPhotoUrl = await uploadAvatar(uid, photoFile);
-            newAvatarUrlForClient = finalPhotoUrl;
-        } 
-        // Priority 2: Handle URL paste (only if no file was uploaded)
-        else if (photoUrl) {
-            finalPhotoUrl = photoUrl;
-            newAvatarUrlForClient = photoUrl;
         }
-
 
         const userRef = adminDb.collection('users').doc(uid);
-        const updates: { [key: string]: any } = {};
-
-        if (displayName) {
-            updates.displayName = displayName;
-        }
+        const updates: { [key: string]: any } = {
+            displayName: validation.data.displayName
+        };
         
         if (finalPhotoUrl) {
             updates.photoURL = finalPhotoUrl;
@@ -106,8 +94,8 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
         
         // Also update the Firebase Auth profile
         await adminAuth.updateUser(uid, {
-            displayName: displayName || undefined,
-            photoURL: finalPhotoUrl || undefined,
+            displayName: validation.data.displayName,
+            photoURL: finalPhotoUrl ?? undefined, // Use finalPhotoUrl or undefined
         });
 
         revalidatePath('/profile');
@@ -116,7 +104,7 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
         return {
             success: true,
             message: 'Profile updated successfully!',
-            newAvatarUrl: newAvatarUrlForClient
+            newAvatarUrl: finalPhotoUrl
         };
 
     } catch (error) {

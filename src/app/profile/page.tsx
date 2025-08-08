@@ -105,21 +105,22 @@ AvatarUploader.displayName = "AvatarUploader";
 function ProfileForm({ user }: { user: UserProfile }) {
   const { toast } = useToast();
   const { setUserProfile } = useAuth();
+  const formRef = useRef<HTMLFormElement>(null);
 
   const initialState: ActionResponse = { success: false, message: '' };
   const [state, formAction] = useActionState(updateUserProfile, initialState);
   
-  const formRef = useRef<HTMLFormElement>(null);
-  
   useEffect(() => {
-    if (state.success) {
-      toast({ title: "Success!", description: state.message });
-      if (state.newAvatarUrl) {
-         setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl, avatarUpdatedAt: Date.now() } : null);
-      }
-      formRef.current?.reset();
-    } else if (state.message) {
-      toast({ variant: 'destructive', title: 'Update Failed', description: state.message });
+    if (state.message) {
+        if (state.success) {
+            toast({ title: "Success!", description: state.message });
+            if (state.newAvatarUrl) {
+                setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl, avatarUpdatedAt: Date.now() } : null);
+            }
+            // Do not reset the form, allow user to see their new name
+        } else {
+            toast({ variant: 'destructive', title: 'Update Failed', description: state.message });
+        }
     }
   }, [state, toast, setUserProfile]);
 
@@ -138,18 +139,9 @@ function ProfileForm({ user }: { user: UserProfile }) {
                     id="displayName" 
                     name="displayName" 
                     defaultValue={user.displayName || ''}
+                    required
                 />
             </div>
-            
-            <div className="space-y-2">
-                <Label htmlFor="photoUrl">Or paste image URL</Label>
-                <Input 
-                    id="photoUrl" 
-                    name="photoUrl"
-                    placeholder="https://example.com/avatar.png"
-                />
-            </div>
-            
             <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" defaultValue={user.email || ''} disabled />
@@ -423,32 +415,16 @@ SecurityTab.displayName = "SecurityTab";
 export default function ProfilePage() {
   const { userProfile, loading, setUserProfile } = useAuth(); // Use setUserProfile from context
   
-  const [localUserProfile, setLocalUserProfile] = useState(userProfile);
-  
   useEffect(() => {
-    setLocalUserProfile(userProfile);
-  }, [userProfile]);
-
-  const handleProfileUpdate = useCallback((updates: Partial<UserProfile>) => {
-    const updatedProfile = { ...localUserProfile, ...updates } as UserProfile;
-    setLocalUserProfile(updatedProfile);
-    setUserProfile(updatedProfile); // Also update the global context
-  }, [localUserProfile, setUserProfile]);
-
-  const defaultPreferences: UserPreferences = {
-    theme: 'system',
-    notifications: { email: false },
-    privacy: { profileVisibility: 'private' },
-  };
-
-  const router = useRouter();
-  useEffect(() => {
-    if (!loading && !localUserProfile) {
+    if (!loading && !userProfile) {
+      // useRouter is a hook, so it must be called here.
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const router = useRouter();
       router.push('/login');
     }
-  }, [localUserProfile, loading, router]);
+  }, [userProfile, loading]);
   
-  if (loading || !localUserProfile) {
+  if (loading || !userProfile) {
     return (
       <div className="flex items-center justify-center h-screen w-full">
          <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -456,8 +432,14 @@ export default function ProfilePage() {
     );
   }
   
-  const userPreferences = (localUserProfile?.preferences as UserPreferences) || defaultPreferences;
-  const userStats = localUserProfile?.stats;
+  const defaultPreferences: UserPreferences = {
+    theme: 'system',
+    notifications: { email: false },
+    privacy: { profileVisibility: 'private' },
+  };
+
+  const userPreferences = (userProfile?.preferences as UserPreferences) || defaultPreferences;
+  const userStats = userProfile?.stats;
 
   return (
     <motion.div
@@ -480,7 +462,7 @@ export default function ProfilePage() {
                 <TabsTrigger value="security">Security</TabsTrigger>
             </TabsList>
             <TabsContent value="profile" className="space-y-4">
-                <ProfileForm user={localUserProfile} />
+                <ProfileForm user={userProfile} />
             </TabsContent>
             <TabsContent value="datapacks" className="space-y-4">
                 <DataPacksTab />
