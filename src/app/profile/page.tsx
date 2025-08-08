@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, useTransition, useActionState } from 'react';
+import { useEffect, useState, useTransition, useActionState, ChangeEvent, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -53,80 +53,39 @@ const StatCard = ({ icon, label, value }: { icon: ReactNode, label: string, valu
 StatCard.displayName = "StatCard";
 
 
-function AvatarUploader({ user }: { user: UserProfile }) {
-    const [preview, setPreview] = useState<string | null>(null);
-
-    useEffect(() => {
-        setPreview(user.photoURL);
-    }, [user.photoURL]);
-
-    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const fallback = user.displayName?.charAt(0) || user.email?.charAt(0) || '?';
-    
-    return (
-        <div className="flex items-center gap-4">
-            <Avatar className="w-24 h-24 text-4xl">
-                 <AvatarImage src={preview || undefined} alt={user.displayName || 'User Avatar'} key={preview} />
-                <AvatarFallback>{fallback}</AvatarFallback>
-            </Avatar>
-            <div className="grid gap-1.5">
-                <div className="relative">
-                    <Label 
-                        htmlFor="photoFile" 
-                        className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2"
-                    >
-                       <Camera className="mr-2"/> Change Avatar
-                    </Label>
-                     <Input 
-                        id="photoFile" 
-                        name="photoFile" 
-                        type="file" 
-                        className="absolute w-full h-full opacity-0 cursor-pointer top-0 left-0"
-                        accept="image/png, image/jpeg" 
-                        onChange={handleFileChange}
-                     />
-                </div>
-                <p className="text-xs text-muted-foreground">JPG, PNG. 5MB max.</p>
-            </div>
-        </div>
-    );
-}
-AvatarUploader.displayName = "AvatarUploader";
-
-
 function ProfileForm({ user }: { user: UserProfile }) {
   const { toast } = useToast();
   const { setUserProfile } = useAuth();
   const initialState: ActionResponse = { success: false, message: '' };
-  
-  // useActionState is the recommended hook for handling form state with Server Actions.
   const [state, formAction] = useActionState(updateUserProfile, initialState);
+  const [preview, setPreview] = useState<string | null>(user.photoURL);
 
-  // useEffect handles "side effects" like showing toasts or updating context
-  // after the server action has completed and the state has been updated.
   useEffect(() => {
-    if (state.message) { // Only show toast if there's a message
+    if (state.message) {
       if (state.success) {
         toast({ title: 'Success!', description: state.message });
         if (state.newAvatarUrl) {
-          // Update the auth context with the new avatar URL
           setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl } : null);
+          setPreview(state.newAvatarUrl);
         }
       } else {
         toast({ variant: 'destructive', title: 'Update Failed', description: state.message });
       }
     }
   }, [state, toast, setUserProfile]);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  const fallback = user.displayName?.charAt(0) || user.email?.charAt(0) || '?';
 
   return (
     <Card>
@@ -135,9 +94,34 @@ function ProfileForm({ user }: { user: UserProfile }) {
         <CardDescription>This is how others will see you on the site.</CardDescription>
       </CardHeader>
       <CardContent>
-        {/* The form action is now handled by the useActionState hook */}
         <form action={formAction} className="space-y-6">
-            <AvatarUploader user={user} />
+            {/* AvatarUploader logic is now integrated here */}
+            <div className="flex items-center gap-4">
+                <Avatar className="w-24 h-24 text-4xl">
+                    <AvatarImage src={preview || undefined} alt={user.displayName || 'User Avatar'} key={preview} />
+                    <AvatarFallback>{fallback}</AvatarFallback>
+                </Avatar>
+                <div className="grid gap-1.5">
+                    <div className="relative">
+                        <Label 
+                            htmlFor="photoFile" 
+                            className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2"
+                        >
+                           <Camera className="mr-2"/> Change Avatar
+                        </Label>
+                         <Input 
+                            id="photoFile" 
+                            name="photoFile" 
+                            type="file" 
+                            className="absolute w-full h-full opacity-0 cursor-pointer top-0 left-0"
+                            accept="image/png, image/jpeg" 
+                            onChange={handleFileChange}
+                         />
+                    </div>
+                    <p className="text-xs text-muted-foreground">JPG, PNG. 5MB max.</p>
+                </div>
+            </div>
+
             <div className="space-y-2">
                 <Label htmlFor="displayName">Display Name</Label>
                 <Input 
