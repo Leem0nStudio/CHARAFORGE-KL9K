@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ArrowRight, Wand2, Package } from 'lucide-react';
+import { Loader2, ArrowRight, Wand2, Package, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { DataPack, Option, Slot } from '@/types/datapack';
 import { cn } from '@/lib/utils';
@@ -98,7 +98,7 @@ function PackSelector({ packs, onSelect, selectedPackId }: {
 }
 
 
-function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGenerated: (prompt: string, packId: string, packName: string) => void }) {
+function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPromptGenerated: (prompt: string, packId: string, packName: string) => void, onBack: () => void }) {
     const { control, handleSubmit, watch } = useForm();
     const formValues = watch();
 
@@ -168,9 +168,14 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
-                    <Wand2 className="h-6 w-6 text-primary" /> {pack.name} Wizard
-                </DialogTitle>
+                <div className="flex items-center gap-4">
+                     <Button type="button" variant="ghost" size="icon" className="sm:hidden" onClick={onBack}>
+                        <ArrowLeft />
+                    </Button>
+                    <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
+                        <Wand2 className="h-6 w-6 text-primary" /> {pack.name} Wizard
+                    </DialogTitle>
+                </div>
                 <DialogDescription>Each selection will add more detail to your final prompt.</DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[50vh] pr-3">
@@ -234,29 +239,28 @@ export function DataPackSelectorModal({
 }: DataPackSelectorModalProps) {
     const [selectedPack, setSelectedPack] = useState<DataPack | null>(null);
     const [wizardPack, setWizardPack] = useState<DataPack | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [view, setView] = useState<'list' | 'preview'>('list');
 
     useEffect(() => {
         if (!isOpen) {
-            // Reset state when modal closes
             setWizardPack(null);
             setSelectedPack(null);
+            setView('list');
             return;
         }
         
-        // When modal opens and packs are loaded, set the first one as selected
-        if (!isLoading && packs.length > 0) {
+        if (!isLoading && packs.length > 0 && !selectedPack) {
             setSelectedPack(packs[0]);
         }
-        
-        // If there's an issue loading packs from parent
-        if (!isLoading && packs.length === 0) {
-            setError("You don't have any DataPacks installed.");
-        } else {
-            setError(null);
-        }
 
-    }, [isOpen, isLoading, packs]);
+    }, [isOpen, isLoading, packs, selectedPack]);
+    
+    const handleSelectPack = (pack: DataPack) => {
+        setSelectedPack(pack);
+        // On mobile, automatically switch to the preview view.
+        // On desktop, this will just update the selection but stay on the same screen.
+        setView('preview'); 
+    };
 
     const handlePromptGeneratedAndClose = useCallback((prompt: string, packId: string, packName: string) => {
         onPromptGenerated(prompt, packId, packName);
@@ -274,45 +278,73 @@ export function DataPackSelectorModal({
         }
         
         if (wizardPack) {
-            return <WizardForm pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} />;
+            return <WizardForm pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} onBack={() => setWizardPack(null)} />;
         }
         
-        if (packs.length > 0) {
+        if (packs.length === 0) {
             return (
                 <>
-                    <DialogHeader>
-                        <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
-                        <DialogDescription>Choose one of your installed packs to start building a prompt.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4 min-h-[60vh]">
-                        <div className="md:col-span-2">
-                            <PackPreview pack={selectedPack} onChoose={() => {if (selectedPack) setWizardPack(selectedPack)}} />
-                        </div>
-                        <div className="md:col-span-1">
-                            <PackSelector
-                                packs={packs}
-                                onSelect={setSelectedPack}
-                                selectedPackId={selectedPack?.id || null}
-                            />
-                        </div>
-                    </div>
+                    <DialogHeader><DialogTitle>No DataPacks Found</DialogTitle></DialogHeader>
+                    <Alert>
+                        <Package className="h-4 w-4" />
+                        <AlertTitle>No DataPacks Installed</AlertTitle>
+                        <AlertDescription>
+                            You haven't installed any DataPacks yet. Visit the catalog to add some to your collection.
+                            <Button asChild variant="link" className="p-0 h-auto ml-1"><Link href="/datapacks">Go to Catalog</Link></Button>
+                        </AlertDescription>
+                    </Alert>
                 </>
-            );
+            )
         }
-
+        
         return (
             <>
-                <DialogHeader><DialogTitle>No DataPacks Found</DialogTitle></DialogHeader>
-                <Alert>
-                    <Package className="h-4 w-4" />
-                    <AlertTitle>No DataPacks Installed</AlertTitle>
-                    <AlertDescription>
-                        You haven't installed any DataPacks yet. Visit the catalog to add some to your collection.
-                        <Button asChild variant="link" className="p-0 h-auto ml-1"><Link href="/datapacks">Go to Catalog</Link></Button>
-                    </AlertDescription>
-                </Alert>
+                <DialogHeader className="sm:hidden">
+                     {/* Mobile header can show which step we're on */}
+                     <DialogTitle>{view === 'list' ? '1. Select Pack' : '2. Confirm Pack'}</DialogTitle>
+                </DialogHeader>
+                <DialogHeader className="hidden sm:block">
+                    <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
+                    <DialogDescription>Choose one of your installed packs to start building a prompt.</DialogDescription>
+                </DialogHeader>
+
+                {/* Mobile View: Show only one component at a time */}
+                <div className="sm:hidden mt-4">
+                    {view === 'list' ? (
+                         <PackSelector
+                            packs={packs}
+                            onSelect={handleSelectPack}
+                            selectedPackId={selectedPack?.id || null}
+                        />
+                    ) : (
+                         <PackPreview pack={selectedPack} onChoose={() => {if (selectedPack) setWizardPack(selectedPack)}} />
+                    )}
+                </div>
+
+                {/* Desktop View: Show both side-by-side */}
+                <div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-8 pt-4 min-h-[60vh]">
+                    <div className="md:col-span-2">
+                        <PackPreview pack={selectedPack} onChoose={() => {if (selectedPack) setWizardPack(selectedPack)}} />
+                    </div>
+                    <div className="md:col-span-1">
+                        <PackSelector
+                            packs={packs}
+                            onSelect={setSelectedPack}
+                            selectedPackId={selectedPack?.id || null}
+                        />
+                    </div>
+                </div>
+                
+                 {/* Back button for mobile view */}
+                {view === 'preview' && (
+                    <div className="sm:hidden mt-4">
+                        <Button variant="outline" className="w-full" onClick={() => setView('list')}>
+                            <ArrowLeft className="mr-2" /> Back to List
+                        </Button>
+                    </div>
+                )}
             </>
-        )
+        );
     };
 
     return (
