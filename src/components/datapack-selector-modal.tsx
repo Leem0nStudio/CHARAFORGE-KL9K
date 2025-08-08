@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { useForm, Controller } from 'react-hook-form';
 import * as yaml from 'js-yaml';
-
+import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -105,14 +105,15 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
     const formValues = watch();
 
     const wizardSlots = useMemo(() => {
-        const schema = pack.schema;
+        const schema = pack.schema as any; // Cast to any to handle both schema types
+        
         // New structure with a 'slots' array
-        if ('slots' in schema && Array.isArray(schema.slots)) {
+        if (schema && Array.isArray(schema.slots)) {
             return schema.slots;
         }
         
         // Legacy structure with YAML content as strings
-        return Object.entries(schema)
+        return Object.entries(schema || {})
             .filter(([key]) => key !== 'prompt_template' && key !== 'promptTemplate')
             .map(([key, yamlContent]) => {
                 try {
@@ -147,7 +148,9 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
     }, [formValues, wizardSlots]);
 
     const onSubmit = (data: any) => {
-        let prompt = ('prompt_template' in pack.schema ? pack.schema.prompt_template : pack.schema.promptTemplate) as string;
+        const schema = pack.schema as any;
+        let prompt = schema.prompt_template || schema.promptTemplate || '';
+        
         if (!prompt) {
             console.error("Prompt template is missing in the datapack schema.");
             return;
@@ -247,6 +250,11 @@ export function DataPackSelectorModal({ isOpen, onClose, onPromptGenerated }: { 
         fetchPacks();
     }, [isOpen]);
 
+    const handlePromptGeneratedAndClose = useCallback((prompt: string, packId: string, packName: string) => {
+        onPromptGenerated(prompt, packId, packName);
+        onClose();
+    }, [onPromptGenerated, onClose]);
+    
     const renderContent = () => {
         if (isLoading) {
             return (
@@ -263,7 +271,7 @@ export function DataPackSelectorModal({ isOpen, onClose, onPromptGenerated }: { 
         }
 
         if (wizardPack) {
-            return <WizardForm pack={wizardPack} onPromptGenerated={onPromptGenerated} />;
+            return <WizardForm pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} />;
         }
 
         if (packs.length > 0) {

@@ -7,7 +7,6 @@ import { adminDb, adminAuth } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
-import type { DataPack } from '@/types/datapack';
 import type { UserPreferences } from '@/types/user';
 
 export type ActionResponse = {
@@ -162,41 +161,5 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         console.error("Update Preferences Error:", error);
         return { success: false, message: "Failed to save preferences." };
-    }
-}
-
-
-export async function getInstalledDataPacks(): Promise<DataPack[]> {
-    try {
-        const uid = await verifyAndGetUid();
-        if (!adminDb) {
-            throw new Error('Database service not available.');
-        }
-        
-        const userDoc = await adminDb.collection('users').doc(uid).get();
-        if (!userDoc.exists) return [];
-        
-        const installedPackIds = userDoc.data()?.stats?.installedPacks || [];
-        if (installedPackIds.length === 0) return [];
-        
-        const packsQuery = adminDb.collection('datapacks').where('id', 'in', installedPackIds);
-        const packsSnapshot = await packsQuery.get();
-        
-        return packsSnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                ...data,
-                id: doc.id,
-                createdAt: data.createdAt.toDate(),
-            } as DataPack
-        });
-
-    } catch (error) {
-         if (error instanceof Error && (error.message.includes('User session not found') || error.message.includes('Invalid or expired'))) {
-            console.log('User session not found for installed packs, returning empty list.');
-            return [];
-        }
-        console.error("Error fetching installed DataPacks:", error);
-        return [];
     }
 }
