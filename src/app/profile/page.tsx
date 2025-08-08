@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useTransition, useActionState, useRef, type ChangeEvent, type ReactNode } from 'react';
+import { useActionState, useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -142,7 +142,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
                     required
                 />
             </div>
-            <div className="space-y-2">
+             <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" defaultValue={user.email || ''} disabled />
             </div>
