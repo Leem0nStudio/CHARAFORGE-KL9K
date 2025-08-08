@@ -1,0 +1,192 @@
+
+{
+    "name": "Skulls and Heavy Metal Pack",
+    "author": "CharaForge",
+    "description": "A datapack to create characters inspired by the 90s punk rock and heavy metal aesthetic, with a touch of Misfits-style horror punk.",
+    "type": "free",
+    "price": 0,
+    "tags": ["punk", "metal", "horror", "90s", "female"],
+    "schema": {
+        "promptTemplate": "A {style} portrait of a {gender} {baseType}, {expression}. They are wearing {headgear}, {face} makeup, a {neck} accessory, {shoulders} protection, a {torso}, {arms} sleeves, {hands} gloves, a {waist} belt, {legs}, and {feet}. Their outfit is completed by a {back} accessory and surrounded by {specialEffects}. The scene is lit by {lighting} against a {background}.",
+        "slots": [
+            {
+                "id": "gender",
+                "label": "Gender",
+                "defaultOption": "female",
+                "options": [
+                    { "label": "Female", "value": "female" }
+                ]
+            },
+            {
+                "id": "baseType",
+                "label": "Base Type",
+                "defaultOption": "punk rock girl",
+                "options": [
+                    { "label": "Punk Rock Girl", "value": "punk rock girl with tattoos" },
+                    { "label": "Goth Metalhead", "value": "goth metalhead" },
+                    { "label": "Horror Punk Fiend", "value": "horror punk fiend" }
+                ]
+            },
+            {
+                "id": "style",
+                "label": "Art Style",
+                "defaultOption": "gritty comic book art",
+                "options": [
+                    { "label": "Gritty Comic Art", "value": "gritty comic book art" },
+                    { "label": "90s Album Cover Art", "value": "90s album cover art" },
+                    { "label": "Photorealistic", "value": "photorealistic, grainy" }
+                ]
+            },
+            {
+                "id": "expression",
+                "label": "Expression",
+                "defaultOption": "with a defiant sneer",
+                "options": [
+                    { "label": "Defiant Sneer", "value": "with a defiant sneer" },
+                    { "label": "Menacing Stare", "value": "with a menacing stare" },
+                    { "label": "Crying Black Tears", "value": "crying black tears" }
+                ]
+            },
+            {
+                "id": "background",
+                "label": "Background",
+                "defaultOption": "a graffiti-covered brick wall",
+                "options": [
+                    { "label": "Graffiti Wall", "value": "a graffiti-covered brick wall" },
+                    { "label": "Mosh Pit", "value": "the middle of a mosh pit at a concert" },
+                    { "label": "Desolate Graveyard", "value": "a desolate, moonlit graveyard" }
+                ]
+            },
+            {
+                "id": "lighting",
+                "label": "Lighting",
+                "defaultOption": "harsh garage lighting",
+                "options": [
+                    { "label": "Harsh Garage Light", "value": "harsh garage lighting" },
+                    { "label": "Red and Blue Stage Lights", "value": "dramatic red and blue stage lights" },
+                    { "label": "Eerie Moonlight", "value": "eerie moonlight" }
+                ]
+            },
+            {
+                "id": "headgear",
+                "label": "Headgear",
+                "defaultOption": "nothing",
+                "options": [
+                    { "label": "Nothing", "value": "nothing" },
+                    { "label": "Black Beanie with Skull", "value": "a black beanie with a skull logo" },
+                    { "label": "Spiked Headband", "value": "a spiked leather headband" }
+                ]
+            },
+            {
+                "id": "face",
+                "label": "Face",
+                "defaultOption": "a Crimson Ghost skull makeup",
+                "options": [
+                    { "label": "Crimson Ghost Makeup", "value": "a Crimson Ghost skull makeup" },
+                    { "label": "Heavy Black Eyeliner", "value": "heavy black eyeliner and dark lipstick" },
+                    { "label": "Deathhawk hairstyle", "value": "a deathhawk mohawk hairstyle" }
+                ]
+            },
+            {
+                "id": "neck",
+                "label": "Neck",
+                "defaultOption": "a spiked choker",
+                "options": [
+                    { "label": "Spiked Choker", "value": "a spiked choker" },
+                    { "label": "Padlock Necklace", "value": "a heavy padlock necklace" },
+                    { "label": "Bandana", "value": "a black bandana tied around her neck" }
+                ]
+            },
+            {
+                "id": "shoulders",
+                "label": "Shoulders",
+                "defaultOption": "spiked shoulder pads",
+                "options": [
+                    { "label": "Spiked Shoulder Pads", "value": "spiked shoulder pads on her jacket" },
+                    { "label": "Nothing", "value": "nothing" },
+                    { "label": "Safety Pins", "value": "safety pins on her shoulders" }
+                ]
+            },
+            {
+                "id": "torso",
+                "label": "Torso",
+                "defaultOption": "a ripped Misfits band t-shirt",
+                "options": [
+                    { "label": "Misfits T-Shirt", "value": "a ripped Misfits band t-shirt" },
+                    { "label": "Black Leather Biker Jacket", "value": "a black leather biker jacket covered in patches" },
+                    { "label": "Fishnet Shirt", "value": "a fishnet shirt under a cropped top" }
+                ]
+            },
+            {
+                "id": "arms",
+                "label": "Arms",
+                "defaultOption": "tattooed sleeves",
+                "options": [
+                    { "label": "Tattooed Sleeves", "value": "tattooed sleeves" },
+                    { "label": "Fishnet Arm Warmers", "value": "fishnet arm warmers" },
+                    { "label": "Leather Gauntlets", "value": "studded leather gauntlets" }
+                ]
+            },
+            {
+                "id": "hands",
+                "label": "Hands",
+                "defaultOption": "fingerless leather gloves",
+                "options": [
+                    { "label": "Fingerless Gloves", "value": "fingerless leather gloves" },
+                    { "label": "Black Nail Polish", "value": "chipped black nail polish" },
+                    { "label": "Brass Knuckles", "value": "holding brass knuckles" }
+                ]
+            },
+            {
+                "id": "waist",
+                "label": "Waist",
+                "defaultOption": "a bullet belt",
+                "options": [
+                    { "label": "Bullet Belt", "value": "a bullet belt" },
+                    { "label": "Chain Belt", "value": "a heavy chain belt" },
+                    { "label": "Studded Leather Belt", "value": "a wide studded leather belt" }
+                ]
+            },
+            {
+                "id": "legs",
+                "label": "Legs",
+                "defaultOption": "ripped black skinny jeans",
+                "options": [
+                    { "label": "Ripped Jeans", "value": "ripped black skinny jeans" },
+                    { "label": "Torn Fishnet Stockings", "value": "torn fishnet stockings" },
+                    { "label": "Leather Pants", "value": "tight leather pants" }
+                ]
+            },
+            {
+                "id": "feet",
+                "label": "Feet",
+                "defaultOption": "worn-out combat boots",
+                "options": [
+                    { "label": "Combat Boots", "value": "worn-out combat boots" },
+                    { "label": "Doc Martens", "value": "classic Doc Martens boots" },
+                    { "label": "Platform Boots", "value": "heavy platform boots" }
+                ]
+            },
+            {
+                "id": "back",
+                "label": "Back",
+                "defaultOption": "a guitar slung over her back",
+                "options": [
+                    { "label": "Guitar", "value": "a guitar slung over her back" },
+                    { "label": "Nothing", "value": "nothing" },
+                    { "label": "Backpack with Patches", "value": "a black backpack covered in band patches" }
+                ]
+            },
+            {
+                "id": "specialEffects",
+                "label": "Special Effects",
+                "defaultOption": "flickering neon lights",
+                "options": [
+                    { "label": "Neon Lights", "value": "flickering neon lights" },
+                    { "label": "Smoke and Fog", "value": "wisps of smoke and fog" },
+                    { "label": "Lens Flare", "value": "a dramatic lens flare" }
+                ]
+            }
+        ]
+    }
+}
