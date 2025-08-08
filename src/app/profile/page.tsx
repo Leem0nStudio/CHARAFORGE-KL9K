@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState, useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useActionState, useEffect, useRef, useState, type ChangeEvent, type ReactNode, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -35,6 +35,7 @@ import { format } from 'date-fns';
 import { PageHeader } from '@/components/page-header';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SubmitButton } from '@/components/ui/submit-button';
 
 
 // #region Sub-components for each Tab
@@ -149,7 +150,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
                 <Input id="email" type="email" defaultValue={user.email || ''} disabled />
             </div>
 
-            <Button type="submit">Update Profile</Button>
+            <SubmitButton>Update Profile</SubmitButton>
         </form>
       </CardContent>
     </Card>
@@ -161,6 +162,10 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
   const { toast } = useToast();
   const [preferences, setPreferences] = useState<UserPreferences>(initialPreferences);
   const [isSavingPrefs, startPrefsTransition] = useTransition();
+
+  useEffect(() => {
+    setPreferences(initialPreferences);
+  }, [initialPreferences]);
 
   const handlePreferencesChange = (field: keyof UserPreferences, value: any) => {
     setPreferences(prev => ({ ...prev, [field]: value }));
