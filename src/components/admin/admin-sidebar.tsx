@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart, Package, Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 import { AnvilIcon } from "@/hooks/use-auth";
 
 const navItems = [

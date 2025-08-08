@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { getCreationsForDataPack, getPublicDataPacks } from '@/app/actions/datapacks';
 import { User, GalleryVertical } from 'lucide-react';
-import { DataPackClient } from './client';
+import { DataPackClient } from '@/app/datapacks/[id]/client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
 
@@ -63,7 +63,7 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                 <CardTitle className="flex items-center gap-2 font-headline text-2xl">
                     <GalleryVertical className="text-primary" />
                     Community Creations
-                </CardTitle>
+                </Title>
                 <CardDescription>Creations from the community using this DataPack.</CardDescription>
              </CardHeader>
              <CardContent>
@@ -102,3 +102,4 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
     </div>
   );
 }
+

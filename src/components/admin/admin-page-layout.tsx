@@ -1,10 +1,10 @@
+
 'use client';
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import Link from 'next/link';
 
 interface AdminPageLayoutProps {
     title: string;
@@ -38,17 +38,13 @@ export function AdminPageLayout({ title, children, actions }: AdminPageLayoutPro
                      <Breadcrumb className="mb-2 hidden sm:flex">
                         <BreadcrumbList>
                              <BreadcrumbItem>
-                                <BreadcrumbLink asChild>
-                                    <Link href="/admin">Dashboard</Link>
-                                </BreadcrumbLink>
+                                <BreadcrumbLink href="/admin">Dashboard</BreadcrumbLink>
                             </BreadcrumbItem>
                             {breadcrumbs.map((crumb, index) => (
                                 <React.Fragment key={crumb.href}>
                                     <BreadcrumbSeparator />
                                     <BreadcrumbItem>
-                                        <BreadcrumbLink asChild>
-                                            <Link href={crumb.href}>{crumb.label}</Link>
-                                        </BreadcrumbLink>
+                                        <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
                                     </BreadcrumbItem>
                                 </React.Fragment>
                             ))}

@@ -46,9 +46,10 @@ const OptionSchema = z.object({
 const SlotSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
+  type: z.enum(['text', 'select']).optional(),
   defaultOption: z.string().optional(),
   placeholder: z.string().optional(),
-  options: z.array(OptionSchema).min(1, "At least one option is required."),
+  options: z.array(OptionSchema).min(1, "At least one option is required.").optional(),
 });
 
 const DataPackSchemaForForm = z.object({
@@ -76,7 +77,7 @@ const getFinalSchema = (schemaValues: z.infer<typeof DataPackSchemaForForm>): Da
     ...schemaValues,
     slots: schemaValues.slots.map(s => ({
       ...s,
-      options: s.options.map(o => ({
+      options: (s.options || []).map(o => ({
         ...o,
         exclusions: (o.exclusions || []).map(e => ({
           ...e,
