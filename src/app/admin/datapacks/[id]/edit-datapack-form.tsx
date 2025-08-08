@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useMemo, useEffect } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, PlusCircle, Trash2, Wand2, Eye } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   AlertDialog,
@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { DataPack, UpsertDataPack, DataPackSchema } from '@/types/datapack';
+import type { DataPack, UpsertDataPack } from '@/types/datapack';
 import * as yaml from 'js-yaml';
 
 
@@ -61,7 +61,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
   // Convert schema object to array for useFieldArray, and back on submit
   const defaultValues = useMemo(() => {
     const schemaArray = initialData?.schema 
-        ? Object.entries(initialData.schema).map(([key, value]) => ({ key, value }))
+        ? Object.entries(initialData.schema).map(([key, value]) => ({ key, value: typeof value === 'object' ? yaml.dump(value) : value }))
         : [{ key: 'prompt_template', value: 'A simple prompt with a {variable}.' }];
 
     return {
@@ -94,27 +94,18 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
         imageBuffer = Buffer.from(arrayBuffer);
       }
       
-      // Convert schema array back to object
+      // Convert schema array back to object, parsing YAML content
       const schemaObject = values.schema.reduce((obj, item) => {
-        obj[item.key] = item.value;
+        try {
+            // We parse the YAML content here before sending it to the server
+            obj[item.key] = yaml.load(item.value);
+        } catch (e) {
+            // if it's not valid yaml, store as string. This helps with prompt_template
+            obj[item.key] = item.value;
+        }
         return obj;
-      }, {} as DataPackSchema);
+      }, {} as { [key: string]: any });
 
-      // Validate YAML syntax before submitting
-      for (const item of values.schema) {
-          if (item.key.toLowerCase() !== 'prompt_template') {
-            try {
-                yaml.load(item.value);
-            } catch (e) {
-                toast({
-                    variant: 'destructive',
-                    title: `Invalid YAML in '${item.key}'`,
-                    description: (e as Error).message,
-                });
-                return; // Stop submission
-            }
-          }
-      }
 
       const dataToSave: UpsertDataPack = {
         id: initialData?.id,
@@ -210,18 +201,18 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
         <TabsContent value="schema">
             <Card>
                 <CardHeader>
-                    <CardTitle>YAML Schema</CardTitle>
-                    <CardDescription>Define the building blocks of your prompt using YAML syntax.</CardDescription>
+                    <CardTitle>Schema Content</CardTitle>
+                    <CardDescription>Define the building blocks of your prompt. The content should be in YAML format for fields that represent lists of options (like race, class) or just a string for the template.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {fields.map((field, index) => (
                         <div key={field.id} className="grid grid-cols-12 gap-4 p-4 border rounded-lg bg-muted/50">
                             <div className="col-span-3 space-y-2">
                                 <Label>Schema Key</Label>
-                                <Input {...form.register(`schema.${index}.key`)} placeholder="e.g., race, class, weapon"/>
+                                <Input {...form.register(`schema.${index}.key`)} placeholder="e.g., prompt_template, race, class"/>
                             </div>
                             <div className="col-span-8 space-y-2">
-                                <Label>YAML Content</Label>
+                                <Label>Content (String or YAML)</Label>
                                 <Controller
                                     control={form.control}
                                     name={`schema.${index}.value`}

@@ -1,284 +1,252 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
-import { useForm, Controller } from 'react-hook-form';
-
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useState, useTransition, useMemo } from 'react';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useRouter } from 'next/navigation';
+import { upsertDataPack, deleteDataPack } from '@/app/actions/datapacks';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ArrowRight, Wand2, Package, X, Check } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getInstalledDataPacks } from '@/app/actions/user';
-import type { DataPack, Option } from '@/types/datapack';
-import { cn } from '@/lib/utils';
-import { ScrollArea } from './ui/scroll-area';
-import { Separator } from './ui/separator';
-import Link from 'next/link';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { DataPack, UpsertDataPack } from '@/types/datapack';
+import * as yaml from 'js-yaml';
 
 
-function PackPreview({ pack, onChoose }: { pack: DataPack | null, onChoose: () => void }) {
-    if (!pack) {
-        return (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg bg-card/50">
-                <Package className="h-16 w-16 mb-4 text-primary" />
-                <h3 className="text-xl font-headline tracking-wider">Select a DataPack</h3>
-                <p>Choose a pack from the list to see its details and use the wizard.</p>
-            </div>
-        )
-    }
+// Zod schema for a single schema entry (key-value pair)
+const SchemaEntrySchema = z.object({
+  key: z.string().min(1, 'Key cannot be empty.'),
+  value: z.string().min(1, 'YAML content cannot be empty.'),
+});
 
-    return (
-        <Card className="flex flex-col h-full">
-            <CardHeader className="p-0">
-                <div className="relative aspect-video rounded-t-lg overflow-hidden">
-                    <Image
-                        src={pack.coverImageUrl || 'https://placehold.co/600x400.png'}
-                        alt={pack.name}
-                        fill
-                        className="object-cover"
-                        data-ai-hint="datapack cover image"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                </div>
-            </CardHeader>
-            <CardContent className="p-6 flex-grow flex flex-col">
-                <h2 className="text-3xl font-headline tracking-wider">{pack.name}</h2>
-                <p className="text-muted-foreground">by {pack.author}</p>
-                <Separator className="my-4" />
-                <ScrollArea className="flex-grow pr-4 max-h-[200px]">
-                    <p className="text-sm text-muted-foreground">{pack.description}</p>
-                </ScrollArea>
-            </CardContent>
-            <CardFooter>
-                 <Button onClick={onChoose} className="w-full font-headline text-lg" size="lg">
-                    Use this Pack <ArrowRight className="ml-2" />
+const FormSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  author: z.string().min(1, 'Author is required'),
+  description: z.string().min(1, 'Description is required'),
+  type: z.enum(['free', 'premium', 'temporal']),
+  price: z.number().min(0),
+  tags: z.string().optional(),
+  // The schema is now an array of key-value pairs for the form
+  schema: z.array(SchemaEntrySchema),
+});
+
+type FormValues = z.infer<typeof FormSchema>;
+
+
+// Main Form Component
+export function EditDataPackForm({ initialData }: { initialData: DataPack | null }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+
+  // Convert schema object to array for useFieldArray, and back on submit
+  const defaultValues = useMemo(() => {
+    const schemaArray = initialData?.schema 
+        ? Object.entries(initialData.schema).map(([key, value]) => ({ key, value: typeof value === 'object' ? yaml.dump(value) : value }))
+        : [{ key: 'prompt_template', value: 'A simple prompt with a {variable}.' }];
+
+    return {
+      name: initialData?.name || '',
+      author: initialData?.author || 'CharaForge',
+      description: initialData?.description || '',
+      type: initialData?.type || 'free',
+      price: initialData?.price || 0,
+      tags: initialData?.tags?.join(', ') || '',
+      schema: schemaArray,
+    };
+  }, [initialData]);
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(FormSchema),
+    defaultValues,
+    mode: 'onChange',
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "schema",
+  });
+
+  const onSubmit = (values: FormValues) => {
+    startTransition(async () => {
+      let imageBuffer: Buffer | undefined = undefined;
+      if (coverImage) {
+        const arrayBuffer = await coverImage.arrayBuffer();
+        imageBuffer = Buffer.from(arrayBuffer);
+      }
+      
+      // Convert schema array back to object, parsing YAML content
+      const schemaObject = values.schema.reduce((obj, item) => {
+        try {
+            // We parse the YAML content here before sending it to the server
+            obj[item.key] = yaml.load(item.value);
+        } catch (e) {
+            // if it's not valid yaml, store as string. This helps with prompt_template
+            obj[item.key] = item.value;
+        }
+        return obj;
+      }, {} as { [key: string]: any });
+
+
+      const dataToSave: UpsertDataPack = {
+        id: initialData?.id,
+        name: values.name,
+        author: values.author,
+        description: values.description,
+        type: values.type,
+        price: values.price,
+        tags: values.tags || '',
+        schema: schemaObject,
+      };
+
+      const result = await upsertDataPack(dataToSave, imageBuffer);
+      if (result.success) {
+        toast({ title: 'Success!', description: result.message });
+        router.push('/admin/datapacks');
+        router.refresh();
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.error || result.message });
+      }
+    });
+  };
+
+  const handleDelete = () => {
+    if (!initialData?.id) return;
+    startTransition(async () => {
+      const result = await deleteDataPack(initialData.id);
+      if (result.success) {
+        toast({ title: 'Success!', description: result.message });
+        router.push('/admin/datapacks');
+        router.refresh();
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+      }
+    });
+  };
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)}>
+      <Tabs defaultValue="metadata">
+        <div className="flex items-center justify-between mb-4">
+            <TabsList>
+                <TabsTrigger value="metadata">Metadata</TabsTrigger>
+                <TabsTrigger value="schema">Schema Editor</TabsTrigger>
+            </TabsList>
+             <div className="flex items-center gap-2">
+                {initialData && (
+                     <AlertDialog>
+                         <AlertDialogTrigger asChild>
+                            <Button type="button" variant="destructive" disabled={isPending}>Delete</Button>
+                         </AlertDialogTrigger>
+                         <AlertDialogContent>
+                             <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
+                             <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
+                             <AlertDialogFooter>
+                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                 <AlertDialogAction onClick={handleDelete} disabled={isPending}>
+                                     {isPending && <Loader2 className="animate-spin mr-2"/>}
+                                     Continue
+                                 </AlertDialogAction>
+                             </AlertDialogFooter>
+                         </AlertDialogContent>
+                     </AlertDialog>
+                 )}
+                <Button type="submit" disabled={isPending}>
+                    {isPending && <Loader2 className="animate-spin mr-2" />}
+                    {initialData ? 'Save Changes' : 'Create DataPack'}
                 </Button>
-            </CardFooter>
-        </Card>
-    )
-}
-
-function PackSelector({ packs, onSelect, selectedPackId }: {
-    packs: DataPack[],
-    selectedPackId: string | null,
-    onSelect: (pack: DataPack) => void
-}) {
-    return (
-        <div className="flex flex-col h-full">
-            <h3 className="font-headline text-xl mb-4 text-center">Your Installed Packs</h3>
-            <ScrollArea className="flex-grow pr-4 -mr-4">
-                <div className="space-y-2">
-                    {packs.map(pack => (
-                        <button
-                            key={pack.id}
-                            onClick={() => onSelect(pack)}
-                            className={cn(
-                                "w-full text-left p-2 rounded-lg border-2 transition-all duration-200 flex items-center gap-3",
-                                selectedPackId === pack.id
-                                    ? "bg-primary/20 border-primary shadow-md"
-                                    : "bg-muted/50 border-transparent hover:bg-muted"
-                            )}
-                        >
-                             <div className="relative w-16 h-12 rounded-md overflow-hidden shrink-0 bg-muted">
-                                <Image src={pack.coverImageUrl || 'https://placehold.co/200x150.png'} alt={pack.name} fill className="object-cover" data-ai-hint="datapack cover image" />
-                            </div>
-                            <div>
-                                <p className="font-semibold text-card-foreground">{pack.name}</p>
-                                <p className="text-xs text-muted-foreground">by {pack.author}</p>
-                            </div>
-                        </button>
-                    ))}
-                </div>
-            </ScrollArea>
+            </div>
         </div>
-    )
-}
 
+        <TabsContent value="metadata">
+          <Card>
+            <CardHeader><CardTitle>DataPack Metadata</CardTitle><CardDescription>Information about the pack shown in the public catalog.</CardDescription></CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div><Label>Name</Label><Input {...form.register('name')} />{form.formState.errors.name && <p className="text-destructive text-sm mt-1">{form.formState.errors.name.message}</p>}</div>
+                <div><Label>Author</Label><Input {...form.register('author')} />{form.formState.errors.author && <p className="text-destructive text-sm mt-1">{form.formState.errors.author.message}</p>}</div>
+                <div><Label>Description</Label><Textarea {...form.register('description')} />{form.formState.errors.description && <p className="text-destructive text-sm mt-1">{form.formState.errors.description.message}</p>}</div>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Type</Label><Select onValueChange={(v) => form.setValue('type', v as any)} value={form.watch('type')}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="free">Free</SelectItem><SelectItem value="premium">Premium</SelectItem><SelectItem value="temporal">Temporal</SelectItem></SelectContent></Select></div>
+                  <div><Label>Price</Label><Input type="number" {...form.register('price', { valueAsNumber: true })} /></div>
+                </div>
+                <div><Label>Tags (comma-separated)</Label><Input {...form.register('tags')} /></div>
+                <div><Label>Cover Image</Label><Input type="file" accept="image/png" onChange={e => setCoverImage(e.target.files?.[0] || null)} /></div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGenerated: (prompt: string, packId: string) => void }) {
-    const { control, handleSubmit, watch, setValue } = useForm();
-    const formValues = watch();
-
-    useEffect(() => {
-        for (const slot of pack.schema.slots) {
-            if (slot.defaultOption) {
-                setValue(slot.id, slot.defaultOption, { shouldValidate: true });
-            }
-        }
-    }, [pack, setValue]);
-
-    const disabledOptions = useMemo(() => {
-        const disabled: Record<string, string[]> = {};
-        for (const slotId in formValues) {
-            const selectedOptionValue = formValues[slotId];
-            if (!selectedOptionValue) continue;
-            const slot = pack.schema.slots.find(s => s.id === slotId);
-            const selectedOption = slot?.options.find(o => o.value === selectedOptionValue);
-            if (selectedOption?.exclusions) {
-                for (const exclusion of selectedOption.exclusions) {
-                    if (!disabled[exclusion.slotId]) disabled[exclusion.slotId] = [];
-                    disabled[exclusion.slotId].push(...exclusion.optionValues);
-                }
-            }
-        }
-        return disabled;
-    }, [formValues, pack]);
-
-    const onSubmit = (data: any) => {
-        let prompt = pack.schema.promptTemplate;
-        for (const key in data) {
-            prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), data[key] || '');
-        }
-        prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/(\s*,\s*)+/g, ', ').replace(/^,|,$/g, '').trim();
-        onPromptGenerated(prompt, pack.id);
-    };
-
-    return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
-                    <Wand2 className="h-6 w-6 text-primary" /> {pack.name} Wizard
-                </DialogTitle>
-                <DialogDescription>Each selection will add more detail to your final prompt.</DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="max-h-[50vh] pr-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
-                    {pack.schema.slots.map(slot => (
-                        <div key={slot.id}>
-                            <Label>{slot.label}</Label>
-                            <Controller
-                                name={slot.id}
-                                control={control}
-                                defaultValue={slot.defaultOption || ""}
-                                render={({ field }) => (
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <SelectTrigger><SelectValue placeholder={slot.placeholder || "Select..."} /></SelectTrigger>
-                                        <SelectContent>
-                                            {slot.options.map((option: Option) => (
-                                                <SelectItem
-                                                    key={option.value}
-                                                    value={option.value}
-                                                    disabled={disabledOptions[slot.id]?.includes(option.value)}
-                                                >
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
+        <TabsContent value="schema">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Schema Content</CardTitle>
+                    <CardDescription>Define the building blocks of your prompt. The content should be in YAML format for fields that represent lists of options (like race, class) or just a string for the template.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {fields.map((field, index) => (
+                        <div key={field.id} className="grid grid-cols-12 gap-4 p-4 border rounded-lg bg-muted/50">
+                            <div className="col-span-3 space-y-2">
+                                <Label>Schema Key</Label>
+                                <Input {...form.register(`schema.${index}.key`)} placeholder="e.g., prompt_template, race, class"/>
+                            </div>
+                            <div className="col-span-8 space-y-2">
+                                <Label>Content (String or YAML)</Label>
+                                <Controller
+                                    control={form.control}
+                                    name={`schema.${index}.value`}
+                                    render={({ field }) => (
+                                        <Textarea 
+                                            {...field}
+                                            placeholder="- label: Human\n  value: human"
+                                            className="font-mono text-xs min-h-[150px]"
+                                        />
+                                    )}
+                                />
+                            </div>
+                            <div className="col-span-1 flex items-end">
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    onClick={() => remove(index)}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            </div>
                         </div>
                     ))}
-                </div>
-            </ScrollArea>
-            <div className="flex justify-end items-center gap-2 pt-4">
-                <Button type="submit" size="lg" className="font-headline text-lg">
-                    Generate Prompt <ArrowRight className="ml-2" />
-                </Button>
-            </div>
-        </form>
-    );
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => append({ key: '', value: '' })}
+                    >
+                        <PlusCircle className="mr-2" /> Add Schema Entry
+                    </Button>
+                </CardContent>
+            </Card>
+        </TabsContent>
+      </Tabs>
+    </form>
+  );
 }
-
-export function DataPackSelectorModal({ isOpen, onClose, onPromptGenerated }: { isOpen: boolean, onClose: () => void, onPromptGenerated: (prompt: string, packId: string) => void }) {
-    const [packs, setPacks] = useState<DataPack[]>([]);
-    const [selectedPack, setSelectedPack] = useState<DataPack | null>(null);
-    const [wizardPack, setWizardPack] = useState<DataPack | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (!isOpen) {
-            setWizardPack(null);
-            setSelectedPack(null);
-            return;
-        }
-
-        async function fetchPacks() {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const installedPacks = await getInstalledDataPacks();
-                setPacks(installedPacks);
-                if (installedPacks.length > 0) {
-                    setSelectedPack(installedPacks[0]);
-                }
-            } catch (err: any) {
-                setError("Could not load your DataPacks. Please try again.");
-            } finally {
-                setIsLoading(false);
-            }
-        }
-        fetchPacks();
-    }, [isOpen]);
-
-    const renderContent = () => {
-        if (isLoading) {
-            return (
-                <div className="flex flex-col items-center justify-center h-96">
-                    <DialogHeader className="text-center mb-4"><DialogTitle>Loading Your DataPacks...</DialogTitle></DialogHeader>
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-            )
-        }
-        if (error) {
-            return (
-                <Alert variant="destructive"><X className="h-4 w-4" /><AlertTitle>Could not load packs</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
-            );
-        }
-
-        if (wizardPack) {
-            return <WizardForm pack={wizardPack} onPromptGenerated={onPromptGenerated} />;
-        }
-
-        if (packs.length > 0) {
-            return (
-                <>
-                    <DialogHeader>
-                        <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
-                        <DialogDescription>Choose one of your installed packs to start building a prompt.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4 min-h-[60vh]">
-                        <div className="md:col-span-2">
-                            <PackPreview pack={selectedPack} onChoose={() => setWizardPack(selectedPack)} />
-                        </div>
-                        <div className="md:col-span-1">
-                            <PackSelector
-                                packs={packs}
-                                onSelect={setSelectedPack}
-                                selectedPackId={selectedPack?.id || null}
-                            />
-                        </div>
-                    </div>
-                </>
-            );
-        }
-
-        return (
-            <>
-                <DialogHeader><DialogTitle>No DataPacks Found</DialogTitle></DialogHeader>
-                <Alert>
-                    <Package className="h-4 w-4" />
-                    <AlertTitle>No DataPacks Installed</AlertTitle>
-                    <AlertDescription>
-                        You haven't installed any DataPacks yet. Visit the catalog to add some to your collection.
-                        <Button asChild variant="link" className="p-0 h-auto ml-1"><Link href="/datapacks">Go to Catalog</Link></Button>
-                    </AlertDescription>
-                </Alert>
-            </>
-        )
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-4xl">
-                {renderContent()}
-            </DialogContent>
-        </Dialog>
-    )
-}
-
-    
