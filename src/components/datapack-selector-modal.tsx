@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import Link from 'next/link';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Input } from './ui/input';
 
 
 function PackPreview({ pack, onChoose }: { pack: DataPack | null, onChoose: () => void }) {
@@ -99,18 +101,14 @@ function PackSelector({ packs, onSelect, selectedPackId }: {
 
 
 function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPromptGenerated: (prompt: string, packId: string, packName: string) => void, onBack: () => void }) {
-    const { control, handleSubmit, watch } = useForm();
+    const { control, handleSubmit, watch, setValue } = useForm();
     const formValues = watch();
 
     const wizardSlots = useMemo(() => {
-        const schema = pack.schema as any; // Cast to any to handle both schema types
-        
-        // New structure with a 'slots' array
+        const schema = pack.schema as any;
         if (schema && Array.isArray(schema.slots)) {
             return schema.slots;
         }
-        
-        // Legacy structure with YAML content as strings
         return Object.entries(schema || {})
             .filter(([key]) => key !== 'prompt_template' && key !== 'promptTemplate')
             .map(([key, yamlContent]) => {
@@ -148,7 +146,6 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
     const onSubmit = (data: any) => {
         const schema = pack.schema as any;
         let prompt = schema.prompt_template || schema.promptTemplate || '';
-        
         if (!prompt) {
             console.error("Prompt template is missing in the datapack schema.");
             return;
@@ -159,14 +156,23 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), data[key]);
             }
         }
-        
         prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/(\s*,\s*)+/g, ', ').replace(/^,|,$/g, '').trim();
-        
         onPromptGenerated(prompt, pack.id, pack.name);
     };
+    
+    // Set default values on initial render
+    useEffect(() => {
+        wizardSlots.forEach(slot => {
+            if (slot.defaultOption) {
+                setValue(slot.id, slot.defaultOption);
+            } else if (slot.options && slot.options.length > 0) {
+                 setValue(slot.id, slot.options[0].value);
+            }
+        });
+    }, [wizardSlots, setValue]);
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full max-h-[80vh]">
             <DialogHeader>
                 <div className="flex items-center gap-4">
                      <Button type="button" variant="ghost" size="icon" className="sm:hidden" onClick={onBack}>
@@ -178,41 +184,72 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                 </div>
                 <DialogDescription>Each selection will add more detail to your final prompt.</DialogDescription>
             </DialogHeader>
-            <ScrollArea className="max-h-[50vh] pr-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
+            <ScrollArea className="flex-grow my-4 pr-3 -mr-3">
+                <Accordion type="multiple" className="w-full space-y-2">
                     {wizardSlots.map(slot => {
                         if (!slot) return null;
-                        const defaultOpt = slot.defaultOption || slot.options?.[0]?.value || "";
+                        
+                        // Handle text input type
+                        if (slot.type === 'text') {
+                             return (
+                                 <div key={slot.id} className="space-y-2">
+                                     <Label>{slot.label}</Label>
+                                     <Controller
+                                         name={slot.id}
+                                         control={control}
+                                         defaultValue=""
+                                         render={({ field }) => <Input {...field} placeholder={slot.placeholder} />}
+                                     />
+                                 </div>
+                             );
+                        }
+
+                        // Handle select/chip type
+                        const selectedValue = formValues[slot.id];
+                        const selectedLabel = slot.options?.find(o => o.value === selectedValue)?.label || 'None';
+
                         return (
-                            <div key={slot.id}>
-                                <Label>{slot.label}</Label>
-                                <Controller
-                                    name={slot.id}
-                                    control={control}
-                                    defaultValue={defaultOpt}
-                                    render={({ field: controllerField }) => (
-                                        <Select onValueChange={controllerField.onChange} value={controllerField.value}>
-                                            <SelectTrigger><SelectValue placeholder={slot.placeholder} /></SelectTrigger>
-                                            <SelectContent>
-                                                {slot.options?.map((option: Option) => (
-                                                    <SelectItem
-                                                        key={option.value}
-                                                        value={option.value}
-                                                        disabled={disabledOptions.get(slot.id)?.has(option.value)}
-                                                    >
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    )}
-                                />
-                            </div>
+                            <AccordionItem key={slot.id} value={slot.id}>
+                                <AccordionTrigger>
+                                    <div>
+                                        <div className="text-sm font-semibold">{slot.label}</div>
+                                        <div className="text-xs text-primary font-medium">{selectedLabel}</div>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    <div className="flex flex-wrap gap-2 pt-2">
+                                        <Controller
+                                            name={slot.id}
+                                            control={control}
+                                            render={({ field }) => (
+                                                <>
+                                                 {slot.options?.map((option: Option) => {
+                                                    const isDisabled = disabledOptions.get(slot.id)?.has(option.value);
+                                                    return (
+                                                         <Button
+                                                            key={option.value}
+                                                            type="button"
+                                                            variant={field.value === option.value ? 'default' : 'secondary'}
+                                                            size="sm"
+                                                            onClick={() => !isDisabled && field.onChange(option.value)}
+                                                            disabled={isDisabled}
+                                                            className="rounded-full"
+                                                        >
+                                                            {option.label}
+                                                        </Button>
+                                                    );
+                                                 })}
+                                                </>
+                                            )}
+                                        />
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
                         )
                     })}
-                </div>
+                </Accordion>
             </ScrollArea>
-            <div className="flex justify-end items-center gap-2 pt-4">
+            <div className="flex justify-end items-center gap-2 pt-4 border-t mt-auto">
                 <Button type="submit" size="lg" className="font-headline text-lg">
                     Generate Prompt <ArrowRight className="ml-2" />
                 </Button>
@@ -257,8 +294,6 @@ export function DataPackSelectorModal({
     
     const handleSelectPack = (pack: DataPack) => {
         setSelectedPack(pack);
-        // On mobile, automatically switch to the preview view.
-        // On desktop, this will just update the selection but stay on the same screen.
         setView('preview'); 
     };
 
@@ -300,15 +335,12 @@ export function DataPackSelectorModal({
         return (
             <>
                 <DialogHeader className="sm:hidden">
-                     {/* Mobile header can show which step we're on */}
                      <DialogTitle>{view === 'list' ? '1. Select Pack' : '2. Confirm Pack'}</DialogTitle>
                 </DialogHeader>
                 <DialogHeader className="hidden sm:block">
                     <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
                     <DialogDescription>Choose one of your installed packs to start building a prompt.</DialogDescription>
                 </DialogHeader>
-
-                {/* Mobile View: Show only one component at a time */}
                 <div className="sm:hidden mt-4">
                     {view === 'list' ? (
                          <PackSelector
@@ -320,8 +352,6 @@ export function DataPackSelectorModal({
                          <PackPreview pack={selectedPack} onChoose={() => {if (selectedPack) setWizardPack(selectedPack)}} />
                     )}
                 </div>
-
-                {/* Desktop View: Show both side-by-side */}
                 <div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-8 pt-4 min-h-[60vh]">
                     <div className="md:col-span-2">
                         <PackPreview pack={selectedPack} onChoose={() => {if (selectedPack) setWizardPack(selectedPack)}} />
@@ -334,8 +364,6 @@ export function DataPackSelectorModal({
                         />
                     </div>
                 </div>
-                
-                 {/* Back button for mobile view */}
                 {view === 'preview' && (
                     <div className="sm:hidden mt-4">
                         <Button variant="outline" className="w-full" onClick={() => setView('list')}>
@@ -349,7 +377,7 @@ export function DataPackSelectorModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-4xl">
+            <DialogContent className="sm:max-w-4xl h-full sm:h-auto">
                 {renderContent()}
             </DialogContent>
         </Dialog>
