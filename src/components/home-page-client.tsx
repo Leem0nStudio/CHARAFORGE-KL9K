@@ -37,11 +37,11 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
 
   return (
     <div className="flex flex-col min-h-screen">
-        <main className="flex-1 space-y-24 md:space-y-32">
+        <div className="flex-1 space-y-20 md:space-y-28">
             
             {/* Hero Section */}
             {newestPack && (
-                <section className="w-full pt-12 md:pt-24 lg:pt-32 relative overflow-hidden bg-gradient-to-b from-background to-primary/10">
+                <section className="w-full pt-8 md:pt-12 lg:pt-16 relative overflow-hidden bg-gradient-to-b from-background to-primary/5">
                     <div className="container grid gap-8 md:grid-cols-2 items-center">
                         <motion.div 
                             className="space-y-4 text-center md:text-left"
@@ -191,7 +191,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
                     ))}
                 </div>
             </section>
-        </main>
+        </div>
     </div>
   );
 }
