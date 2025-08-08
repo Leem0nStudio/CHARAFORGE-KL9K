@@ -41,7 +41,7 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                     alt={pack.name}
                     width={600}
                     height={400}
-                    className="w-full rounded-lg shadow-lg object-cover"
+                    className="w-full rounded-lg shadow-lg object-contain"
                     data-ai-hint="datapack cover image"
                 />
             </div>
@@ -72,12 +72,12 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                         {communityCreations.map(creation => (
                             <Link href={`/characters/${creation.id}`} key={creation.id} className="group">
                                 <Card className="overflow-hidden">
-                                     <div className="relative aspect-square">
+                                     <div className="relative aspect-square bg-muted/20">
                                         <Image 
                                             src={creation.imageUrl} 
                                             alt={creation.name} 
                                             fill
-                                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                            className="object-contain transition-transform duration-300 group-hover:scale-105"
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                         <div className="absolute bottom-2 left-2 text-white">

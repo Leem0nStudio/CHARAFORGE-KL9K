@@ -74,14 +74,15 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
                             transition={{ duration: 0.6, delay: 0.2 }}
                         >
                             <Link href={`/datapacks/${newestPack.id}`}>
+                                <div className="relative aspect-square">
                                 <Image
                                     src={newestPack.coverImageUrl || 'https://placehold.co/720x720.png'}
                                     alt={newestPack.name}
-                                    width={720}
-                                    height={720}
-                                    className="rounded-xl shadow-2xl aspect-square object-cover transition-transform hover:scale-105 duration-300"
+                                    fill
+                                    className="rounded-xl shadow-2xl object-contain transition-transform hover:scale-105 duration-300"
                                     data-ai-hint="datapack cover image"
                                 />
+                                </div>
                             </Link>
                         </motion.div>
                     </div>
@@ -102,8 +103,8 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
                             <Card className="overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full flex flex-col">
                                 <Link href={`/datapacks/${pack.id}`} className="flex flex-col h-full">
                                     <CardHeader className="p-0">
-                                        <div className="relative aspect-square">
-                                            <Image src={pack.coverImageUrl || 'https://placehold.co/600x600.png'} alt={pack.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" data-ai-hint="datapack cover image" />
+                                        <div className="relative aspect-square bg-muted/20">
+                                            <Image src={pack.coverImageUrl || 'https://placehold.co/600x600.png'} alt={pack.name} fill className="object-contain transition-transform duration-300 group-hover:scale-105 p-2" data-ai-hint="datapack cover image" />
                                             <Badge className={cn("absolute top-2 right-2 font-bold", pack.type === 'premium' && "bg-yellow-500 text-black", pack.type === 'free' && "bg-green-500")}>{pack.type}</Badge>
                                         </div>
                                     </CardHeader>
@@ -139,13 +140,14 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
                          >
                             <Link href={`/characters/${creation.id}`}>
                                 <Card className="overflow-hidden group relative">
+                                    <div className="aspect-square relative w-full bg-muted/20">
                                      <Image
                                         src={creation.imageUrl}
                                         alt={creation.name}
-                                        width={500}
-                                        height={500}
-                                        className="aspect-square object-cover w-full transition-transform duration-300 group-hover:scale-110"
+                                        fill
+                                        className="object-contain w-full transition-transform duration-300 group-hover:scale-110"
                                      />
+                                     </div>
                                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                                      <div className="absolute bottom-0 left-0 p-4 text-white">
                                         <h3 className="font-bold text-lg leading-tight">{creation.name}</h3>

@@ -214,7 +214,9 @@ function ImagesTab({ character }: { character: Character }) {
        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {fields.map((field, index) => (
              <Card key={field.id} className="group relative overflow-hidden">
-                <Image src={field.url} alt={`Character image ${index + 1}`} width={200} height={200} className="w-full aspect-square object-cover" />
+                 <div className="relative w-full aspect-square bg-muted/20">
+                    <Image src={field.url} alt={`Character image ${index + 1}`} fill className="w-full object-contain" />
+                 </div>
                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2 gap-1">
                     <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary(field.url)} disabled={primaryImageUrl === field.url}>
                         <Star className="mr-2" /> {primaryImageUrl === field.url ? 'Primary' : 'Set Primary'}

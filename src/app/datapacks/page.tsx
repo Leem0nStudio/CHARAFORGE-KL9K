@@ -27,13 +27,13 @@ export default async function DataPacksPage() {
                         <Card key={pack.id} className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
                            <Link href={`/datapacks/${pack.id}`} className="flex flex-col h-full">
                                 <CardHeader className="p-0">
-                                    <div className="relative aspect-square">
+                                    <div className="relative aspect-square bg-muted/20">
                                         <Image
                                             src={pack.coverImageUrl || 'https://placehold.co/600x600.png'}
                                             alt={pack.name}
                                             fill
                                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                            className="object-contain transition-transform duration-300 group-hover:scale-105"
                                             data-ai-hint="datapack cover image"
                                         />
                                         <Badge className={cn(

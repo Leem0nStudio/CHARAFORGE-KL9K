@@ -121,16 +121,16 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
       >
         <Card className="h-full bg-card/50 border-0 shadow-none">
           <CardContent className="p-0">
-            <div className="relative aspect-video sm:aspect-[16/9] w-full rounded-t-lg overflow-hidden bg-muted">
+            <div className="relative aspect-square w-full rounded-t-lg overflow-hidden bg-muted/20">
                 <Image
                     key={character.imageUrl}
                     src={character.imageUrl}
                     alt={character.name}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                     priority
                 />
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none" />
                  <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 text-white">
                     <h2 className="text-2xl sm:text-4xl font-extrabold font-headline tracking-wider drop-shadow-lg">{character.name}</h2>
                     <div className="flex items-center gap-4 text-base sm:text-lg text-primary-foreground/80 drop-shadow-md">
@@ -288,8 +288,8 @@ export default function CharactersPage() {
                                       )}
                                   >
                                       <div className="flex items-center gap-4">
-                                          <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted">
-                                              <Image src={character.imageUrl} alt={character.name} fill className="object-cover" />
+                                          <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted/20">
+                                              <Image src={character.imageUrl} alt={character.name} fill className="object-contain" />
                                           </div>
                                           <div>
                                               <p className="font-semibold text-card-foreground">{character.name}</p>

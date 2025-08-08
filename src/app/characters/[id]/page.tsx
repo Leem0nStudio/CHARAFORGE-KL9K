@@ -72,13 +72,14 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                 <div className="lg:col-span-1">
                     <Card className="sticky top-20">
                          <CardHeader className="p-0">
-                            <Image
-                                src={character.imageUrl}
-                                alt={character.name}
-                                width={720}
-                                height={720}
-                                className="w-full aspect-square object-cover rounded-t-lg"
-                            />
+                            <div className="w-full aspect-square relative bg-muted/20">
+                                <Image
+                                    src={character.imageUrl}
+                                    alt={character.name}
+                                    fill
+                                    className="object-contain rounded-t-lg"
+                                />
+                            </div>
                         </CardHeader>
                         <CardContent className="p-6">
                             <h2 className="text-2xl font-bold font-headline">{character.name}</h2>

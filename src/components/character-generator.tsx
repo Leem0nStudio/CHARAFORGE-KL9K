@@ -369,12 +369,12 @@ export function CharacterGenerator() {
                      {isGeneratingImage && <Skeleton className="w-full aspect-square rounded-lg" />}
                      
                      {!isGeneratingImage && characterData.imageUrl && (
-                        <div className="aspect-square relative rounded-lg overflow-hidden border-2 border-green-500 shadow-lg">
+                        <div className="aspect-square relative rounded-lg overflow-hidden border-2 border-green-500 shadow-lg bg-muted/20 p-1">
                             <Image
                                 src={characterData.imageUrl}
                                 alt="Generated character portrait"
                                 fill
-                                className="object-cover"
+                                className="object-contain"
                             />
                              <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-green-600 text-white text-xs font-bold py-1 px-2 rounded-full shadow">
                                 <Check className="w-3 h-3"/>

@@ -35,7 +35,7 @@ function PackPreview({ pack, onChoose }: { pack: DataPack | null, onChoose: () =
     return (
         <Card className="flex flex-col h-full">
             <CardHeader className="p-0">
-                 <div className="relative rounded-t-lg overflow-hidden bg-black/20 max-h-[400px]">
+                 <div className="relative rounded-t-lg overflow-hidden bg-muted/20 max-h-[400px]">
                     <Image
                         src={pack.coverImageUrl || 'https://placehold.co/600x400.png'}
                         alt={pack.name}
@@ -84,8 +84,8 @@ function PackSelector({ packs, onSelect, selectedPackId }: {
                                     : "bg-muted/50 border-transparent hover:bg-muted"
                             )}
                         >
-                             <div className="relative w-16 h-12 rounded-md overflow-hidden shrink-0 bg-muted">
-                                <Image src={pack.coverImageUrl || 'https://placehold.co/200x150.png'} alt={pack.name} fill className="object-cover" data-ai-hint="datapack cover image" />
+                             <div className="relative w-16 h-12 rounded-md overflow-hidden shrink-0 bg-muted/20">
+                                <Image src={pack.coverImageUrl || 'https://placehold.co/200x150.png'} alt={pack.name} fill className="object-contain" data-ai-hint="datapack cover image" />
                             </div>
                             <div>
                                 <p className="font-semibold text-card-foreground">{pack.name}</p>
@@ -383,5 +383,3 @@ export function DataPackSelectorModal({
         </Dialog>
     )
 }
-
-    
