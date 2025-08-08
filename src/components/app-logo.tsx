@@ -1,6 +1,4 @@
 
-'use server';
-
 import { cn } from '@/lib/utils';
 
 /**
