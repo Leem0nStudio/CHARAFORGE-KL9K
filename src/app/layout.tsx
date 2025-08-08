@@ -7,7 +7,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
-import { Exo_2, Grenze_Gotisch, Squada_One } from 'next/font/google';
+import { Exo_2, Grenze_Gotisch, Rowdies } from 'next/font/google';
 
 const exo2 = Exo_2({
   subsets: ['latin'],
@@ -21,9 +21,9 @@ const grenzeGotisch = Grenze_Gotisch({
   variable: '--font-headline',
 });
 
-const squadaOne = Squada_One({
+const rowdies = Rowdies({
     subsets: ['latin'],
-    weight: '400',
+    weight: '700',
     variable: '--font-logo',
 });
 
@@ -40,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('min-h-screen bg-background font-body antialiased', exo2.variable, grenzeGotisch.variable, squadaOne.variable)}>
+      <body className={cn('min-h-screen bg-background font-body antialiased', exo2.variable, grenzeGotisch.variable, rowdies.variable)}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
