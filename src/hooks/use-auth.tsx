@@ -14,7 +14,32 @@ import { User, onIdTokenChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData, Timestamp } from 'firebase/firestore';
 import { getFirebaseClient } from '@/lib/firebase/client';
 import type { UserProfile } from '@/types/user';
-import { AppLogo } from '@/components/app-logo';
+import { cn } from '@/lib/utils';
+
+// Define the AnvilIcon directly here for the loading state.
+// It's a simple, sychronous component safe for client-side use.
+function AnvilIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={cn("h-6 w-6", className)}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="anvilGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--accent))" />
+          <stop offset="100%" stopColor="hsl(var(--primary))" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M4 6L2 8V11H4V8H6V6H4ZM7 5V8H5V11H7V14H9V5H7ZM10 4V14H12V4H10ZM13 5V14H15V5H13ZM16 6V8H18V11H20L22 8V6H16ZM5 16V18H7V21H17V18H19V16H5Z"
+        fill="url(#anvilGradient)"
+      />
+    </svg>
+  );
+}
+
 
 export interface AuthContextType {
   authUser: User | null; // The original Firebase Auth User object
@@ -147,7 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen w-full bg-background">
-         <AppLogo className="animate-pulse-glow" iconClassName="w-24 h-24" />
+         <AnvilIcon className="w-24 h-24 animate-pulse-glow" />
          <p className="mt-4 text-muted-foreground font-headline tracking-wider animate-subtle-pulse">FORGING SESSION...</p>
       </div>
     );
@@ -167,3 +192,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export { AnvilIcon };

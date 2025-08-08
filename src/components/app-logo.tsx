@@ -1,4 +1,6 @@
 
+'use client';
+
 import { cn } from '@/lib/utils';
 
 /**
@@ -30,28 +32,18 @@ export function AnvilIcon({ className }: { className?: string }) {
 
 /**
  * A reusable server component that displays the application logo.
- * In the future, this will fetch the user-uploaded logo. For now, it
- * falls back to the default AnvilIcon.
+ * It falls back to the default AnvilIcon.
  * @param className - Optional classes to apply to the container.
  * @param iconClassName - Optional classes to apply to the icon/image itself.
  */
-export async function AppLogo({ className, iconClassName }: { className?: string, iconClassName?: string }) {
-    // Placeholder for fetching the dynamic logo URL.
-    const logoUrl = null;
-
+export function AppLogo({ className, iconClassName }: { className?: string, iconClassName?: string }) {
+    // For now, this component only returns the default icon.
+    // The logic to fetch a dynamic logo will be added separately to avoid architectural issues.
     return (
         <div className={className}>
-            {logoUrl ? (
-                <img 
-                    src={logoUrl} 
-                    alt="CharaForge Logo" 
-                    className={cn("h-7 w-7 sm:h-10 sm:w-10", iconClassName)}
-                />
-            ) : (
-                <AnvilIcon 
-                    className={cn("h-8 w-8", iconClassName)}
-                />
-            )}
+            <AnvilIcon 
+                className={cn("h-8 w-8", iconClassName)}
+            />
         </div>
     );
 }
