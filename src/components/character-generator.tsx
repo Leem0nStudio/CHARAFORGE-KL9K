@@ -32,9 +32,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { generateCharacterBio } from "@/ai/flows/generate-character-bio";
 import { generateCharacterImage } from "@/ai/flows/generate-character-image";
 import { saveCharacter } from "@/ai/flows/save-character";
+import { getInstalledDataPacks } from "@/app/actions/datapacks";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { DataPackSelectorModal } from "./datapack-selector-modal";
+import { Badge } from "./ui/badge";
+import type { DataPack } from "@/types/datapack";
 
 const generationFormSchema = z.object({
   description: z.string().min(20, {
@@ -67,11 +70,32 @@ export function CharacterGenerator() {
   const [bioError, setBioError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activePackName, setActivePackName] = useState<string | null>(null);
 
   const { toast } = useToast();
   const { authUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const dataPackId = searchParams.get('packId');
+
+
+  useEffect(() => {
+    const fetchPackName = async () => {
+      if (dataPackId) {
+        // We need to fetch the installed packs to find the name from the ID.
+        // This is a lightweight operation.
+        const installedPacks = await getInstalledDataPacks();
+        const pack = installedPacks.find((p: DataPack) => p.id === dataPackId);
+        if (pack) {
+          setActivePackName(pack.name);
+        }
+      } else {
+        setActivePackName(null);
+      }
+    };
+    fetchPackName();
+  }, [dataPackId]);
+
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
     resolver: zodResolver(generationFormSchema),
@@ -80,7 +104,6 @@ export function CharacterGenerator() {
     },
   });
 
-  const dataPackId = searchParams.get('packId');
 
   // Effect to read prompt from URL and set it in the form
   useEffect(() => {
@@ -240,7 +263,15 @@ export function CharacterGenerator() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Character Description</FormLabel>
+                      <div className="flex justify-between items-center">
+                        <FormLabel>Character Description</FormLabel>
+                        {activePackName && (
+                          <Badge variant="secondary" className="flex items-center gap-1.5">
+                            <Package className="h-3 w-3" />
+                            {activePackName}
+                          </Badge>
+                        )}
+                      </div>
                       <FormControl>
                         <Textarea
                           placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder. They are haunted by a past betrayal..."
