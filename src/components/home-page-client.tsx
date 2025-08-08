@@ -9,7 +9,7 @@ import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
 import { motion } from 'framer-motion';
 import useEmblaCarousel from 'embla-carousel-react';
-import { Download, Heart, Swords as SwordsIcon } from 'lucide-react';
+import { Download, Heart, Swords } from 'lucide-react';
 
 
 type HomePageClientProps = {
@@ -102,7 +102,7 @@ export function HomePageClient({ featuredCreations, topCreators }: HomePageClien
                                 <div className="flex justify-around">
                                     <div className="text-center">
                                         <p className="font-bold text-lg">{creator.stats?.charactersCreated || 0}</p>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><SwordsIcon className="h-3 w-3" /> Creations</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Swords className="h-3 w-3" /> Creations</p>
                                     </div>
                                     <div className="text-center">
                                         <p className="font-bold text-lg">{creator.stats?.totalLikes || 0}</p>
