@@ -7,13 +7,23 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { upsertDataPack, deleteDataPack } from '@/app/actions/datapacks';
+import { generateDataPackSchema } from '@/ai/flows/generate-datapack-schema';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Wand2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +39,62 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DataPack, UpsertDataPack } from '@/types/datapack';
 import * as yaml from 'js-yaml';
+
+// #region AI Generator Dialog
+function AiGeneratorDialog({ onSchemaGenerated }: { onSchemaGenerated: (schema: any) => void }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isGenerating, startTransition] = useTransition();
+    const [concept, setConcept] = useState('');
+    const { toast } = useToast();
+
+    const handleGenerate = () => {
+        if (!concept) return;
+        startTransition(async () => {
+            try {
+                const result = await generateDataPackSchema({ concept });
+                onSchemaGenerated(result);
+                toast({ title: "Schema Generated!", description: "The AI has populated the schema editor. Please review the results."});
+                setIsOpen(false);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "An unknown error occurred.";
+                toast({ variant: 'destructive', title: 'Generation Failed', description: message });
+            }
+        });
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button type="button" variant="outline"><Wand2 className="mr-2" /> AI Assistant</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>DataPack AI Assistant</DialogTitle>
+                    <DialogDescription>
+                        Describe the theme or concept for your DataPack, and the AI will generate a complete schema for you.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <Label htmlFor="concept">Concept</Label>
+                    <Input 
+                        id="concept"
+                        value={concept}
+                        onChange={(e) => setConcept(e.target.value)}
+                        placeholder="e.g., Sci-Fi Noir Detectives, Elemental Dragons"
+                    />
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
+                    <Button onClick={handleGenerate} disabled={isGenerating || !concept}>
+                        {isGenerating && <Loader2 className="mr-2 animate-spin" />}
+                        Generate
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+// #endregion
 
 
 // Zod schema for a single schema entry (key-value pair)
@@ -81,10 +147,22 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
     mode: 'onChange',
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "schema",
   });
+  
+  const handleAiSchemaGenerated = (generatedSchema: any) => {
+    const { promptTemplate, slots } = generatedSchema;
+
+    const newSchemaArray = [
+        { key: 'promptTemplate', value: promptTemplate },
+        { key: 'slots', value: yaml.dump(slots) }
+    ];
+    
+    // Replace the entire field array with the new AI-generated schema
+    replace(newSchemaArray);
+  };
 
   const onSubmit = (values: FormValues) => {
     startTransition(async () => {
@@ -200,9 +278,12 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
 
         <TabsContent value="schema">
             <Card>
-                <CardHeader>
-                    <CardTitle>Schema Content</CardTitle>
-                    <CardDescription>Define the building blocks of your prompt. The content should be in YAML format for fields that represent lists of options (like race, class) or just a string for the template.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Schema Content</CardTitle>
+                        <CardDescription>Define the building blocks of your prompt. Use the AI Assistant or edit manually.</CardDescription>
+                    </div>
+                    <AiGeneratorDialog onSchemaGenerated={handleAiSchemaGenerated} />
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {fields.map((field, index) => (
