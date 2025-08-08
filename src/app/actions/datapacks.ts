@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -7,6 +8,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { DataPack, UpsertDataPack } from '@/types/datapack';
 import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
+import type { UserProfile } from '@/types/user';
 
 export type ActionResponse = {
     success: boolean;
@@ -187,7 +189,7 @@ export async function installDataPack(packId: string): Promise<{success: boolean
         const packRef = adminDb.collection('datapacks').doc(packId);
         const userRef = adminDb.collection('users').doc(uid);
 
-        const [packDoc, userDoc] = await Promise.all([packRef.get(), userRef.get()]);
+        const [packDoc, userDoc] = await Promise.all([packRef.get(), userDoc.get()]);
 
         if (!packDoc.exists) {
             return { success: false, message: "This DataPack does not exist." };
@@ -271,4 +273,47 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
     console.error(`Error fetching creations for DataPack ${packId}:`, error);
     return [];
   }
+}
+
+export async function getInstalledDataPacks(): Promise<DataPack[]> {
+    try {
+        const uid = await verifyAndGetUid();
+        if (!adminDb) throw new Error("Database service is not available.");
+
+        const userRef = adminDb.collection('users').doc(uid);
+        const userDoc = await userRef.get();
+
+        if (!userDoc.exists) return [];
+
+        const userProfile = userDoc.data() as UserProfile;
+        const installedPackIds = userProfile.stats?.installedPacks;
+
+        if (!installedPackIds || installedPackIds.length === 0) {
+            return [];
+        }
+
+        const packPromises = installedPackIds.map(packId => 
+            adminDb.collection('datapacks').doc(packId).get()
+        );
+        const packSnapshots = await Promise.all(packPromises);
+
+        const installedPacks = packSnapshots
+            .filter(doc => doc.exists)
+            .map(doc => {
+                 const data = doc.data();
+                 return {
+                    ...data,
+                    id: doc.id,
+                    createdAt: data?.createdAt.toDate(),
+                 } as DataPack
+            });
+
+        return installedPacks;
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+        console.error("Get Installed DataPacks Error:", message);
+        // In case of error (e.g., user not logged in), return an empty array
+        return [];
+    }
 }

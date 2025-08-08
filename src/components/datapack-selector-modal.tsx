@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { useForm, Controller } from 'react-hook-form';
+import yaml from 'js-yaml';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -12,8 +13,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ArrowRight, Wand2, Package, X, Check } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getInstalledDataPacks } from '@/app/profile/actions';
-import type { DataPack, Option } from '@/types/datapack';
+import { getInstalledDataPacks } from '@/app/actions/datapacks';
+import type { DataPack, Option, Slot } from '@/types/datapack';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
@@ -34,15 +35,16 @@ function PackPreview({ pack }: { pack: DataPack | null }) {
     return (
         <Card className="flex flex-col h-full">
             <CardHeader className="p-0">
-                <div className="relative aspect-video rounded-t-lg overflow-hidden">
-                    <Image
+                <div className="relative rounded-t-lg overflow-hidden max-h-[400px]">
+                     <Image
                         src={pack.coverImageUrl || 'https://placehold.co/600x400.png'}
                         alt={pack.name}
-                        fill
-                        className="object-cover"
+                        width={600}
+                        height={400}
+                        className="w-full h-auto object-contain"
                         data-ai-hint="datapack cover image"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
                 </div>
             </CardHeader>
             <CardContent className="p-6 flex-grow flex flex-col">
@@ -102,35 +104,65 @@ function PackSelector({ packs, onSelect, onChoose, selectedPackId }: {
 
 function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGenerated: (prompt: string, packId: string) => void }) {
     const { control, handleSubmit, watch, setValue } = useForm();
-    const formValues = watch();
+
+    const slots: Slot[] = useMemo(() => {
+        // New format: `schema.slots` is an array of objects
+        if (pack.schema.slots && Array.isArray(pack.schema.slots)) {
+            return pack.schema.slots;
+        }
+        
+        // Legacy format: `schema` has YAML strings as properties
+        const legacySlots: Slot[] = [];
+        const { promptTemplate, name, version, ...rest } = pack.schema as any;
+        for (const key in rest) {
+            try {
+                const options = yaml.load(rest[key]) as { label: string, value: string }[];
+                if(Array.isArray(options)) {
+                    legacySlots.push({
+                        id: key,
+                        label: key.charAt(0).toUpperCase() + key.slice(1),
+                        options: options,
+                        placeholder: `Select ${key}...`
+                    });
+                }
+            } catch (e) {
+                console.error(`Could not parse YAML for slot: ${key}`, e);
+            }
+        }
+        return legacySlots;
+
+    }, [pack.schema]);
 
     useEffect(() => {
-        for (const slot of pack.schema.slots) {
+        for (const slot of slots) {
             if (slot.defaultOption) {
                 setValue(slot.id, slot.defaultOption, { shouldValidate: true });
             }
         }
-    }, [pack, setValue]);
+    }, [slots, setValue]);
+
+    const formValues = watch();
 
     const disabledOptions = useMemo(() => {
         const disabled: Record<string, string[]> = {};
         for (const slotId in formValues) {
             const selectedOptionValue = formValues[slotId];
             if (!selectedOptionValue) continue;
-            const slot = pack.schema.slots.find(s => s.id === slotId);
+            
+            const slot = slots.find(s => s.id === slotId);
             const selectedOption = slot?.options.find(o => o.value === selectedOptionValue);
             if (selectedOption?.exclusions) {
                 for (const exclusion of selectedOption.exclusions) {
                     if (!disabled[exclusion.slotId]) disabled[exclusion.slotId] = [];
-                    disabled[exclusion.slotId].push(...exclusion.optionValues);
+                    disabled[exclusion.slotId].push(...(exclusion.optionValues || []));
                 }
             }
         }
         return disabled;
-    }, [formValues, pack]);
+    }, [formValues, slots]);
 
     const onSubmit = (data: any) => {
-        let prompt = pack.schema.promptTemplate;
+        let prompt = (pack.schema.promptTemplate as string) || '';
         for (const key in data) {
             prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), data[key] || '');
         }
@@ -148,7 +180,7 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
             </DialogHeader>
             <ScrollArea className="max-h-[50vh] pr-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
-                    {pack.schema.slots.map(slot => (
+                    {slots.map(slot => (
                         <div key={slot.id}>
                             <Label>{slot.label}</Label>
                             <Controller

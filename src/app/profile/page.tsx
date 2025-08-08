@@ -25,7 +25,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { updateUserProfile, deleteUserAccount, updateUserPreferences, getInstalledDataPacks } from './actions';
+import { updateUserProfile, deleteUserAccount, updateUserPreferences } from './actions';
+import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { Loader2, User, Swords, Heart, Package, Gem, Calendar, Wand2, Upload, Link as LinkIcon, Camera } from 'lucide-react';
 import type { ActionResponse } from './actions';
 import type { UserProfile, UserStats, UserPreferences } from '@/types/user';
