@@ -130,6 +130,7 @@ export async function getDataPacksForAdmin(): Promise<DataPack[]> {
             ...data,
             id: doc.id,
             createdAt: data.createdAt.toDate(),
+            updatedAt: data.updatedAt?.toDate() || null,
         } as DataPack;
     });
 }
@@ -143,10 +144,12 @@ export async function getDataPackForAdmin(packId: string): Promise<DataPack | nu
 
     const data = doc.data() as any;
 
+    // Ensure all timestamp fields are converted to serializable Dates
     return {
         ...data,
         id: doc.id,
-        createdAt: data.createdAt.toDate(),
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate() || null,
     } as DataPack;
 }
 
@@ -175,6 +178,7 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
             id: doc.id,
             ...data,
             createdAt: data.createdAt.toDate(),
+            updatedAt: data.updatedAt?.toDate() || null,
         } as DataPack;
     });
 
@@ -302,6 +306,7 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
                 ...data,
                 id: doc.id,
                 createdAt: data.createdAt.toDate(),
+                updatedAt: data.updatedAt?.toDate() || null,
             } as DataPack
         });
 

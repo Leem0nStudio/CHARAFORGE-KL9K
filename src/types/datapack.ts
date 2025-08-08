@@ -16,6 +16,7 @@ export interface DataPack {
     price: number;
     tags: string[];
     createdAt: Date;
+    updatedAt?: Date | null;
     schema: DataPackSchema | { [key: string]: string }; // Allow both old and new schema for transition
 }
 
@@ -27,7 +28,7 @@ export interface UpsertDataPack {
     type: 'free' | 'premium' | 'temporal';
     price: number;
     tags: string; // Comma-separated tags
-    schema: { [key: string]: string }; // Admin still submits as YAML strings for simplicity.
+    schema: { [key: string]: any }; // Allow any value type for schema
 }
 
 // These types define the structure within the new DataPackSchema.
@@ -46,7 +47,7 @@ export interface Slot {
     id: string;
     label: string;
     type?: 'text' | 'select';
-    options: Option[];
+    options?: Option[];
     defaultOption?: string;
     placeholder?: string;
 }
