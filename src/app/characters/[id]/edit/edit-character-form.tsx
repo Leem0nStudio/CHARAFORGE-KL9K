@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState, useTransition, useCallback } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
@@ -162,10 +162,10 @@ function ImagesTab({ character }: { character: Character }) {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove } = useForm<UpdateImagesFormValues>({
     control: form.control,
     name: "images",
-  });
+  }).control.register("images")._f;
   
   useEffect(() => {
     form.reset({

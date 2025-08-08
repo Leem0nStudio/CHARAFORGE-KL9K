@@ -34,7 +34,6 @@ import { generateCharacterImage } from "@/ai/flows/generate-character-image";
 import { saveCharacter } from "@/ai/flows/save-character";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import Link from "next/link";
 import { DataPackSelectorModal } from "./datapack-selector-modal";
 
 const generationFormSchema = z.object({

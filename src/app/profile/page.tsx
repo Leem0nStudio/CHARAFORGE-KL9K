@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useTransition, useActionState, useCallback } from 'react';
+import { useEffect, useState, useTransition, useActionState, useCallback, useRef, type ChangeEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -26,8 +26,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { updateUserProfile, deleteUserAccount, updateUserPreferences, getInstalledDataPacks, type ActionResponse } from '@/app/actions/user';
-import { Loader2, User, Swords, Heart, Package, Gem, Calendar, Wand2, Upload, Link as LinkIcon, Camera } from 'lucide-react';
-import type { UserProfile, UserStats, UserPreferences } from '@/types/user';
+import { Loader2, User, Swords, Heart, Package, Gem, Calendar, Wand2, Camera } from 'lucide-react';
+import type { UserProfile, UserPreferences } from '@/types/user';
 import type { DataPack } from '@/types/datapack';
 import { format } from 'date-fns';
 import { PageHeader } from '@/components/page-header';
@@ -37,7 +37,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 // #region Sub-components for each Tab
 
-const StatCard = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) => (
+const StatCard = ({ icon, label, value }: { icon: ReactNode, label: string, value: string | number }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{label}</CardTitle>
@@ -58,7 +58,7 @@ function AvatarUploader({ user }: { user: UserProfile }) {
         setPreview(user.photoURL);
     }, [user.photoURL]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
@@ -109,7 +109,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
   const initialState: ActionResponse = { success: false, message: '' };
   const [state, formAction] = useActionState(updateUserProfile, initialState);
   
-  const formRef = React.useRef<HTMLFormElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   
   useEffect(() => {
     if (state.success) {
@@ -168,11 +168,11 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
   const [preferences, setPreferences] = useState<UserPreferences>(initialPreferences);
   const [isSavingPrefs, startPrefsTransition] = useTransition();
 
-  const handlePreferencesChange = React.useCallback((field: keyof UserPreferences, value: any) => {
+  const handlePreferencesChange = useCallback((field: keyof UserPreferences, value: any) => {
     setPreferences(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const handleNestedPreferencesChange = React.useCallback((parent: 'notifications' | 'privacy', field: string, value: any) => {
+  const handleNestedPreferencesChange = useCallback((parent: 'notifications' | 'privacy', field: string, value: any) => {
     setPreferences(prev => ({
       ...prev,
       [parent]: {
@@ -182,7 +182,7 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
     }));
   }, []);
 
-  const handleSavePreferences = React.useCallback(() => {
+  const handleSavePreferences = useCallback(() => {
     startPrefsTransition(async () => {
       const result = await updateUserPreferences(preferences);
       if (result.success) {
@@ -257,7 +257,7 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
 }
 PreferencesForm.displayName = "PreferencesForm";
 
-function StatsTab({ userStats }: { userStats?: UserStats }) {
+function StatsTab({ userStats }: { userStats?: UserProfile['stats'] }) {
     const memberSince = userStats?.memberSince;
     let memberSinceDate = 'N/A';
     if (memberSince) {
@@ -352,7 +352,7 @@ function SecurityTab() {
   const router = useRouter();
   const [isDeleting, startDeleteTransition] = useTransition();
 
-  const handleDeleteAccount = React.useCallback(async () => {
+  const handleDeleteAccount = useCallback(async () => {
     startDeleteTransition(async () => {
       const result = await deleteUserAccount();
       if (result.success) {
