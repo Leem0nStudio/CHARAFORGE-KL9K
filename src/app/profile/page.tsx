@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useTransition, useActionState, useCallback, useRef, type ChangeEvent, type ReactNode } from 'react';
+import { useEffect, useTransition, useActionState, useRef, type ChangeEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -117,7 +117,7 @@ function ProfileForm({ user }: { user: UserProfile }) {
             if (state.newAvatarUrl) {
                 setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl, avatarUpdatedAt: Date.now() } : null);
             }
-            // Do not reset the form, allow user to see their new name
+            formRef.current?.reset();
         } else {
             toast({ variant: 'destructive', title: 'Update Failed', description: state.message });
         }
@@ -160,11 +160,11 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
   const [preferences, setPreferences] = useState<UserPreferences>(initialPreferences);
   const [isSavingPrefs, startPrefsTransition] = useTransition();
 
-  const handlePreferencesChange = useCallback((field: keyof UserPreferences, value: any) => {
+  const handlePreferencesChange = (field: keyof UserPreferences, value: any) => {
     setPreferences(prev => ({ ...prev, [field]: value }));
-  }, []);
+  };
 
-  const handleNestedPreferencesChange = useCallback((parent: 'notifications' | 'privacy', field: string, value: any) => {
+  const handleNestedPreferencesChange = (parent: 'notifications' | 'privacy', field: string, value: any) => {
     setPreferences(prev => ({
       ...prev,
       [parent]: {
@@ -172,9 +172,9 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
         [field]: value,
       },
     }));
-  }, []);
+  };
 
-  const handleSavePreferences = useCallback(() => {
+  const handleSavePreferences = () => {
     startPrefsTransition(async () => {
       const result = await updateUserPreferences(preferences);
       if (result.success) {
@@ -183,7 +183,7 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
         toast({ variant: 'destructive', title: 'Error', description: result.message });
       }
     });
-  }, [preferences, toast]);
+  };
 
   return (
     <Card>
@@ -344,7 +344,7 @@ function SecurityTab() {
   const router = useRouter();
   const [isDeleting, startDeleteTransition] = useTransition();
 
-  const handleDeleteAccount = useCallback(async () => {
+  const handleDeleteAccount = () => {
     startDeleteTransition(async () => {
       const result = await deleteUserAccount();
       if (result.success) {
@@ -355,7 +355,7 @@ function SecurityTab() {
         toast({ variant: 'destructive', title: 'Error', description: result.message });
       }
     });
-  }, [toast, router]);
+  };
 
   return (
     <div className="space-y-4">
@@ -414,15 +414,13 @@ SecurityTab.displayName = "SecurityTab";
 
 export default function ProfilePage() {
   const { userProfile, loading, setUserProfile } = useAuth(); // Use setUserProfile from context
-  
+  const router = useRouter();
+
   useEffect(() => {
     if (!loading && !userProfile) {
-      // useRouter is a hook, so it must be called here.
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const router = useRouter();
       router.push('/login');
     }
-  }, [userProfile, loading]);
+  }, [userProfile, loading, router]);
   
   if (loading || !userProfile) {
     return (
