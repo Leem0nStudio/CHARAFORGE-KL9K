@@ -4,17 +4,17 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useForm, Controller } from 'react-hook-form';
+import * as yaml from 'js-yaml';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Loader2, ArrowRight, Wand2, Package, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getInstalledDataPacks } from '@/app/actions/user';
-import type { DataPack, Option, Slot } from '@/types/datapack';
+import type { DataPack, Option } from '@/types/datapack';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
@@ -101,86 +101,39 @@ function PackSelector({ packs, onSelect, selectedPackId }: {
 
 
 function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGenerated: (prompt: string, packId: string) => void }) {
-    const { control, handleSubmit, watch, setValue } = useForm();
-    const formValues = watch();
-
-    useEffect(() => {
-        for (const slot of pack.schema.slots) {
-            if (slot.defaultOption) {
-                setValue(slot.id, slot.defaultOption, { shouldValidate: true });
+    const { control, handleSubmit } = useForm();
+    
+    // Parse YAML content into options for the select components
+    const wizardFields = Object.entries(pack.schema)
+        .filter(([key]) => key !== 'prompt_template')
+        .map(([key, yamlContent]) => {
+            try {
+                const options = yaml.load(yamlContent) as Option[];
+                return { id: key, label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), options };
+            } catch (e) {
+                console.error(`Error parsing YAML for key "${key}":`, e);
+                return null; // Skip fields with invalid YAML
             }
-        }
-    }, [pack, setValue]);
+        })
+        .filter(Boolean);
 
-    const disabledOptions = (() => {
-        const disabled: Record<string, string[]> = {};
-        for (const slotId in formValues) {
-            const selectedOptionValue = formValues[slotId];
-            if (!selectedOptionValue) continue;
-            
-            const slot = pack.schema.slots.find(s => s.id === slotId);
-            if (!slot || slot.type === 'text') continue;
-            
-            const selectedOption = slot.options.find(o => o.value === selectedOptionValue);
-            
-            if (selectedOption?.exclusions) {
-                for (const exclusion of selectedOption.exclusions) {
-                    if (!disabled[exclusion.slotId]) disabled[exclusion.slotId] = [];
-                    disabled[exclusion.slotId].push(...exclusion.optionValues);
-                }
-            }
-        }
-        return disabled;
-    })();
 
     const onSubmit = (data: any) => {
-        let prompt = pack.schema.promptTemplate;
+        let prompt = pack.schema.prompt_template;
+        if (!prompt) {
+            console.error("Prompt template is missing in the datapack schema.");
+            return;
+        }
+
         for (const key in data) {
             prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), data[key] || '');
         }
+        
+        // Clean up any un-replaced placeholders
         prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/(\s*,\s*)+/g, ', ').replace(/^,|,$/g, '').trim();
+        
         onPromptGenerated(prompt, pack.id);
     };
-
-    const renderSlot = (slot: Slot) => {
-        if (slot.type === 'text') {
-            return (
-                <Controller
-                    name={slot.id}
-                    control={control}
-                    defaultValue=""
-                    render={({ field }) => (
-                         <Input {...field} placeholder={slot.placeholder || "Enter text..."} />
-                    )}
-                />
-            )
-        }
-        
-        // Default to select
-        return (
-             <Controller
-                name={slot.id}
-                control={control}
-                defaultValue={slot.defaultOption || ""}
-                render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger><SelectValue placeholder={slot.placeholder || "Select..."} /></SelectTrigger>
-                        <SelectContent>
-                            {slot.options && slot.options.map((option: Option) => (
-                                <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                    disabled={disabledOptions[slot.id]?.includes(option.value)}
-                                >
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                )}
-            />
-        )
-    }
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -192,12 +145,34 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
             </DialogHeader>
             <ScrollArea className="max-h-[50vh] pr-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
-                    {pack.schema.slots.map(slot => (
-                        <div key={slot.id}>
-                            <Label>{slot.label}</Label>
-                            {renderSlot(slot)}
-                        </div>
-                    ))}
+                    {wizardFields.map(field => {
+                        if (!field) return null;
+                        return (
+                            <div key={field.id}>
+                                <Label>{field.label}</Label>
+                                <Controller
+                                    name={field.id}
+                                    control={control}
+                                    defaultValue={field.options?.[0]?.value || ""}
+                                    render={({ field: controllerField }) => (
+                                        <Select onValueChange={controllerField.onChange} value={controllerField.value}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                {field.options?.map((option: Option) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
+                            </div>
+                        )
+                    })}
                 </div>
             </ScrollArea>
             <div className="flex justify-end items-center gap-2 pt-4">
@@ -269,7 +244,7 @@ export function DataPackSelectorModal({ isOpen, onClose, onPromptGenerated }: { 
                     </DialogHeader>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4 min-h-[60vh]">
                         <div className="md:col-span-2">
-                            <PackPreview pack={selectedPack} onChoose={() => setWizardPack(selectedPack)} />
+                            <PackPreview pack={selectedPack} onChoose={() => {if (selectedPack) setWizardPack(selectedPack)}} />
                         </div>
                         <div className="md:col-span-1">
                             <PackSelector

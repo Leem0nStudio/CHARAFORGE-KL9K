@@ -96,6 +96,7 @@ export function CharacterGenerator() {
     // A better approach might be a state object for the generated prompt context
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.set('packId', packId);
+    currentUrl.searchParams.set('prompt', encodeURIComponent(prompt));
     router.replace(currentUrl.toString(), { scroll: false });
     setIsModalOpen(false);
   }, [generationForm, router]);
