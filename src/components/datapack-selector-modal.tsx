@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { useForm, Controller } from 'react-hook-form';
 import * as yaml from 'js-yaml';
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, ArrowRight, Wand2, Package, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getInstalledDataPacks } from '@/app/actions/user';
-import type { DataPack, Option } from '@/types/datapack';
+import type { DataPack, Option, Slot } from '@/types/datapack';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
@@ -101,35 +101,64 @@ function PackSelector({ packs, onSelect, selectedPackId }: {
 
 
 function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGenerated: (prompt: string, packId: string) => void }) {
-    const { control, handleSubmit } = useForm();
-    
-    // Parse YAML content into options for the select components
-    const wizardFields = Object.entries(pack.schema)
-        .filter(([key]) => key !== 'prompt_template')
-        .map(([key, yamlContent]) => {
-            try {
-                const options = yaml.load(yamlContent as string) as Option[];
-                return { id: key, label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), options };
-            } catch (e) {
-                console.error(`Error parsing YAML for key "${key}":`, e);
-                return null; // Skip fields with invalid YAML
-            }
-        })
-        .filter(Boolean);
+    const { control, handleSubmit, watch } = useForm();
+    const formValues = watch();
 
+    const wizardSlots = useMemo(() => {
+        const schema = pack.schema;
+        // New structure with a 'slots' array
+        if ('slots' in schema && Array.isArray(schema.slots)) {
+            return schema.slots;
+        }
+        
+        // Legacy structure with YAML content as strings
+        return Object.entries(schema)
+            .filter(([key]) => key !== 'prompt_template' && key !== 'promptTemplate')
+            .map(([key, yamlContent]) => {
+                try {
+                    const options = yaml.load(yamlContent as string) as Option[];
+                    return { id: key, label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), options };
+                } catch (e) {
+                    console.error(`Error parsing YAML for key "${key}":`, e);
+                    return null;
+                }
+            })
+            .filter(Boolean) as Slot[];
+    }, [pack.schema]);
+
+    const disabledOptions = useMemo(() => {
+        const disabled = new Map<string, Set<string>>();
+        wizardSlots.forEach(slot => {
+            const selectedValue = formValues[slot.id];
+            if (!selectedValue) return;
+
+            const selectedOption = slot.options.find(opt => opt.value === selectedValue);
+            if (!selectedOption || !selectedOption.exclusions) return;
+
+            selectedOption.exclusions.forEach(exclusion => {
+                if (!disabled.has(exclusion.slotId)) {
+                    disabled.set(exclusion.slotId, new Set());
+                }
+                const disabledSet = disabled.get(exclusion.slotId)!;
+                exclusion.optionValues.forEach(val => disabledSet.add(val));
+            });
+        });
+        return disabled;
+    }, [formValues, wizardSlots]);
 
     const onSubmit = (data: any) => {
-        let prompt = pack.schema.prompt_template;
+        let prompt = ('prompt_template' in pack.schema ? pack.schema.prompt_template : pack.schema.promptTemplate) as string;
         if (!prompt) {
             console.error("Prompt template is missing in the datapack schema.");
             return;
         }
 
         for (const key in data) {
-            prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), data[key] || '');
+            if(data[key]) {
+               prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), data[key]);
+            }
         }
         
-        // Clean up any un-replaced placeholders
         prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/(\s*,\s*)+/g, ', ').replace(/^,|,$/g, '').trim();
         
         onPromptGenerated(prompt, pack.id);
@@ -145,23 +174,25 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
             </DialogHeader>
             <ScrollArea className="max-h-[50vh] pr-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
-                    {wizardFields.map(field => {
-                        if (!field) return null;
+                    {wizardSlots.map(slot => {
+                        if (!slot) return null;
+                        const defaultOpt = slot.defaultOption || slot.options?.[0]?.value || "";
                         return (
-                            <div key={field.id}>
-                                <Label>{field.label}</Label>
+                            <div key={slot.id}>
+                                <Label>{slot.label}</Label>
                                 <Controller
-                                    name={field.id}
+                                    name={slot.id}
                                     control={control}
-                                    defaultValue={field.options?.[0]?.value || ""}
+                                    defaultValue={defaultOpt}
                                     render={({ field: controllerField }) => (
                                         <Select onValueChange={controllerField.onChange} value={controllerField.value}>
-                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder={slot.placeholder} /></SelectTrigger>
                                             <SelectContent>
-                                                {field.options?.map((option: Option) => (
+                                                {slot.options?.map((option: Option) => (
                                                     <SelectItem
                                                         key={option.value}
                                                         value={option.value}
+                                                        disabled={disabledOptions.get(slot.id)?.has(option.value)}
                                                     >
                                                         {option.label}
                                                     </SelectItem>
@@ -281,5 +312,3 @@ export function DataPackSelectorModal({ isOpen, onClose, onPromptGenerated }: { 
         </Dialog>
     )
 }
-
-    
