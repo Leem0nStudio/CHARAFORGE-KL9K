@@ -7,7 +7,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
-import { Exo_2, Grenze_Gotisch, Rowdies } from 'next/font/google';
+import { Exo_2, Grenze_Gotisch, Rowdies, Anton } from 'next/font/google';
 
 const exo2 = Exo_2({
   subsets: ['latin'],
@@ -27,6 +27,12 @@ const rowdies = Rowdies({
     variable: '--font-logo',
 });
 
+const anton = Anton({
+    subsets: ['latin'],
+    weight: '400',
+    variable: '--font-button',
+});
+
 
 export const metadata: Metadata = {
   title: 'CharaForge',
@@ -40,7 +46,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('min-h-screen bg-background font-body antialiased', exo2.variable, grenzeGotisch.variable, rowdies.variable)}>
+      <body className={cn('min-h-screen bg-background font-body antialiased', exo2.variable, grenzeGotisch.variable, rowdies.variable, anton.variable)}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
