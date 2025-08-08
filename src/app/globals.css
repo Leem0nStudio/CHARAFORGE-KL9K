@@ -91,3 +91,33 @@
     min-width: 0;
   }
 }
+
+@layer utilities {
+  @keyframes pulse-glow {
+    0%, 100% {
+      transform: scale(1);
+      filter: drop-shadow(0 0 4px hsl(var(--accent) / 0.6));
+    }
+    50% {
+      transform: scale(1.05);
+      filter: drop-shadow(0 0 8px hsl(var(--accent) / 0.8));
+    }
+  }
+  
+  @keyframes subtle-pulse {
+    0%, 100% {
+      opacity: 0.75;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-subtle-pulse {
+      animation: subtle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}

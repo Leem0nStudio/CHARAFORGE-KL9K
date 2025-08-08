@@ -126,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (newAuthUser) {
         const token = await newAuthUser.getIdToken();
         // This is the critical change: ensure the server-side cookie is set
-        // before updating the client-side state. This prevents race conditions.
+        // before we proceed, solving the race condition.
         await setCookie(token);
 
         setAuthUser(newAuthUser);
@@ -158,8 +158,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen w-full bg-background">
-         <AnvilIcon className="w-24 h-24 animate-pulse" />
-         <p className="mt-4 text-muted-foreground font-headline tracking-wider animate-pulse">FORGING SESSION...</p>
+         <AnvilIcon className="w-24 h-24 animate-pulse-glow" />
+         <p className="mt-4 text-muted-foreground font-headline tracking-wider animate-subtle-pulse">FORGING SESSION...</p>
       </div>
     );
   }
@@ -167,7 +167,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={{ authUser, userProfile, setUserProfile, loading }}>
       {children}
-    </AuthContext.Provider>
+    </Auth.Provider>
   );
 };
 
