@@ -1,10 +1,10 @@
 
 
-// The schema is now a flexible container for YAML content.
-// Each key represents a "file" (e.g., 'outfits', 'poses') and its value is the raw YAML string.
-export type DataPackSchema = {
-    [key: string]: string; // e.g., { "prompt_template": "...", "style": "...", "race": "..." }
-};
+// This is the new, more flexible structure for schema that supports complex wizards.
+export interface DataPackSchema {
+    promptTemplate: string;
+    slots: Slot[];
+}
 
 export interface DataPack {
     id: string;
@@ -16,7 +16,7 @@ export interface DataPack {
     price: number;
     tags: string[];
     createdAt: Date;
-    schema: DataPackSchema; // The schema is now the object containing YAML strings.
+    schema: DataPackSchema | { [key: string]: string }; // Allow both old and new schema for transition
 }
 
 export interface UpsertDataPack {
@@ -27,10 +27,10 @@ export interface UpsertDataPack {
     type: 'free' | 'premium' | 'temporal';
     price: number;
     tags: string; // Comma-separated tags
-    schema: DataPackSchema; // The full schema object with YAML strings is submitted.
+    schema: { [key: string]: string }; // Admin still submits as YAML strings for simplicity.
 }
 
-// These types might be used internally by a YAML parser, but are no longer part of the core data model.
+// These types define the structure within the new DataPackSchema.
 export interface Exclusion {
     slotId: string;
     optionValues: string[];
@@ -46,7 +46,9 @@ export interface Slot {
     id: string;
     label: string;
     type?: 'text' | 'select';
-    options?: Option[];
+    options: Option[];
     defaultOption?: string;
     placeholder?: string;
 }
+
+    

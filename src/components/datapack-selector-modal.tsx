@@ -108,7 +108,7 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
         .filter(([key]) => key !== 'prompt_template')
         .map(([key, yamlContent]) => {
             try {
-                const options = yaml.load(yamlContent) as Option[];
+                const options = yaml.load(yamlContent as string) as Option[];
                 return { id: key, label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), options };
             } catch (e) {
                 console.error(`Error parsing YAML for key "${key}":`, e);
@@ -281,3 +281,5 @@ export function DataPackSelectorModal({ isOpen, onClose, onPromptGenerated }: { 
         </Dialog>
     )
 }
+
+    
