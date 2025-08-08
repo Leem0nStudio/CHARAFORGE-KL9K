@@ -2,30 +2,26 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
+import type { DataPack } from '@/types/datapack';
 import { motion } from 'framer-motion';
 import useEmblaCarousel from 'embla-carousel-react';
-import { Download, Heart, Swords } from 'lucide-react';
+import { Heart, Swords, ArrowRight } from 'lucide-react';
 
 
 type HomePageClientProps = {
     featuredCreations: Character[];
     topCreators: UserProfile[];
+    newDataPacks: DataPack[];
 }
 
-const dataPacks = [
-    { name: 'Cyberpunk Neon Styles', author: 'CyberVance', installs: '22.1k', image: 'https://placehold.co/600x400.png', hint: 'cyberpunk city' },
-    { name: 'High-Fantasy Armors', author: 'MysticScribe', installs: '18.5k', image: 'https://placehold.co/600x400.png', hint: 'fantasy armor' },
-    { name: 'Anime Eyes Pack Vol. 1', author: 'AnimeForge', installs: '45.2k', image: 'https://placehold.co/600x400.png', hint: 'anime eyes' },
-    { name: '8-Bit Retro Effects', author: 'PixelPioneer', installs: '12.8k', image: 'https://placehold.co/600x400.png', hint: 'pixel art' },
-];
 
-
-export function HomePageClient({ featuredCreations, topCreators }: HomePageClientProps) {
+export function HomePageClient({ featuredCreations, topCreators, newDataPacks }: HomePageClientProps) {
   const [emblaRef] = useEmblaCarousel({ loop: true });
 
   return (
@@ -123,31 +119,28 @@ export function HomePageClient({ featuredCreations, topCreators }: HomePageClien
                     </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {dataPacks.map((pack, index) => (
+                    {newDataPacks.slice(0, 4).map((pack, index) => (
                         <motion.div
-                            key={pack.name}
+                            key={pack.id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
                         >
-                            <Card className="overflow-hidden group hover:shadow-primary/20 transition-all duration-300">
-                                <div className="relative aspect-video">
-                                    <Image src={pack.image} alt={pack.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" data-ai-hint={pack.hint} />
-                                </div>
-                                <CardContent className="p-4">
-                                    <h3 className="text-lg font-bold truncate font-headline">{pack.name}</h3>
-                                    <p className="text-sm text-muted-foreground">by @{pack.author}</p>
-                                    <div className="flex justify-between items-center mt-4">
-                                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                            <Download className="w-4 h-4" />
-                                            <span>{pack.installs}</span>
-                                        </div>
-                                        <Button variant="secondary" size="sm">
-                                            <Download className="mr-2" />
-                                            Install
-                                        </Button>
+                            <Card className="overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full flex flex-col">
+                                <Link href={`/datapacks/${pack.id}`} className="flex flex-col h-full">
+                                    <div className="relative aspect-square">
+                                        <Image src={pack.coverImageUrl || 'https://placehold.co/600x600.png'} alt={pack.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" data-ai-hint="datapack cover image" />
                                     </div>
-                                 </CardContent>
+                                    <CardContent className="p-4 flex-grow">
+                                        <h3 className="text-lg font-bold truncate font-headline">{pack.name}</h3>
+                                        <p className="text-sm text-muted-foreground">by @{pack.author}</p>
+                                    </CardContent>
+                                    <CardFooter>
+                                        <Button variant="secondary" size="sm" className="w-full">
+                                            View Details <ArrowRight className="ml-2" />
+                                        </Button>
+                                    </CardFooter>
+                                </Link>
                             </Card>
                         </motion.div>
                     ))}
