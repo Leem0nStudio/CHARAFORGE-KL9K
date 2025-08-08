@@ -44,15 +44,15 @@ export default async function DataPacksPage() {
                                         )}>{pack.type}</Badge>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="p-6 flex-grow">
-                                    <CardTitle>{pack.name}</CardTitle>
+                                <CardContent className="p-4 flex-grow">
+                                    <CardTitle className="font-bold">{pack.name}</CardTitle>
                                     <CardDescription className="mt-2 flex items-center gap-2">
                                         <User className="h-4 w-4" /> 
                                         <span>by @{pack.author}</span>
                                     </CardDescription>
-                                    <p className="mt-4 text-sm text-muted-foreground line-clamp-3">{pack.description}</p>
+                                    <p className="mt-3 text-sm text-muted-foreground line-clamp-2">{pack.description}</p>
                                 </CardContent>
-                                <CardFooter className="mt-auto">
+                                <CardFooter className="mt-auto p-4">
                                    <p className="text-sm text-primary font-semibold">View Details →</p>
                                 </CardFooter>
                            </Link>
