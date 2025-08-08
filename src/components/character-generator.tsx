@@ -80,16 +80,43 @@ export function CharacterGenerator() {
   const searchParams = useSearchParams();
   const dataPackId = searchParams.get('packId');
 
+  const generationForm = useForm<z.infer<typeof generationFormSchema>>({
+    resolver: zodResolver(generationFormSchema),
+    defaultValues: {
+      description: "",
+    },
+  });
+
+  const saveForm = useForm<z.infer<typeof saveFormSchema>>({
+    resolver: zodResolver(saveFormSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
+
+  const handlePromptGenerated = useCallback((prompt: string, packId: string, packName: string) => {
+    generationForm.setValue('description', prompt, { shouldValidate: true });
+    setActivePackName(packName);
+    
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('packId', packId);
+    currentUrl.searchParams.set('prompt', encodeURIComponent(prompt));
+    router.replace(currentUrl.toString(), { scroll: false });
+    setIsModalOpen(false);
+  }, [generationForm, router]);
+  
+  // Effect to read prompt from URL and set it in the form
+  useEffect(() => {
+    const promptFromUrl = searchParams.get('prompt');
+    if (promptFromUrl) {
+      generationForm.setValue('description', decodeURIComponent(promptFromUrl));
+    }
+  }, [searchParams, generationForm]);
 
   useEffect(() => {
-    // This effect is to handle the case where the user lands on the page
-    // with a packId in the URL, but we don't have the name yet.
-    // We only run this if the activePackName is not already set.
     const fetchPackName = async () => {
       if (dataPackId && !activePackName) {
         try {
-          // Packs will be fetched when the modal opens, but if a pack is pre-selected
-          // via URL, we need to ensure its name is loaded for the badge.
           const packs = await getInstalledDataPacks();
           setInstalledPacks(packs);
           const pack = packs.find((p: DataPack) => p.id === dataPackId);
@@ -118,42 +145,6 @@ export function CharacterGenerator() {
       setIsLoadingPacks(false);
     }
   };
-
-
-  // Effect to read prompt from URL and set it in the form
-  useEffect(() => {
-    const promptFromUrl = searchParams.get('prompt');
-    if (promptFromUrl) {
-      generationForm.setValue('description', decodeURIComponent(promptFromUrl));
-    }
-  }, [searchParams, generationForm]);
-  
-  const handlePromptGenerated = useCallback((prompt: string, packId: string, packName: string) => {
-    generationForm.setValue('description', prompt, { shouldValidate: true });
-    setActivePackName(packName);
-    
-    const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('packId', packId);
-    currentUrl.searchParams.set('prompt', encodeURIComponent(prompt));
-    router.replace(currentUrl.toString(), { scroll: false });
-    setIsModalOpen(false);
-  }, [generationForm, router]);
-
-
-  const generationForm = useForm<z.infer<typeof generationFormSchema>>({
-    resolver: zodResolver(generationFormSchema),
-    defaultValues: {
-      description: "",
-    },
-  });
-
-
-  const saveForm = useForm<z.infer<typeof saveFormSchema>>({
-    resolver: zodResolver(saveFormSchema),
-    defaultValues: {
-      name: "",
-    },
-  });
 
   async function onGenerateBio(data: z.infer<typeof generationFormSchema>) {
     if (!authUser) {
