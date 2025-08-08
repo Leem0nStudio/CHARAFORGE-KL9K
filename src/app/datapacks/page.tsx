@@ -1,12 +1,11 @@
 
-import { getPublicDataPacks } from '../../app/actions/datapacks';
+import { getPublicDataPacks } from '@/app/actions/datapacks';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import Image from 'next/image';
 import Link from 'next/link';
 import { User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { DataPackClient } from './[id]/client';
 
 export default async function DataPacksPage() {
     const dataPacks = await getPublicDataPacks();
@@ -69,5 +68,3 @@ export default async function DataPacksPage() {
         </div>
     );
 }
-
-    

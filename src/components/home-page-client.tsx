@@ -1,18 +1,15 @@
 
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { User, Expand, X, Star, Download, Heart, Swords as SwordsIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import useEmblaCarousel from 'embla-carousel-react';
-import { cn } from '@/lib/utils';
+import { Download, Heart, Swords as SwordsIcon } from 'lucide-react';
 
 
 type HomePageClientProps = {

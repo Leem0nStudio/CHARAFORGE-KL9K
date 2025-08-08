@@ -1,7 +1,8 @@
+
 import { notFound } from 'next/navigation';
-import { adminDb, adminApp } from '@/lib/firebase/server';
-import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
+import { getAuth } from 'firebase-admin/auth';
+import { adminDb, adminApp } from '@/lib/firebase/server';
 import { PageHeader } from '@/components/page-header';
 import { EditCharacterForm } from './edit-character-form';
 import type { Character } from '@/types/character';
@@ -65,6 +66,8 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
       userId: characterData.userId,
       status: characterData.status,
       createdAt: characterData.createdAt.toDate(),
+      isSharedToDataPack: characterData.isSharedToDataPack,
+      dataPackId: characterData.dataPackId,
   };
 
   return character;

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useForm, Controller } from 'react-hook-form';
 
@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Loader2, ArrowRight, Wand2, Package, X, Check } from 'lucide-react';
+import { Loader2, ArrowRight, Wand2, Package, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getInstalledDataPacks } from '@/app/actions/user';
 import type { DataPack, Option, Slot } from '@/types/datapack';
@@ -112,7 +112,7 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
         }
     }, [pack, setValue]);
 
-    const disabledOptions = useMemo(() => {
+    const disabledOptions = (() => {
         const disabled: Record<string, string[]> = {};
         for (const slotId in formValues) {
             const selectedOptionValue = formValues[slotId];
@@ -131,7 +131,7 @@ function WizardForm({ pack, onPromptGenerated }: { pack: DataPack, onPromptGener
             }
         }
         return disabled;
-    }, [formValues, pack]);
+    })();
 
     const onSubmit = (data: any) => {
         let prompt = pack.schema.promptTemplate;
