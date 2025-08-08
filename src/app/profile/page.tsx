@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, useTransition } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, useTransition, useActionState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { updateUserProfile, deleteUserAccount, updateUserPreferences } from '@/app/actions/user';
+import { updateUserProfile, deleteUserAccount, updateUserPreferences, type ActionResponse } from '@/app/actions/user';
 import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { Loader2, User, Swords, Heart, Package, Gem, Calendar, Wand2, Camera } from 'lucide-react';
 import type { UserProfile, UserPreferences } from '@/types/user';
@@ -107,19 +107,26 @@ AvatarUploader.displayName = "AvatarUploader";
 function ProfileForm({ user }: { user: UserProfile }) {
   const { toast } = useToast();
   const { setUserProfile } = useAuth();
-  const formRef = useRef<HTMLFormElement>(null);
+  const initialState: ActionResponse = { success: false, message: '' };
   
-  const handleAction = async (formData: FormData) => {
-    const result = await updateUserProfile(null, formData);
-    if (result.success) {
-        toast({ title: "Success!", description: result.message });
-        if (result.newAvatarUrl) {
-            setUserProfile(prev => prev ? { ...prev, photoURL: result.newAvatarUrl } : null);
+  // useActionState is the recommended hook for handling form state with Server Actions.
+  const [state, formAction] = useActionState(updateUserProfile, initialState);
+
+  // useEffect handles "side effects" like showing toasts or updating context
+  // after the server action has completed and the state has been updated.
+  useEffect(() => {
+    if (state.message) { // Only show toast if there's a message
+      if (state.success) {
+        toast({ title: 'Success!', description: state.message });
+        if (state.newAvatarUrl) {
+          // Update the auth context with the new avatar URL
+          setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl } : null);
         }
-    } else {
-        toast({ variant: 'destructive', title: 'Update Failed', description: result.message });
+      } else {
+        toast({ variant: 'destructive', title: 'Update Failed', description: state.message });
+      }
     }
-  };
+  }, [state, toast, setUserProfile]);
 
   return (
     <Card>
@@ -128,7 +135,8 @@ function ProfileForm({ user }: { user: UserProfile }) {
         <CardDescription>This is how others will see you on the site.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form ref={formRef} action={handleAction} className="space-y-6">
+        {/* The form action is now handled by the useActionState hook */}
+        <form action={formAction} className="space-y-6">
             <AvatarUploader user={user} />
             <div className="space-y-2">
                 <Label htmlFor="displayName">Display Name</Label>
@@ -143,7 +151,6 @@ function ProfileForm({ user }: { user: UserProfile }) {
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" defaultValue={user.email || ''} disabled />
             </div>
-
             <SubmitButton>Update Profile</SubmitButton>
         </form>
       </CardContent>
@@ -160,6 +167,7 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
   useEffect(() => {
     setPreferences(initialPreferences);
   }, [initialPreferences]);
+
 
   const handlePreferencesChange = (field: keyof UserPreferences, value: any) => {
     setPreferences(prev => ({ ...prev, [field]: value }));
@@ -480,3 +488,5 @@ export default function ProfilePage() {
     </motion.div>
   );
 }
+
+    
