@@ -9,7 +9,6 @@ import { useRouter } from 'next/navigation';
 
 import type { Character } from '@/types/character';
 import { updateCharacter, updateCharacterImages } from '@/app/actions/characters';
-import { translateText, type TranslateTextInput } from '@/ai/flows/translate-text';
 import { useToast } from '@/hooks/use-toast';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -17,8 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Pencil, Languages, ImagePlus, Trash2, Star, PlusCircle } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Loader2, Pencil, ImagePlus, Trash2, Star, PlusCircle } from 'lucide-react';
 import Image from 'next/image';
 import { Label } from '@/components/ui/label';
 
@@ -42,7 +40,7 @@ type UpdateImagesFormValues = z.infer<typeof UpdateImagesSchema>;
 // #endregion
 
 // #region Sub-components
-function EditTab({ character, onBiographyUpdate }: { character: Character, onBiographyUpdate: (newBio: string) => void }) {
+function EditTab({ character }: { character: Character }) {
     const { toast } = useToast();
     const router = useRouter();
     const [isUpdating, startUpdateTransition] = useTransition();
@@ -54,11 +52,6 @@ function EditTab({ character, onBiographyUpdate }: { character: Character, onBio
             biography: character.biography,
         },
     });
-
-    const bioValue = form.watch('biography');
-    useEffect(() => {
-        onBiographyUpdate(bioValue);
-    }, [bioValue, onBiographyUpdate]);
 
     useEffect(() => {
         form.reset({ name: character.name, biography: character.biography });
@@ -98,54 +91,6 @@ function EditTab({ character, onBiographyUpdate }: { character: Character, onBio
             </div>
         </form>
     );
-}
-
-function TranslateTab({ currentBiography, onBiographyUpdate }: { currentBiography: string; onBiographyUpdate: (newBio: string) => void }) {
-  const { toast } = useToast();
-  const [isTranslating, startTranslation] = useTransition();
-  const [targetLanguage, setTargetLanguage] = useState<TranslateTextInput['targetLanguage'] | ''>('');
-
-  const handleTranslate = () => {
-    if (!targetLanguage) {
-      toast({ variant: 'destructive', title: 'No Language Selected', description: 'Please select a language to translate to.' });
-      return;
-    }
-    startTranslation(async () => {
-      try {
-        const result = await translateText({ text: currentBiography, targetLanguage });
-        onBiographyUpdate(result.translatedText);
-        toast({ title: 'Translation Complete!', description: `Biography translated to ${targetLanguage}. Review and save your changes in the 'Edit' tab.` });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        toast({ variant: 'destructive', title: 'Translation Failed', description: message });
-      }
-    });
-  };
-
-  return (
-    <div className="space-y-4">
-        <p className="text-muted-foreground">
-            Use AI to translate the current biography. The result will replace the text in the "Edit" tab. Remember to save your changes after translating.
-        </p>
-        <div className="flex items-center gap-2">
-             <Select onValueChange={(value: TranslateTextInput['targetLanguage']) => setTargetLanguage(value)} value={targetLanguage}>
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select Language" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="Spanish">Spanish</SelectItem>
-                    <SelectItem value="French">French</SelectItem>
-                    <SelectItem value="German">German</SelectItem>
-                </SelectContent>
-            </Select>
-            <Button onClick={handleTranslate} disabled={isTranslating || !targetLanguage}>
-                {isTranslating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Languages className="mr-2 h-4 w-4" />
-                Translate
-            </Button>
-        </div>
-    </div>
-  );
 }
 
 function ImagesTab({ character }: { character: Character }) {
@@ -266,19 +211,14 @@ function ImagesTab({ character }: { character: Character }) {
 export function EditCharacterForm({ character }: { character: Character }) {
     const [characterState, setCharacterState] = useState(character);
 
-    const handleBiographyUpdate = useCallback((newBio: string) => {
-        setCharacterState(prevState => ({ ...prevState, biography: newBio }));
-    }, []);
-    
     useEffect(() => {
         setCharacterState(character);
     }, [character]);
 
     return (
         <Tabs defaultValue="edit" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="edit"><Pencil className="mr-2" />Edit Details</TabsTrigger>
-                <TabsTrigger value="translate"><Languages className="mr-2" />Translate Bio</TabsTrigger>
                 <TabsTrigger value="images"><ImagePlus className="mr-2" />Manage Images</TabsTrigger>
             </TabsList>
             <TabsContent value="edit">
@@ -288,21 +228,7 @@ export function EditCharacterForm({ character }: { character: Character }) {
                         <CardDescription>Modify the fields below to update your character.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <EditTab character={characterState} onBiographyUpdate={handleBiographyUpdate} />
-                    </CardContent>
-                </Card>
-            </TabsContent>
-            <TabsContent value="translate">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Translate Biography</CardTitle>
-                        <CardDescription>Use AI to translate the character's story into another language.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <TranslateTab 
-                           currentBiography={characterState.biography} 
-                           onBiographyUpdate={handleBiographyUpdate}
-                       />
+                        <EditTab character={characterState} />
                     </CardContent>
                 </Card>
             </TabsContent>
