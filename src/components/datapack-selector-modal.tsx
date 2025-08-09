@@ -63,10 +63,11 @@ function PackPreview({ pack, onChoose }: { pack: DataPack | null, onChoose: () =
     )
 }
 
-function PackSelector({ packs, onSelect, selectedPackId }: {
+function PackSelector({ packs, onSelect, selectedPackId, onChoose }: {
     packs: DataPack[],
     selectedPackId: string | null,
-    onSelect: (pack: DataPack) => void
+    onSelect: (pack: DataPack) => void,
+    onChoose: (pack: DataPack) => void
 }) {
     return (
         <div className="flex flex-col h-full">
@@ -87,10 +88,13 @@ function PackSelector({ packs, onSelect, selectedPackId }: {
                              <div className="relative w-16 h-12 rounded-md overflow-hidden shrink-0 bg-muted/20">
                                 <Image src={pack.coverImageUrl || 'https://placehold.co/200x150.png'} alt={pack.name} fill className="object-contain" data-ai-hint="datapack cover image" />
                             </div>
-                            <div>
+                            <div className='flex-grow'>
                                 <p className="font-semibold text-card-foreground">{pack.name}</p>
                                 <p className="text-xs text-muted-foreground">by {pack.author}</p>
                             </div>
+                            <Button variant="ghost" size="icon" className="sm:hidden" onClick={(e) => { e.stopPropagation(); onChoose(pack); }}>
+                                <ArrowRight className="h-4 w-4" />
+                            </Button>
                         </button>
                     ))}
                 </div>
@@ -172,10 +176,10 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
     }, [wizardSlots, setValue]);
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full max-h-[80vh]">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full max-h-[80vh] sm:max-h-full">
             <DialogHeader>
                 <div className="flex items-center gap-4">
-                     <Button type="button" variant="ghost" size="icon" className="sm:hidden" onClick={onBack}>
+                     <Button type="button" variant="ghost" size="icon" onClick={onBack}>
                         <ArrowLeft />
                     </Button>
                     <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
@@ -189,10 +193,9 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                     {wizardSlots.map(slot => {
                         if (!slot) return null;
                         
-                        // Handle text input type
                         if (slot.type === 'text') {
                              return (
-                                 <div key={slot.id} className="space-y-2">
+                                 <div key={slot.id} className="p-4 border rounded-lg">
                                      <Label>{slot.label}</Label>
                                      <Controller
                                          name={slot.id}
@@ -204,7 +207,6 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                              );
                         }
 
-                        // Handle select/chip type
                         const selectedValue = formValues[slot.id];
                         const selectedLabel = slot.options?.find(o => o.value === selectedValue)?.label || 'None';
 
@@ -276,27 +278,23 @@ export function DataPackSelectorModal({
 }: DataPackSelectorModalProps) {
     const [selectedPack, setSelectedPack] = useState<DataPack | null>(null);
     const [wizardPack, setWizardPack] = useState<DataPack | null>(null);
-    const [view, setView] = useState<'list' | 'preview'>('list');
 
     useEffect(() => {
         if (!isOpen) {
-            setWizardPack(null);
-            setSelectedPack(null);
-            setView('list');
+            // Reset state when modal closes
+            setTimeout(() => {
+                setWizardPack(null);
+                setSelectedPack(null);
+            }, 300); // Delay reset to allow for closing animation
             return;
         }
         
-        if (!isLoading && packs.length > 0 && !selectedPack) {
+        if (!isLoading && packs.length > 0 && !selectedPack && !wizardPack) {
             setSelectedPack(packs[0]);
         }
 
-    }, [isOpen, isLoading, packs, selectedPack]);
+    }, [isOpen, isLoading, packs, selectedPack, wizardPack]);
     
-    const handleSelectPack = (pack: DataPack) => {
-        setSelectedPack(pack);
-        setView('preview'); 
-    };
-
     const handlePromptGeneratedAndClose = useCallback((prompt: string, packId: string, packName: string) => {
         onPromptGenerated(prompt, packId, packName);
         onClose();
@@ -332,26 +330,30 @@ export function DataPackSelectorModal({
             )
         }
         
+        // Main responsive layout
         return (
-            <>
-                <DialogHeader className="sm:hidden">
-                     <DialogTitle>{view === 'list' ? '1. Select Pack' : '2. Confirm Pack'}</DialogTitle>
-                </DialogHeader>
+             <>
                 <DialogHeader className="hidden sm:block">
                     <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
                     <DialogDescription>Choose one of your installed packs to start building a prompt.</DialogDescription>
                 </DialogHeader>
-                <div className="sm:hidden mt-4">
-                    {view === 'list' ? (
-                         <PackSelector
+
+                {/* Mobile View: List Only */}
+                <div className="sm:hidden">
+                    <DialogHeader>
+                        <DialogTitle className="font-headline text-2xl">Select a DataPack</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-4">
+                        <PackSelector
                             packs={packs}
-                            onSelect={handleSelectPack}
-                            selectedPackId={selectedPack?.id || null}
+                            onSelect={() => {}} // Not used on mobile
+                            selectedPackId={null}
+                            onChoose={(pack) => setWizardPack(pack)}
                         />
-                    ) : (
-                         <PackPreview pack={selectedPack} onChoose={() => {if (selectedPack) setWizardPack(selectedPack)}} />
-                    )}
+                    </div>
                 </div>
+
+                {/* Desktop View: Two Columns */}
                 <div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-8 pt-4 min-h-[60vh]">
                     <div className="md:col-span-2">
                         <PackPreview pack={selectedPack} onChoose={() => {if (selectedPack) setWizardPack(selectedPack)}} />
@@ -361,25 +363,21 @@ export function DataPackSelectorModal({
                             packs={packs}
                             onSelect={setSelectedPack}
                             selectedPackId={selectedPack?.id || null}
+                            onChoose={() => {}} // Not used on desktop
                         />
                     </div>
                 </div>
-                {view === 'preview' && (
-                    <div className="sm:hidden mt-4">
-                        <Button variant="outline" className="w-full" onClick={() => setView('list')}>
-                            <ArrowLeft className="mr-2" /> Back to List
-                        </Button>
-                    </div>
-                )}
-            </>
+             </>
         );
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-4xl h-full sm:h-auto">
+            <DialogContent className={cn("sm:max-w-4xl", wizardPack ? "sm:max-w-xl" : "sm:max-w-4xl")}>
                 {renderContent()}
             </DialogContent>
         </Dialog>
     )
 }
+
+    
