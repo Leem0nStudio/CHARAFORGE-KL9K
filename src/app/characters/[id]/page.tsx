@@ -5,15 +5,17 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
-import { User, Calendar, Tag, GitBranch, ChevronsRight, Pencil } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { User, Calendar, Tag, GitBranch, Heart, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { BranchButton } from './branch-button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { EditButton } from './edit-button';
-
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
+import { BackButton } from '@/components/back-button';
 
 async function getCharacter(characterId: string): Promise<{ character: Character | null, currentUserId: string | null }> {
     if (!adminDb) {
@@ -45,22 +47,16 @@ async function getCharacter(characterId: string): Promise<{ character: Character
         const data = doc.data();
         if (!data) return { character: null, currentUserId };
         
-        let branchedFrom: { id: string, name: string } | null = null;
-
         // Fetch user, datapack, and branchedFrom info in parallel
-        const [userDoc, dataPackDoc, branchedFromDoc, originalAuthorDoc] = await Promise.all([
+        const [userDoc, dataPackDoc, originalAuthorDoc] = await Promise.all([
             data.userId ? adminDb.collection('users').doc(data.userId).get() : Promise.resolve(null),
             data.dataPackId ? adminDb.collection('datapacks').doc(data.dataPackId).get() : Promise.resolve(null),
-            data.branchedFromId ? adminDb.collection('characters').doc(data.branchedFromId).get() : Promise.resolve(null),
             data.originalAuthorId ? adminDb.collection('users').doc(data.originalAuthorId).get() : Promise.resolve(null),
         ]);
         
         const userName = userDoc && userDoc.exists ? userDoc.data()?.displayName || 'Anonymous' : 'Anonymous';
         const originalAuthorName = originalAuthorDoc && originalAuthorDoc.exists ? originalAuthorDoc.data()?.displayName || 'Anonymous' : data.originalAuthorName || null;
         const dataPackName = dataPackDoc && dataPackDoc.exists ? dataPackDoc.data()?.name || null : null;
-        if (branchedFromDoc && branchedFromDoc.exists) {
-            branchedFrom = { id: branchedFromDoc.id, name: branchedFromDoc.data()?.name || 'Unknown' };
-        }
 
         const character: Character = {
             id: doc.id,
@@ -71,11 +67,6 @@ async function getCharacter(characterId: string): Promise<{ character: Character
             dataPackName: dataPackName,
             branchingPermissions: data.branchingPermissions || 'private',
         } as Character;
-        
-        // This is a bit awkward, but we add the branchedFrom data after casting
-        // to avoid type conflicts with the core Character type definition.
-        (character as any).branchedFrom = branchedFrom;
-
 
         return { character, currentUserId };
 
@@ -94,97 +85,111 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
     
     const isOwner = character.userId === currentUserId;
 
-    // Character must be public to be viewed, unless the viewer is the owner.
     if (character.status !== 'public' && !isOwner) {
         notFound();
     }
 
     const canBranch = currentUserId && !isOwner && character.branchingPermissions === 'public';
-    const branchedFrom = (character as any).branchedFrom;
 
     return (
-        <div className="container py-8 max-w-4xl mx-auto">
-            <div className="flex flex-col gap-6">
-                <Card className="overflow-hidden group relative">
-                     <div className="w-full aspect-[4/3] relative bg-muted/20">
-                        <Image
-                            src={character.imageUrl}
-                            alt={character.name}
-                            fill
-                            priority
-                            className="object-contain"
-                        />
-                         <div className="absolute top-4 right-4">
-                            <div className="flex gap-2 p-2 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="container py-8 max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                
+                {/* Left Column: Character Details */}
+                <div className="lg:col-span-2 order-2 lg:order-1">
+                     <div className="flex items-center gap-4 mb-4">
+                        <BackButton />
+                        <h1 className="text-3xl font-bold tracking-tight font-headline sr-only">{character.name}</h1>
+                    </div>
+                    <Card className="bg-card/50 overflow-hidden">
+                        {/* Header Section */}
+                        <div className="p-4 bg-[hsl(var(--info-card-header))] text-[hsl(var(--info-card-header-foreground))]">
+                            <h2 className="text-3xl font-headline tracking-wider">{character.name}</h2>
+                            <Separator className="my-2 bg-[hsl(var(--info-card-header-foreground))] opacity-20" />
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                                <div className="flex items-center gap-1.5">
+                                    <User className="h-4 w-4" />
+                                    <span>{character.userName}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <Calendar className="h-4 w-4" />
+                                    <span>{new Date(character.createdAt).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Chips/Tags Section */}
+                         <div className="p-4 flex flex-wrap gap-2 bg-[hsl(var(--info-card-header))] border-t border-t-[hsl(var(--info-card-header-foreground))] border-opacity-20">
+                             {character.dataPackId && character.dataPackName && (
+                                <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                                    <Tag className="h-3 w-3 mr-1.5" />
+                                    <Link href={`/datapacks/${character.dataPackId}`} className="hover:underline">
+                                       {character.dataPackName}
+                                    </Link>
+                                </Badge>
+                             )}
+                             {character.branchedFromId && (
+                                <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                                    <GitBranch className="h-3 w-3 mr-1.5" />
+                                     Branched
+                                </Badge>
+                             )}
+                              {character.originalAuthorName && character.branchedFromId && (
+                                <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                                    <User className="h-3 w-3 mr-1.5" />
+                                    Origin: {character.originalAuthorName}
+                                </Badge>
+                             )}
+                        </div>
+                        
+                        {/* Biography Section */}
+                        <CardContent className="pt-6">
+                            <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                                {character.biography}
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Right Column: Character Image */}
+                <div className="lg:col-span-1 w-full order-1 lg:order-2 sticky top-20">
+                     <Card className="overflow-hidden group relative border-2 border-primary/20 shadow-lg">
+                         <div className="w-full aspect-square relative bg-muted/20">
+                            <Image
+                                src={character.imageUrl}
+                                alt={character.name}
+                                fill
+                                priority
+                                className="object-contain p-2"
+                            />
+                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                             <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <TooltipProvider>
                                     {isOwner && <EditButton characterId={character.id} />}
                                     {canBranch && <BranchButton characterId={character.id} isIcon={true} />}
+                                     <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="secondary" size="icon" disabled>
+                                                <Heart />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Like (Coming Soon)</p></TooltipContent>
+                                    </Tooltip>
+                                     <Tooltip>
+                                        <TooltipTrigger asChild>
+                                             <Button variant="secondary" size="icon" disabled>
+                                                <MessageSquare />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Comment (Coming Soon)</p></TooltipContent>
+                                    </Tooltip>
                                 </TooltipProvider>
                             </div>
                         </div>
-                    </div>
-                </Card>
+                     </Card>
+                </div>
 
-                <Card>
-                    <CardContent className="pt-6 space-y-4">
-                        <h1 className="font-headline text-3xl">{character.name}</h1>
-                         
-                         <div className="text-sm text-muted-foreground space-y-2">
-                            <div className="flex items-center gap-2">
-                                <User className="h-4 w-4" />
-                                <span>Created by {character.userName}</span>
-                            </div>
-                             <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4" />
-                                <span>Created on {new Date(character.createdAt).toLocaleDateString()}</span>
-                            </div>
-                            {character.dataPackId && character.dataPackName && (
-                                <div className="flex items-center gap-2">
-                                    <Tag className="h-4 w-4" />
-                                    <span>
-                                        From:{' '}
-                                        <Link href={`/datapacks/${character.dataPackId}`} className="hover:underline text-primary">
-                                            {character.dataPackName}
-                                        </Link>
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-
-                         {branchedFrom && (
-                            <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg space-y-2 border-l-4 border-primary">
-                                <div className="flex items-center gap-2">
-                                  <GitBranch className="h-4 w-4 text-primary" />
-                                  <span>Branched from{' '}
-                                    <Link href={`/characters/${branchedFrom.id}`} className="font-semibold text-foreground hover:underline">
-                                       {branchedFrom.name}
-                                    </Link>
-                                  </span>
-                                </div>
-                                {character.originalAuthorName && 
-                                    <div className="flex items-center gap-2 pl-6">
-                                        <ChevronsRight className="h-4 w-4"/>
-                                        <span>Original creator:{' '}
-                                            <span className="font-semibold text-foreground">{character.originalAuthorName}</span>
-                                        </span>
-                                    </div>
-                                }
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Biography</CardTitle>
-                         <CardDescription>The story of {character.name}.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="prose dark:prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
-                        {character.biography}
-                    </CardContent>
-                </Card>
             </div>
         </div>
     );
 }
-

@@ -35,6 +35,10 @@
     --ring: 221.2 83.2% 53.3%;
     
     --radius: 0.5rem;
+
+    /* New custom color for Gwent-style card header */
+    --info-card-header: 30 25% 18%; /* A dark, warm brown */
+    --info-card-header-foreground: 30 15% 85%; /* A light, parchment-like color */
   }
 
   .dark {
@@ -67,6 +71,10 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 221.2 83.2% 53.3%;
+    
+    /* New custom color for Gwent-style card header */
+    --info-card-header: 30 25% 18%;
+    --info-card-header-foreground: 30 15% 85%;
   }
 }
 
