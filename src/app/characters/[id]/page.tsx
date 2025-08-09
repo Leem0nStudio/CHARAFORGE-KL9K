@@ -5,21 +5,17 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
-import { User, Calendar, Tag, GitBranch, Heart, MessageSquare } from 'lucide-react';
+import { User, Calendar, Tag, GitBranch } from 'lucide-react';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
-import { BranchButton } from './branch-button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
-import { EditButton } from './edit-button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { BackButton } from '@/components/back-button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { UserProfile } from '@/types/user';
+import { CharacterImageActions } from '@/components/character/character-image-actions';
 
 
 async function getCharacter(characterId: string): Promise<{
@@ -65,8 +61,7 @@ async function getCharacter(characterId: string): Promise<{
         ]);
         
         const creatorProfile = userDoc && userDoc.exists ? userDoc.data() as UserProfile : null;
-        const userName = creatorProfile?.displayName || 'Anonymous';
-
+        
         const originalAuthorProfile = originalAuthorDoc && originalAuthorDoc.exists ? originalAuthorDoc.data() as UserProfile : null;
         const originalAuthorName = originalAuthorProfile?.displayName || data.originalAuthorName || null;
         
@@ -76,10 +71,11 @@ async function getCharacter(characterId: string): Promise<{
             id: doc.id,
             ...data,
             createdAt: data.createdAt.toDate(),
-            userName: userName,
+            userName: creatorProfile?.displayName || 'Anonymous', // Use fetched profile name
             originalAuthorName: originalAuthorName,
             dataPackName: dataPackName,
             branchingPermissions: data.branchingPermissions || 'private',
+            versions: data.versions || [{ id: doc.id, name: data.versionName || 'v.1', version: data.version || 1 }],
         } as Character;
 
         return { character, currentUserId, creatorProfile, originalAuthorProfile };
@@ -102,8 +98,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
     if (character.status !== 'public' && !isOwner) {
         notFound();
     }
-
-    const canBranch = currentUserId && !isOwner && character.branchingPermissions === 'public';
+    
     const authorForAvatar = creatorProfile || { displayName: character.userName || '?', photoURL: null };
 
 
@@ -198,27 +193,12 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                             </Dialog>
 
                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                           <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              <TooltipProvider>
-                                  {isOwner && <EditButton characterId={character.id} />}
-                                  {canBranch && <BranchButton characterId={character.id} isIcon={true} />}
-                                   <Tooltip>
-                                      <TooltipTrigger asChild>
-                                          <Button variant="secondary" size="icon" disabled>
-                                              <Heart />
-                                          </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent><p>Like (Coming Soon)</p></TooltipContent>
-                                  </Tooltip>
-                                   <Tooltip>
-                                      <TooltipTrigger asChild>
-                                           <Button variant="secondary" size="icon" disabled>
-                                              <MessageSquare />
-                                          </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent><p>Comment (Coming Soon)</p></TooltipContent>
-                                  </Tooltip>
-                              </TooltipProvider>
+                           <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              <CharacterImageActions 
+                                character={character}
+                                currentUserId={currentUserId}
+                                isOwner={isOwner}
+                              />
                           </div>
                        </Card>
                   </div>
