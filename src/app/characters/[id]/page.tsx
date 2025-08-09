@@ -1,28 +1,49 @@
 
-import { notFound } from 'next/navigation';
+'use server';
+
+import { notFound, redirect } from 'next/navigation';
 import Image from 'next/image';
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
-import { User, Calendar, Tag } from 'lucide-react';
+import { User, Calendar, Tag, GitBranch } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
+import { Button } from '@/components/ui/button';
+import { branchCharacter } from '@/app/actions/characters';
+import { BranchButton } from './branch-button';
 
-async function getCharacter(characterId: string): Promise<Character | null> {
+
+async function getCharacter(characterId: string): Promise<{ character: Character | null, currentUserId: string | null }> {
     if (!adminDb) {
         console.error('Database service is unavailable.');
-        return null;
+        return { character: null, currentUserId: null };
     }
+    
+    let currentUserId: string | null = null;
+    try {
+        const cookieStore = cookies();
+        const idToken = cookieStore.get('firebaseIdToken')?.value;
+        if (idToken) {
+            const decodedToken = await adminDb.app.auth().verifyIdToken(idToken);
+            currentUserId = decodedToken.uid;
+        }
+    } catch (e) {
+      // Ignore error if user is not logged in
+    }
+
+
     try {
         const characterRef = adminDb.collection('characters').doc(characterId);
         const doc = await characterRef.get();
 
         if (!doc.exists) {
-            return null;
+            return { character: null, currentUserId };
         }
 
         const data = doc.data();
-        if (!data) return null;
+        if (!data) return { character: null, currentUserId };
 
         let userName = 'Anonymous';
         let dataPackName = null;
@@ -40,7 +61,7 @@ async function getCharacter(characterId: string): Promise<Character | null> {
             dataPackName = dataPackDoc.data()?.name || null;
         }
 
-        return {
+        const character = {
             id: doc.id,
             ...data,
             createdAt: data.createdAt.toDate(),
@@ -48,23 +69,29 @@ async function getCharacter(characterId: string): Promise<Character | null> {
             dataPackName: dataPackName, // Add pack name to character object
         } as Character;
 
+        return { character, currentUserId };
+
     } catch (error) {
         console.error(`Error fetching character ${characterId}:`, error);
-        return null;
+        return { character: null, currentUserId };
     }
 }
 
 export default async function CharacterDetailPage({ params }: { params: { id: string } }) {
-    const character = await getCharacter(params.id);
+    const { character, currentUserId } = await getCharacter(params.id);
 
     if (!character) {
         notFound();
     }
     
-    // Character status must be public to be viewed directly, unless we implement owner/admin checks
-    if (character.status !== 'public') {
+    const isOwner = character.userId === currentUserId;
+
+    // Character must be public to be viewed, unless the viewer is the owner.
+    if (character.status !== 'public' && !isOwner) {
         notFound();
     }
+
+    const canBranch = currentUserId && !isOwner && character.branchingPermissions === 'public';
 
     return (
         <div className="container py-8">
@@ -104,6 +131,11 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                     </div>
                                 )}
                             </div>
+                             {canBranch && (
+                                <div className="mt-4">
+                                   <BranchButton characterId={character.id} />
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

@@ -21,4 +21,5 @@ export type Character = {
   versionName: string;
   baseCharacterId: string | null;
   versions: { id: string; name: string; version: number }[];
+  branchingPermissions?: 'private' | 'public'; // New: permission for forking
 };

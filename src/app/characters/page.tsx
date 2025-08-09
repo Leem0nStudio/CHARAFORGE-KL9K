@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { getCharacters, deleteCharacter, updateCharacterStatus, updateCharacterDataPackSharing, createCharacterVersion } from '../actions/characters';
+import { getCharacters, deleteCharacter, updateCharacterStatus, updateCharacterDataPackSharing, createCharacterVersion, updateCharacterBranchingPermissions } from '../actions/characters';
 import { useToast } from '@/hooks/use-toast';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,14 +15,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { PageHeader } from '@/components/page-header';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
-import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2, GalleryHorizontal, Plus } from 'lucide-react';
+import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2, GalleryHorizontal, Plus, GitBranch, GitPullRequest } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 
 function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdated }: { character: Character | null; onCharacterDeleted: (id: string) => void; onCharacterUpdated: () => void; }) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [isUpdating, startUpdateTransition] = useTransition();
   
   if (!character) {
     return (
@@ -63,72 +63,47 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
     }
   }, [character.id, character.name, toast, onCharacterDeleted]);
   
-  const handleTogglePublicStatus = useCallback(async () => {
-    setIsUpdating(true);
-    const newStatus = character.status === 'public' ? 'private' : 'public';
-    try {
-      const result = await updateCharacterStatus(character.id, newStatus);
-      toast({
-        title: result.success ? 'Success!' : 'Update Failed',
-        description: result.message,
-      });
-      if (result.success) onCharacterUpdated();
-    } catch (error) {
-       toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: error instanceof Error ? error.message : 'Could not update the character status.',
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [character.id, character.status, toast, onCharacterUpdated]);
-
-  const handleToggleDataPackSharing = useCallback(async () => {
-    setIsUpdating(true);
-    const newSharingStatus = !character.isSharedToDataPack;
-    try {
-      const result = await updateCharacterDataPackSharing(character.id, newSharingStatus);
-       toast({
-        title: result.success ? 'Success!' : 'Update Failed',
-        description: result.message,
-      });
-      if (result.success) onCharacterUpdated();
-    } catch (error) {
-       toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: error instanceof Error ? error.message : 'Could not update sharing status.',
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [character.id, character.isSharedToDataPack, toast, onCharacterUpdated]);
-
-  const handleCreateVersion = useCallback(async () => {
-    setIsUpdating(true);
-    try {
-        const result = await createCharacterVersion(character.id);
+  const handleUpdate = useCallback((updateAction: () => Promise<any>) => {
+    startUpdateTransition(async () => {
+      try {
+        const result = await updateAction();
         toast({
-            title: result.success ? 'Success!' : 'Versioning Failed',
-            description: result.message,
-            variant: result.success ? 'default' : 'destructive',
+          title: result.success ? 'Success!' : 'Update Failed',
+          description: result.message,
         });
         if (result.success) onCharacterUpdated();
-    } catch (error) {
+      } catch (error) {
         toast({
-            variant: 'destructive',
-            title: 'Versioning Error',
-            description: error instanceof Error ? error.message : 'An unexpected error occurred.',
+          variant: 'destructive',
+          title: 'Update Failed',
+          description: error instanceof Error ? error.message : 'An unexpected error occurred.',
         });
-    } finally {
-        setIsUpdating(false);
-    }
-  }, [character.id, onCharacterUpdated, toast]);
+      }
+    });
+  }, [toast, onCharacterUpdated]);
 
+  const handleTogglePublicStatus = () => {
+    const newStatus = character.status === 'public' ? 'private' : 'public';
+    handleUpdate(() => updateCharacterStatus(character.id, newStatus));
+  };
+
+  const handleToggleDataPackSharing = () => {
+    const newSharingStatus = !character.isSharedToDataPack;
+    handleUpdate(() => updateCharacterDataPackSharing(character.id, newSharingStatus));
+  };
+  
+  const handleToggleBranchingPermissions = () => {
+    const newPermissions = character.branchingPermissions === 'public' ? 'private' : 'public';
+    handleUpdate(() => updateCharacterBranchingPermissions(character.id, newPermissions));
+  }
+
+  const handleCreateVersion = () => {
+    handleUpdate(() => createCharacterVersion(character.id));
+  };
 
   const isPublic = character.status === 'public';
   const wasMadeWithDataPack = !!character.dataPackId;
+  const canBranch = character.branchingPermissions === 'public';
   
   return (
     <AnimatePresence mode="wait">
@@ -160,6 +135,12 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                         <>
                           <span>•</span>
                           <p>Shared to Gallery</p>
+                        </>
+                      )}
+                       {canBranch && isPublic && (
+                        <>
+                          <span>•</span>
+                          <p>Branching Enabled</p>
                         </>
                       )}
                     </div>
@@ -207,13 +188,22 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button variant="outline" onClick={handleCopyPrompt}><Copy className="mr-2"/> Copy Original Prompt</Button>
                     <Button onClick={handleTogglePublicStatus} disabled={isUpdating}>
-                        {isUpdating ? <Loader2 className="animate-spin" /> : (isPublic ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>)}
+                        {isUpdating && <Loader2 className="animate-spin mr-2" />}
+                        {isPublic ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>}
                         {isPublic ? "Make Private" : "Make Public"}
                     </Button>
+                    {isPublic && (
+                       <Button onClick={handleToggleBranchingPermissions} disabled={isUpdating} variant="secondary">
+                            {isUpdating && <Loader2 className="animate-spin mr-2" />}
+                            <GitBranch className="mr-2"/>
+                            {canBranch ? "Disable Branching" : "Enable Branching"}
+                        </Button>
+                    )}
                     {wasMadeWithDataPack && (
                        <Button onClick={handleToggleDataPackSharing} disabled={isUpdating} variant="secondary">
-                            {isUpdating ? <Loader2 className="animate-spin" /> : <GalleryHorizontal className="mr-2"/>}
-                            {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to DataPack Gallery"}
+                            {isUpdating && <Loader2 className="animate-spin mr-2" />}
+                            <GalleryHorizontal className="mr-2"/>
+                            {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to Gallery"}
                         </Button>
                     )}
                 </div>
@@ -288,11 +278,17 @@ export default function CharactersPage() {
     setCharacters(prev => {
         const remaining = prev.filter(c => c.id !== deletedId);
         if (selectedCharacterId === deletedId) {
-            setSelectedCharacterId(remaining.length > 0 ? remaining[0].id : null);
+            const newSelectedId = remaining.length > 0 ? remaining[0].id : null;
+            setSelectedCharacterId(newSelectedId);
+             if (newSelectedId) {
+                router.push(`/characters?id=${newSelectedId}`, { scroll: false });
+            } else {
+                 router.push('/characters', { scroll: false });
+            }
         }
         return remaining;
     });
-  }, [selectedCharacterId]);
+  }, [selectedCharacterId, router]);
 
   const selectCharacter = (id: string) => {
     setSelectedCharacterId(id);

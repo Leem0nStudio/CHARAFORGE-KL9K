@@ -11,6 +11,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 type ActionResponse = {
     success: boolean;
     message: string;
+    characterId?: string;
 };
 
 export async function createCharacterVersion(characterId: string): Promise<ActionResponse> {
@@ -315,6 +316,7 @@ export async function getCharacters(): Promise<Character[]> {
         versionName: data.versionName || `v.${data.version || 1}`,
         baseCharacterId: data.baseCharacterId || null,
         versions: versions,
+        branchingPermissions: data.branchingPermissions || 'private',
       } as Character;
     });
 
@@ -327,5 +329,84 @@ export async function getCharacters(): Promise<Character[]> {
     }
     console.error("Error fetching characters:", error);
     return [];
+  }
+}
+
+export async function updateCharacterBranchingPermissions(characterId: string, permissions: 'private' | 'public'): Promise<ActionResponse> {
+  if (!adminDb) {
+    return { success: false, message: 'Database service is unavailable.' };
+  }
+  const uid = await verifyAndGetUid();
+
+  try {
+    const characterRef = adminDb.collection('characters').doc(characterId);
+    const characterDoc = await characterRef.get();
+
+    if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+      return { success: false, message: 'Permission denied or character not found.' };
+    }
+
+    await characterRef.update({ branchingPermissions: permissions });
+
+    revalidatePath('/characters');
+    return { success: true, message: `Branching permissions set to ${permissions}.` };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not update permissions.';
+    return { success: false, message };
+  }
+}
+
+export async function branchCharacter(characterId: string): Promise<ActionResponse> {
+  if (!adminDb) {
+    return { success: false, message: 'Database service is unavailable.' };
+  }
+  const newOwnerId = await verifyAndGetUid();
+
+  try {
+    const originalCharRef = adminDb.collection('characters').doc(characterId);
+    const originalCharDoc = await originalCharRef.get();
+
+    if (!originalCharDoc.exists) {
+      return { success: false, message: 'Character to branch not found.' };
+    }
+
+    const originalData = originalCharDoc.data() as Character;
+
+    if (originalData.branchingPermissions !== 'public') {
+      return { success: false, message: 'This character does not allow branching.' };
+    }
+     if (originalData.userId === newOwnerId) {
+      return { success: false, message: 'You cannot branch your own character. Create a new version instead.' };
+    }
+
+    // Prepare new character data
+    const newCharacterRef = adminDb.collection('characters').doc();
+    const version = 1;
+    const versionName = 'v.1';
+    const initialVersion = { id: newCharacterRef.id, name: versionName, version: version };
+
+    const newCharacterData = {
+      ...originalData,
+      userId: newOwnerId, // Assign to the new owner
+      status: 'private', // Branched characters start as private
+      isSharedToDataPack: false,
+      branchingPermissions: 'private', // Permissions are not inherited
+      // Reset versioning
+      version: version,
+      versionName: versionName,
+      baseCharacterId: null, // It's the base of a new tree
+      versions: [initialVersion],
+      createdAt: FieldValue.serverTimestamp(),
+    };
+
+    await newCharacterRef.set(newCharacterData);
+    
+    revalidatePath('/characters');
+    return { success: true, message: `Successfully branched "${originalData.name}"! It's now in your gallery.`, characterId: newCharacterRef.id };
+
+  } catch (error) {
+    console.error('Error branching character:', error);
+    const message = error instanceof Error ? error.message : 'Could not branch the character.';
+    return { success: false, message };
   }
 }
