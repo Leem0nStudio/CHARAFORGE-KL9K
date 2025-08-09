@@ -10,6 +10,7 @@ import type { Character } from '@/types/character';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { UserProfile } from '@/types/user';
 import { randomUUID } from 'crypto';
+import { generateCharacterImage } from '@/ai/flows/generate-character-image';
 
 
 type ActionResponse = {
@@ -44,6 +45,54 @@ export async function uploadCharacterImage(characterId: string, file: File): Pro
     });
     
     return fileRef.publicUrl();
+}
+
+export async function generateNewCharacterImage(characterId: string, description: string): Promise<ActionResponse & { newImageUrl?: string }> {
+     const uid = await verifyAndGetUid(); // Security check
+     if (!adminDb) {
+        return { success: false, message: 'Database service is unavailable.' };
+     }
+     
+     try {
+        const { imageUrl } = await generateCharacterImage({ description });
+
+        if (!imageUrl) {
+            return { success: false, message: 'AI failed to generate a new image.' };
+        }
+        
+        // This is a temporary data URI, we need to upload it to storage
+        const storage = getStorage();
+        const bucket = storage.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+        const match = imageUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+        if (!match) {
+            throw new Error('Invalid Data URI format from AI.');
+        }
+        const contentType = match[1];
+        const base64Data = match[2];
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        const fileName = `usersImg/${uid}/${characterId}/${randomUUID()}.png`;
+        const file = bucket.file(fileName);
+        await file.save(imageBuffer, {
+            metadata: { contentType, cacheControl: 'public, max-age=31536000' },
+            public: true,
+        });
+
+        const publicUrl = file.publicUrl();
+
+        // Add the new image to the character's gallery
+        const characterRef = adminDb.collection('characters').doc(characterId);
+        await characterRef.update({
+            gallery: FieldValue.arrayUnion(publicUrl),
+        });
+
+        revalidatePath(`/characters/${characterId}/edit`);
+
+        return { success: true, message: 'New image generated and added to gallery!', newImageUrl: publicUrl };
+
+     } catch(error) {
+        const message = error instanceof Error ? error.message : 'Could not generate new image.';
+        return { success: false, message };
+     }
 }
 
 

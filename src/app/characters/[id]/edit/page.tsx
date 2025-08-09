@@ -87,8 +87,8 @@ export default async function EditCharacterPage({ params }: { params: { id: stri
     return (
       <div className="container py-8">
           <PageHeader 
-              title="Edit Character"
-              description="Refine the details of your creation, translate its story, or expand its gallery."
+              title="Character Workshop"
+              description="Refine, regenerate, and manage every aspect of your creation."
           />
           <div className="max-w-7xl mx-auto">
             <EditCharacterForm character={character} />
