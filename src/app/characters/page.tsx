@@ -12,6 +12,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { PageHeader } from '@/components/page-header';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
@@ -146,6 +147,33 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                     </div>
                  </div>
                  <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex gap-2">
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="secondary" size="icon"><Settings /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={handleCopyPrompt}>
+                                <Copy className="mr-2"/> Copy Original Prompt
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleTogglePublicStatus} disabled={isUpdating}>
+                                {isPublic ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>}
+                                {isPublic ? "Make Private" : "Make Public"}
+                            </DropdownMenuItem>
+                             {isPublic && (
+                               <DropdownMenuItem onClick={handleToggleBranchingPermissions} disabled={isUpdating}>
+                                    <GitBranch className="mr-2"/>
+                                    {canBranch ? "Disable Branching" : "Enable Branching"}
+                                </DropdownMenuItem>
+                            )}
+                            {wasMadeWithDataPack && (
+                               <DropdownMenuItem onClick={handleToggleDataPackSharing} disabled={isUpdating}>
+                                    <GalleryHorizontal className="mr-2"/>
+                                    {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to Gallery"}
+                                </DropdownMenuItem>
+                            )}
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+
                     <Button variant="secondary" size="icon" asChild>
                         <Link href={`/characters/${character.id}/edit`}><Pencil /></Link>
                     </Button>
@@ -183,35 +211,6 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                         <ScrollArea className="h-48 pr-4">
                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{character.biography}</p>
                         </ScrollArea>
-                    </CardContent>
-                </Card>
-
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Actions</CardTitle>
-                        <CardDescription>Manage your character's settings and content.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Button variant="outline" onClick={handleCopyPrompt}><Copy className="mr-2"/> Copy Original Prompt</Button>
-                        <Button onClick={handleTogglePublicStatus} disabled={isUpdating}>
-                            {isUpdating && <Loader2 className="animate-spin mr-2" />}
-                            {isPublic ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>}
-                            {isPublic ? "Make Private" : "Make Public"}
-                        </Button>
-                        {isPublic && (
-                           <Button onClick={handleToggleBranchingPermissions} disabled={isUpdating} variant="secondary">
-                                {isUpdating && <Loader2 className="animate-spin mr-2" />}
-                                <GitBranch className="mr-2"/>
-                                {canBranch ? "Disable Branching" : "Enable Branching"}
-                            </Button>
-                        )}
-                        {wasMadeWithDataPack && (
-                           <Button onClick={handleToggleDataPackSharing} disabled={isUpdating} variant="secondary">
-                                {isUpdating && <Loader2 className="animate-spin mr-2" />}
-                                <GalleryHorizontal className="mr-2"/>
-                                {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to Gallery"}
-                            </Button>
-                        )}
                     </CardContent>
                 </Card>
 
@@ -377,5 +376,7 @@ export default function CharactersPage() {
     </div>
   );
 }
+
+    
 
     
