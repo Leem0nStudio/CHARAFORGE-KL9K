@@ -72,6 +72,7 @@ async function getCharacter(characterId: string): Promise<{ character: Character
             createdAt: data.createdAt.toDate(),
             userName: userName,
             dataPackName: dataPackName,
+            branchingPermissions: data.branchingPermissions || 'private', // FIX: Added this line
         } as Character;
         
         // This is a bit awkward, but we add the branchedFrom data after casting
