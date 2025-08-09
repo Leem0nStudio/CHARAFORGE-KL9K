@@ -180,7 +180,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                           className="object-contain p-2"
                                       />
                                   </div>
-                               </DialogTrigger>
+                                </DialogTrigger>
                                <DialogContent className="max-w-3xl p-0 bg-transparent border-0">
                                   <DialogTitle className="sr-only">{character.name}</DialogTitle>
                                   <Image
