@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { PageHeader } from '@/components/page-header';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
@@ -118,7 +119,7 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
       >
         <Card className="h-full bg-card/50 border-0 shadow-none">
           <CardContent className="p-0">
-            <div className="relative aspect-square w-full rounded-t-lg overflow-hidden bg-muted/20">
+            <div className="group relative aspect-square w-full rounded-t-lg overflow-hidden bg-muted/20">
                 <Image
                     key={character.imageUrl}
                     src={character.imageUrl}
@@ -146,59 +147,80 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                       )}
                     </div>
                  </div>
-                 <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex gap-2">
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="secondary" size="icon"><Settings /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={handleCopyPrompt}>
-                                <Copy className="mr-2"/> Copy Original Prompt
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleTogglePublicStatus} disabled={isUpdating}>
-                                {isPublic ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>}
-                                {isPublic ? "Make Private" : "Make Public"}
-                            </DropdownMenuItem>
-                             {isPublic && (
-                               <DropdownMenuItem onClick={handleToggleBranchingPermissions} disabled={isUpdating}>
-                                    <GitBranch className="mr-2"/>
-                                    {canBranch ? "Disable Branching" : "Enable Branching"}
-                                </DropdownMenuItem>
-                            )}
-                            {wasMadeWithDataPack && (
-                               <DropdownMenuItem onClick={handleToggleDataPackSharing} disabled={isUpdating}>
-                                    <GalleryHorizontal className="mr-2"/>
-                                    {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to Gallery"}
-                                </DropdownMenuItem>
-                            )}
-                        </DropdownMenuContent>
-                     </DropdownMenu>
 
-                    <Button variant="secondary" size="icon" asChild>
-                        <Link href={`/characters/${character.id}/edit`}><Pencil /></Link>
-                    </Button>
-                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="icon" disabled={isDeleting}>
-                            {isDeleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                      <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                          This will permanently delete your character and remove their data from our servers.
-                          </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className={buttonVariants({ variant: "destructive" })}>
-                          {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          Delete
-                          </AlertDialogAction>
-                      </AlertDialogFooter>
-                      </AlertDialogContent>
-                  </AlertDialog>
+                 <div className="absolute top-4 right-4">
+                    <TooltipProvider>
+                        <div className="flex gap-2 p-2 rounded-lg bg-black/40 opacity-70 group-hover:opacity-100 transition-opacity duration-300">
+                             <DropdownMenu>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                         <DropdownMenuTrigger asChild>
+                                            <Button variant="secondary" size="icon"><Settings /></Button>
+                                        </DropdownMenuTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>More Actions</p></TooltipContent>
+                                </Tooltip>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={handleCopyPrompt}>
+                                        <Copy className="mr-2"/> Copy Original Prompt
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleTogglePublicStatus} disabled={isUpdating}>
+                                        {isPublic ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>}
+                                        {isPublic ? "Make Private" : "Make Public"}
+                                    </DropdownMenuItem>
+                                    {isPublic && (
+                                    <DropdownMenuItem onClick={handleToggleBranchingPermissions} disabled={isUpdating}>
+                                            <GitBranch className="mr-2"/>
+                                            {canBranch ? "Disable Branching" : "Enable Branching"}
+                                        </DropdownMenuItem>
+                                    )}
+                                    {wasMadeWithDataPack && (
+                                    <DropdownMenuItem onClick={handleToggleDataPackSharing} disabled={isUpdating}>
+                                            <GalleryHorizontal className="mr-2"/>
+                                            {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to Gallery"}
+                                        </DropdownMenuItem>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                     <Button variant="secondary" size="icon" asChild>
+                                        <Link href={`/characters/${character.id}/edit`}><Pencil /></Link>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Edit Character</p></TooltipContent>
+                            </Tooltip>
+                            
+                            <AlertDialog>
+                                <Tooltip>
+                                     <TooltipTrigger asChild>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" size="icon" disabled={isDeleting}>
+                                                {isDeleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Delete Character</p></TooltipContent>
+                                </Tooltip>
+                                <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                    This will permanently delete your character and remove their data from our servers.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className={buttonVariants({ variant: "destructive" })}>
+                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </TooltipProvider>
                  </div>
             </div>
             <div className="p-4 sm:p-6 space-y-6">
@@ -376,7 +398,3 @@ export default function CharactersPage() {
     </div>
   );
 }
-
-    
-
-    
