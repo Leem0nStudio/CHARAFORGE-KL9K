@@ -93,20 +93,23 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
 
     return (
         <div className="container py-8 max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+             <div className="flex items-center gap-4 mb-4">
+                <BackButton />
+                <h1 className="text-3xl font-bold tracking-tight font-headline sr-only">{character.name}</h1>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 
                 {/* Left Column: Character Details */}
-                <div className="lg:col-span-2 order-2 lg:order-1">
-                     <div className="flex items-center gap-4 mb-4">
-                        <BackButton />
-                        <h1 className="text-3xl font-bold tracking-tight font-headline sr-only">{character.name}</h1>
-                    </div>
-                    <Card className="bg-card/50 overflow-hidden">
+                <div className="w-full">
+                    <Card className="bg-card/50 overflow-hidden h-full">
                         {/* Header Section */}
-                        <div className="p-4 bg-[hsl(var(--info-card-header))] text-[hsl(var(--info-card-header-foreground))]">
-                            <h2 className="text-3xl font-headline tracking-wider">{character.name}</h2>
-                            <Separator className="my-2 bg-[hsl(var(--info-card-header-foreground))] opacity-20" />
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                        <div className="p-4 bg-info-card-header text-info-card-header-foreground">
+                            <h2 className="text-4xl font-headline tracking-wider">{character.name}</h2>
+                        </div>
+                        
+                        {/* Metadata Section */}
+                        <div className="p-4 border-b border-border">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground mb-4">
                                 <div className="flex items-center gap-1.5">
                                     <User className="h-4 w-4" />
                                     <span>{character.userName}</span>
@@ -116,30 +119,29 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                     <span>{new Date(character.createdAt).toLocaleDateString()}</span>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Chips/Tags Section */}
-                         <div className="p-4 flex flex-wrap gap-2 bg-[hsl(var(--info-card-header))] border-t border-t-[hsl(var(--info-card-header-foreground))] border-opacity-20">
-                             {character.dataPackId && character.dataPackName && (
-                                <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
-                                    <Tag className="h-3 w-3 mr-1.5" />
-                                    <Link href={`/datapacks/${character.dataPackId}`} className="hover:underline">
-                                       {character.dataPackName}
-                                    </Link>
-                                </Badge>
-                             )}
-                             {character.branchedFromId && (
-                                <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
-                                    <GitBranch className="h-3 w-3 mr-1.5" />
-                                     Branched
-                                </Badge>
-                             )}
-                              {character.originalAuthorName && character.branchedFromId && (
-                                <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
-                                    <User className="h-3 w-3 mr-1.5" />
-                                    Origin: {character.originalAuthorName}
-                                </Badge>
-                             )}
+                            <div className="flex flex-wrap gap-2">
+                                {character.dataPackId && character.dataPackName && (
+                                    <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                                        <Tag className="h-3 w-3 mr-1.5" />
+                                        <Link href={`/datapacks/${character.dataPackId}`} className="hover:underline">
+                                        {character.dataPackName}
+                                        </Link>
+                                    </Badge>
+                                )}
+                                {character.branchedFromId && (
+                                    <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                                        <GitBranch className="h-3 w-3 mr-1.5" />
+                                        Branched
+                                    </Badge>
+                                )}
+                                {character.originalAuthorName && character.branchedFromId && (
+                                    <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                                        <User className="h-3 w-3 mr-1.5" />
+                                        Origin: {character.originalAuthorName}
+                                    </Badge>
+                                )}
+                            </div>
                         </div>
                         
                         {/* Biography Section */}
@@ -152,7 +154,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                 </div>
 
                 {/* Right Column: Character Image */}
-                <div className="lg:col-span-1 w-full order-1 lg:order-2 sticky top-20">
+                <div className="w-full">
                      <Card className="overflow-hidden group relative border-2 border-primary/20 shadow-lg">
                          <div className="w-full aspect-square relative bg-muted/20">
                             <Image
@@ -188,7 +190,6 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                         </div>
                      </Card>
                 </div>
-
             </div>
         </div>
     );
