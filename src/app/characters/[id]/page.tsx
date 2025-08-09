@@ -5,11 +5,14 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
-import { User, Calendar, Tag, GitBranch, ChevronsRight } from 'lucide-react';
+import { User, Calendar, Tag, GitBranch, ChevronsRight, Pencil } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { BranchButton } from './branch-button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { EditButton } from './edit-button';
 
 
 async function getCharacter(characterId: string): Promise<{ character: Character | null, currentUserId: string | null }> {
@@ -102,7 +105,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
     return (
         <div className="container py-8 max-w-4xl mx-auto">
             <div className="flex flex-col gap-6">
-                <Card className="overflow-hidden">
+                <Card className="overflow-hidden group relative">
                      <div className="w-full aspect-[4/3] relative bg-muted/20">
                         <Image
                             src={character.imageUrl}
@@ -111,6 +114,14 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                             priority
                             className="object-contain"
                         />
+                         <div className="absolute top-4 right-4">
+                            <div className="flex gap-2 p-2 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <TooltipProvider>
+                                    {isOwner && <EditButton characterId={character.id} />}
+                                    {canBranch && <BranchButton characterId={character.id} isIcon={true} />}
+                                </TooltipProvider>
+                            </div>
+                        </div>
                     </div>
                 </Card>
 
@@ -160,12 +171,6 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                 }
                             </div>
                         )}
-
-                         {canBranch && (
-                            <div className="mt-4 border-t pt-4">
-                               <BranchButton characterId={character.id} />
-                            </div>
-                        )}
                     </CardContent>
                 </Card>
 
@@ -182,3 +187,4 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
         </div>
     );
 }
+

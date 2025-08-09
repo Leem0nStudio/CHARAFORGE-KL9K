@@ -7,8 +7,9 @@ import { useToast } from '@/hooks/use-toast';
 import { branchCharacter } from '@/app/actions/characters';
 import { Button } from '@/components/ui/button';
 import { GitBranch, Loader2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-export function BranchButton({ characterId }: { characterId: string }) {
+export function BranchButton({ characterId, isIcon = false }: { characterId: string, isIcon?: boolean }) {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const { toast } = useToast();
@@ -31,6 +32,19 @@ export function BranchButton({ characterId }: { characterId: string }) {
             }
         });
     };
+    
+    if (isIcon) {
+        return (
+             <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="secondary" size="icon" onClick={handleBranch} disabled={isPending}>
+                        {isPending ? <Loader2 className="animate-spin" /> : <GitBranch />}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>Branch this Character</p></TooltipContent>
+            </Tooltip>
+        )
+    }
 
     return (
         <Button onClick={handleBranch} disabled={isPending} className="w-full">
