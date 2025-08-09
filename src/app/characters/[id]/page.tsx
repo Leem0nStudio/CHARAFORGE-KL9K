@@ -46,14 +46,16 @@ async function getCharacter(characterId: string): Promise<{ character: Character
         if (!data) return { character: null, currentUserId };
 
         let userName = 'Anonymous';
+        let originalAuthorName = data.originalAuthorName || null;
         let dataPackName = null;
         let branchedFrom: { id: string, name: string } | null = null;
 
         // Fetch user, datapack, and branchedFrom info in parallel
-        const [userDoc, dataPackDoc, branchedFromDoc] = await Promise.all([
+        const [userDoc, dataPackDoc, branchedFromDoc, originalAuthorDoc] = await Promise.all([
             data.userId ? adminDb.collection('users').doc(data.userId).get() : Promise.resolve(null),
             data.dataPackId ? adminDb.collection('datapacks').doc(data.dataPackId).get() : Promise.resolve(null),
             data.branchedFromId ? adminDb.collection('characters').doc(data.branchedFromId).get() : Promise.resolve(null),
+            data.originalAuthorId ? adminDb.collection('users').doc(data.originalAuthorId).get() : Promise.resolve(null),
         ]);
 
         if (userDoc && userDoc.exists) {
@@ -65,6 +67,10 @@ async function getCharacter(characterId: string): Promise<{ character: Character
         if (branchedFromDoc && branchedFromDoc.exists) {
             branchedFrom = { id: branchedFromDoc.id, name: branchedFromDoc.data()?.name || 'Unknown' };
         }
+        if (originalAuthorDoc && originalAuthorDoc.exists) {
+            originalAuthorName = originalAuthorDoc.data()?.displayName || 'Anonymous';
+        }
+
 
         const character: Character = {
             id: doc.id,
@@ -73,6 +79,7 @@ async function getCharacter(characterId: string): Promise<{ character: Character
             userName: userName,
             dataPackName: dataPackName,
             branchingPermissions: data.branchingPermissions || 'private',
+            originalAuthorName: originalAuthorName,
         } as Character;
         
         // This is a bit awkward, but we add the branchedFrom data after casting
@@ -108,23 +115,27 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
     return (
         <div className="container py-8">
             <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                <div className="lg:col-span-2">
-                    <Card className="sticky top-20">
-                         <CardHeader className="p-0">
-                            <div className="w-full aspect-square relative bg-muted/20">
-                                <Image
-                                    src={character.imageUrl}
-                                    alt={character.name}
-                                    fill
-                                    className="object-contain rounded-t-lg"
-                                />
-                            </div>
+                {/* Main Content: Image and Metadata */}
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="overflow-hidden">
+                         <div className="w-full aspect-[4/3] relative bg-muted/20">
+                            <Image
+                                src={character.imageUrl}
+                                alt={character.name}
+                                fill
+                                priority
+                                className="object-contain"
+                            />
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="font-headline text-4xl">{character.name}</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-6 space-y-4">
-                            <h1 className="text-4xl font-bold font-headline">{character.name}</h1>
-                            
-                            {branchedFrom && (
-                                <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg space-y-2">
+                        <CardContent className="space-y-4">
+                             {branchedFrom && (
+                                <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg space-y-2 border-l-4 border-primary">
                                     <div className="flex items-center gap-2">
                                       <GitBranch className="h-4 w-4 text-primary" />
                                       <span>Branched from{' '}
@@ -163,16 +174,18 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                     </div>
                                 )}
                             </div>
+
                              {canBranch && (
-                                <div className="mt-4">
+                                <div className="mt-6 border-t pt-6">
                                    <BranchButton characterId={character.id} />
                                 </div>
                             )}
                         </CardContent>
                     </Card>
                 </div>
+                 {/* Sidebar: Biography */}
                 <div className="lg:col-span-1">
-                    <Card>
+                    <Card className="sticky top-20">
                         <CardHeader>
                             <CardTitle>Biography</CardTitle>
                              <CardDescription>The story of {character.name}.</CardDescription>
