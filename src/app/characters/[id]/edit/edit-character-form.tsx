@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 
 import type { Character } from '@/types/character';
-import { updateCharacter, updateCharacterImages } from '@/app/actions/characters';
+import { updateCharacter, updateCharacterImages, uploadCharacterImage } from '@/app/actions/characters';
 import { useToast } from '@/hooks/use-toast';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Pencil, ImagePlus, Trash2, Star, PlusCircle } from 'lucide-react';
+import { Loader2, Pencil, ImagePlus, Trash2, Star, Upload, FileUp } from 'lucide-react';
 import Image from 'next/image';
 import { Label } from '@/components/ui/label';
 
@@ -26,12 +26,8 @@ const UpdateCharacterSchema = z.object({
   biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
 });
 
-const ImageSchema = z.object({
-  url: z.string().url("Please enter a valid URL."),
-});
-
 const UpdateImagesSchema = z.object({
-    images: z.array(ImageSchema).min(1, "At least one image is required.").max(10, "You can add a maximum of 10 images."),
+    images: z.array(z.string().url()).min(1, "At least one image is required.").max(10, "You can add a maximum of 10 images."),
     primaryImageUrl: z.string().url("A primary image must be selected."),
 });
 
@@ -40,9 +36,8 @@ type UpdateImagesFormValues = z.infer<typeof UpdateImagesSchema>;
 // #endregion
 
 // #region Sub-components
-function EditTab({ character }: { character: Character }) {
+function EditTab({ character, onUpdate }: { character: Character, onUpdate: (data: Partial<Character>) => void }) {
     const { toast } = useToast();
-    const router = useRouter();
     const [isUpdating, startUpdateTransition] = useTransition();
 
     const form = useForm<UpdateCharacterFormValues>({
@@ -53,10 +48,6 @@ function EditTab({ character }: { character: Character }) {
         },
     });
 
-    useEffect(() => {
-        form.reset({ name: character.name, biography: character.biography });
-    }, [character, form]);
-    
     const onSubmit = (data: UpdateCharacterFormValues) => {
         startUpdateTransition(async () => {
             const result = await updateCharacter(character.id, data);
@@ -66,7 +57,7 @@ function EditTab({ character }: { character: Character }) {
                 variant: result.success ? 'default' : 'destructive',
             });
             if (result.success) {
-                router.push('/characters');
+                onUpdate(data);
             }
         });
     };
@@ -86,52 +77,51 @@ function EditTab({ character }: { character: Character }) {
             <div className="flex justify-end gap-2">
                 <Button type="submit" disabled={isUpdating}>
                     {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Changes
+                    Save Details
                 </Button>
             </div>
         </form>
     );
 }
 
-function ImagesTab({ character }: { character: Character }) {
+function ImagesTab({ character, onUpdate }: { character: Character, onUpdate: (data: Partial<Character>) => void }) {
   const { toast } = useToast();
-  const router = useRouter();
   const [isUpdating, startUpdateTransition] = useTransition();
-  const [newImageUrl, setNewImageUrl] = useState('');
+  const [isUploading, startUploadTransition] = useTransition();
 
   const form = useForm<UpdateImagesFormValues>({
     resolver: zodResolver(UpdateImagesSchema),
     defaultValues: {
-      images: character.gallery?.map(url => ({ url })) || [{ url: character.imageUrl }],
+      images: character.gallery || [character.imageUrl],
       primaryImageUrl: character.imageUrl,
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, move } = useFieldArray({
     control: form.control,
     name: "images",
   });
-  
-  useEffect(() => {
-    form.reset({
-      images: character.gallery?.map(url => ({ url })) || [{ url: character.imageUrl }],
-      primaryImageUrl: character.imageUrl,
-    });
-  }, [character, form]);
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const handleAddImage = () => {
-    const result = ImageSchema.safeParse({ url: newImageUrl });
-    if (result.success) {
-      if (fields.length >= 10) {
+    if (fields.length >= 10) {
         toast({ variant: 'destructive', title: 'Gallery Full', description: 'You cannot add more than 10 images.' });
         return;
-      }
-      append({ url: newImageUrl });
-      setNewImageUrl('');
-    } else {
-        toast({ variant: 'destructive', title: 'Invalid URL', description: 'Please enter a valid image URL.' });
     }
+
+    startUploadTransition(async () => {
+        try {
+            const newImageUrl = await uploadCharacterImage(character.id, file);
+            append(newImageUrl);
+            form.setValue('primaryImageUrl', newImageUrl, { shouldDirty: true }); // Optionally set new upload as primary
+            toast({ title: "Image Uploaded!", description: "The new image has been added to your gallery."});
+        } catch (error) {
+             const message = error instanceof Error ? error.message : "Could not upload the image.";
+             toast({ variant: 'destructive', title: 'Upload Failed', description: message });
+        }
+    });
   };
 
   const handleSetPrimary = (url: string) => {
@@ -140,14 +130,14 @@ function ImagesTab({ character }: { character: Character }) {
 
   const onSubmit = (data: UpdateImagesFormValues) => {
     startUpdateTransition(async () => {
-      const result = await updateCharacterImages(character.id, data.images.map(img => img.url), data.primaryImageUrl);
+      const result = await updateCharacterImages(character.id, data.images, data.primaryImageUrl);
       toast({
             title: result.success ? 'Success!' : 'Update Failed',
             description: result.message,
             variant: result.success ? 'default' : 'destructive',
       });
       if (result.success) {
-        router.push('/characters');
+        onUpdate({ gallery: data.images, imageUrl: data.primaryImageUrl });
       }
     });
   };
@@ -160,45 +150,46 @@ function ImagesTab({ character }: { character: Character }) {
           {fields.map((field, index) => (
              <Card key={field.id} className="group relative overflow-hidden">
                  <div className="relative w-full aspect-square bg-muted/20">
-                    <Image src={(field as {url: string}).url} alt={`Character image ${index + 1}`} fill className="w-full object-contain" />
+                    <Image src={(field as any).value || field} alt={`Character image ${index + 1}`} fill className="w-full object-contain" />
                  </div>
                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2 gap-1">
-                    <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary((field as {url: string}).url)} disabled={primaryImageUrl === (field as {url: string}).url}>
-                        <Star className="mr-2" /> {primaryImageUrl === (field as {url: string}).url ? 'Primary' : 'Set Primary'}
+                    <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary(field as any)} disabled={primaryImageUrl === (field as any)}>
+                        <Star className="mr-2" /> {primaryImageUrl === (field as any) ? 'Primary' : 'Set Primary'}
                     </Button>
                     <Button type="button" variant="destructive" size="sm" className="w-full" onClick={() => remove(index)} disabled={fields.length <= 1}>
                         <Trash2 className="mr-2" /> Remove
                     </Button>
                 </div>
-                {primaryImageUrl === (field as {url: string}).url && (
+                {primaryImageUrl === (field as any) && (
                     <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1.5 text-xs shadow-lg">
                         <Star className="w-3 h-3 fill-current" />
                     </div>
                 )}
              </Card>
           ))}
+            <Card className="flex items-center justify-center border-2 border-dashed bg-muted/50 hover:border-primary transition-colors">
+                <Label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-4 text-center">
+                    {isUploading ? (
+                         <>
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                            <span className="mt-2 text-sm text-muted-foreground">Uploading...</span>
+                        </>
+                    ) : (
+                         <>
+                            <FileUp className="h-8 w-8 text-muted-foreground" />
+                            <span className="mt-2 text-sm font-semibold text-muted-foreground">Upload Image</span>
+                         </>
+                    )}
+                </Label>
+                <Input id="image-upload" type="file" className="hidden" onChange={handleImageUpload} accept="image/png, image/jpeg, image/webp" disabled={isUploading}/>
+            </Card>
        </div>
         {form.formState.errors.images && <p className="text-sm font-medium text-destructive">{form.formState.errors.images.message}</p>}
        
-        <Card>
-            <CardHeader>
-                <CardTitle>Add New Image</CardTitle>
-                <CardDescription>Paste an image URL below to add it to the gallery.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center gap-2">
-                 <Input 
-                    placeholder="https://example.com/image.png"
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                  />
-                 <Button type="button" onClick={handleAddImage}><PlusCircle /> Add</Button>
-            </CardContent>
-        </Card>
-
         <div className="flex justify-end gap-2">
             <Button type="submit" disabled={isUpdating || !form.formState.isDirty}>
                 {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Image Gallery
+                Save Gallery
             </Button>
         </div>
      </form>
@@ -210,25 +201,31 @@ function ImagesTab({ character }: { character: Character }) {
 
 export function EditCharacterForm({ character }: { character: Character }) {
     const [characterState, setCharacterState] = useState(character);
+    const router = useRouter();
 
     useEffect(() => {
         setCharacterState(character);
     }, [character]);
+    
+    const handleCharacterUpdate = (data: Partial<Character>) => {
+        setCharacterState(prev => ({ ...prev, ...data }));
+        router.refresh(); // Re-fetches server data and re-renders
+    };
 
     return (
         <Tabs defaultValue="edit" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="edit"><Pencil className="mr-2" />Edit Details</TabsTrigger>
-                <TabsTrigger value="images"><ImagePlus className="mr-2" />Manage Images</TabsTrigger>
+                <TabsTrigger value="images"><ImagePlus className="mr-2" />Images & AI</TabsTrigger>
             </TabsList>
             <TabsContent value="edit">
                  <Card>
                     <CardHeader>
                         <CardTitle>Core Details</CardTitle>
-                        <CardDescription>Modify the fields below to update your character.</CardDescription>
+                        <CardDescription>Modify the fields below to update your character's story.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <EditTab character={characterState} />
+                        <EditTab character={characterState} onUpdate={handleCharacterUpdate} />
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -236,10 +233,10 @@ export function EditCharacterForm({ character }: { character: Character }) {
                  <Card>
                     <CardHeader>
                         <CardTitle>Image Gallery</CardTitle>
-                        <CardDescription>Add or remove images, and set a primary image for your character.</CardDescription>
+                        <CardDescription>Upload new images, manage your gallery, and set a primary image.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ImagesTab character={characterState} />
+                        <ImagesTab character={characterState} onUpdate={handleCharacterUpdate} />
                     </CardContent>
                 </Card>
             </TabsContent>

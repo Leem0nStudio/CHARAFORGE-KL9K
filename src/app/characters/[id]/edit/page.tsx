@@ -1,4 +1,6 @@
 
+'use server';
+
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { getAuth } from 'firebase-admin/auth';
@@ -72,6 +74,7 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
       versionName: characterData.versionName || `v.${characterData.version || 1}`,
       baseCharacterId: characterData.baseCharacterId || null,
       versions: characterData.versions || [{ id: characterDoc.id, name: characterData.versionName || 'v.1', version: characterData.version || 1 }],
+      branchingPermissions: characterData.branchingPermissions,
   };
 
   return character;

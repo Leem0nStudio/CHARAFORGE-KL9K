@@ -4,16 +4,48 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { adminDb } from '@/lib/firebase/server';
+import { getStorage } from 'firebase-admin/storage';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character } from '@/types/character';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { UserProfile } from '@/types/user';
+import { randomUUID } from 'crypto';
+
 
 type ActionResponse = {
     success: boolean;
     message: string;
     characterId?: string;
+    newImageUrl?: string;
 };
+
+// Helper function to upload an arbitrary image file for a user
+export async function uploadCharacterImage(characterId: string, file: File): Promise<string> {
+    const uid = await verifyAndGetUid(); // Security check
+    if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
+        throw new Error('Firebase Storage bucket is not configured.');
+    }
+    const storage = getStorage();
+    const bucket = storage.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+    
+    // Create a unique file name to avoid collisions
+    const fileName = `${randomUUID()}-${file.name}`;
+    const filePath = `usersImg/${uid}/${characterId}/${fileName}`;
+    const fileRef = bucket.file(filePath);
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    await fileRef.save(buffer, {
+        metadata: { 
+            contentType: file.type,
+            cacheControl: 'public, max-age=31536000', // Cache aggressively
+        },
+        public: true,
+    });
+    
+    return fileRef.publicUrl();
+}
+
 
 export async function createCharacterVersion(characterId: string): Promise<ActionResponse> {
   if (!adminDb) {
