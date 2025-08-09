@@ -38,6 +38,7 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { DataPackSelectorModal } from "./datapack-selector-modal";
 import { Badge } from "./ui/badge";
 import type { DataPack } from "@/types/datapack";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 const generationFormSchema = z.object({
   description: z.string().min(20, {
@@ -45,6 +46,7 @@ const generationFormSchema = z.object({
   }).max(1000, {
     message: "Description must not be longer than 1000 characters."
   }),
+  targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
 });
 
 const saveFormSchema = z.object({
@@ -84,6 +86,7 @@ export function CharacterGenerator() {
     resolver: zodResolver(generationFormSchema),
     defaultValues: {
       description: "",
+      targetLanguage: 'English',
     },
   });
 
@@ -163,7 +166,7 @@ export function CharacterGenerator() {
     saveForm.reset();
 
     try {
-      const bioResult = await generateCharacterBio({ description: data.description });
+      const bioResult = await generateCharacterBio({ description: data.description, targetLanguage: data.targetLanguage });
       if (!bioResult.biography) {
         throw new Error("AI failed to generate a biography.");
       }
@@ -296,6 +299,29 @@ export function CharacterGenerator() {
                           disabled={!canInteract}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={generationForm.control}
+                  name="targetLanguage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Output Language</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!canInteract}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a language" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="English">English</SelectItem>
+                          <SelectItem value="Spanish">Spanish</SelectItem>
+                          <SelectItem value="French">French</SelectItem>
+                          <SelectItem value="German">German</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

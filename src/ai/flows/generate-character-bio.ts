@@ -13,6 +13,7 @@ import {z} from 'genkit';
 
 const GenerateCharacterBioInputSchema = z.object({
   description: z.string().describe('A description of the character.'),
+  targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).optional().describe('The target language for the biography.'),
 });
 export type GenerateCharacterBioInput = z.infer<typeof GenerateCharacterBioInputSchema>;
 
@@ -33,6 +34,12 @@ const generateCharacterBioPrompt = ai.definePrompt({
   prompt: `You are a professional writer specializing in character biographies.
 
   Based on the provided description, generate a detailed and engaging biography for the character.
+  
+  {{#if targetLanguage}}
+  IMPORTANT: The biography MUST be written in {{targetLanguage}}.
+  {{else}}
+  The biography MUST be written in English.
+  {{/if}}
 
   Description: {{{description}}}`,
 });
