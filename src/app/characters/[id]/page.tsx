@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { BackButton } from '@/components/back-button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { UserProfile } from '@/types/user';
 import { CharacterImageActions } from '@/components/character/character-image-actions';
@@ -182,6 +182,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                   </div>
                                </DialogTrigger>
                                <DialogContent className="max-w-3xl p-0 bg-transparent border-0">
+                                  <DialogTitle className="sr-only">{character.name}</DialogTitle>
                                   <Image
                                     src={character.imageUrl}
                                     alt={character.name}
