@@ -47,6 +47,42 @@ export async function uploadCharacterImage(characterId: string, file: File): Pro
     return fileRef.publicUrl();
 }
 
+/**
+ * A generalized helper to upload an image from a Data URI to a user-specific folder in Firebase Storage.
+ * @param dataUri The image represented as a Data URI string.
+ * @param userId The UID of the user uploading the image.
+ * @param characterId The ID of the character for folder organization.
+ * @returns The public URL of the uploaded image.
+ * @throws Throws an error if the upload fails.
+ */
+async function uploadDataUriToStorage(dataUri: string, userId: string, characterId?: string): Promise<string> {
+    const storage = getStorage();
+    const bucket = storage.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+
+    const match = dataUri.match(/^data:(image\/\w+);base64,(.+)$/);
+    if (!match) {
+        throw new Error('Invalid Data URI format for image.');
+    }
+    const contentType = match[1];
+    const base64Data = match[2];
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    
+    const id = characterId || randomUUID();
+    const fileName = `usersImg/${userId}/${id}/${randomUUID()}.png`;
+    const file = bucket.file(fileName);
+
+    await file.save(imageBuffer, {
+        metadata: { 
+            contentType,
+            cacheControl: 'public, max-age=31536000', // Cache for 1 year
+        },
+        public: true,
+    });
+
+    return file.publicUrl();
+}
+
+
 export async function generateNewCharacterImage(characterId: string, description: string): Promise<ActionResponse & { newImageUrl?: string }> {
      const uid = await verifyAndGetUid(); // Security check
      if (!adminDb) {
@@ -60,25 +96,9 @@ export async function generateNewCharacterImage(characterId: string, description
             return { success: false, message: 'AI failed to generate a new image.' };
         }
         
-        // This is a temporary data URI, we need to upload it to storage
-        const storage = getStorage();
-        const bucket = storage.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-        const match = imageUrl.match(/^data:(image\/\w+);base64,(.+)$/);
-        if (!match) {
-            throw new Error('Invalid Data URI format from AI.');
-        }
-        const contentType = match[1];
-        const base64Data = match[2];
-        const imageBuffer = Buffer.from(base64Data, 'base64');
-        const fileName = `usersImg/${uid}/${characterId}/${randomUUID()}.png`;
-        const file = bucket.file(fileName);
-        await file.save(imageBuffer, {
-            metadata: { contentType, cacheControl: 'public, max-age=31536000' },
-            public: true,
-        });
-
-        const publicUrl = file.publicUrl();
-
+        // Use the centralized Data URI upload function
+        const publicUrl = await uploadDataUriToStorage(imageUrl, uid, characterId);
+        
         // Add the new image to the character's gallery
         const characterRef = adminDb.collection('characters').doc(characterId);
         await characterRef.update({
@@ -155,6 +175,8 @@ export async function createCharacterVersion(characterId: string): Promise<Actio
     await batch.commit();
     
     revalidatePath('/characters');
+    revalidatePath(`/characters/${newCharacterRef.id}/edit`);
+
     return { success: true, message: `Created new version: ${newVersionName}`, characterId: newCharacterRef.id };
 
   } catch (error) {
@@ -225,6 +247,8 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
 
     revalidatePath('/characters');
     revalidatePath('/'); 
+    revalidatePath(`/characters/${characterId}/edit`);
+
 
     return { success: true, message: `Character is now ${validation.data}.` };
   } catch (error) {
@@ -270,6 +294,7 @@ export async function updateCharacterDataPackSharing(characterId: string, isShar
     revalidatePath('/characters');
     revalidatePath(`/datapacks/${characterData.dataPackId}`);
     revalidatePath('/');
+    revalidatePath(`/characters/${characterId}/edit`);
     
     return { success: true, message: `Sharing status for DataPack gallery updated.` };
 
@@ -432,6 +457,7 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
 
     revalidatePath('/characters');
     revalidatePath(`/characters/${characterId}`);
+    revalidatePath(`/characters/${characterId}/edit`);
 
     return { success: true, message: `Branching permissions set to ${permissions}.` };
   } catch (error) {
@@ -521,43 +547,6 @@ const SaveCharacterInputSchema = z.object({
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 
-/**
- * Uploads an image from a Data URI to a user-specific folder in Firebase Storage.
- * This is the standard function for uploading PUBLIC images.
- * @param dataUri The image represented as a Data URI string.
- * @param userId The UID of the user uploading the image, for folder organization.
- * @returns The public URL of the uploaded image.
- * @throws Throws an error if the upload fails.
- */
-async function uploadImageToStorage(dataUri: string, userId: string): Promise<string> {
-    const storage = getStorage();
-    const bucket = storage.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-
-    const match = dataUri.match(/^data:(image\/\w+);base64,(.+)$/);
-    if (!match) {
-        throw new Error('Invalid Data URI format for image.');
-    }
-    const contentType = match[1];
-    const base64Data = match[2];
-    const imageBuffer = Buffer.from(base64Data, 'base64');
-    
-    // Generate a unique file name inside the user-specific folder.
-    const fileName = `usersImg/${userId}/${randomUUID()}.png`;
-    const file = bucket.file(fileName);
-
-    // Standard way to save a public file
-    await file.save(imageBuffer, {
-        metadata: { 
-            contentType,
-            cacheControl: 'public, max-age=31536000', // Cache for 1 year
-        },
-        public: true,
-    });
-
-    return file.publicUrl();
-}
-
-
 export async function saveCharacter(input: SaveCharacterInput) {
   if (!adminDb) {
     throw new Error('Database service is not available. Please try again later.');
@@ -572,11 +561,12 @@ export async function saveCharacter(input: SaveCharacterInput) {
   
   try {
     const userId = await verifyAndGetUid();
+    
+    const characterRef = adminDb.collection('characters').doc();
 
     // Use the standardized public upload function
-    const storageUrl = await uploadImageToStorage(imageDataUri, userId);
+    const storageUrl = await uploadDataUriToStorage(imageDataUri, userId, characterRef.id);
 
-    const characterRef = adminDb.collection('characters').doc();
     const userRef = adminDb.collection('users').doc(userId);
 
     await adminDb.runTransaction(async (transaction) => {
@@ -598,8 +588,9 @@ export async function saveCharacter(input: SaveCharacterInput) {
             dataPackId: dataPackId || null,
             version: version,
             versionName: versionName,
-            baseCharacterId: null,
+            baseCharacterId: characterRef.id, // A new character is its own base
             versions: [initialVersion],
+            branchingPermissions: 'private',
         };
 
         transaction.set(characterRef, characterData);
@@ -614,6 +605,8 @@ export async function saveCharacter(input: SaveCharacterInput) {
             });
         }
     });
+
+    revalidatePath('/characters');
 
     return { success: true, characterId: characterRef.id };
   } catch (error) {
