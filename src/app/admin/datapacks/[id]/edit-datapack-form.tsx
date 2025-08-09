@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { DataPack, UpsertDataPack, DataPackSchema, Slot, Option, Exclusion } from '@/types/datapack';
+import type { DataPack, UpsertDataPack, DataPackSchema, Slot } from '@/types/datapack';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 // #region AI Generator Dialog
@@ -62,16 +62,17 @@ function AiGeneratorDialog({ onSchemaGenerated }: { onSchemaGenerated: (schema: 
                 <AlertDialogHeader>
                     <AlertDialogTitle>DataPack AI Assistant</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Describe the theme or concept for your DataPack, and the AI will generate a complete schema for you.
+                        Describe the theme or concept for your DataPack, and the AI will generate a complete schema for you. Be descriptive for the best results.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="space-y-4 py-4">
                     <Label htmlFor="concept">Concept</Label>
-                    <Input 
+                    <Textarea 
                         id="concept"
                         value={concept}
                         onChange={(e) => setConcept(e.target.value)}
-                        placeholder="e.g., Sci-Fi Noir Detectives, Elemental Dragons"
+                        placeholder="e.g., Sci-Fi Noir Detectives in a rain-slicked megacity, Elemental Dragons with ancient, warring clans, or Lovecraftian Horror Investigators in 1920s New England."
+                        className="min-h-[100px]"
                     />
                 </div>
                 <AlertDialogFooter>
@@ -140,9 +141,9 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
       type: initialData?.type || 'free',
       price: initialData?.price || 0,
       tags: initialData?.tags?.join(', ') || '',
-      schema: {
-        promptTemplate: initialData?.schema?.promptTemplate || 'A {style} portrait of a {race} {class}.',
-        slots: initialData?.schema?.slots || [],
+      schema: initialData?.schema || {
+        promptTemplate: 'A {style} portrait of a {race} {class}.',
+        slots: [],
       },
     };
   }, [initialData]);
@@ -153,7 +154,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
     mode: 'onChange',
   });
 
-  const { fields: slotFields, append: appendSlot, remove: removeSlot } = useFieldArray({
+  const { fields: slotFields, append: appendSlot, remove: removeSlot, move: moveSlot } = useFieldArray({
     control: form.control,
     name: "schema.slots",
   });
@@ -279,23 +280,25 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
 
                     <Accordion type="multiple" className="w-full space-y-2">
                         {slotFields.map((slot, slotIndex) => (
-                            <AccordionItem key={slot.id} value={slot.id}>
-                                <AccordionTrigger className="bg-muted/50 px-4 rounded-t-lg">
-                                    <div className="flex items-center gap-2">
-                                        <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                        <div className="font-mono text-sm">{slot.id}</div>
-                                        <div className="text-muted-foreground">- {slot.label}</div>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="p-4 border border-t-0 rounded-b-lg">
-                                    <SlotEditor control={form.control} slotIndex={slotIndex} />
-                                </AccordionContent>
+                            <AccordionItem key={slot.id} value={slot.id} className="border-none">
+                                <div className="bg-muted/50 p-4 rounded-lg border">
+                                    <AccordionTrigger>
+                                        <div className="flex items-center gap-2 w-full">
+                                            <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                                            <div className="font-mono text-sm">{form.watch(`schema.slots.${slotIndex}.id`)}</div>
+                                            <div className="text-muted-foreground">- {form.watch(`schema.slots.${slotIndex}.label`)}</div>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="pt-4">
+                                        <SlotEditor control={form.control} slotIndex={slotIndex} removeSlot={removeSlot} />
+                                    </AccordionContent>
+                                </div>
                             </AccordionItem>
                         ))}
                     </Accordion>
                      {form.formState.errors.schema?.slots?.root && <p className="text-destructive text-sm mt-1">{form.formState.errors.schema.slots.root.message}</p>}
 
-                    <Button type="button" variant="outline" onClick={() => appendSlot({ id: '', label: '', type: 'select', options: [] })}>
+                    <Button type="button" variant="outline" onClick={() => appendSlot({ id: `new_slot_${slotFields.length}`, label: 'New Slot', type: 'select', options: [] })}>
                         <PlusCircle className="mr-2" /> Add Slot
                     </Button>
                 </CardContent>
@@ -307,15 +310,17 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
 }
 
 // Sub-component for editing a single slot
-function SlotEditor({ control, slotIndex }: { control: any, slotIndex: number }) {
+function SlotEditor({ control, slotIndex, removeSlot }: { control: any, slotIndex: number, removeSlot: (index: number) => void }) {
     const { fields: optionFields, append: appendOption, remove: removeOption } = useFieldArray({
         control,
         name: `schema.slots.${slotIndex}.options`,
     });
 
+    const isTextType = control.watch(`schema.slots.${slotIndex}.type`) === 'text';
+
     return (
-        <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-6 bg-background/50 p-4 rounded-md">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <Label>Slot ID</Label>
                     <Input {...control.register(`schema.slots.${slotIndex}.id`)} placeholder="e.g., armor_torso" />
@@ -324,38 +329,67 @@ function SlotEditor({ control, slotIndex }: { control: any, slotIndex: number })
                     <Label>Slot Label</Label>
                     <Input {...control.register(`schema.slots.${slotIndex}.label`)} placeholder="e.g., Torso Armor" />
                 </div>
+                 <div>
+                    <Label>Type</Label>
+                    <Controller
+                        control={control}
+                        name={`schema.slots.${slotIndex}.type`}
+                        render={({ field }) => (
+                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="select">Select (List of Options)</SelectItem>
+                                    <SelectItem value="text">Text (Free Input)</SelectItem>
+                                </SelectContent>
+                             </Select>
+                        )}
+                    />
+                </div>
             </div>
-             <div>
-                <Label>Default Option Value</Label>
-                <Input {...control.register(`schema.slots.${slotIndex}.defaultOption`)} placeholder="e.g., leather_tunic" />
-            </div>
-
-            <div className="border-t pt-4 mt-4 space-y-2">
-                <Label className="text-base font-semibold">Options</Label>
-                {optionFields.map((option, optionIndex) => (
-                    <div key={option.id} className="grid grid-cols-12 gap-2 p-2 border rounded-md bg-background">
-                         <div className="col-span-5">
-                             <Label className="text-xs">Option Label</Label>
-                             <Input {...control.register(`schema.slots.${slotIndex}.options.${optionIndex}.label`)} placeholder="e.g., Leather Tunic" />
-                         </div>
-                         <div className="col-span-6">
-                            <Label className="text-xs">Option Value</Label>
-                             <Input {...control.register(`schema.slots.${slotIndex}.options.${optionIndex}.value`)} placeholder="e.g., leather_tunic" />
-                         </div>
-                         <div className="col-span-1 flex items-end">
-                            <Button type="button" variant="destructive" size="icon" onClick={() => removeOption(optionIndex)}>
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
-                        </div>
+            
+            {isTextType ? (
+                 <div>
+                    <Label>Placeholder</Label>
+                    <Input {...control.register(`schema.slots.${slotIndex}.placeholder`)} placeholder="e.g., Enter character name..." />
+                </div>
+            ) : (
+                <>
+                    <div>
+                        <Label>Default Option Value</Label>
+                        <Input {...control.register(`schema.slots.${slotIndex}.defaultOption`)} placeholder="e.g., leather_tunic" />
                     </div>
-                ))}
-                <Button type="button" size="sm" variant="secondary" onClick={() => appendOption({ label: '', value: '' })}>
-                    <PlusCircle className="mr-2" /> Add Option
+
+                    <div className="border-t pt-4 mt-4 space-y-2">
+                        <Label className="text-base font-semibold">Options</Label>
+                        {optionFields.map((option, optionIndex) => (
+                            <div key={option.id} className="grid grid-cols-12 gap-2 p-2 border rounded-md bg-background">
+                                <div className="col-span-5">
+                                    <Label className="text-xs">Option Label</Label>
+                                    <Input {...control.register(`schema.slots.${slotIndex}.options.${optionIndex}.label`)} placeholder="e.g., Leather Tunic" />
+                                </div>
+                                <div className="col-span-6">
+                                    <Label className="text-xs">Option Value</Label>
+                                    <Input {...control.register(`schema.slots.${slotIndex}.options.${optionIndex}.value`)} placeholder="e.g., leather_tunic" />
+                                </div>
+                                <div className="col-span-1 flex items-end">
+                                    <Button type="button" variant="destructive" size="icon" onClick={() => removeOption(optionIndex)}>
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                        <Button type="button" size="sm" variant="secondary" onClick={() => appendOption({ label: '', value: '' })}>
+                            <PlusCircle className="mr-2" /> Add Option
+                        </Button>
+                    </div>
+                </>
+            )}
+
+            <div className="border-t pt-4 mt-4">
+                <Button type="button" variant="destructive" size="sm" onClick={() => removeSlot(slotIndex)}>
+                    Remove Slot
                 </Button>
             </div>
-             <Button type="button" variant="destructive" onClick={() => control.remove(slotIndex)}>
-                Remove Slot
-            </Button>
         </div>
     )
 }

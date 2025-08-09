@@ -33,7 +33,7 @@ const OptionSchema = z.object({
 const SlotSchema = z.object({
     id: z.string().min(1).describe("A unique, snake_case identifier for this slot (e.g., 'armor_torso')."),
     label: z.string().min(1).describe("The user-facing name for this category (e.g., 'Torso Armor')."),
-    type: z.enum(['text', 'select']).optional().describe("The type of input. 'select' for a list of options, 'text' for free-form input."),
+    type: z.enum(['text', 'select']).default('select').describe("The type of input. 'select' for a list of options, 'text' for free-form input."),
     options: z.array(OptionSchema).optional().describe("A list of choices for this slot. Required if type is 'select'."),
     defaultOption: z.string().optional().describe("The default 'value' to be pre-selected for this slot."),
     placeholder: z.string().optional().describe("Placeholder text for 'text' type inputs."),
