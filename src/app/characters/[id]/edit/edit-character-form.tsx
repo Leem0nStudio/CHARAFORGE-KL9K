@@ -61,8 +61,8 @@ function EditTab({ character, onBiographyUpdate }: { character: Character, onBio
     }, [bioValue, onBiographyUpdate]);
 
     useEffect(() => {
-        form.setValue('biography', character.biography);
-    }, [character.biography, form]);
+        form.reset({ name: character.name, biography: character.biography });
+    }, [character, form]);
     
     const onSubmit = (data: UpdateCharacterFormValues) => {
         startUpdateTransition(async () => {
