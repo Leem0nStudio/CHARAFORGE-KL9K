@@ -7,10 +7,9 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { deleteCharacter, updateCharacterStatus, updateCharacterDataPackSharing } from '@/app/actions/characters';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Loader2, Settings, Pencil, Trash2, ShieldCheck, ShieldOff, GalleryHorizontal } from 'lucide-react';
-import { VersionActions } from './version-actions';
+import { Loader2, Settings, Pencil, Trash2, ShieldCheck, ShieldOff, GalleryHorizontal, GitBranch } from 'lucide-react';
 import { BranchButton } from '@/app/characters/[id]/branch-button';
 import type { Character } from '@/types/character';
 
@@ -89,14 +88,9 @@ export function CharacterImageActions({ character, currentUserId, isOwner }: Cha
                             <Link href={`/characters/${character.id}/edit`}><Pencil className="mr-2" /> Edit Details</Link>
                         </DropdownMenuItem>
 
-                        <DropdownMenuSub>
-                           <DropdownMenuSubTrigger>
-                                <Settings className="mr-2" /> Versioning & Perms
-                           </DropdownMenuSubTrigger>
-                           <DropdownMenuSubContent>
-                                <VersionActions character={character} onUpdate={handleUpdate} />
-                           </DropdownMenuSubContent>
-                        </DropdownMenuSub>
+                         <DropdownMenuItem asChild>
+                           <Link href={`/characters/${character.id}/edit`}><GitBranch className="mr-2" /> Versioning & Perms</Link>
+                         </DropdownMenuItem>
                         
                         <DropdownMenuSeparator />
 

@@ -18,20 +18,26 @@ export function EditVersionsTab({ character, onUpdate }: { character: Character,
     const router = useRouter();
     const [isUpdating, startUpdateTransition] = useTransition();
 
-    const handleUpdate = (updateAction: () => Promise<any>, optimisticData: Partial<Character>) => {
+    const handleUpdate = (updateAction: () => Promise<any>, optimisticData?: Partial<Character>) => {
         startUpdateTransition(async () => {
-            onUpdate(optimisticData); // Optimistic update
+            if (optimisticData) {
+                onUpdate(optimisticData); // Optimistic update
+            }
             const result = await updateAction();
             toast({
                 title: result.success ? 'Success!' : 'Update Failed',
                 description: result.message,
                 variant: result.success ? 'default' : 'destructive',
             });
-            if (!result.success) {
+            if (result.success) {
+                 if (result.characterId) {
+                    router.push(`/characters/${result.characterId}/edit`);
+                } else {
+                    router.refresh();
+                }
+            } else if (optimisticData) {
                 // Revert on failure
                 onUpdate({ branchingPermissions: character.branchingPermissions });
-            } else if (result.characterId) {
-                router.push(`/characters/${result.characterId}/edit`);
             }
         });
     };
@@ -42,18 +48,7 @@ export function EditVersionsTab({ character, onUpdate }: { character: Character,
     };
 
     const handleCreateVersion = () => {
-        // No optimistic update needed here as it creates a new entity
-        startUpdateTransition(async () => {
-             const result = await createCharacterVersion(character.id);
-             toast({
-                title: result.success ? 'Success!' : 'Update Failed',
-                description: result.message,
-                variant: result.success ? 'default' : 'destructive',
-            });
-            if (result.success && result.characterId) {
-                router.push(`/characters/${result.characterId}/edit`);
-            }
-        });
+        handleUpdate(() => createCharacterVersion(character.id));
     };
 
     return (
@@ -67,7 +62,7 @@ export function EditVersionsTab({ character, onUpdate }: { character: Character,
                     <Label className="font-semibold">Versions</Label>
                     <div className="flex items-center gap-2 flex-wrap">
                         <Button variant="outline" size="sm" onClick={handleCreateVersion} disabled={isUpdating}>
-                            {isUpdating ? <Loader2 className="animate-spin" /> : <Plus />} New Version
+                            {isUpdating ? <Loader2 className="animate-spin w-4 h-4" /> : <Plus className="w-4 h-4" />} New Version
                         </Button>
                         {character.versions?.sort((a,b) => b.version - a.version).map(v => (
                             <Button key={v.id} asChild variant={v.id === character.id ? 'default' : 'secondary'} size="sm">
