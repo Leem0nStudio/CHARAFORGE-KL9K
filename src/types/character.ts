@@ -21,5 +21,10 @@ export type Character = {
   versionName: string;
   baseCharacterId: string | null;
   versions: { id: string; name: string; version: number }[];
-  branchingPermissions?: 'private' | 'public'; // New: permission for forking
+  branchingPermissions?: 'private' | 'public';
+  // New lineage fields
+  branchedFromId?: string | null;
+  originalAuthorId?: string | null;
+  originalAuthorName?: string | null;
+  dataPackName?: string | null; // Added for display purposes
 };

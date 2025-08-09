@@ -7,6 +7,7 @@ import { adminDb } from '@/lib/firebase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character } from '@/types/character';
 import { FieldValue } from 'firebase-admin/firestore';
+import type { UserProfile } from '@/types/user';
 
 type ActionResponse = {
     success: boolean;
@@ -361,6 +362,8 @@ export async function branchCharacter(characterId: string): Promise<ActionRespon
     return { success: false, message: 'Database service is unavailable.' };
   }
   const newOwnerId = await verifyAndGetUid();
+  const newOwnerProfile = await adminDb.collection('users').doc(newOwnerId).get().then(doc => doc.data() as UserProfile);
+
 
   try {
     const originalCharRef = adminDb.collection('characters').doc(characterId);
@@ -387,14 +390,22 @@ export async function branchCharacter(characterId: string): Promise<ActionRespon
 
     const newCharacterData = {
       ...originalData,
-      userId: newOwnerId, // Assign to the new owner
-      status: 'private', // Branched characters start as private
+      // Overwrite ownership and metadata
+      userId: newOwnerId,
+      userName: newOwnerProfile.displayName || 'Anonymous',
+      status: 'private', 
       isSharedToDataPack: false,
-      branchingPermissions: 'private', // Permissions are not inherited
-      // Reset versioning
+      branchingPermissions: 'private',
+      
+      // Set lineage
+      branchedFromId: originalData.id,
+      originalAuthorId: originalData.originalAuthorId || originalData.userId,
+      originalAuthorName: originalData.originalAuthorName || originalData.userName,
+
+      // Reset versioning for the new branch
       version: version,
       versionName: versionName,
-      baseCharacterId: null, // It's the base of a new tree
+      baseCharacterId: null, 
       versions: [initialVersion],
       createdAt: FieldValue.serverTimestamp(),
     };

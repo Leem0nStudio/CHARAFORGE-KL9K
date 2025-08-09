@@ -5,7 +5,7 @@ import { notFound, redirect } from 'next/navigation';
 import Image from 'next/image';
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
-import { User, Calendar, Tag, GitBranch } from 'lucide-react';
+import { User, Calendar, Tag, GitBranch, ChevronsRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -47,11 +47,13 @@ async function getCharacter(characterId: string): Promise<{ character: Character
 
         let userName = 'Anonymous';
         let dataPackName = null;
+        let branchedFrom: { id: string, name: string } | null = null;
 
-        // Fetch user and datapack info in parallel
-        const [userDoc, dataPackDoc] = await Promise.all([
+        // Fetch user, datapack, and branchedFrom info in parallel
+        const [userDoc, dataPackDoc, branchedFromDoc] = await Promise.all([
             data.userId ? adminDb.collection('users').doc(data.userId).get() : Promise.resolve(null),
             data.dataPackId ? adminDb.collection('datapacks').doc(data.dataPackId).get() : Promise.resolve(null),
+            data.branchedFromId ? adminDb.collection('characters').doc(data.branchedFromId).get() : Promise.resolve(null),
         ]);
 
         if (userDoc && userDoc.exists) {
@@ -60,14 +62,22 @@ async function getCharacter(characterId: string): Promise<{ character: Character
         if (dataPackDoc && dataPackDoc.exists) {
             dataPackName = dataPackDoc.data()?.name || null;
         }
+        if (branchedFromDoc && branchedFromDoc.exists) {
+            branchedFrom = { id: branchedFromDoc.id, name: branchedFromDoc.data()?.name || 'Unknown' };
+        }
 
-        const character = {
+        const character: Character = {
             id: doc.id,
             ...data,
             createdAt: data.createdAt.toDate(),
             userName: userName,
-            dataPackName: dataPackName, // Add pack name to character object
+            dataPackName: dataPackName,
         } as Character;
+        
+        // This is a bit awkward, but we add the branchedFrom data after casting
+        // to avoid type conflicts with the core Character type definition.
+        (character as any).branchedFrom = branchedFrom;
+
 
         return { character, currentUserId };
 
@@ -92,6 +102,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
     }
 
     const canBranch = currentUserId && !isOwner && character.branchingPermissions === 'public';
+    const branchedFrom = (character as any).branchedFrom;
 
     return (
         <div className="container py-8">
@@ -109,6 +120,25 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                             </div>
                         </CardHeader>
                         <CardContent className="p-6">
+                            {branchedFrom && (
+                                <div className="mb-4 text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <GitBranch className="h-4 w-4 text-primary" />
+                                      <span>Branched from{' '}
+                                        <Link href={`/characters/${branchedFrom.id}`} className="font-semibold text-foreground hover:underline">
+                                           {branchedFrom.name}
+                                        </Link>
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs">
+                                        <ChevronsRight className="h-3 w-3"/>
+                                        <span>Original creator:{' '}
+                                            <span className="font-semibold text-foreground">{character.originalAuthorName || 'Unknown'}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
                             <h2 className="text-2xl font-bold font-headline">{character.name}</h2>
                              <div className="text-sm text-muted-foreground space-y-2 mt-2">
                                 <div className="flex items-center gap-2">
