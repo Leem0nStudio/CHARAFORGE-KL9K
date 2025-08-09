@@ -4,12 +4,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { useForm, Controller } from 'react-hook-form';
-import * as yaml from 'js-yaml';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ArrowRight, Wand2, Package, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { DataPack, Option, Slot } from '@/types/datapack';
@@ -112,22 +110,8 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
     const formValues = watch();
 
     const wizardSlots = useMemo(() => {
-        const schema = pack.schema as any;
-        if (schema && Array.isArray(schema.slots)) {
-            return schema.slots;
-        }
-        return Object.entries(schema || {})
-            .filter(([key]) => key !== 'prompt_template' && key !== 'promptTemplate')
-            .map(([key, yamlContent]) => {
-                try {
-                    const options = yaml.load(yamlContent as string) as Option[];
-                    return { id: key, label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), options };
-                } catch (e) {
-                    console.error(`Error parsing YAML for key "${key}":`, e);
-                    return null;
-                }
-            })
-            .filter(Boolean) as Slot[];
+        // Now we can directly use the structured schema
+        return pack.schema.slots || [];
     }, [pack.schema]);
 
     const disabledOptions = useMemo(() => {
@@ -151,8 +135,7 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
     }, [formValues, wizardSlots]);
 
     const onSubmit = (data: any) => {
-        const schema = pack.schema as any;
-        let prompt = schema.prompt_template || schema.promptTemplate || '';
+        let prompt = pack.schema.promptTemplate || '';
         if (!prompt) {
             console.error("Prompt template is missing in the datapack schema.");
             return;
@@ -163,7 +146,8 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), data[key]);
             }
         }
-        prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/(\s*,\s*)+/g, ', ').replace(/^,|,$/g, '').trim();
+        // Clean up any remaining placeholders that didn't have a value
+        prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/, ,/g, ',').replace(/, /g, ' ').replace(/,$/g, '').trim();
         onPromptGenerated(prompt, pack.id, pack.name);
     };
     
@@ -382,5 +366,3 @@ export function DataPackSelectorModal({
         </Dialog>
     )
 }
-
-    

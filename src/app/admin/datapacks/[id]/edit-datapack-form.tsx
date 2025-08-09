@@ -13,17 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, PlusCircle, Trash2, Wand2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Wand2, GripVertical } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,13 +26,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { DataPack, UpsertDataPack } from '@/types/datapack';
-import * as yaml from 'js-yaml';
+import type { DataPack, UpsertDataPack, DataPackSchema, Slot, Option, Exclusion } from '@/types/datapack';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 // #region AI Generator Dialog
-function AiGeneratorDialog({ onSchemaGenerated }: { onSchemaGenerated: (schema: any) => void }) {
+function AiGeneratorDialog({ onSchemaGenerated }: { onSchemaGenerated: (schema: DataPackSchema) => void }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isGenerating, startTransition] = useTransition();
     const [concept, setConcept] = useState('');
@@ -63,17 +54,17 @@ function AiGeneratorDialog({ onSchemaGenerated }: { onSchemaGenerated: (schema: 
     }
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
+        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+            <AlertDialogTrigger asChild>
                 <Button type="button" variant="outline"><Wand2 className="mr-2" /> AI Assistant</Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>DataPack AI Assistant</DialogTitle>
-                    <DialogDescription>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>DataPack AI Assistant</AlertDialogTitle>
+                    <AlertDialogDescription>
                         Describe the theme or concept for your DataPack, and the AI will generate a complete schema for you.
-                    </DialogDescription>
-                </DialogHeader>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
                 <div className="space-y-4 py-4">
                     <Label htmlFor="concept">Concept</Label>
                     <Input 
@@ -83,24 +74,43 @@ function AiGeneratorDialog({ onSchemaGenerated }: { onSchemaGenerated: (schema: 
                         placeholder="e.g., Sci-Fi Noir Detectives, Elemental Dragons"
                     />
                 </div>
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-                    <Button onClick={handleGenerate} disabled={isGenerating || !concept}>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleGenerate} disabled={isGenerating || !concept}>
                         {isGenerating && <Loader2 className="mr-2 animate-spin" />}
                         Generate
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     )
 }
 // #endregion
 
+// Zod schemas for the new structured format
+const ExclusionSchema = z.object({
+    slotId: z.string().min(1, 'Target Slot ID is required.'),
+    optionValues: z.array(z.string()).min(1, 'At least one option value is required.'),
+});
 
-// Zod schema for a single schema entry (key-value pair)
-const SchemaEntrySchema = z.object({
-  key: z.string().min(1, 'Key cannot be empty.'),
-  value: z.string().min(1, 'YAML content cannot be empty.'),
+const OptionSchema = z.object({
+    label: z.string().min(1, 'Label is required.'),
+    value: z.string().min(1, 'Value is required.'),
+    exclusions: z.array(ExclusionSchema).optional(),
+});
+
+const SlotSchema = z.object({
+    id: z.string().min(1, 'ID is required.'),
+    label: z.string().min(1, 'Label is required.'),
+    type: z.enum(['text', 'select']).default('select'),
+    options: z.array(OptionSchema).optional(),
+    defaultOption: z.string().optional(),
+    placeholder: z.string().optional(),
+});
+
+const DataPackSchemaSchema = z.object({
+    promptTemplate: z.string().min(1, 'Prompt template is required.'),
+    slots: z.array(SlotSchema).min(1, 'At least one slot is required.'),
 });
 
 const FormSchema = z.object({
@@ -110,12 +120,10 @@ const FormSchema = z.object({
   type: z.enum(['free', 'premium', 'temporal']),
   price: z.number().min(0),
   tags: z.string().optional(),
-  // The schema is now an array of key-value pairs for the form
-  schema: z.array(SchemaEntrySchema),
+  schema: DataPackSchemaSchema,
 });
 
 type FormValues = z.infer<typeof FormSchema>;
-
 
 // Main Form Component
 export function EditDataPackForm({ initialData }: { initialData: DataPack | null }) {
@@ -124,12 +132,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
   const [isPending, startTransition] = useTransition();
   const [coverImage, setCoverImage] = useState<File | null>(null);
 
-  // Convert schema object to array for useFieldArray, and back on submit
-  const defaultValues = useMemo(() => {
-    const schemaArray = initialData?.schema 
-        ? Object.entries(initialData.schema).map(([key, value]) => ({ key, value: typeof value === 'object' ? yaml.dump(value) : value }))
-        : [{ key: 'prompt_template', value: 'A simple prompt with a {variable}.' }];
-
+  const defaultValues = useMemo<FormValues>(() => {
     return {
       name: initialData?.name || '',
       author: initialData?.author || 'CharaForge',
@@ -137,7 +140,10 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
       type: initialData?.type || 'free',
       price: initialData?.price || 0,
       tags: initialData?.tags?.join(', ') || '',
-      schema: schemaArray,
+      schema: {
+        promptTemplate: initialData?.schema?.promptTemplate || 'A {style} portrait of a {race} {class}.',
+        slots: initialData?.schema?.slots || [],
+      },
     };
   }, [initialData]);
 
@@ -147,21 +153,13 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
     mode: 'onChange',
   });
 
-  const { fields, append, remove, replace } = useFieldArray({
+  const { fields: slotFields, append: appendSlot, remove: removeSlot } = useFieldArray({
     control: form.control,
-    name: "schema",
+    name: "schema.slots",
   });
   
-  const handleAiSchemaGenerated = (generatedSchema: any) => {
-    const { promptTemplate, slots } = generatedSchema;
-
-    const newSchemaArray = [
-        { key: 'promptTemplate', value: promptTemplate },
-        { key: 'slots', value: yaml.dump(slots) }
-    ];
-    
-    // Replace the entire field array with the new AI-generated schema
-    replace(newSchemaArray);
+  const handleAiSchemaGenerated = (generatedSchema: DataPackSchema) => {
+    form.setValue('schema', generatedSchema, { shouldValidate: true });
   };
 
   const onSubmit = (values: FormValues) => {
@@ -172,19 +170,6 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
         imageBuffer = Buffer.from(arrayBuffer);
       }
       
-      // Convert schema array back to object, parsing YAML content
-      const schemaObject = values.schema.reduce((obj, item) => {
-        try {
-            // We parse the YAML content here before sending it to the server
-            obj[item.key] = yaml.load(item.value);
-        } catch (e) {
-            // if it's not valid yaml, store as string. This helps with prompt_template
-            obj[item.key] = item.value;
-        }
-        return obj;
-      }, {} as { [key: string]: any });
-
-
       const dataToSave: UpsertDataPack = {
         id: initialData?.id,
         name: values.name,
@@ -193,7 +178,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
         type: values.type,
         price: values.price,
         tags: values.tags || '',
-        schema: schemaObject,
+        schema: values.schema,
       };
 
       const result = await upsertDataPack(dataToSave, imageBuffer);
@@ -266,7 +251,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Type</Label><Select onValueChange={(v) => form.setValue('type', v as any)} value={form.watch('type')}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="free">Free</SelectItem><SelectItem value="premium">Premium</SelectItem><SelectItem value="temporal">Temporal</SelectItem></SelectContent></Select></div>
+                  <div><Label>Type</Label><Select onValueChange={(v) => form.setValue('type', v as any)} defaultValue={form.getValues('type')}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="free">Free</SelectItem><SelectItem value="premium">Premium</SelectItem><SelectItem value="temporal">Temporal</SelectItem></SelectContent></Select></div>
                   <div><Label>Price</Label><Input type="number" {...form.register('price', { valueAsNumber: true })} /></div>
                 </div>
                 <div><Label>Tags (comma-separated)</Label><Input {...form.register('tags')} /></div>
@@ -281,49 +266,37 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                         <CardTitle>Schema Content</CardTitle>
-                        <CardDescription>Define the building blocks of your prompt. Use the AI Assistant or edit manually.</CardDescription>
+                        <CardDescription>Define the building blocks of your prompt.</CardDescription>
                     </div>
                     <AiGeneratorDialog onSchemaGenerated={handleAiSchemaGenerated} />
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {fields.map((field, index) => (
-                        <div key={field.id} className="grid grid-cols-12 gap-4 p-4 border rounded-lg bg-muted/50">
-                            <div className="col-span-3 space-y-2">
-                                <Label>Schema Key</Label>
-                                <Input {...form.register(`schema.${index}.key`)} placeholder="e.g., prompt_template, race, class"/>
-                            </div>
-                            <div className="col-span-8 space-y-2">
-                                <Label>Content (String or YAML)</Label>
-                                <Controller
-                                    control={form.control}
-                                    name={`schema.${index}.value`}
-                                    render={({ field }) => (
-                                        <Textarea 
-                                            {...field}
-                                            placeholder="- label: Human\n  value: human"
-                                            className="font-mono text-xs min-h-[150px]"
-                                        />
-                                    )}
-                                />
-                            </div>
-                            <div className="col-span-1 flex items-end">
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="icon"
-                                    onClick={() => remove(index)}
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => append({ key: '', value: '' })}
-                    >
-                        <PlusCircle className="mr-2" /> Add Schema Entry
+                    <div>
+                        <Label>Prompt Template</Label>
+                        <Textarea {...form.register('schema.promptTemplate')} placeholder="A portrait of a {race} {class}..." />
+                        {form.formState.errors.schema?.promptTemplate && <p className="text-destructive text-sm mt-1">{form.formState.errors.schema.promptTemplate.message}</p>}
+                    </div>
+
+                    <Accordion type="multiple" className="w-full space-y-2">
+                        {slotFields.map((slot, slotIndex) => (
+                            <AccordionItem key={slot.id} value={slot.id}>
+                                <AccordionTrigger className="bg-muted/50 px-4 rounded-t-lg">
+                                    <div className="flex items-center gap-2">
+                                        <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                        <div className="font-mono text-sm">{slot.id}</div>
+                                        <div className="text-muted-foreground">- {slot.label}</div>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="p-4 border border-t-0 rounded-b-lg">
+                                    <SlotEditor control={form.control} slotIndex={slotIndex} />
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                     {form.formState.errors.schema?.slots?.root && <p className="text-destructive text-sm mt-1">{form.formState.errors.schema.slots.root.message}</p>}
+
+                    <Button type="button" variant="outline" onClick={() => appendSlot({ id: '', label: '', type: 'select', options: [] })}>
+                        <PlusCircle className="mr-2" /> Add Slot
                     </Button>
                 </CardContent>
             </Card>
@@ -331,4 +304,58 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
       </Tabs>
     </form>
   );
+}
+
+// Sub-component for editing a single slot
+function SlotEditor({ control, slotIndex }: { control: any, slotIndex: number }) {
+    const { fields: optionFields, append: appendOption, remove: removeOption } = useFieldArray({
+        control,
+        name: `schema.slots.${slotIndex}.options`,
+    });
+
+    return (
+        <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <Label>Slot ID</Label>
+                    <Input {...control.register(`schema.slots.${slotIndex}.id`)} placeholder="e.g., armor_torso" />
+                </div>
+                <div>
+                    <Label>Slot Label</Label>
+                    <Input {...control.register(`schema.slots.${slotIndex}.label`)} placeholder="e.g., Torso Armor" />
+                </div>
+            </div>
+             <div>
+                <Label>Default Option Value</Label>
+                <Input {...control.register(`schema.slots.${slotIndex}.defaultOption`)} placeholder="e.g., leather_tunic" />
+            </div>
+
+            <div className="border-t pt-4 mt-4 space-y-2">
+                <Label className="text-base font-semibold">Options</Label>
+                {optionFields.map((option, optionIndex) => (
+                    <div key={option.id} className="grid grid-cols-12 gap-2 p-2 border rounded-md bg-background">
+                         <div className="col-span-5">
+                             <Label className="text-xs">Option Label</Label>
+                             <Input {...control.register(`schema.slots.${slotIndex}.options.${optionIndex}.label`)} placeholder="e.g., Leather Tunic" />
+                         </div>
+                         <div className="col-span-6">
+                            <Label className="text-xs">Option Value</Label>
+                             <Input {...control.register(`schema.slots.${slotIndex}.options.${optionIndex}.value`)} placeholder="e.g., leather_tunic" />
+                         </div>
+                         <div className="col-span-1 flex items-end">
+                            <Button type="button" variant="destructive" size="icon" onClick={() => removeOption(optionIndex)}>
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    </div>
+                ))}
+                <Button type="button" size="sm" variant="secondary" onClick={() => appendOption({ label: '', value: '' })}>
+                    <PlusCircle className="mr-2" /> Add Option
+                </Button>
+            </div>
+             <Button type="button" variant="destructive" onClick={() => control.remove(slotIndex)}>
+                Remove Slot
+            </Button>
+        </div>
+    )
 }
