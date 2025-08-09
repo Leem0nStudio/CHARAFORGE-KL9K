@@ -14,15 +14,18 @@ import { Button } from '@/components/ui/button';
 import { EditButton } from './edit-button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { BackButton } from '@/components/back-button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import type { UserProfile } from '@/types/user';
 
-async function getCharacter(characterId: string): Promise<{ character: Character | null, currentUserId: string | null }> {
+
+async function getCharacter(characterId: string): Promise<{ character: Character | null, currentUserId: string | null, originalAuthorProfile: UserProfile | null }> {
     if (!adminDb) {
         console.error('Database service is unavailable.');
-        return { character: null, currentUserId: null };
+        return { character: null, currentUserId: null, originalAuthorProfile: null };
     }
     
     let currentUserId: string | null = null;
@@ -43,13 +46,13 @@ async function getCharacter(characterId: string): Promise<{ character: Character
         const doc = await characterRef.get();
 
         if (!doc.exists) {
-            return { character: null, currentUserId };
+            return { character: null, currentUserId: null, originalAuthorProfile: null };
         }
 
         const data = doc.data();
-        if (!data) return { character: null, currentUserId };
+        if (!data) return { character: null, currentUserId: null, originalAuthorProfile: null };
         
-        // Fetch user, datapack, and branchedFrom info in parallel
+        // Fetch user, datapack, and original author profile in parallel
         const [userDoc, dataPackDoc, originalAuthorDoc] = await Promise.all([
             data.userId ? adminDb.collection('users').doc(data.userId).get() : Promise.resolve(null),
             data.dataPackId ? adminDb.collection('datapacks').doc(data.dataPackId).get() : Promise.resolve(null),
@@ -57,7 +60,8 @@ async function getCharacter(characterId: string): Promise<{ character: Character
         ]);
         
         const userName = userDoc && userDoc.exists ? userDoc.data()?.displayName || 'Anonymous' : 'Anonymous';
-        const originalAuthorName = originalAuthorDoc && originalAuthorDoc.exists ? originalAuthorDoc.data()?.displayName || 'Anonymous' : data.originalAuthorName || null;
+        const originalAuthorProfile = originalAuthorDoc && originalAuthorDoc.exists ? originalAuthorDoc.data() as UserProfile : null;
+        const originalAuthorName = originalAuthorProfile?.displayName || data.originalAuthorName || null;
         const dataPackName = dataPackDoc && dataPackDoc.exists ? dataPackDoc.data()?.name || null : null;
 
         const character: Character = {
@@ -70,16 +74,16 @@ async function getCharacter(characterId: string): Promise<{ character: Character
             branchingPermissions: data.branchingPermissions || 'private',
         } as Character;
 
-        return { character, currentUserId };
+        return { character, currentUserId, originalAuthorProfile };
 
     } catch (error) {
         console.error(`Error fetching character ${characterId}:`, error);
-        return { character: null, currentUserId };
+        return { character: null, currentUserId: null, originalAuthorProfile: null };
     }
 }
 
 export default async function CharacterDetailPage({ params }: { params: { id: string } }) {
-    const { character, currentUserId } = await getCharacter(params.id);
+    const { character, currentUserId, originalAuthorProfile } = await getCharacter(params.id);
 
     if (!character) {
         notFound();
@@ -92,6 +96,8 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
     }
 
     const canBranch = currentUserId && !isOwner && character.branchingPermissions === 'public';
+    const authorForAvatar = originalAuthorProfile || { displayName: character.originalAuthorName || '?', photoURL: null };
+
 
     return (
         <div className="container py-8 max-w-7xl mx-auto">
@@ -107,42 +113,40 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                   <div className="w-full">
                       <Card className="bg-card/50 overflow-hidden h-full flex flex-col">
                           {/* Header Section */}
-                          <div className="p-4 bg-info-card-header text-info-card-header-foreground">
+                          <div className="p-4 bg-info-card-header text-info-card-header-foreground flex items-center gap-4">
+                              <Avatar className="h-10 w-10 border-2 border-info-card-header-foreground/50">
+                                <AvatarImage src={authorForAvatar.photoURL || undefined} alt={authorForAvatar.displayName || 'Author'} />
+                                <AvatarFallback>{authorForAvatar.displayName?.charAt(0) || '?'}</AvatarFallback>
+                              </Avatar>
                               <h2 className="text-4xl font-headline tracking-wider">{character.name}</h2>
                           </div>
                           
                           {/* Metadata Section */}
-                          <div className="p-4 border-b border-border">
-                              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground mb-4">
+                          <div className="p-4 border-b border-t border-border space-y-2">
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                                   <div className="flex items-center gap-1.5">
-                                      <User className="h-4 w-4" />
+                                      <User className="h-3 w-3" />
                                       <span>{character.userName}</span>
                                   </div>
                                   <div className="flex items-center gap-1.5">
-                                      <Calendar className="h-4 w-4" />
+                                      <Calendar className="h-3 w-3" />
                                       <span>{new Date(character.createdAt).toLocaleDateString()}</span>
                                   </div>
+                                  {character.dataPackId && character.dataPackName && (
+                                     <div className="flex items-center gap-1.5">
+                                         <Tag className="h-3 w-3" />
+                                         <Link href={`/datapacks/${character.dataPackId}`} className="hover:underline">
+                                           {character.dataPackName}
+                                          </Link>
+                                     </div>
+                                  )}
                               </div>
 
                               <div className="flex flex-wrap gap-2">
-                                  {character.dataPackId && character.dataPackName && (
-                                      <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
-                                          <Tag className="h-3 w-3 mr-1.5" />
-                                          <Link href={`/datapacks/${character.dataPackId}`} className="hover:underline">
-                                          {character.dataPackName}
-                                          </Link>
-                                      </Badge>
-                                  )}
                                   {character.branchedFromId && (
                                       <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
                                           <GitBranch className="h-3 w-3 mr-1.5" />
-                                          Branched
-                                      </Badge>
-                                  )}
-                                  {character.originalAuthorName && character.branchedFromId && (
-                                      <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
-                                          <User className="h-3 w-3 mr-1.5" />
-                                          Origin: {character.originalAuthorName}
+                                          Branched from {character.originalAuthorName || 'Unknown'}
                                       </Badge>
                                   )}
                               </div>
