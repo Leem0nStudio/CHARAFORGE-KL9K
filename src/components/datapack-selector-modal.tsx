@@ -75,11 +75,14 @@ function PackSelector({ packs, onSelect, selectedPackId, onChoose }: {
             <ScrollArea className="flex-grow pr-4 -mr-4">
                 <div className="space-y-2">
                     {packs.map(pack => (
-                        <button
+                        <div
                             key={pack.id}
                             onClick={() => onSelect(pack)}
+                            onKeyDown={(e) => e.key === 'Enter' && onSelect(pack)}
+                            role="button"
+                            tabIndex={0}
                             className={cn(
-                                "w-full text-left p-2 rounded-lg border-2 transition-all duration-200 flex items-center gap-3",
+                                "w-full text-left p-2 rounded-lg border-2 transition-all duration-200 flex items-center gap-3 cursor-pointer",
                                 selectedPackId === pack.id
                                     ? "bg-primary/20 border-primary shadow-md"
                                     : "bg-muted/50 border-transparent hover:bg-muted"
@@ -95,7 +98,7 @@ function PackSelector({ packs, onSelect, selectedPackId, onChoose }: {
                             <Button variant="ghost" size="icon" className="sm:hidden" onClick={(e) => { e.stopPropagation(); onChoose(pack); }}>
                                 <ArrowRight className="h-4 w-4" />
                             </Button>
-                        </button>
+                        </div>
                     ))}
                 </div>
             </ScrollArea>
