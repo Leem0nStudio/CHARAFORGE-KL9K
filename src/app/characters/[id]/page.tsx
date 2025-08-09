@@ -14,8 +14,10 @@ import { Button } from '@/components/ui/button';
 import { EditButton } from './edit-button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { BackButton } from '@/components/back-button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 async function getCharacter(characterId: string): Promise<{ character: Character | null, currentUserId: string | null }> {
     if (!adminDb) {
@@ -97,100 +99,119 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                 <BackButton />
                 <h1 className="text-3xl font-bold tracking-tight font-headline sr-only">{character.name}</h1>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                
-                {/* Left Column: Character Details */}
-                <div className="w-full">
-                    <Card className="bg-card/50 overflow-hidden h-full">
-                        {/* Header Section */}
-                        <div className="p-4 bg-info-card-header text-info-card-header-foreground">
-                            <h2 className="text-4xl font-headline tracking-wider">{character.name}</h2>
-                        </div>
-                        
-                        {/* Metadata Section */}
-                        <div className="p-4 border-b border-border">
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground mb-4">
-                                <div className="flex items-center gap-1.5">
-                                    <User className="h-4 w-4" />
-                                    <span>{character.userName}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <Calendar className="h-4 w-4" />
-                                    <span>{new Date(character.createdAt).toLocaleDateString()}</span>
-                                </div>
-                            </div>
+            
+            <Card className="w-full p-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                  
+                  {/* Left Column: Character Details */}
+                  <div className="w-full">
+                      <Card className="bg-card/50 overflow-hidden h-full flex flex-col">
+                          {/* Header Section */}
+                          <div className="p-4 bg-info-card-header text-info-card-header-foreground">
+                              <h2 className="text-4xl font-headline tracking-wider">{character.name}</h2>
+                          </div>
+                          
+                          {/* Metadata Section */}
+                          <div className="p-4 border-b border-border">
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground mb-4">
+                                  <div className="flex items-center gap-1.5">
+                                      <User className="h-4 w-4" />
+                                      <span>{character.userName}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                      <Calendar className="h-4 w-4" />
+                                      <span>{new Date(character.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                              </div>
 
-                            <div className="flex flex-wrap gap-2">
-                                {character.dataPackId && character.dataPackName && (
-                                    <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
-                                        <Tag className="h-3 w-3 mr-1.5" />
-                                        <Link href={`/datapacks/${character.dataPackId}`} className="hover:underline">
-                                        {character.dataPackName}
-                                        </Link>
-                                    </Badge>
-                                )}
-                                {character.branchedFromId && (
-                                    <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
-                                        <GitBranch className="h-3 w-3 mr-1.5" />
-                                        Branched
-                                    </Badge>
-                                )}
-                                {character.originalAuthorName && character.branchedFromId && (
-                                    <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
-                                        <User className="h-3 w-3 mr-1.5" />
-                                        Origin: {character.originalAuthorName}
-                                    </Badge>
-                                )}
-                            </div>
-                        </div>
-                        
-                        {/* Biography Section */}
-                        <CardContent className="pt-6">
-                            <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                                {character.biography}
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
+                              <div className="flex flex-wrap gap-2">
+                                  {character.dataPackId && character.dataPackName && (
+                                      <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                                          <Tag className="h-3 w-3 mr-1.5" />
+                                          <Link href={`/datapacks/${character.dataPackId}`} className="hover:underline">
+                                          {character.dataPackName}
+                                          </Link>
+                                      </Badge>
+                                  )}
+                                  {character.branchedFromId && (
+                                      <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                                          <GitBranch className="h-3 w-3 mr-1.5" />
+                                          Branched
+                                      </Badge>
+                                  )}
+                                  {character.originalAuthorName && character.branchedFromId && (
+                                      <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                                          <User className="h-3 w-3 mr-1.5" />
+                                          Origin: {character.originalAuthorName}
+                                      </Badge>
+                                  )}
+                              </div>
+                          </div>
+                          
+                          {/* Biography Section */}
+                          <CardContent className="pt-6 flex-1 flex flex-col">
+                              <ScrollArea className="flex-grow h-96">
+                                <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed pr-4">
+                                    {character.biography}
+                                </p>
+                              </ScrollArea>
+                          </CardContent>
+                      </Card>
+                  </div>
 
-                {/* Right Column: Character Image */}
-                <div className="w-full">
-                     <Card className="overflow-hidden group relative border-2 border-primary/20 shadow-lg">
-                         <div className="w-full aspect-square relative bg-muted/20">
-                            <Image
-                                src={character.imageUrl}
-                                alt={character.name}
-                                fill
-                                priority
-                                className="object-contain p-2"
-                            />
-                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                             <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <TooltipProvider>
-                                    {isOwner && <EditButton characterId={character.id} />}
-                                    {canBranch && <BranchButton characterId={character.id} isIcon={true} />}
-                                     <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="secondary" size="icon" disabled>
-                                                <Heart />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Like (Coming Soon)</p></TooltipContent>
-                                    </Tooltip>
-                                     <Tooltip>
-                                        <TooltipTrigger asChild>
-                                             <Button variant="secondary" size="icon" disabled>
-                                                <MessageSquare />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Comment (Coming Soon)</p></TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            </div>
-                        </div>
-                     </Card>
-                </div>
-            </div>
+                  {/* Right Column: Character Image */}
+                  <div className="w-full">
+                       <Card className="overflow-hidden group relative border-2 border-primary/20 shadow-lg">
+                           <Dialog>
+                              <DialogTrigger asChild>
+                                  <div className="w-full aspect-square relative bg-muted/20 cursor-pointer">
+                                      <Image
+                                          src={character.imageUrl}
+                                          alt={character.name}
+                                          fill
+                                          priority
+                                          className="object-contain p-2"
+                                      />
+                                  </div>
+                               </DialogTrigger>
+                               <DialogContent className="max-w-3xl p-0 bg-transparent border-0">
+                                  <Image
+                                    src={character.imageUrl}
+                                    alt={character.name}
+                                    width={1024}
+                                    height={1024}
+                                    className="object-contain rounded-lg w-full h-auto"
+                                  />
+                                </DialogContent>
+                            </Dialog>
+
+                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                           <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              <TooltipProvider>
+                                  {isOwner && <EditButton characterId={character.id} />}
+                                  {canBranch && <BranchButton characterId={character.id} isIcon={true} />}
+                                   <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <Button variant="secondary" size="icon" disabled>
+                                              <Heart />
+                                          </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent><p>Like (Coming Soon)</p></TooltipContent>
+                                  </Tooltip>
+                                   <Tooltip>
+                                      <TooltipTrigger asChild>
+                                           <Button variant="secondary" size="icon" disabled>
+                                              <MessageSquare />
+                                          </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent><p>Comment (Coming Soon)</p></TooltipContent>
+                                  </Tooltip>
+                              </TooltipProvider>
+                          </div>
+                       </Card>
+                  </div>
+              </div>
+            </Card>
         </div>
     );
 }
