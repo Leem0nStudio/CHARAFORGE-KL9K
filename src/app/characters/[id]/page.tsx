@@ -100,91 +100,84 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
     const branchedFrom = (character as any).branchedFrom;
 
     return (
-        <div className="container py-8">
-            <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                {/* Main Content: Image and Metadata */}
-                <div className="lg:col-span-2 space-y-6">
-                    <Card className="overflow-hidden">
-                         <div className="w-full aspect-[4/3] relative bg-muted/20">
-                            <Image
-                                src={character.imageUrl}
-                                alt={character.name}
-                                fill
-                                priority
-                                className="object-contain"
-                            />
-                        </div>
-                    </Card>
+        <div className="container py-8 max-w-4xl mx-auto">
+            <div className="flex flex-col gap-6">
+                <Card className="overflow-hidden">
+                     <div className="w-full aspect-[4/3] relative bg-muted/20">
+                        <Image
+                            src={character.imageUrl}
+                            alt={character.name}
+                            fill
+                            priority
+                            className="object-contain"
+                        />
+                    </div>
+                </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="font-headline text-4xl">{character.name}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                             
-                             <div className="text-sm text-muted-foreground space-y-2">
+                <Card>
+                    <CardContent className="pt-6 space-y-4">
+                        <h1 className="font-headline text-3xl">{character.name}</h1>
+                         
+                         <div className="text-sm text-muted-foreground space-y-2">
+                            <div className="flex items-center gap-2">
+                                <User className="h-4 w-4" />
+                                <span>Created by {character.userName}</span>
+                            </div>
+                             <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                <span>Created on {new Date(character.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            {character.dataPackId && character.dataPackName && (
                                 <div className="flex items-center gap-2">
-                                    <User className="h-4 w-4" />
-                                    <span>Created by {character.userName}</span>
+                                    <Tag className="h-4 w-4" />
+                                    <span>
+                                        From:{' '}
+                                        <Link href={`/datapacks/${character.dataPackId}`} className="hover:underline text-primary">
+                                            {character.dataPackName}
+                                        </Link>
+                                    </span>
                                 </div>
-                                 <div className="flex items-center gap-2">
-                                    <Calendar className="h-4 w-4" />
-                                    <span>Created on {new Date(character.createdAt).toLocaleDateString()}</span>
+                            )}
+                        </div>
+
+                         {branchedFrom && (
+                            <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg space-y-2 border-l-4 border-primary">
+                                <div className="flex items-center gap-2">
+                                  <GitBranch className="h-4 w-4 text-primary" />
+                                  <span>Branched from{' '}
+                                    <Link href={`/characters/${branchedFrom.id}`} className="font-semibold text-foreground hover:underline">
+                                       {branchedFrom.name}
+                                    </Link>
+                                  </span>
                                 </div>
-                                {character.dataPackId && character.dataPackName && (
-                                    <div className="flex items-center gap-2">
-                                        <Tag className="h-4 w-4" />
-                                        <span>
-                                            From:{' '}
-                                            <Link href={`/datapacks/${character.dataPackId}`} className="hover:underline text-primary">
-                                                {character.dataPackName}
-                                            </Link>
+                                {character.originalAuthorName && 
+                                    <div className="flex items-center gap-2 pl-6">
+                                        <ChevronsRight className="h-4 w-4"/>
+                                        <span>Original creator:{' '}
+                                            <span className="font-semibold text-foreground">{character.originalAuthorName}</span>
                                         </span>
                                     </div>
-                                )}
+                                }
                             </div>
+                        )}
 
-                             {branchedFrom && (
-                                <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg space-y-2 border-l-4 border-primary">
-                                    <div className="flex items-center gap-2">
-                                      <GitBranch className="h-4 w-4 text-primary" />
-                                      <span>Branched from{' '}
-                                        <Link href={`/characters/${branchedFrom.id}`} className="font-semibold text-foreground hover:underline">
-                                           {branchedFrom.name}
-                                        </Link>
-                                      </span>
-                                    </div>
-                                    {character.originalAuthorName && 
-                                        <div className="flex items-center gap-2 pl-6">
-                                            <ChevronsRight className="h-4 w-4"/>
-                                            <span>Original creator:{' '}
-                                                <span className="font-semibold text-foreground">{character.originalAuthorName}</span>
-                                            </span>
-                                        </div>
-                                    }
-                                </div>
-                            )}
+                         {canBranch && (
+                            <div className="mt-4 border-t pt-4">
+                               <BranchButton characterId={character.id} />
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
-                             {canBranch && (
-                                <div className="mt-6 border-t pt-6">
-                                   <BranchButton characterId={character.id} />
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-                 {/* Sidebar: Biography */}
-                <div className="lg:col-span-1">
-                    <Card className="sticky top-20">
-                        <CardHeader>
-                            <CardTitle>Biography</CardTitle>
-                             <CardDescription>The story of {character.name}.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="prose dark:prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
-                            {character.biography}
-                        </CardContent>
-                    </Card>
-                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Biography</CardTitle>
+                         <CardDescription>The story of {character.name}.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="prose dark:prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
+                        {character.biography}
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );
