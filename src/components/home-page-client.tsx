@@ -36,45 +36,45 @@ const CreationCard = ({ creation, index }: { creation: Character, index: number 
     return (
         <motion.div
             key={creation.id}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.05 }}
         >
-            <Card className="overflow-hidden group relative h-full flex flex-col">
-                <Link href={`/characters/${creation.id}`} className="flex flex-col h-full">
-                    <CardHeader className="p-0">
-                        <div className="aspect-square relative w-full bg-muted/20">
-                            <Image
-                                src={creation.imageUrl}
-                                alt={creation.name}
-                                fill
-                                className="object-contain w-full transition-transform duration-300 group-hover:scale-110"
-                            />
+            <Card className="overflow-hidden group relative h-full flex flex-col border-2 border-transparent hover:border-primary transition-colors duration-300">
+                <Link href={`/characters/${creation.id}`}>
+                    <div className="aspect-square relative w-full bg-muted/20">
+                        <Image
+                            src={creation.imageUrl}
+                            alt={creation.name}
+                            fill
+                            className="object-contain w-full transition-transform duration-300 group-hover:scale-105"
+                        />
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        <div className="absolute top-2 right-2">
+                             {isBranch && (
+                                <Badge variant="secondary" className="flex items-center gap-1">
+                                    <GitBranch className="h-3 w-3" />
+                                    Branch
+                                </Badge>
+                             )}
                         </div>
-                    </CardHeader>
-                    <CardContent className="p-4 flex-grow">
-                        <h3 className="font-bold text-lg leading-tight">{creation.name}</h3>
-                    </CardContent>
-                    <CardFooter className="p-4 bg-muted/30 text-xs text-muted-foreground">
-                        {isBranch ? (
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-1.5">
-                                    <GitBranch className="h-3 w-3 text-primary" />
-                                    <span>Branched by @{creation.userName}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <User className="h-3 w-3" />
-                                    <span>Original: @{creation.originalAuthorName}</span>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-1.5">
-                                <User className="h-3 w-3" />
-                                <span>by @{creation.userName}</span>
-                            </div>
-                        )}
-                    </CardFooter>
+                        <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                             <h3 className="font-bold text-lg leading-tight drop-shadow-md truncate">{creation.name}</h3>
+                             <p className="text-xs text-white/80 drop-shadow-sm truncate">by @{creation.userName}</p>
+                        </div>
+                    </div>
                 </Link>
+                <div className="p-3 bg-card flex flex-col flex-grow">
+                    <p className="text-xs text-muted-foreground line-clamp-2">{creation.description}</p>
+                    <div className="mt-2 flex-grow flex items-end">
+                       {creation.dataPackName && (
+                            <Badge variant="outline">
+                                <Package className="h-3 w-3 mr-1.5" />
+                                {creation.dataPackName}
+                            </Badge>
+                       )}
+                    </div>
+                </div>
             </Card>
         </motion.div>
     )

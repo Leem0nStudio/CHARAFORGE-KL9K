@@ -29,6 +29,7 @@ export async function getPublicCharacters(): Promise<Character[]> {
         const data = doc.data();
         let userName = 'Anonymous';
         let originalAuthorName = data.originalAuthorName || null;
+        let dataPackName = null;
 
         // Fetch current owner's name
         if (data.userId) {
@@ -44,7 +45,6 @@ export async function getPublicCharacters(): Promise<Character[]> {
         }
         
         // If originalAuthorName is not set directly, fetch it if needed.
-        // This handles cases where a character was branched before the name field was added.
         if (!originalAuthorName && data.originalAuthorId) {
              try {
                 if (!adminDb) throw new Error('Database service is unavailable during user fetch.');
@@ -56,6 +56,19 @@ export async function getPublicCharacters(): Promise<Character[]> {
                 console.error(`Failed to fetch original author ${data.originalAuthorId} for character ${doc.id}:`, userError);
             }
         }
+        
+        // Fetch DataPack name if it exists
+        if (data.dataPackId) {
+            try {
+                if (!adminDb) throw new Error('Database service is unavailable during datapack fetch.');
+                const packDoc = await adminDb.collection('datapacks').doc(data.dataPackId).get();
+                if (packDoc.exists) {
+                    dataPackName = packDoc.data()?.name || null;
+                }
+            } catch (packError) {
+                 console.error(`Failed to fetch datapack ${data.dataPackId} for character ${doc.id}:`, packError);
+            }
+        }
 
 
         charactersData.push({
@@ -64,6 +77,7 @@ export async function getPublicCharacters(): Promise<Character[]> {
             createdAt: data.createdAt.toDate(),
             userName: userName,
             originalAuthorName: originalAuthorName,
+            dataPackName: dataPackName,
         } as Character);
     }
     
