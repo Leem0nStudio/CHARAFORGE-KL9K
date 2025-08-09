@@ -1,17 +1,14 @@
 
 'use server';
 
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
 import { User, Calendar, Tag, GitBranch, ChevronsRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
-import { Button } from '@/components/ui/button';
-import { branchCharacter } from '@/app/actions/characters';
 import { BranchButton } from './branch-button';
 
 
@@ -48,13 +45,15 @@ async function getCharacter(characterId: string): Promise<{ character: Character
         let branchedFrom: { id: string, name: string } | null = null;
 
         // Fetch user, datapack, and branchedFrom info in parallel
-        const [userDoc, dataPackDoc, branchedFromDoc] = await Promise.all([
+        const [userDoc, dataPackDoc, branchedFromDoc, originalAuthorDoc] = await Promise.all([
             data.userId ? adminDb.collection('users').doc(data.userId).get() : Promise.resolve(null),
             data.dataPackId ? adminDb.collection('datapacks').doc(data.dataPackId).get() : Promise.resolve(null),
             data.branchedFromId ? adminDb.collection('characters').doc(data.branchedFromId).get() : Promise.resolve(null),
+            data.originalAuthorId ? adminDb.collection('users').doc(data.originalAuthorId).get() : Promise.resolve(null),
         ]);
         
         const userName = userDoc && userDoc.exists ? userDoc.data()?.displayName || 'Anonymous' : 'Anonymous';
+        const originalAuthorName = originalAuthorDoc && originalAuthorDoc.exists ? originalAuthorDoc.data()?.displayName || 'Anonymous' : data.originalAuthorName || null;
         const dataPackName = dataPackDoc && dataPackDoc.exists ? dataPackDoc.data()?.name || null : null;
         if (branchedFromDoc && branchedFromDoc.exists) {
             branchedFrom = { id: branchedFromDoc.id, name: branchedFromDoc.data()?.name || 'Unknown' };
@@ -65,6 +64,7 @@ async function getCharacter(characterId: string): Promise<{ character: Character
             ...data,
             createdAt: data.createdAt.toDate(),
             userName: userName,
+            originalAuthorName: originalAuthorName,
             dataPackName: dataPackName,
             branchingPermissions: data.branchingPermissions || 'private',
         } as Character;
@@ -155,7 +155,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                       </span>
                                     </div>
                                     {character.originalAuthorName && 
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 pl-6">
                                             <ChevronsRight className="h-4 w-4"/>
                                             <span>Original creator:{' '}
                                                 <span className="font-semibold text-foreground">{character.originalAuthorName}</span>
@@ -189,8 +189,3 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
         </div>
     );
 }
-
-
-    
-
-    
