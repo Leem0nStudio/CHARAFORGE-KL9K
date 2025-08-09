@@ -22,10 +22,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { UserProfile } from '@/types/user';
 
 
-async function getCharacter(characterId: string): Promise<{ character: Character | null, currentUserId: string | null, originalAuthorProfile: UserProfile | null }> {
+async function getCharacter(characterId: string): Promise<{
+    character: Character | null,
+    currentUserId: string | null,
+    creatorProfile: UserProfile | null,
+    originalAuthorProfile: UserProfile | null
+}> {
     if (!adminDb) {
         console.error('Database service is unavailable.');
-        return { character: null, currentUserId: null, originalAuthorProfile: null };
+        return { character: null, currentUserId: null, creatorProfile: null, originalAuthorProfile: null };
     }
     
     let currentUserId: string | null = null;
@@ -46,11 +51,11 @@ async function getCharacter(characterId: string): Promise<{ character: Character
         const doc = await characterRef.get();
 
         if (!doc.exists) {
-            return { character: null, currentUserId: null, originalAuthorProfile: null };
+            return { character: null, currentUserId: null, creatorProfile: null, originalAuthorProfile: null };
         }
 
         const data = doc.data();
-        if (!data) return { character: null, currentUserId: null, originalAuthorProfile: null };
+        if (!data) return { character: null, currentUserId: null, creatorProfile: null, originalAuthorProfile: null };
         
         // Fetch user, datapack, and original author profile in parallel
         const [userDoc, dataPackDoc, originalAuthorDoc] = await Promise.all([
@@ -59,9 +64,12 @@ async function getCharacter(characterId: string): Promise<{ character: Character
             data.originalAuthorId ? adminDb.collection('users').doc(data.originalAuthorId).get() : Promise.resolve(null),
         ]);
         
-        const userName = userDoc && userDoc.exists ? userDoc.data()?.displayName || 'Anonymous' : 'Anonymous';
+        const creatorProfile = userDoc && userDoc.exists ? userDoc.data() as UserProfile : null;
+        const userName = creatorProfile?.displayName || 'Anonymous';
+
         const originalAuthorProfile = originalAuthorDoc && originalAuthorDoc.exists ? originalAuthorDoc.data() as UserProfile : null;
         const originalAuthorName = originalAuthorProfile?.displayName || data.originalAuthorName || null;
+        
         const dataPackName = dataPackDoc && dataPackDoc.exists ? dataPackDoc.data()?.name || null : null;
 
         const character: Character = {
@@ -74,16 +82,16 @@ async function getCharacter(characterId: string): Promise<{ character: Character
             branchingPermissions: data.branchingPermissions || 'private',
         } as Character;
 
-        return { character, currentUserId, originalAuthorProfile };
+        return { character, currentUserId, creatorProfile, originalAuthorProfile };
 
     } catch (error) {
         console.error(`Error fetching character ${characterId}:`, error);
-        return { character: null, currentUserId: null, originalAuthorProfile: null };
+        return { character: null, currentUserId: null, creatorProfile: null, originalAuthorProfile: null };
     }
 }
 
 export default async function CharacterDetailPage({ params }: { params: { id: string } }) {
-    const { character, currentUserId, originalAuthorProfile } = await getCharacter(params.id);
+    const { character, currentUserId, creatorProfile } = await getCharacter(params.id);
 
     if (!character) {
         notFound();
@@ -96,7 +104,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
     }
 
     const canBranch = currentUserId && !isOwner && character.branchingPermissions === 'public';
-    const authorForAvatar = originalAuthorProfile || { displayName: character.originalAuthorName || '?', photoURL: null };
+    const authorForAvatar = creatorProfile || { displayName: character.userName || '?', photoURL: null };
 
 
     return (
