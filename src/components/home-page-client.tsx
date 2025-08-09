@@ -41,8 +41,8 @@ const CreationCard = ({ creation, index }: { creation: Character, index: number 
             transition={{ duration: 0.4, delay: index * 0.05 }}
         >
             <Card className="overflow-hidden group relative h-full flex flex-col border-2 border-transparent hover:border-primary transition-colors duration-300">
-                <Link href={`/characters/${creation.id}`}>
-                    <div className="aspect-square relative w-full bg-muted/20">
+                <div className="aspect-square relative w-full bg-muted/20">
+                    <Link href={`/characters/${creation.id}`}>
                         <Image
                             src={creation.imageUrl}
                             alt={creation.name}
@@ -52,29 +52,46 @@ const CreationCard = ({ creation, index }: { creation: Character, index: number 
                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                         <div className="absolute top-2 right-2">
                              {isBranch && (
-                                <Badge variant="secondary" className="flex items-center gap-1">
-                                    <GitBranch className="h-3 w-3" />
-                                    Branch
-                                </Badge>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Badge variant="secondary" className="flex items-center gap-1">
+                                                <GitBranch className="h-3 w-3" />
+                                            </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Branched</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                              )}
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
                              <h3 className="font-bold text-lg leading-tight drop-shadow-md truncate">{creation.name}</h3>
-                             <p className="text-xs text-white/80 drop-shadow-sm truncate">by @{creation.userName}</p>
                         </div>
-                    </div>
-                </Link>
-                <div className="p-3 bg-card flex flex-col flex-grow">
-                    <p className="text-xs text-muted-foreground line-clamp-2">{creation.description}</p>
-                    <div className="mt-2 flex-grow flex items-end">
-                       {creation.dataPackName && (
-                            <Badge variant="outline">
-                                <Package className="h-3 w-3 mr-1.5" />
-                                {creation.dataPackName}
-                            </Badge>
-                       )}
-                    </div>
+                    </Link>
                 </div>
+                <CardFooter className="p-3 bg-card flex-col items-start flex-grow">
+                     <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-grow">{creation.description}</p>
+                     {creation.dataPackName && (
+                        <Badge variant="outline" className="mb-2">
+                            <Package className="h-3 w-3 mr-1.5" />
+                            {creation.dataPackName}
+                        </Badge>
+                       )}
+                    <div className="w-full">
+                        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <User className="h-3 w-3" />
+                            <span>by {creation.userName}</span>
+                        </div>
+                        {isBranch && (
+                            <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+                                <GitBranch className="h-3 w-3" />
+                                <span>from {creation.originalAuthorName || 'Unknown'}</span>
+                            </div>
+                        )}
+                    </div>
+                </CardFooter>
             </Card>
         </motion.div>
     )
