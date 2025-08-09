@@ -7,7 +7,7 @@ import { DataPackClient } from './client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import type { Character } from '@/types/character';
 
 
@@ -37,7 +37,8 @@ const CreationCard = ({ creation }: { creation: Character }) => {
                         className="object-contain w-full transition-transform duration-300 group-hover:scale-105"
                     />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute top-2 right-2 flex items-center gap-1">
+                             {creation.versionName && <Badge variant="secondary" className="text-xs">{creation.versionName}</Badge>}
                             {isBranch && (
                             <TooltipProvider>
                                 <Tooltip>
@@ -143,5 +144,3 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
     </div>
   );
 }
-
-    
