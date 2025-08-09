@@ -199,3 +199,6 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
         </div>
     );
 }
+
+
+    
