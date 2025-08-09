@@ -132,22 +132,22 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                       <Calendar className="h-3 w-3" />
                                       <span>{new Date(character.createdAt).toLocaleDateString()}</span>
                                   </div>
-                                  {character.dataPackId && character.dataPackName && (
-                                     <div className="flex items-center gap-1.5">
-                                         <Tag className="h-3 w-3" />
-                                         <Link href={`/datapacks/${character.dataPackId}`} className="hover:underline">
-                                           {character.dataPackName}
-                                          </Link>
-                                     </div>
-                                  )}
                               </div>
 
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
                                   {character.branchedFromId && (
                                       <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
                                           <GitBranch className="h-3 w-3 mr-1.5" />
                                           Branched from {character.originalAuthorName || 'Unknown'}
                                       </Badge>
+                                  )}
+                                  {character.dataPackId && character.dataPackName && (
+                                     <Link href={`/datapacks/${character.dataPackId}`}>
+                                        <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 hover:bg-accent/20 transition-colors">
+                                           <Tag className="h-3 w-3 mr-1.5" />
+                                            {character.dataPackName}
+                                        </Badge>
+                                      </Link>
                                   )}
                               </div>
                           </div>
