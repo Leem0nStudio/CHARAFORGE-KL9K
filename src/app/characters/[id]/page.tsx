@@ -193,8 +193,8 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                 </DialogContent>
                             </Dialog>
 
-                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                           <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                           <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-black/30 backdrop-blur-sm p-2 rounded-lg">
                               <CharacterImageActions 
                                 character={character}
                                 currentUserId={currentUserId}
