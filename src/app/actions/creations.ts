@@ -1,3 +1,4 @@
+
 'use server';
 
 import { adminDb } from '@/lib/firebase/server';
@@ -27,7 +28,9 @@ export async function getPublicCharacters(): Promise<Character[]> {
     for (const doc of snapshot.docs) {
         const data = doc.data();
         let userName = 'Anonymous';
+        let originalAuthorName = data.originalAuthorName || null;
 
+        // Fetch current owner's name
         if (data.userId) {
             try {
                 if (!adminDb) throw new Error('Database service is unavailable during user fetch.');
@@ -40,11 +43,27 @@ export async function getPublicCharacters(): Promise<Character[]> {
             }
         }
         
+        // If originalAuthorName is not set directly, fetch it if needed.
+        // This handles cases where a character was branched before the name field was added.
+        if (!originalAuthorName && data.originalAuthorId) {
+             try {
+                if (!adminDb) throw new Error('Database service is unavailable during user fetch.');
+                const originalAuthorDoc = await adminDb.collection('users').doc(data.originalAuthorId).get();
+                if (originalAuthorDoc.exists) {
+                    originalAuthorName = originalAuthorDoc.data()?.displayName || 'Anonymous';
+                }
+            } catch (userError) {
+                console.error(`Failed to fetch original author ${data.originalAuthorId} for character ${doc.id}:`, userError);
+            }
+        }
+
+
         charactersData.push({
             id: doc.id,
             ...data,
             createdAt: data.createdAt.toDate(),
             userName: userName,
+            originalAuthorName: originalAuthorName,
         } as Character);
     }
     

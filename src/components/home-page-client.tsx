@@ -10,7 +10,7 @@ import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
 import type { DataPack } from '@/types/datapack';
 import { motion } from 'framer-motion';
-import { Heart, Swords, ArrowRight, Package, Wand2 } from 'lucide-react';
+import { Heart, Swords, ArrowRight, Package, Wand2, User, GitBranch } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +29,56 @@ const SectionTitle = ({ title, subtitle }: { title: string, subtitle: string }) 
         </p>
     </div>
 )
+
+const CreationCard = ({ creation, index }: { creation: Character, index: number }) => {
+    const isBranch = !!creation.branchedFromId;
+
+    return (
+        <motion.div
+            key={creation.id}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, delay: index * 0.05 }}
+        >
+            <Card className="overflow-hidden group relative h-full flex flex-col">
+                <Link href={`/characters/${creation.id}`} className="flex flex-col h-full">
+                    <CardHeader className="p-0">
+                        <div className="aspect-square relative w-full bg-muted/20">
+                            <Image
+                                src={creation.imageUrl}
+                                alt={creation.name}
+                                fill
+                                className="object-contain w-full transition-transform duration-300 group-hover:scale-110"
+                            />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-4 flex-grow">
+                        <h3 className="font-bold text-lg leading-tight">{creation.name}</h3>
+                    </CardContent>
+                    <CardFooter className="p-4 bg-muted/30 text-xs text-muted-foreground">
+                        {isBranch ? (
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-1.5">
+                                    <GitBranch className="h-3 w-3 text-primary" />
+                                    <span>Branched by @{creation.userName}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <User className="h-3 w-3" />
+                                    <span>Original: @{creation.originalAuthorName}</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1.5">
+                                <User className="h-3 w-3" />
+                                <span>by @{creation.userName}</span>
+                            </div>
+                        )}
+                    </CardFooter>
+                </Link>
+            </Card>
+        </motion.div>
+    )
+}
 
 
 export function HomePageClient({ featuredCreations, topCreators, newDataPacks }: HomePageClientProps) {
@@ -132,30 +182,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
                 <SectionTitle title="Community Gallery" subtitle="Discover legendary characters forged by our community." />
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                      {featuredCreations.slice(0, 8).map((creation, index) => (
-                         <motion.div
-                            key={creation.id}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.4, delay: index * 0.05 }}
-                         >
-                            <Link href={`/characters/${creation.id}`}>
-                                <Card className="overflow-hidden group relative">
-                                    <div className="aspect-square relative w-full bg-muted/20">
-                                     <Image
-                                        src={creation.imageUrl}
-                                        alt={creation.name}
-                                        fill
-                                        className="object-contain w-full transition-transform duration-300 group-hover:scale-110"
-                                     />
-                                     </div>
-                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                                     <div className="absolute bottom-0 left-0 p-4 text-white">
-                                        <h3 className="font-bold text-lg leading-tight">{creation.name}</h3>
-                                        <p className="text-xs text-white/80">by @{creation.userName}</p>
-                                     </div>
-                                 </Card>
-                            </Link>
-                         </motion.div>
+                         <CreationCard key={creation.id} creation={creation} index={index} />
                      ))}
                 </div>
             </section>
