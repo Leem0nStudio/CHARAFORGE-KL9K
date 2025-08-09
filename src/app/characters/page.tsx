@@ -332,7 +332,7 @@ export default function CharactersPage() {
       return Array.from(groups.values()).sort((a, b) => {
           const lastA = a.reduce((latest, curr) => new Date(curr.createdAt) > new Date(latest.createdAt) ? curr : latest);
           const lastB = b.reduce((latest, curr) => new Date(curr.createdAt) > new Date(latest.createdAt) ? curr : latest);
-          return new Date(lastB.createdAt).getTime() - new Date(lastA.createdAt).getTime();
+          return new Date(lastB.createdAt).getTime() - new Date(a[0].createdAt).getTime();
       });
   };
 
@@ -474,4 +474,3 @@ export default function CharactersPage() {
     </div>
   );
 }
-
