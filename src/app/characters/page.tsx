@@ -17,15 +17,24 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { PageHeader } from '@/components/page-header';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
-import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2, GalleryHorizontal, Plus, GitBranch, Settings, ArrowLeft } from 'lucide-react';
+import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2, GalleryHorizontal, Plus, GitBranch, Settings, ArrowLeft, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 
-function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdated, onBack }: { 
+function CharacterDetailPanel({ 
+  character, 
+  allVersions,
+  onCharacterDeleted, 
+  onCharacterUpdated, 
+  onBack,
+  onSelectVersion 
+}: { 
   character: Character | null; 
-  onCharacterDeleted: (id: string) => void; 
+  allVersions: Character[];
+  onCharacterDeleted: (id: string, baseId: string | null) => void; 
   onCharacterUpdated: () => void;
   onBack: () => void; 
+  onSelectVersion: (id: string) => void;
 }) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -56,7 +65,7 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
         title: 'Character Deleted',
         description: `${character.name} has been removed.`,
       });
-      onCharacterDeleted(character.id);
+      onCharacterDeleted(character.id, character.baseCharacterId);
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -66,7 +75,7 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
     } finally {
       setIsDeleting(false);
     }
-  }, [character.id, character.name, toast, onCharacterDeleted]);
+  }, [character, toast, onCharacterDeleted]);
   
   const handleUpdate = useCallback((updateAction: () => Promise<any>) => {
     startUpdateTransition(async () => {
@@ -105,6 +114,8 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
   const handleCreateVersion = () => {
     handleUpdate(() => createCharacterVersion(character.id));
   };
+  
+  const otherVersions = allVersions.filter(v => v.id !== character.id).sort((a, b) => b.version - a.version);
 
   const isPublic = character.status === 'public';
   const wasMadeWithDataPack = !!character.dataPackId;
@@ -138,19 +149,9 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                  <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 text-white">
                     <h2 className="text-2xl sm:text-4xl font-extrabold font-headline tracking-wider drop-shadow-lg">{character.name}</h2>
                     <div className="flex items-center gap-4 text-base sm:text-lg text-primary-foreground/80 drop-shadow-md">
-                      <p>{isPublic ? "Public Character" : "Private Character"}</p>
-                      {wasMadeWithDataPack && character.isSharedToDataPack && (
-                        <>
-                          <span>•</span>
-                          <p>Shared to Gallery</p>
-                        </>
-                      )}
-                       {canBranch && isPublic && (
-                        <>
-                          <span>•</span>
-                          <p>Branching Enabled</p>
-                        </>
-                      )}
+                      <p>{character.versionName}</p>
+                      <span>•</span>
+                      <p>{isPublic ? "Public" : "Private"}</p>
                     </div>
                  </div>
 
@@ -222,6 +223,10 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                                         {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to Gallery"}
                                     </DropdownMenuItem>
                                 )}
+                                <DropdownMenuSeparator />
+                                 <DropdownMenuItem onClick={handleCreateVersion} disabled={isUpdating}>
+                                    <Plus className="mr-2"/> Create New Version
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
 
@@ -242,24 +247,32 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Versions</CardTitle>
-                        <CardDescription>Manage different versions of this character.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex items-center gap-2 flex-wrap">
-                        <Button variant="outline" size="icon" onClick={handleCreateVersion} disabled={isUpdating}>
-                            {isUpdating ? <Loader2 className="animate-spin"/> : <Plus />}
-                        </Button>
-                        {character.versions?.sort((a,b) => b.version - a.version).map(v => (
-                            <Button key={v.id} asChild variant={v.id === character.id ? 'default' : 'secondary'}>
-                                <Link href={`/characters?id=${v.id}`}>
-                                    {v.name}
-                                </Link>
-                            </Button>
-                        ))}
-                    </CardContent>
-                </Card>
+                {otherVersions.length > 0 && (
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-2"><Layers /> Other Versions</CardTitle>
+                          <CardDescription>Explore other variations of this character.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                          {otherVersions.map(version => (
+                            <div key={version.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                              <div className="flex items-center gap-3">
+                                  <div className="relative w-12 h-12 rounded-md overflow-hidden shrink-0 bg-muted-foreground/20">
+                                      <Image src={version.imageUrl} alt={version.name} fill className="object-contain" />
+                                  </div>
+                                  <div>
+                                      <p className="font-semibold text-card-foreground">{version.name}</p>
+                                      <p className="text-xs text-muted-foreground">{version.versionName}</p>
+                                  </div>
+                              </div>
+                              <Button size="sm" variant="secondary" onClick={() => onSelectVersion(version.id)}>
+                                View
+                              </Button>
+                            </div>
+                          ))}
+                      </CardContent>
+                  </Card>
+                )}
             </div>
           </CardContent>
         </Card>
@@ -288,7 +301,13 @@ export default function CharactersPage() {
       if (urlId && fetchedCharacters.some(c => c.id === urlId)) {
         setSelectedCharacterId(urlId);
       } else if (fetchedCharacters.length > 0 && !selectedCharacterId) {
-        setSelectedCharacterId(fetchedCharacters[0].id);
+        // Find the most recently created character group and select its latest version
+        const grouped = groupCharacters(fetchedCharacters);
+        const mostRecentGroup = grouped[0];
+        if (mostRecentGroup) {
+           const latestVersionInGroup = mostRecentGroup.sort((a,b) => b.version - a.version)[0];
+           setSelectedCharacterId(latestVersionInGroup.id);
+        }
       } else if (fetchedCharacters.length === 0) {
         setSelectedCharacterId(null);
       }
@@ -298,6 +317,26 @@ export default function CharactersPage() {
       setLoading(false);
     }
   }, [authUser, selectedCharacterId, searchParams]);
+  
+  // Group characters by baseCharacterId or their own id if they are the base
+  const groupCharacters = (chars: Character[]): Character[][] => {
+      const groups = new Map<string, Character[]>();
+      chars.forEach(char => {
+          const baseId = char.baseCharacterId || char.id;
+          if (!groups.has(baseId)) {
+              groups.set(baseId, []);
+          }
+          groups.get(baseId)!.push(char);
+      });
+      // Sort groups by the most recent character's creation date within each group
+      return Array.from(groups.values()).sort((a, b) => {
+          const lastA = a.reduce((latest, curr) => new Date(curr.createdAt) > new Date(latest.createdAt) ? curr : latest);
+          const lastB = b.reduce((latest, curr) => new Date(curr.createdAt) > new Date(latest.createdAt) ? curr : latest);
+          return new Date(lastB.createdAt).getTime() - new Date(lastA.createdAt).getTime();
+      });
+  };
+
+  const characterGroups = useMemo(() => groupCharacters(characters), [characters]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -308,21 +347,32 @@ export default function CharactersPage() {
     fetchCharacters();
   }, [authUser, authLoading, router, fetchCharacters]);
   
-  const handleCharacterDeleted = useCallback((deletedId: string) => {
-    setCharacters(prev => {
-        const remaining = prev.filter(c => c.id !== deletedId);
-        if (selectedCharacterId === deletedId) {
-            const newSelectedId = remaining.length > 0 ? remaining[0].id : null;
-            setSelectedCharacterId(newSelectedId);
-             if (newSelectedId) {
-                router.push(`/characters?id=${newSelectedId}`, { scroll: false });
-            } else {
-                 router.push('/characters', { scroll: false });
-            }
+  const handleCharacterDeleted = useCallback((deletedId: string, baseId: string | null) => {
+    const newCharacters = characters.filter(c => c.id !== deletedId);
+    setCharacters(newCharacters);
+
+    if (selectedCharacterId === deletedId) {
+      const groupKey = baseId || deletedId;
+      const group = newCharacters.filter(c => (c.baseCharacterId || c.id) === groupKey);
+      
+      let nextSelectedId: string | null = null;
+      if (group.length > 0) {
+        nextSelectedId = group.sort((a, b) => b.version - a.version)[0].id;
+      } else {
+        const remainingGroups = groupCharacters(newCharacters);
+        if (remainingGroups.length > 0) {
+          nextSelectedId = remainingGroups[0].sort((a, b) => b.version - a.version)[0].id;
         }
-        return remaining;
-    });
-  }, [selectedCharacterId, router]);
+      }
+      
+      setSelectedCharacterId(nextSelectedId);
+      if (nextSelectedId) {
+        router.push(`/characters?id=${nextSelectedId}`, { scroll: false });
+      } else {
+        router.push('/characters', { scroll: false });
+      }
+    }
+  }, [selectedCharacterId, router, characters]);
 
   const selectCharacter = (id: string) => {
     setSelectedCharacterId(id);
@@ -332,6 +382,12 @@ export default function CharactersPage() {
   const selectedCharacter = useMemo(() => {
     return characters.find(c => c.id === selectedCharacterId) || null;
   }, [characters, selectedCharacterId]);
+
+  const allVersionsOfSelected = useMemo(() => {
+    if (!selectedCharacter) return [];
+    const baseId = selectedCharacter.baseCharacterId || selectedCharacter.id;
+    return characters.filter(c => (c.baseCharacterId || c.id) === baseId);
+  }, [selectedCharacter, characters]);
 
   const showDetailsMobile = selectedCharacterId && characters.length > 0;
   
@@ -355,31 +411,39 @@ export default function CharactersPage() {
              <div className="w-full flex items-center justify-center p-8 min-h-[400px]">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : characters.length > 0 ? (
+          ) : characterGroups.length > 0 ? (
               <>
                   <aside className={cn("w-full lg:w-1/4", showDetailsMobile && "hidden lg:block")}>
                       <ScrollArea className="h-full max-h-[40vh] lg:max-h-[70vh] pr-4">
                           <div className="space-y-2">
-                              {characters.map(character => (
-                                  <button
-                                      key={character.id}
-                                      onClick={() => selectCharacter(character.id)}
-                                      className={cn(
-                                          "w-full text-left p-2 rounded-lg border-2 border-transparent transition-all duration-200 hover:bg-card/80",
-                                          selectedCharacterId === character.id && "bg-card border-primary shadow-md"
-                                      )}
-                                  >
-                                      <div className="flex items-center gap-4">
-                                          <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted/20">
-                                              <Image src={character.imageUrl} alt={character.name} fill className="object-contain" />
-                                          </div>
-                                          <div>
-                                              <p className="font-semibold text-card-foreground">{character.name}</p>
-                                              <p className="text-xs text-muted-foreground">{character.versionName}</p>
-                                          </div>
-                                      </div>
-                                  </button>
-                              ))}
+                              {characterGroups.map(group => {
+                                  const latestVersion = group.sort((a,b) => b.version - a.version)[0];
+                                  return (
+                                    <button
+                                        key={latestVersion.baseCharacterId || latestVersion.id}
+                                        onClick={() => selectCharacter(latestVersion.id)}
+                                        className={cn(
+                                            "w-full text-left p-2 rounded-lg border-2 border-transparent transition-all duration-200 hover:bg-card/80",
+                                            (selectedCharacter?.baseCharacterId || selectedCharacter?.id) === (latestVersion.baseCharacterId || latestVersion.id) && "bg-card border-primary shadow-md"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted/20">
+                                                <Image src={latestVersion.imageUrl} alt={latestVersion.name} fill className="object-contain" />
+                                                {group.length > 1 && (
+                                                  <div className="absolute bottom-0 right-0 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-tl-md rounded-br-md flex items-center gap-1">
+                                                    <Layers className="h-3 w-3"/> {group.length}
+                                                  </div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-card-foreground">{latestVersion.name}</p>
+                                                <p className="text-xs text-muted-foreground">{group.length} Version(s)</p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                  )
+                              })}
                           </div>
                       </ScrollArea>
                   </aside>
@@ -387,9 +451,11 @@ export default function CharactersPage() {
                   <div className={cn("w-full lg:w-3/4", !showDetailsMobile && "hidden lg:block")}>
                     <CharacterDetailPanel 
                         character={selectedCharacter} 
+                        allVersions={allVersionsOfSelected}
                         onCharacterDeleted={handleCharacterDeleted}
                         onCharacterUpdated={fetchCharacters}
                         onBack={() => setSelectedCharacterId(null)}
+                        onSelectVersion={selectCharacter}
                     />
                   </div>
               </>
@@ -408,3 +474,4 @@ export default function CharactersPage() {
     </div>
   );
 }
+
