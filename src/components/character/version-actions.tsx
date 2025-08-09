@@ -17,14 +17,13 @@ interface VersionActionsProps {
 }
 
 export function VersionActions({ character, onUpdate }: VersionActionsProps) {
-    const [isUpdating, startUpdateTransition] = useTransition();
     const router = useRouter();
 
     const handleCreateVersion = () => {
         onUpdate(async () => {
             const result = await createCharacterVersion(character.id);
             if (result.success && result.characterId) {
-                // Redirect to the new version
+                // Redirect to the new version's detail page
                 router.push(`/characters/${result.characterId}`);
             }
             return result;
@@ -41,7 +40,7 @@ export function VersionActions({ character, onUpdate }: VersionActionsProps) {
             <div className="flex flex-col space-y-2">
                 <Label className="font-semibold">Versions</Label>
                 <div className="flex flex-wrap gap-1">
-                     <Button variant="outline" size="sm" onClick={handleCreateVersion} disabled={isUpdating}>
+                     <Button variant="outline" size="sm" onClick={handleCreateVersion}>
                         <Plus className="mr-2" /> New
                     </Button>
                     {character.versions?.sort((a,b) => b.version - a.version).map(v => (
@@ -64,9 +63,10 @@ export function VersionActions({ character, onUpdate }: VersionActionsProps) {
                         id="branching-switch"
                         checked={character.branchingPermissions === 'public'}
                         onCheckedChange={handleToggleBranching}
-                        disabled={isUpdating}
+                        disabled={character.status !== 'public'}
                     />
                 </div>
+                 {character.status !== 'public' && <p className="text-xs text-muted-foreground">Character must be public to enable branching.</p>}
             </div>
         </div>
     );

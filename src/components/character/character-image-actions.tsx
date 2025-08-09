@@ -9,7 +9,7 @@ import { deleteCharacter, updateCharacterStatus, updateCharacterDataPackSharing 
 import { Button, buttonVariants } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Loader2, Settings, Pencil, Trash2, ShieldCheck, ShieldOff, GalleryHorizontal, GitBranch } from 'lucide-react';
+import { Loader2, Settings, Pencil, Trash2, ShieldCheck, ShieldOff, GalleryHorizontal } from 'lucide-react';
 import { VersionActions } from './version-actions';
 import { BranchButton } from '@/app/characters/[id]/branch-button';
 import type { Character } from '@/types/character';
@@ -72,7 +72,7 @@ export function CharacterImageActions({ character, currentUserId, isOwner }: Cha
         handleUpdate(() => updateCharacterDataPackSharing(character.id, newSharingStatus));
     };
     
-    const canBranch = currentUserId && !isOwner && character.branchingPermissions === 'public';
+    const canBranch = currentUserId && !isOwner && character.branchingPermissions === 'public' && character.status === 'public';
 
 
     return (
@@ -91,7 +91,7 @@ export function CharacterImageActions({ character, currentUserId, isOwner }: Cha
 
                         <DropdownMenuSub>
                            <DropdownMenuSubTrigger>
-                                <GitBranch className="mr-2" /> Versioning
+                                <Settings className="mr-2" /> Versioning & Perms
                            </DropdownMenuSubTrigger>
                            <DropdownMenuSubContent>
                                 <VersionActions character={character} onUpdate={handleUpdate} />

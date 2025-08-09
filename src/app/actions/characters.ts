@@ -74,7 +74,7 @@ export async function createCharacterVersion(characterId: string): Promise<Actio
     await batch.commit();
     
     revalidatePath('/characters');
-    return { success: true, message: `Created new version: ${newVersionName}` };
+    return { success: true, message: `Created new version: ${newVersionName}`, characterId: newCharacterRef.id };
 
   } catch (error) {
     console.error('Error creating character version:', error);
@@ -350,6 +350,8 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
     await characterRef.update({ branchingPermissions: permissions });
 
     revalidatePath('/characters');
+    revalidatePath(`/characters/${characterId}`);
+
     return { success: true, message: `Branching permissions set to ${permissions}.` };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not update permissions.';
@@ -382,7 +384,7 @@ export async function branchCharacter(characterId: string): Promise<ActionRespon
       return { success: false, message: 'You cannot branch your own character. Create a new version instead.' };
     }
     
-    const originalAuthorId = originalData.originalAuthorId || originalData.userId;
+    const originalAuthorId = originalData.userId; // The creator of this specific version is the original author of the new branch
     const originalAuthorProfile = await adminDb.collection('users').doc(originalAuthorId).get().then(doc => doc.data() as UserProfile | undefined);
 
     // Prepare new character data
@@ -408,10 +410,13 @@ export async function branchCharacter(characterId: string): Promise<ActionRespon
       // Reset versioning for the new branch
       version: version,
       versionName: versionName,
-      baseCharacterId: null, 
+      baseCharacterId: newCharacterRef.id, // The new character is its own base
       versions: [initialVersion],
       createdAt: FieldValue.serverTimestamp(),
     };
+    
+    // Remove fields that should not be copied
+    delete (newCharacterData as any).id;
 
     await newCharacterRef.set(newCharacterData);
     
@@ -424,5 +429,3 @@ export async function branchCharacter(characterId: string): Promise<ActionRespon
     return { success: false, message };
   }
 }
-
-    

@@ -87,7 +87,7 @@ async function getCharacter(characterId: string): Promise<{
 }
 
 export default async function CharacterDetailPage({ params }: { params: { id: string } }) {
-    const { character, currentUserId, creatorProfile } = await getCharacter(params.id);
+    const { character, currentUserId, creatorProfile, originalAuthorProfile } = await getCharacter(params.id);
 
     if (!character) {
         notFound();
@@ -138,10 +138,10 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                               </div>
 
                               <div className="flex flex-wrap items-center gap-2">
-                                  {character.branchedFromId && (
+                                  {character.branchedFromId && originalAuthorProfile && (
                                       <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
                                           <GitBranch className="h-3 w-3 mr-1.5" />
-                                          Branched from {character.originalAuthorName || 'Unknown'}
+                                          Branched from {originalAuthorProfile.displayName || 'Unknown'}
                                       </Badge>
                                   )}
                                   {character.dataPackId && character.dataPackName && (
