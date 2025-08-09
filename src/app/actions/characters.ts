@@ -381,6 +381,9 @@ export async function branchCharacter(characterId: string): Promise<ActionRespon
      if (originalData.userId === newOwnerId) {
       return { success: false, message: 'You cannot branch your own character. Create a new version instead.' };
     }
+    
+    const originalAuthorId = originalData.originalAuthorId || originalData.userId;
+    const originalAuthorProfile = await adminDb.collection('users').doc(originalAuthorId).get().then(doc => doc.data() as UserProfile | undefined);
 
     // Prepare new character data
     const newCharacterRef = adminDb.collection('characters').doc();
@@ -392,15 +395,15 @@ export async function branchCharacter(characterId: string): Promise<ActionRespon
       ...originalData,
       // Overwrite ownership and metadata
       userId: newOwnerId,
-      userName: newOwnerProfile.displayName || 'Anonymous',
+      userName: newOwnerProfile?.displayName || 'Anonymous',
       status: 'private', 
       isSharedToDataPack: false,
       branchingPermissions: 'private',
       
       // Set lineage
       branchedFromId: originalData.id,
-      originalAuthorId: originalData.originalAuthorId || originalData.userId,
-      originalAuthorName: originalData.originalAuthorName || originalData.userName,
+      originalAuthorId: originalAuthorId,
+      originalAuthorName: originalAuthorProfile?.displayName || 'Anonymous',
 
       // Reset versioning for the new branch
       version: version,
@@ -421,3 +424,5 @@ export async function branchCharacter(characterId: string): Promise<ActionRespon
     return { success: false, message };
   }
 }
+
+    

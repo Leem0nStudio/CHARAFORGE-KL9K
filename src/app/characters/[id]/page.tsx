@@ -44,33 +44,21 @@ async function getCharacter(characterId: string): Promise<{ character: Character
 
         const data = doc.data();
         if (!data) return { character: null, currentUserId };
-
-        let userName = 'Anonymous';
-        let originalAuthorName = data.originalAuthorName || null;
-        let dataPackName = null;
+        
         let branchedFrom: { id: string, name: string } | null = null;
 
         // Fetch user, datapack, and branchedFrom info in parallel
-        const [userDoc, dataPackDoc, branchedFromDoc, originalAuthorDoc] = await Promise.all([
+        const [userDoc, dataPackDoc, branchedFromDoc] = await Promise.all([
             data.userId ? adminDb.collection('users').doc(data.userId).get() : Promise.resolve(null),
             data.dataPackId ? adminDb.collection('datapacks').doc(data.dataPackId).get() : Promise.resolve(null),
             data.branchedFromId ? adminDb.collection('characters').doc(data.branchedFromId).get() : Promise.resolve(null),
-            data.originalAuthorId ? adminDb.collection('users').doc(data.originalAuthorId).get() : Promise.resolve(null),
         ]);
-
-        if (userDoc && userDoc.exists) {
-            userName = userDoc.data()?.displayName || 'Anonymous';
-        }
-        if (dataPackDoc && dataPackDoc.exists) {
-            dataPackName = dataPackDoc.data()?.name || null;
-        }
+        
+        const userName = userDoc && userDoc.exists ? userDoc.data()?.displayName || 'Anonymous' : 'Anonymous';
+        const dataPackName = dataPackDoc && dataPackDoc.exists ? dataPackDoc.data()?.name || null : null;
         if (branchedFromDoc && branchedFromDoc.exists) {
             branchedFrom = { id: branchedFromDoc.id, name: branchedFromDoc.data()?.name || 'Unknown' };
         }
-        if (originalAuthorDoc && originalAuthorDoc.exists) {
-            originalAuthorName = originalAuthorDoc.data()?.displayName || 'Anonymous';
-        }
-
 
         const character: Character = {
             id: doc.id,
@@ -79,7 +67,6 @@ async function getCharacter(characterId: string): Promise<{ character: Character
             userName: userName,
             dataPackName: dataPackName,
             branchingPermissions: data.branchingPermissions || 'private',
-            originalAuthorName: originalAuthorName,
         } as Character;
         
         // This is a bit awkward, but we add the branchedFrom data after casting
@@ -134,25 +121,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                             <CardTitle className="font-headline text-4xl">{character.name}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                             {branchedFrom && (
-                                <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg space-y-2 border-l-4 border-primary">
-                                    <div className="flex items-center gap-2">
-                                      <GitBranch className="h-4 w-4 text-primary" />
-                                      <span>Branched from{' '}
-                                        <Link href={`/characters/${branchedFrom.id}`} className="font-semibold text-foreground hover:underline">
-                                           {branchedFrom.name}
-                                        </Link>
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <ChevronsRight className="h-4 w-4"/>
-                                        <span>Original creator:{' '}
-                                            <span className="font-semibold text-foreground">{character.originalAuthorName || 'Unknown'}</span>
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-
+                             
                              <div className="text-sm text-muted-foreground space-y-2">
                                 <div className="flex items-center gap-2">
                                     <User className="h-4 w-4" />
@@ -174,6 +143,27 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                     </div>
                                 )}
                             </div>
+
+                             {branchedFrom && (
+                                <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg space-y-2 border-l-4 border-primary">
+                                    <div className="flex items-center gap-2">
+                                      <GitBranch className="h-4 w-4 text-primary" />
+                                      <span>Branched from{' '}
+                                        <Link href={`/characters/${branchedFrom.id}`} className="font-semibold text-foreground hover:underline">
+                                           {branchedFrom.name}
+                                        </Link>
+                                      </span>
+                                    </div>
+                                    {character.originalAuthorName && 
+                                        <div className="flex items-center gap-2">
+                                            <ChevronsRight className="h-4 w-4"/>
+                                            <span>Original creator:{' '}
+                                                <span className="font-semibold text-foreground">{character.originalAuthorName}</span>
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+                            )}
 
                              {canBranch && (
                                 <div className="mt-6 border-t pt-6">
@@ -200,5 +190,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
     );
 }
 
+
+    
 
     
