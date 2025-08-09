@@ -11,12 +11,11 @@ import type { Character } from '@/types/character';
 import { updateCharacter, updateCharacterImages, uploadCharacterImage } from '@/app/actions/characters';
 import { useToast } from '@/hooks/use-toast';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Pencil, ImagePlus, Trash2, Star, Upload, FileUp } from 'lucide-react';
+import { Loader2, Star, Trash2, FileUp } from 'lucide-react';
 import Image from 'next/image';
 import { Label } from '@/components/ui/label';
 
@@ -213,33 +212,26 @@ export function EditCharacterForm({ character }: { character: Character }) {
     };
 
     return (
-        <Tabs defaultValue="edit" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="edit"><Pencil className="mr-2" />Edit Details</TabsTrigger>
-                <TabsTrigger value="images"><ImagePlus className="mr-2" />Images & AI</TabsTrigger>
-            </TabsList>
-            <TabsContent value="edit">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Core Details</CardTitle>
-                        <CardDescription>Modify the fields below to update your character's story.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <EditTab character={characterState} onUpdate={handleCharacterUpdate} />
-                    </CardContent>
-                </Card>
-            </TabsContent>
-             <TabsContent value="images">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Image Gallery</CardTitle>
-                        <CardDescription>Upload new images, manage your gallery, and set a primary image.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ImagesTab character={characterState} onUpdate={handleCharacterUpdate} />
-                    </CardContent>
-                </Card>
-            </TabsContent>
-        </Tabs>
+        <div className="space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Core Details</CardTitle>
+                    <CardDescription>Modify the fields below to update your character's story.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <EditTab character={characterState} onUpdate={handleCharacterUpdate} />
+                </CardContent>
+            </Card>
+            
+             <Card>
+                <CardHeader>
+                    <CardTitle>Image Gallery</CardTitle>
+                    <CardDescription>Upload new images, manage your gallery, and set a primary image.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ImagesTab character={characterState} onUpdate={handleCharacterUpdate} />
+                </CardContent>
+            </Card>
+        </div>
     );
 }
