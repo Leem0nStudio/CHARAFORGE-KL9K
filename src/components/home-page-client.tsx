@@ -13,6 +13,7 @@ import { motion } from 'framer-motion';
 import { Heart, Swords, ArrowRight, Package, Wand2, User, GitBranch } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 type HomePageClientProps = {
@@ -100,61 +101,65 @@ const CreationCard = ({ creation, index }: { creation: Character, index: number 
 
 export function HomePageClient({ featuredCreations, topCreators, newDataPacks }: HomePageClientProps) {
 
-  const newestPack = newDataPacks.length > 0 ? newDataPacks[0] : null;
-
   return (
     <div className="flex flex-col min-h-screen">
         <div className="flex-1 space-y-20 md:space-y-28">
             
             {/* Hero Section */}
-            {newestPack && (
-                <section className="w-full pt-8 md:pt-12 lg:pt-16 relative overflow-hidden bg-gradient-to-b from-background to-primary/5">
-                    <div className="container grid gap-8 md:grid-cols-2 items-center">
-                        <motion.div 
-                            className="space-y-4 text-center md:text-left"
-                            initial={{ opacity: 0, x: -50 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.6 }}
-                        >
-                            <Badge variant="secondary">Newest DataPack</Badge>
-                            <h1 className="font-headline text-4xl lg:text-6xl tracking-tighter font-extrabold">{newestPack.name}</h1>
-                            <p className="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto md:mx-0">
-                                {newestPack.description}
-                            </p>
-                             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                                <Button asChild size="lg" className="font-headline text-lg">
-                                    <Link href={`/datapacks/${newestPack.id}`}>
-                                        <Package className="mr-2"/> Explore Pack
-                                    </Link>
-                                </Button>
-                                <Button asChild size="lg" variant="secondary" className="font-headline text-lg">
-                                    <Link href="/character-generator">
-                                       <Wand2 className="mr-2"/> Start Creating
-                                    </Link>
-                                </Button>
-                            </div>
-                        </motion.div>
-                        <motion.div 
-                            className="relative"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.6, delay: 0.2 }}
-                        >
-                            <Link href={`/datapacks/${newestPack.id}`}>
-                                <div className="relative aspect-square">
-                                <Image
-                                    src={newestPack.coverImageUrl || 'https://placehold.co/720x720.png'}
-                                    alt={newestPack.name}
-                                    fill
-                                    className="rounded-xl shadow-2xl object-contain transition-transform hover:scale-105 duration-300"
-                                    data-ai-hint="datapack cover image"
-                                />
+             <section className="w-full pt-12 md:pt-24 lg:pt-32 relative overflow-hidden bg-gradient-to-b from-background to-primary/5">
+                <div className="container px-4 md:px-6">
+                    <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
+                        <div className="flex flex-col justify-center space-y-4 text-center lg:text-left">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
+                                    Forja Personajes Legendarios con IA
+                                </h1>
+                                <p className="max-w-[600px] text-muted-foreground md:text-xl mx-auto lg:mx-0 mt-4">
+                                    Da vida a tus ideas. Describe tu personaje, elige un estilo y deja que nuestra IA cree retratos y biografías únicas para tus historias, juegos o proyectos creativos.
+                                </p>
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: 0.2 }}
+                                className="w-full max-w-sm mx-auto lg:mx-0 space-y-2"
+                            >
+                               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                                    <Button asChild size="lg" className="font-headline text-lg">
+                                        <Link href="/character-generator">
+                                        <Wand2 className="mr-2"/> Empezar a Crear
+                                        </Link>
+                                    </Button>
+                                    <Button asChild size="lg" variant="secondary" className="font-headline text-lg">
+                                        <Link href="/datapacks">
+                                        <Package className="mr-2"/> Explorar DataPacks
+                                        </Link>
+                                    </Button>
                                 </div>
-                            </Link>
+                            </motion.div>
+                        </div>
+                        <motion.div
+                             initial={{ opacity: 0, scale: 0.8 }}
+                             animate={{ opacity: 1, scale: 1 }}
+                             transition={{ duration: 0.6, delay: 0.2 }}
+                        >
+                            <Image
+                                src="https://placehold.co/600x600.png"
+                                alt="Hero Character"
+                                width={600}
+                                height={600}
+                                className="mx-auto aspect-square overflow-hidden rounded-xl object-contain sm:w-full lg:order-last"
+                                data-ai-hint="fantasy character portrait"
+                            />
                         </motion.div>
                     </div>
-                </section>
-            )}
+                </div>
+            </section>
+
 
             {/* DataPacks Section */}
             <section id="datapacks" className="container">
@@ -241,3 +246,5 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
     </div>
   );
 }
+
+    
