@@ -332,6 +332,8 @@ export default function CharactersPage() {
   const selectedCharacter = useMemo(() => {
     return characters.find(c => c.id === selectedCharacterId) || null;
   }, [characters, selectedCharacterId]);
+
+  const showDetailsMobile = selectedCharacterId && characters.length > 0;
   
   if (authLoading || (loading && characters.length === 0 && !authUser)) {
      return (
@@ -340,8 +342,6 @@ export default function CharactersPage() {
       </div>
     );
   }
-  
-  const showDetailsMobile = selectedCharacterId && characters.length > 0;
 
   return (
     <div className="container py-8">
@@ -408,5 +408,3 @@ export default function CharactersPage() {
     </div>
   );
 }
-
-    
