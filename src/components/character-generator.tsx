@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { generateCharacterBio } from "@/ai/flows/generate-character-bio";
 import { generateCharacterImage } from "@/ai/flows/generate-character-image";
-import { saveCharacter } from "@/ai/flows/save-character";
+import { saveCharacter } from "@/app/actions/characters";
 import { getInstalledDataPacks } from "@/app/actions/datapacks";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
