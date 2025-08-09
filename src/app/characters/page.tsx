@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { PageHeader } from '@/components/page-header';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
-import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2, GalleryHorizontal, Plus, GitBranch, GitPullRequest } from 'lucide-react';
+import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2, GalleryHorizontal, Plus, GitBranch, GitPullRequest, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 
@@ -185,28 +185,35 @@ function CharacterDetailPanel({ character, onCharacterDeleted, onCharacterUpdate
                         </ScrollArea>
                     </CardContent>
                 </Card>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Button variant="outline" onClick={handleCopyPrompt}><Copy className="mr-2"/> Copy Original Prompt</Button>
-                    <Button onClick={handleTogglePublicStatus} disabled={isUpdating}>
-                        {isUpdating && <Loader2 className="animate-spin mr-2" />}
-                        {isPublic ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>}
-                        {isPublic ? "Make Private" : "Make Public"}
-                    </Button>
-                    {isPublic && (
-                       <Button onClick={handleToggleBranchingPermissions} disabled={isUpdating} variant="secondary">
+
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Actions</CardTitle>
+                        <CardDescription>Manage your character's settings and content.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Button variant="outline" onClick={handleCopyPrompt}><Copy className="mr-2"/> Copy Original Prompt</Button>
+                        <Button onClick={handleTogglePublicStatus} disabled={isUpdating}>
                             {isUpdating && <Loader2 className="animate-spin mr-2" />}
-                            <GitBranch className="mr-2"/>
-                            {canBranch ? "Disable Branching" : "Enable Branching"}
+                            {isPublic ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>}
+                            {isPublic ? "Make Private" : "Make Public"}
                         </Button>
-                    )}
-                    {wasMadeWithDataPack && (
-                       <Button onClick={handleToggleDataPackSharing} disabled={isUpdating} variant="secondary">
-                            {isUpdating && <Loader2 className="animate-spin mr-2" />}
-                            <GalleryHorizontal className="mr-2"/>
-                            {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to Gallery"}
-                        </Button>
-                    )}
-                </div>
+                        {isPublic && (
+                           <Button onClick={handleToggleBranchingPermissions} disabled={isUpdating} variant="secondary">
+                                {isUpdating && <Loader2 className="animate-spin mr-2" />}
+                                <GitBranch className="mr-2"/>
+                                {canBranch ? "Disable Branching" : "Enable Branching"}
+                            </Button>
+                        )}
+                        {wasMadeWithDataPack && (
+                           <Button onClick={handleToggleDataPackSharing} disabled={isUpdating} variant="secondary">
+                                {isUpdating && <Loader2 className="animate-spin mr-2" />}
+                                <GalleryHorizontal className="mr-2"/>
+                                {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to Gallery"}
+                            </Button>
+                        )}
+                    </CardContent>
+                </Card>
 
                 <Card>
                     <CardHeader>
@@ -370,3 +377,5 @@ export default function CharactersPage() {
     </div>
   );
 }
+
+    
