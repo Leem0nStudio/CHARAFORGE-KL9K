@@ -72,7 +72,7 @@ async function getCharacter(characterId: string): Promise<{ character: Character
             createdAt: data.createdAt.toDate(),
             userName: userName,
             dataPackName: dataPackName,
-            branchingPermissions: data.branchingPermissions || 'private', // FIX: Added this line
+            branchingPermissions: data.branchingPermissions || 'private',
         } as Character;
         
         // This is a bit awkward, but we add the branchedFrom data after casting
@@ -108,7 +108,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
     return (
         <div className="container py-8">
             <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-2">
                     <Card className="sticky top-20">
                          <CardHeader className="p-0">
                             <div className="w-full aspect-square relative bg-muted/20">
@@ -120,10 +120,12 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                 />
                             </div>
                         </CardHeader>
-                        <CardContent className="p-6">
+                        <CardContent className="p-6 space-y-4">
+                            <h1 className="text-4xl font-bold font-headline">{character.name}</h1>
+                            
                             {branchedFrom && (
-                                <div className="mb-4 text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg">
-                                    <div className="flex items-center gap-2 mb-1">
+                                <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg space-y-2">
+                                    <div className="flex items-center gap-2">
                                       <GitBranch className="h-4 w-4 text-primary" />
                                       <span>Branched from{' '}
                                         <Link href={`/characters/${branchedFrom.id}`} className="font-semibold text-foreground hover:underline">
@@ -131,8 +133,8 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                         </Link>
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-xs">
-                                        <ChevronsRight className="h-3 w-3"/>
+                                    <div className="flex items-center gap-2">
+                                        <ChevronsRight className="h-4 w-4"/>
                                         <span>Original creator:{' '}
                                             <span className="font-semibold text-foreground">{character.originalAuthorName || 'Unknown'}</span>
                                         </span>
@@ -140,8 +142,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                 </div>
                             )}
 
-                            <h2 className="text-2xl font-bold font-headline">{character.name}</h2>
-                             <div className="text-sm text-muted-foreground space-y-2 mt-2">
+                             <div className="text-sm text-muted-foreground space-y-2">
                                 <div className="flex items-center gap-2">
                                     <User className="h-4 w-4" />
                                     <span>Created by {character.userName}</span>
@@ -170,7 +171,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                         </CardContent>
                     </Card>
                 </div>
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-1">
                     <Card>
                         <CardHeader>
                             <CardTitle>Biography</CardTitle>
