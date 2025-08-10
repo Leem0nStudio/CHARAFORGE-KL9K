@@ -40,7 +40,11 @@ export async function createStoryCast(data: { name: string; description: string 
             updatedAt: FieldValue.serverTimestamp(),
         });
 
+        // Refetch the document to get the server-generated timestamps
         const createdDoc = await newCastRef.get();
+        if (!createdDoc.exists) {
+            throw new Error("Failed to retrieve the newly created cast.");
+        }
         const createdData = createdDoc.data() as any;
 
         revalidatePath('/story-forge'); 
@@ -102,19 +106,36 @@ export async function generateStory(castId: string, storyPrompt: string): Promis
     }
 
     try {
-        // Fetch full character details
-        const characterDocs = await adminDb.collection('characters').where('id', 'in', castData.characterIds).get();
-        const characters = characterDocs.docs.map(doc => doc.data() as Character)
-            .map(char => ({
+        // Fetch full character details for the cast
+        const characterRefs = castData.characterIds.map(id => adminDb.collection('characters').doc(id));
+        const characterDocs = await adminDb.getAll(...characterRefs);
+        
+        const charactersForAI: CharacterDetailsForAI[] = characterDocs.map(doc => {
+            if (!doc.exists) {
+                // This case should be handled gracefully, maybe the character was deleted
+                return null;
+            }
+            const char = doc.data() as Character;
+            return {
                 name: char.name,
                 biography: char.biography,
                 alignment: char.alignment || 'True Neutral', // Default alignment if not set
-            }));
+            };
+        }).filter((c): c is CharacterDetailsForAI => c !== null);
+
+        if (charactersForAI.length !== castData.characterIds.length) {
+             console.warn("Some characters in the cast could not be found and were omitted from the story generation.");
+        }
+        
+        if (charactersForAI.length === 0) {
+            return { success: false, message: 'None of the characters in the cast could be found.' };
+        }
+
 
         // Call the AI flow
         const storyResult = await generateStoryFlow({
             prompt: storyPrompt,
-            cast: characters,
+            cast: charactersForAI,
         });
 
         // Optionally, save the generated story to Firestore
