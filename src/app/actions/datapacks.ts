@@ -74,6 +74,7 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
             schema: data.schema, // The schema is now an object
             updatedAt: FieldValue.serverTimestamp(),
             coverImageUrl: coverImageUrl,
+            isNsfw: data.isNsfw || false,
         };
         
         const docRef = adminDb.collection('datapacks').doc(packId);
@@ -323,5 +324,3 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         return [];
     }
 }
-
-    

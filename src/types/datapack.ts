@@ -1,5 +1,4 @@
 
-
 export interface Exclusion {
     slotId: string;
     optionValues: string[];
@@ -40,6 +39,7 @@ export interface DataPack {
     createdAt: Date;
     updatedAt?: Date | null;
     schema: DataPackSchema; // Standardized to the new, structured format.
+    isNsfw?: boolean;
 }
 
 export interface UpsertDataPack {
@@ -49,5 +49,7 @@ export interface UpsertDataPack {
     description: string;
     type: 'free' | 'premium' | 'temporal';
     price: number;
-    tags: string[]; // Keep tags for passing to server action
-    schema: DataPackSchema; // The schema is now
+    tags?: string[];
+    schema: DataPackSchema;
+    isNsfw?: boolean;
+}

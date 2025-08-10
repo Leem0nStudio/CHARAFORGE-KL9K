@@ -30,6 +30,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DataPack, UpsertDataPack, DataPackSchema, Slot } from '@/types/datapack';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Switch } from '@/components/ui/switch';
 
 // #region AI Generator Dialog
 function AiGeneratorDialog({ onSchemaGenerated }: { onSchemaGenerated: (schema: DataPackSchema) => void }) {
@@ -107,6 +108,7 @@ const SlotSchema = z.object({
     options: z.array(OptionSchema).optional(),
     defaultOption: z.string().optional(),
     placeholder: z.string().optional(),
+    isLocked: z.boolean().optional(),
 });
 
 const DataPackSchemaSchema = z.object({
@@ -121,6 +123,7 @@ const FormSchema = z.object({
   type: z.enum(['free', 'premium', 'temporal']),
   price: z.number().min(0),
   schema: DataPackSchemaSchema,
+  isNsfw: z.boolean().optional(),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -143,6 +146,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
         promptTemplate: 'A {style} portrait of a {race} {class}.',
         slots: [],
       },
+      isNsfw: initialData?.isNsfw || false,
     };
   }, [initialData]);
 
@@ -171,13 +175,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
       
       const dataToSave: UpsertDataPack = {
         id: initialData?.id,
-        name: values.name,
-        author: values.author,
-        description: values.description,
-        type: values.type,
-        price: values.price,
-        tags: initialData?.tags || [],
-        schema: values.schema,
+        ...values,
       };
 
       const result = await upsertDataPack(dataToSave, imageBuffer);
@@ -254,6 +252,23 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
                   <div><Label>Price</Label><Input type="number" {...form.register('price', { valueAsNumber: true })} /></div>
                 </div>
                 <div><Label>Cover Image</Label><Input type="file" accept="image/png" onChange={e => setCoverImage(e.target.files?.[0] || null)} /></div>
+                 <Controller
+                    control={form.control}
+                    name="isNsfw"
+                    render={({ field }) => (
+                      <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="isNsfw-switch">Mark as NSFW</Label>
+                             <p className="text-xs text-muted-foreground">Enable if this pack contains adult content.</p>
+                        </div>
+                        <Switch
+                            id="isNsfw-switch"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                        />
+                      </div>
+                    )}
+                  />
               </div>
             </CardContent>
           </Card>
@@ -383,6 +398,26 @@ function SlotEditor({ form, slotIndex, removeSlot }: { form: any, slotIndex: num
                 </>
             )}
 
+             <div className="border-t pt-4 mt-4">
+                 <Controller
+                    control={control}
+                    name={`schema.slots.${slotIndex}.isLocked`}
+                    render={({ field }) => (
+                      <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm bg-background">
+                        <div className="space-y-0.5">
+                            <Label htmlFor={`isLocked-switch-${slotIndex}`}>Lock this slot</Label>
+                             <p className="text-xs text-muted-foreground">If locked, users cannot change this value.</p>
+                        </div>
+                        <Switch
+                            id={`isLocked-switch-${slotIndex}`}
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                        />
+                      </div>
+                    )}
+                  />
+            </div>
+
             <div className="border-t pt-4 mt-4">
                 <Button type="button" variant="destructive" size="sm" onClick={() => removeSlot(slotIndex)}>
                     Remove Slot
@@ -391,5 +426,3 @@ function SlotEditor({ form, slotIndex, removeSlot }: { form: any, slotIndex: num
         </div>
     )
 }
-
-    

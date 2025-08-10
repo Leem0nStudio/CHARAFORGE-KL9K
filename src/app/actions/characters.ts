@@ -216,7 +216,11 @@ export async function deleteCharacter(characterId: string) {
 
 const UpdateStatusSchema = z.enum(['private', 'public']);
 
-export async function updateCharacterStatus(characterId: string, status: 'private' | 'public'): Promise<ActionResponse> {
+export async function updateCharacterStatus(
+  characterId: string, 
+  status: 'private' | 'public',
+  isNsfw?: boolean,
+): Promise<ActionResponse> {
   if (!adminDb) {
       return { success: false, message: 'Database service is unavailable.' };
   }
@@ -234,8 +238,15 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
     if (!characterDoc.exists || characterData?.userId !== uid) {
       return { success: false, message: 'Permission denied or character not found.' };
     }
+    
+    const updates: { status: 'private' | 'public'; isNsfw?: boolean } = {
+        status: validation.data
+    };
+    if (typeof isNsfw === 'boolean') {
+        updates.isNsfw = isNsfw;
+    }
 
-    await characterRef.update({ status: validation.data });
+    await characterRef.update(updates);
     
     if (validation.data === 'public' && characterData.dataPackId && characterData.imageUrl) {
         const dataPackRef = adminDb.collection('datapacks').doc(characterData.dataPackId);
@@ -250,7 +261,7 @@ export async function updateCharacterStatus(characterId: string, status: 'privat
     revalidatePath(`/characters/${characterId}/edit`);
 
 
-    return { success: true, message: `Character is now ${validation.data}.` };
+    return { success: true, message: `Character status updated.` };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not update character status.';
     return { success: false, message };
@@ -543,6 +554,8 @@ const SaveCharacterInputSchema = z.object({
   biography: z.string(),
   imageUrl: z.string().startsWith('data:image/'),
   dataPackId: z.string().optional().nullable(),
+  tags: z.array(z.string()).optional(),
+  isNsfw: z.boolean().optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
@@ -557,7 +570,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
     throw new Error(`Invalid input for ${firstError.path.join('.')}: ${firstError.message}`);
   }
   
-  const { name, description, biography, imageUrl: imageDataUri, dataPackId } = validation.data;
+  const { name, description, biography, imageUrl: imageDataUri, dataPackId, tags, isNsfw } = validation.data;
   
   try {
     const userId = await verifyAndGetUid();
@@ -591,6 +604,8 @@ export async function saveCharacter(input: SaveCharacterInput) {
             baseCharacterId: characterRef.id, // A new character is its own base
             versions: [initialVersion],
             branchingPermissions: 'private',
+            tags: tags || [],
+            isNsfw: isNsfw || false,
         };
 
         transaction.set(characterRef, characterData);
