@@ -61,17 +61,13 @@ function ProfileForm({ user }: { user: UserProfile }) {
   const [preview, setPreview] = useState<string | null>(user.photoURL);
 
   useEffect(() => {
-    // Sync preview with the latest user data from auth context
-    setPreview(user.photoURL);
-  }, [user.photoURL]);
-
-  useEffect(() => {
     if (state.message) {
       if (state.success) {
         toast({ title: 'Success!', description: state.message });
         if (state.newAvatarUrl) {
-          // Update the global user profile state
+          // Update the global user profile state from the action's response
           setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl } : null);
+          setPreview(state.newAvatarUrl);
         }
       } else {
         toast({ variant: 'destructive', title: 'Update Failed', description: state.message });
@@ -410,7 +406,7 @@ SecurityTab.displayName = "SecurityTab";
 // #endregion
 
 export default function ProfilePage() {
-  const { userProfile, loading, setUserProfile } = useAuth(); // Use setUserProfile from context
+  const { userProfile, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -476,3 +472,5 @@ export default function ProfilePage() {
     </motion.div>
   );
 }
+
+    
