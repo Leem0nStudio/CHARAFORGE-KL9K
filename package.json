@@ -16,7 +16,8 @@
     "admin:revoke": "node --import tsx scripts/manage-admin.js revoke",
     "admin:check": "node --import tsx scripts/manage-admin.js check",
     "admin:list": "node --import tsx scripts/manage-admin.js list",
-    "datapacks:seed": "node --import tsx scripts/seed-datapacks.ts"
+    "datapacks:seed": "node --import tsx scripts/seed-datapacks.ts",
+    "tags:fetch": "node --import tsx scripts/fetch-danbooru-tags.ts"
   },
   "dependencies": {
     "@genkit-ai/firebase": "1.14.1",
