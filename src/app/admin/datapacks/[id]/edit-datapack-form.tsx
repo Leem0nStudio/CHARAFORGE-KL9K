@@ -290,7 +290,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="pt-4">
-                                        <SlotEditor control={form.control} slotIndex={slotIndex} removeSlot={removeSlot} />
+                                        <SlotEditor control={form.control} watch={form.watch} slotIndex={slotIndex} removeSlot={removeSlot} />
                                     </AccordionContent>
                                 </div>
                             </AccordionItem>
@@ -310,13 +310,13 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
 }
 
 // Sub-component for editing a single slot
-function SlotEditor({ control, slotIndex, removeSlot }: { control: any, slotIndex: number, removeSlot: (index: number) => void }) {
+function SlotEditor({ control, watch, slotIndex, removeSlot }: { control: any, watch: any, slotIndex: number, removeSlot: (index: number) => void }) {
     const { fields: optionFields, append: appendOption, remove: removeOption } = useFieldArray({
         control,
         name: `schema.slots.${slotIndex}.options`,
     });
 
-    const isTextType = control.watch(`schema.slots.${slotIndex}.type`) === 'text';
+    const isTextType = watch(`schema.slots.${slotIndex}.type`) === 'text';
 
     return (
         <div className="space-y-6 bg-background/50 p-4 rounded-md">
