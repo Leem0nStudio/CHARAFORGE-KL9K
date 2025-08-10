@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { GitBranch, Plus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function EditVersionsTab({ character, onUpdate }: { character: Character, onUpdate: (data: Partial<Character>) => void }) {
     const { toast } = useToast();
@@ -51,6 +52,8 @@ export function EditVersionsTab({ character, onUpdate }: { character: Character,
         handleUpdate(() => createCharacterVersion(character.id));
     };
 
+    const canEnableBranching = character.status === 'public';
+
     return (
         <Card>
             <CardHeader>
@@ -74,23 +77,33 @@ export function EditVersionsTab({ character, onUpdate }: { character: Character,
                     </div>
                 </div>
                 
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                        <Label htmlFor="branching-switch" className="flex items-center gap-2 font-semibold">
-                            <GitBranch /> Allow Branching
-                        </Label>
-                        <p className="text-sm text-muted-foreground">Allow other users to create their own version of this character.</p>
+                <TooltipProvider>
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="branching-switch" className="flex items-center gap-2 font-semibold">
+                                <GitBranch /> Allow Branching
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Allow other users to create their own version of this character.</p>
+                        </div>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                 <div className="flex items-center">
+                                      <Switch
+                                        id="branching-switch"
+                                        checked={character.branchingPermissions === 'public'}
+                                        onCheckedChange={handleToggleBranching}
+                                        disabled={isUpdating || !canEnableBranching}
+                                    />
+                                 </div>
+                            </TooltipTrigger>
+                            {!canEnableBranching && (
+                                <TooltipContent>
+                                    <p>Character must be public to enable branching.</p>
+                                </TooltipContent>
+                            )}
+                        </Tooltip>
                     </div>
-                    <Switch
-                        id="branching-switch"
-                        checked={character.branchingPermissions === 'public'}
-                        onCheckedChange={handleToggleBranching}
-                        disabled={isUpdating || character.status !== 'public'}
-                    />
-                </div>
-                 {character.status !== 'public' && (
-                    <p className="text-xs text-muted-foreground text-center">Character must be public to enable branching.</p>
-                 )}
+                </TooltipProvider>
             </CardContent>
         </Card>
     );
