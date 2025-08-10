@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
-import { useForm, Controller } from 'react-hook-form';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useForm } from 'react-hook-form';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -15,9 +15,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import Link from 'next/link';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Input } from './ui/input';
-
 
 function PackPreview({ pack, onChoose }: { pack: DataPack | null, onChoose: () => void }) {
     if (!pack) {
@@ -104,15 +102,66 @@ function PackSelector({ packs, onSelect, selectedPackId, onChoose }: {
     )
 }
 
+function OptionSelectModal({
+    isOpen,
+    onClose,
+    slot,
+    currentValue,
+    onSelect,
+    disabledOptions,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    slot: Slot;
+    currentValue: string;
+    onSelect: (value: string) => void;
+    disabledOptions: Set<string>;
+}) {
+    if (!slot) return null;
 
-function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPromptGenerated: (prompt: string, packId: string, packName: string) => void, onBack: () => void }) {
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle className="font-headline text-2xl">{slot.label}</DialogTitle>
+                    <DialogDescription>Select an option for this category.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                     <div className="flex flex-wrap gap-2 pt-2">
+                         {slot.options?.map((option: Option) => {
+                             const isDisabled = disabledOptions.has(option.value);
+                             return (
+                                 <Button
+                                     key={option.value}
+                                     type="button"
+                                     variant={currentValue === option.value ? 'default' : 'secondary'}
+                                     onClick={() => {
+                                         if (!isDisabled) {
+                                            onSelect(option.value);
+                                            onClose();
+                                         }
+                                     }}
+                                     disabled={isDisabled}
+                                     className="rounded-full"
+                                 >
+                                     {option.label}
+                                 </Button>
+                             );
+                         })}
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPromptGenerated: (prompt: string, packId: string, packName: string) => void, onBack: () => void }) {
     const { control, handleSubmit, watch, setValue } = useForm();
     const formValues = watch();
 
-    const wizardSlots = useMemo(() => {
-        // Now we can directly use the structured schema
-        return pack.schema.slots || [];
-    }, [pack.schema]);
+    const [activeSlot, setActiveSlot] = useState<Slot | null>(null);
+
+    const wizardSlots = useMemo(() => pack.schema.slots || [], [pack.schema]);
 
     const disabledOptions = useMemo(() => {
         const disabled = new Map<string, Set<string>>();
@@ -134,24 +183,6 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
         return disabled;
     }, [formValues, wizardSlots]);
 
-    const onSubmit = (data: any) => {
-        let prompt = pack.schema.promptTemplate || '';
-        if (!prompt) {
-            console.error("Prompt template is missing in the datapack schema.");
-            return;
-        }
-
-        for (const key in data) {
-            if(data[key]) {
-               prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), data[key]);
-            }
-        }
-        // Clean up any remaining placeholders that didn't have a value
-        prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/, ,/g, ',').replace(/, /g, ' ').replace(/,$/g, '').trim();
-        onPromptGenerated(prompt, pack.id, pack.name);
-    };
-    
-    // Set default values on initial render
     useEffect(() => {
         wizardSlots.forEach(slot => {
             if (slot.defaultOption) {
@@ -162,8 +193,27 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
         });
     }, [wizardSlots, setValue]);
 
+    const onSubmit = (data: any) => {
+        let prompt = pack.schema.promptTemplate || '';
+        for (const key in data) {
+            if (data[key]) {
+               prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), data[key]);
+            }
+        }
+        prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/, ,/g, ',').replace(/, /g, ' ').replace(/,$/g, '').trim();
+        onPromptGenerated(prompt, pack.id, pack.name);
+    };
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full max-h-[80vh] sm:max-h-full">
+             <OptionSelectModal
+                isOpen={!!activeSlot}
+                onClose={() => setActiveSlot(null)}
+                slot={activeSlot!}
+                currentValue={activeSlot ? formValues[activeSlot.id] : ''}
+                onSelect={(value) => activeSlot && setValue(activeSlot.id, value)}
+                disabledOptions={activeSlot ? (disabledOptions.get(activeSlot.id) || new Set()) : new Set()}
+            />
             <DialogHeader>
                 <div className="flex items-center gap-4">
                      <Button type="button" variant="ghost" size="icon" onClick={onBack}>
@@ -173,78 +223,53 @@ function WizardForm({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                         <Wand2 className="h-6 w-6 text-primary" /> {pack.name} Wizard
                     </DialogTitle>
                 </div>
-                <DialogDescription>Each selection will add more detail to your final prompt.</DialogDescription>
+                <DialogDescription>Click on any card to change its selection.</DialogDescription>
             </DialogHeader>
             <ScrollArea className="flex-grow my-4 pr-3 -mr-3">
-                <Accordion type="multiple" className="w-full space-y-2">
+                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {wizardSlots.map(slot => {
                         if (!slot) return null;
-                        
+
                         if (slot.type === 'text') {
                              return (
-                                 <div key={slot.id} className="p-4 border rounded-lg">
+                                 <div key={slot.id} className="p-4 border rounded-lg col-span-2">
                                      <Label>{slot.label}</Label>
-                                     <Controller
-                                         name={slot.id}
-                                         control={control}
-                                         defaultValue=""
-                                         render={({ field }) => <Input {...field} placeholder={slot.placeholder} />}
+                                     <Input
+                                         {...control.register(slot.id)}
+                                         placeholder={slot.placeholder}
+                                         className="w-full"
                                      />
                                  </div>
                              );
                         }
-
+                        
                         const selectedValue = formValues[slot.id];
-                        const selectedLabel = slot.options?.find(o => o.value === selectedValue)?.label || 'None';
+                        const selectedOption = slot.options?.find(o => o.value === selectedValue);
 
                         return (
-                            <AccordionItem key={slot.id} value={slot.id}>
-                                <AccordionTrigger>
-                                    <div>
-                                        <div className="text-lg font-logo tracking-wider">{slot.label}</div>
-                                        <div className="text-xs text-primary font-medium">{selectedLabel}</div>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent>
-                                    <div className="flex flex-wrap gap-2 pt-2">
-                                        <Controller
-                                            name={slot.id}
-                                            control={control}
-                                            render={({ field }) => (
-                                                <>
-                                                 {slot.options?.map((option: Option) => {
-                                                    const isDisabled = disabledOptions.get(slot.id)?.has(option.value);
-                                                    return (
-                                                         <Button
-                                                            key={option.value}
-                                                            type="button"
-                                                            variant={field.value === option.value ? 'default' : 'secondary'}
-                                                            size="sm"
-                                                            onClick={() => !isDisabled && field.onChange(option.value)}
-                                                            disabled={isDisabled}
-                                                            className="rounded-full font-body tracking-normal"
-                                                        >
-                                                            {option.label}
-                                                        </Button>
-                                                    );
-                                                 })}
-                                                </>
-                                            )}
-                                        />
-                                    </div>
-                                </AccordionContent>
-                            </AccordionItem>
+                            <Card
+                                key={slot.id}
+                                onClick={() => setActiveSlot(slot)}
+                                className="cursor-pointer hover:bg-muted/50 transition-colors h-full flex flex-col"
+                            >
+                                <CardHeader className="p-3">
+                                    <CardTitle className="text-base font-logo tracking-wider">{slot.label}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-3 pt-0 flex-grow">
+                                     <p className="text-sm text-primary font-semibold truncate">{selectedOption?.label || 'None'}</p>
+                                </CardContent>
+                            </Card>
                         )
                     })}
-                </Accordion>
+                 </div>
             </ScrollArea>
-            <div className="flex justify-end items-center gap-2 pt-4 border-t mt-auto">
-                <Button type="submit" size="lg" className="font-headline text-lg">
+            <DialogFooter className="flex-none pt-4 border-t">
+                 <Button type="submit" size="lg" className="w-full sm:w-auto font-headline text-lg">
                     Generate Prompt <ArrowRight className="ml-2" />
                 </Button>
-            </div>
+            </DialogFooter>
         </form>
-    );
+    )
 }
 
 interface DataPackSelectorModalProps {
@@ -268,11 +293,10 @@ export function DataPackSelectorModal({
 
     useEffect(() => {
         if (!isOpen) {
-            // Reset state when modal closes
             setTimeout(() => {
                 setWizardPack(null);
                 setSelectedPack(null);
-            }, 300); // Delay reset to allow for closing animation
+            }, 300);
             return;
         }
         
@@ -298,7 +322,7 @@ export function DataPackSelectorModal({
         }
         
         if (wizardPack) {
-            return <WizardForm pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} onBack={() => setWizardPack(null)} />;
+            return <WizardGrid pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} onBack={() => setWizardPack(null)} />;
         }
         
         if (packs.length === 0) {
@@ -317,7 +341,6 @@ export function DataPackSelectorModal({
             )
         }
         
-        // Main responsive layout
         return (
              <>
                 <DialogHeader className="hidden sm:block">
@@ -325,7 +348,6 @@ export function DataPackSelectorModal({
                     <DialogDescription>Choose one of your installed packs to start building a prompt.</DialogDescription>
                 </DialogHeader>
 
-                {/* Mobile View: List Only */}
                 <div className="sm:hidden">
                     <DialogHeader>
                         <DialogTitle className="font-headline text-2xl">Select a DataPack</DialogTitle>
@@ -333,14 +355,13 @@ export function DataPackSelectorModal({
                     <div className="mt-4">
                         <PackSelector
                             packs={packs}
-                            onSelect={() => {}} // Not used on mobile
+                            onSelect={() => {}} 
                             selectedPackId={null}
                             onChoose={(pack) => setWizardPack(pack)}
                         />
                     </div>
                 </div>
 
-                {/* Desktop View: Two Columns */}
                 <div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-8 pt-4 min-h-[60vh]">
                     <div className="md:col-span-2">
                         <PackPreview pack={selectedPack} onChoose={() => {if (selectedPack) setWizardPack(selectedPack)}} />
@@ -350,7 +371,7 @@ export function DataPackSelectorModal({
                             packs={packs}
                             onSelect={setSelectedPack}
                             selectedPackId={selectedPack?.id || null}
-                            onChoose={() => {}} // Not used on desktop
+                            onChoose={() => {}}
                         />
                     </div>
                 </div>
@@ -360,7 +381,7 @@ export function DataPackSelectorModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className={cn("sm:max-w-4xl", wizardPack ? "sm:max-w-xl" : "sm:max-w-4xl")}>
+            <DialogContent className={cn("sm:max-w-4xl", wizardPack ? "sm:max-w-4xl" : "sm:max-w-4xl")}>
                 {renderContent()}
             </DialogContent>
         </Dialog>
