@@ -59,9 +59,15 @@ const generateCharacterImageFlow = ai.defineFlow(
 
         return {imageUrl};
     } catch (error) {
-        console.error("Error generating character image:", error);
-        // Re-throwing the error ensures the client-side catch block can handle it.
-        throw new Error("Failed to generate character image. The AI service may be temporarily unavailable or the prompt may have been rejected.");
+        // Log the detailed error on the server for debugging purposes.
+        console.error("Error in generateCharacterImageFlow:", error);
+
+        // Provide a more user-friendly error message to the client.
+        if (error instanceof Error && error.message.includes('SAFETY')) {
+             throw new Error("Failed to generate character image. The prompt was rejected by safety filters. Please try a less graphic description.");
+        }
+        
+        throw new Error("Failed to generate character image. The AI service may be temporarily unavailable or the prompt was rejected.");
     }
   }
 );
