@@ -134,7 +134,7 @@ function CharacterDetailPanel({
         <Card className="h-full bg-card/50 border-0 shadow-none">
           <CardContent className="p-0">
             <div className="group relative aspect-square w-full rounded-t-lg overflow-hidden bg-muted/20">
-                <Button variant="ghost" size="icon" onClick={onBack} className="absolute top-4 left-4 z-10 lg:hidden">
+                <Button variant="ghost" size="icon" onClick={onBack} className="absolute top-4 left-4 z-10 lg:hidden bg-background/50 hover:bg-background/80">
                     <ArrowLeft />
                 </Button>
                 <Image
@@ -290,7 +290,6 @@ export default function CharactersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Helper function to group characters by their base ID
   const groupCharacters = useCallback((chars: Character[]): Character[][] => {
       const groups = new Map<string, Character[]>();
       chars.forEach(char => {
@@ -300,7 +299,6 @@ export default function CharactersPage() {
           }
           groups.get(baseId)!.push(char);
       });
-      // Sort groups by the creation date of the most recent character in each group
       return Array.from(groups.values()).sort((a, b) => {
           const lastA = a.reduce((latest, curr) => new Date(curr.createdAt) > new Date(latest.createdAt) ? curr : latest);
           const lastB = b.reduce((latest, curr) => new Date(curr.createdAt) > new Date(latest.createdAt) ? curr : latest);
@@ -318,14 +316,7 @@ export default function CharactersPage() {
       const urlId = searchParams.get('id');
       if (urlId && fetchedCharacters.some(c => c.id === urlId)) {
         setSelectedCharacterId(urlId);
-      } else if (fetchedCharacters.length > 0 && !selectedCharacterId) {
-        const grouped = groupCharacters(fetchedCharacters);
-        const mostRecentGroup = grouped[0];
-        if (mostRecentGroup) {
-           const latestVersionInGroup = mostRecentGroup.sort((a,b) => b.version - a.version)[0];
-           setSelectedCharacterId(latestVersionInGroup.id);
-        }
-      } else if (fetchedCharacters.length === 0) {
+      } else {
         setSelectedCharacterId(null);
       }
     } catch (error) {
@@ -333,7 +324,7 @@ export default function CharactersPage() {
     } finally {
       setLoading(false);
     }
-  }, [authUser, selectedCharacterId, searchParams, groupCharacters]);
+  }, [authUser, searchParams]);
 
   const characterGroups = useMemo(() => groupCharacters(characters), [characters, groupCharacters]);
 
@@ -351,26 +342,10 @@ export default function CharactersPage() {
     setCharacters(newCharacters);
 
     if (selectedCharacterId === deletedId) {
-      const remainingGroups = groupCharacters(newCharacters);
-      let nextSelectedId: string | null = null;
-      
-      if (remainingGroups.length > 0) {
-        const groupOfDeleted = baseId ? remainingGroups.find(g => g[0].baseCharacterId === baseId) : undefined;
-        if (groupOfDeleted && groupOfDeleted.length > 0) {
-           nextSelectedId = groupOfDeleted.sort((a, b) => b.version - a.version)[0].id;
-        } else {
-           nextSelectedId = remainingGroups[0].sort((a, b) => b.version - a.version)[0].id;
-        }
-      }
-      
-      setSelectedCharacterId(nextSelectedId);
-      if (nextSelectedId) {
-        router.push(`/characters?id=${nextSelectedId}`, { scroll: false });
-      } else {
+        setSelectedCharacterId(null);
         router.push('/characters', { scroll: false });
-      }
     }
-  }, [selectedCharacterId, router, characters, groupCharacters]);
+  }, [selectedCharacterId, router, characters]);
 
   const selectCharacter = (id: string) => {
     setSelectedCharacterId(id);
@@ -387,7 +362,7 @@ export default function CharactersPage() {
     return characters.filter(c => (c.baseCharacterId || c.id) === baseId);
   }, [selectedCharacter, characters]);
 
-  const showDetailsMobile = selectedCharacterId && characters.length > 0;
+  const showDetailsMobile = !!selectedCharacterId;
   
   if (authLoading || (loading && characters.length === 0 && !authUser)) {
      return (
@@ -422,7 +397,7 @@ export default function CharactersPage() {
                                         onClick={() => selectCharacter(latestVersion.id)}
                                         className={cn(
                                             "w-full text-left p-2 rounded-lg border-2 border-transparent transition-all duration-200 hover:bg-card/80",
-                                            (selectedCharacter?.baseCharacterId || selectedCharacter?.id) === (latestVersion.baseCharacterId || latestVersion.id) && "bg-card border-primary shadow-md"
+                                            selectedCharacterId === latestVersion.id && "bg-card border-primary shadow-md"
                                         )}
                                     >
                                         <div className="flex items-center gap-4">
@@ -452,7 +427,10 @@ export default function CharactersPage() {
                         allVersions={allVersionsOfSelected}
                         onCharacterDeleted={handleCharacterDeleted}
                         onCharacterUpdated={fetchCharacters}
-                        onBack={() => setSelectedCharacterId(null)}
+                        onBack={() => {
+                            setSelectedCharacterId(null);
+                            router.push('/characters', { scroll: false });
+                        }}
                         onSelectVersion={selectCharacter}
                     />
                   </div>
