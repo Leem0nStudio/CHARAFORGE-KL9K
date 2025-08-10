@@ -47,20 +47,22 @@ type TagCategory = keyof typeof TAG_DATABASE;
 // #endregion
 
 // #region Tag Search Service
-const searchTagsInputSchema = z.object({
+export const SearchTagsInputSchema = z.object({
   query: z.string().describe("A simple, one or two-word search term (e.g., 'hat', 'skirt', 'armor')."),
   category: z.enum(['headwear', 'topwear', 'bottomwear', 'general']).optional().describe("The category to search within. If 'general', search all categories."),
 });
+export type SearchTagsInput = z.infer<typeof SearchTagsInputSchema>;
 
-const searchTagsOutputSchema = z.array(z.string()).describe("A list of matching tag names.");
+export const SearchTagsOutputSchema = z.array(z.string()).describe("A list of matching tag names.");
+export type SearchTagsOutput = z.infer<typeof SearchTagsOutputSchema>;
+
 
 /**
- * A simulated search function.
- * @param query - The simplified search term.
- * @param category - The optional category to filter by.
- * @returns A promise that resolves to a list of tag names.
+ * A simulated search function that mimics searching through a pre-processed tag database.
+ * @param input - The search parameters, including the query and optional category.
+ * @returns A promise that resolves to a list of matching tag names, sorted by popularity.
  */
-async function searchTags(input: z.infer<typeof searchTagsInputSchema>): Promise<string[]> {
+export async function searchTags(input: SearchTagsInput): Promise<SearchTagsOutput> {
     const { query, category } = input;
     const searchTerm = query.toLowerCase().replace(/s$/, ''); // Basic pluralization removal
 
@@ -80,20 +82,4 @@ async function searchTags(input: z.infer<typeof searchTagsInputSchema>): Promise
 
     return results.slice(0, 10); // Return top 10 matches
 }
-// #endregion
-
-// #region Genkit Tool Definition
-/**
- * A Genkit Tool that makes the tag search functionality available to an AI model.
- * The model can decide to call this tool to get information it needs to answer a user's prompt.
- */
-export const searchTagsTool = ai.defineTool(
-  {
-    name: 'searchTagsTool',
-    description: 'Searches the Danbooru tag database for tags matching a query and optional category. Useful for finding specific, existing tags to build an image prompt.',
-    inputSchema: searchTagsInputSchema,
-    outputSchema: searchTagsOutputSchema,
-  },
-  async (input) => searchTags(input)
-);
 // #endregion
