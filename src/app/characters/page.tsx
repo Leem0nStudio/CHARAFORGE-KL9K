@@ -39,25 +39,19 @@ function CharacterDetailPanel({
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, startUpdateTransition] = useTransition();
-  
-  if (!character) {
-    return (
-        <div className="w-full lg:w-3/4 flex-col gap-4 items-center justify-center h-full min-h-[600px] bg-card/30 rounded-lg border-2 border-dashed hidden lg:flex">
-            <User className="h-12 w-12 mx-auto text-muted-foreground" />
-            <p className="text-center text-muted-foreground">Select a character from the list to see their details.</p>
-        </div>
-    );
-  }
 
+  // ALL HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP
   const handleCopyPrompt = useCallback(() => {
+    if (!character) return;
     navigator.clipboard.writeText(character.description);
     toast({
       title: 'Prompt Copied!',
       description: 'The original prompt has been copied to your clipboard.',
     });
-  }, [character.description, toast]);
+  }, [character, toast]);
 
   const handleDelete = useCallback(async () => {
+    if (!character) return;
     setIsDeleting(true);
     try {
       await deleteCharacter(character.id);
@@ -96,27 +90,41 @@ function CharacterDetailPanel({
     });
   }, [toast, onCharacterUpdated]);
 
-  const handleTogglePublicStatus = () => {
+  const handleTogglePublicStatus = useCallback(() => {
+    if (!character) return;
     const newStatus = character.status === 'public' ? 'private' : 'public';
     handleUpdate(() => updateCharacterStatus(character.id, newStatus));
-  };
+  }, [character, handleUpdate]);
 
-  const handleToggleDataPackSharing = () => {
+  const handleToggleDataPackSharing = useCallback(() => {
+    if (!character) return;
     const newSharingStatus = !character.isSharedToDataPack;
     handleUpdate(() => updateCharacterDataPackSharing(character.id, newSharingStatus));
-  };
+  }, [character, handleUpdate]);
   
-  const handleToggleBranchingPermissions = () => {
+  const handleToggleBranchingPermissions = useCallback(() => {
+    if (!character) return;
     const newPermissions = character.branchingPermissions === 'public' ? 'private' : 'public';
     handleUpdate(() => updateCharacterBranchingPermissions(character.id, newPermissions));
-  }
+  }, [character, handleUpdate]);
 
-  const handleCreateVersion = () => {
+  const handleCreateVersion = useCallback(() => {
+    if (!character) return;
     handleUpdate(() => createCharacterVersion(character.id));
-  };
+  }, [character, handleUpdate]);
+
+
+  // CONDITIONAL RENDERING HAPPENS *AFTER* ALL HOOKS ARE CALLED
+  if (!character) {
+    return (
+        <div className="w-full lg:w-3/4 flex-col gap-4 items-center justify-center h-full min-h-[600px] bg-card/30 rounded-lg border-2 border-dashed hidden lg:flex">
+            <User className="h-12 w-12 mx-auto text-muted-foreground" />
+            <p className="text-center text-muted-foreground">Select a character from the list to see their details.</p>
+        </div>
+    );
+  }
   
   const otherVersions = allVersions.filter(v => v.id !== character.id).sort((a, b) => b.version - a.version);
-
   const isPublic = character.status === 'public';
   const wasMadeWithDataPack = !!character.dataPackId;
   const canBranch = character.branchingPermissions === 'public';
