@@ -1,19 +1,20 @@
+
 'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
 import type { DataPack } from '@/types/datapack';
 import { motion } from 'framer-motion';
-import { Heart, Swords, ArrowRight, Package, Wand2, User, GitBranch } from 'lucide-react';
+import { Heart, Swords, ArrowRight, Package, Wand2, User, GitBranch, Trophy } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
+import { Separator } from './ui/separator';
 
 type HomePageClientProps = {
     featuredCreations: Character[];
@@ -95,6 +96,22 @@ const CreationCard = ({ creation, index }: { creation: Character, index: number 
                 </CardFooter>
             </Card>
         </motion.div>
+    )
+}
+
+const RankBadge = ({ rank }: { rank: number }) => {
+    const colors = {
+        1: 'bg-blue-600/20 text-blue-400 border-blue-500',
+        2: 'bg-amber-600/20 text-amber-400 border-amber-500',
+        3: 'bg-orange-700/20 text-orange-400 border-orange-500',
+        default: 'bg-slate-600/20 text-slate-400 border-slate-500',
+    };
+    const color = colors[rank as keyof typeof colors] || colors.default;
+
+    return (
+        <div className={cn("flex items-center justify-center h-10 w-10 shrink-0 border", color)} style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}>
+            <span className="font-bold text-sm z-10">#{rank}</span>
+        </div>
     )
 }
 
@@ -211,38 +228,42 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
             
             {/* Top Creators */}
             <section id="top-creators" className="container">
-                 <SectionTitle title="Master Forgers" subtitle="Meet the creators shaping new worlds and inspiring the community." />
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {topCreators.map((creator, index) => (
-                         <motion.div
-                            key={creator.uid}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: index * 0.1 }}
-                         >
-                            <Card className="text-center p-6 hover:bg-card/80 transition-colors duration-300 shadow-md hover:shadow-primary/20">
-                                <Avatar className="h-20 w-20 mx-auto mb-4 border-4 border-primary/50">
-                                    <AvatarImage src={creator.photoURL || undefined} alt={creator.displayName || 'Creator'} data-ai-hint="creator avatar" />
-                                    <AvatarFallback>{creator.displayName?.charAt(0) || 'C'}</AvatarFallback>
-                                </Avatar>
-                                <h3 className="text-xl font-bold font-headline">{creator.displayName}</h3>
-                                <p className="text-muted-foreground text-sm mb-4">{`@${creator.displayName?.toLowerCase().replace(/\s+/g, '')}`}</p>
-                                <div className="flex justify-around">
-                                    <div className="text-center">
-                                        <p className="font-bold text-lg">{creator.stats?.charactersCreated || 0}</p>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Swords className="h-3 w-3" /> Creations</p>
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="font-bold text-lg">{creator.stats?.totalLikes || 0}</p>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Heart className="h-3 w-3" /> Likes</p>
-                                    </div>
-                                </div>
-                            </Card>
-                        </motion.div>
-                    ))}
-                </div>
+                 <div className="max-w-md mx-auto">
+                     <Card>
+                         <CardHeader>
+                            <CardTitle className="flex justify-between items-center">
+                                <span>Master Forgers</span>
+                                <Button variant="link" asChild>
+                                    <Link href="#">More <ArrowRight className="w-4 h-4 ml-1" /></Link>
+                                </Button>
+                            </CardTitle>
+                         </CardHeader>
+                         <CardContent>
+                             <ul className="space-y-2">
+                                {topCreators.map((creator, index) => (
+                                     <li key={creator.uid}>
+                                         <div className="flex items-center gap-4">
+                                            <Avatar className="h-12 w-12">
+                                                <AvatarImage src={creator.photoURL || undefined} alt={creator.displayName || 'Creator'} data-ai-hint="creator avatar" />
+                                                <AvatarFallback>{creator.displayName?.charAt(0) || 'C'}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-grow">
+                                                <p className="font-semibold text-lg">{creator.displayName}</p>
+                                                <p className="text-sm text-muted-foreground flex items-center gap-1.5"><Trophy className="w-4 h-4 text-amber-400" /> {creator.stats?.charactersCreated || 0} creations</p>
+                                            </div>
+                                             <RankBadge rank={index + 1} />
+                                         </div>
+                                        {index < topCreators.length - 1 && <Separator className="mt-2" />}
+                                     </li>
+                                ))}
+                            </ul>
+                         </CardContent>
+                     </Card>
+                 </div>
             </section>
         </div>
     </div>
   );
 }
+
+    
