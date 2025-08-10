@@ -290,6 +290,24 @@ export default function CharactersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Helper function to group characters by their base ID
+  const groupCharacters = useCallback((chars: Character[]): Character[][] => {
+      const groups = new Map<string, Character[]>();
+      chars.forEach(char => {
+          const baseId = char.baseCharacterId || char.id;
+          if (!groups.has(baseId)) {
+              groups.set(baseId, []);
+          }
+          groups.get(baseId)!.push(char);
+      });
+      // Sort groups by the creation date of the most recent character in each group
+      return Array.from(groups.values()).sort((a, b) => {
+          const lastA = a.reduce((latest, curr) => new Date(curr.createdAt) > new Date(latest.createdAt) ? curr : latest);
+          const lastB = b.reduce((latest, curr) => new Date(curr.createdAt) > new Date(latest.createdAt) ? curr : latest);
+          return new Date(lastB.createdAt).getTime() - new Date(lastA.createdAt).getTime();
+      });
+  }, []);
+  
   const fetchCharacters = useCallback(async () => {
     if (!authUser) return;
     setLoading(true);
@@ -301,7 +319,6 @@ export default function CharactersPage() {
       if (urlId && fetchedCharacters.some(c => c.id === urlId)) {
         setSelectedCharacterId(urlId);
       } else if (fetchedCharacters.length > 0 && !selectedCharacterId) {
-        // Find the most recently created character group and select its latest version
         const grouped = groupCharacters(fetchedCharacters);
         const mostRecentGroup = grouped[0];
         if (mostRecentGroup) {
@@ -316,27 +333,9 @@ export default function CharactersPage() {
     } finally {
       setLoading(false);
     }
-  }, [authUser, selectedCharacterId, searchParams]);
-  
-  // Group characters by baseCharacterId or their own id if they are the base
-  const groupCharacters = (chars: Character[]): Character[][] => {
-      const groups = new Map<string, Character[]>();
-      chars.forEach(char => {
-          const baseId = char.baseCharacterId || char.id;
-          if (!groups.has(baseId)) {
-              groups.set(baseId, []);
-          }
-          groups.get(baseId)!.push(char);
-      });
-      // Sort groups by the most recent character's creation date within each group
-      return Array.from(groups.values()).sort((a, b) => {
-          const lastA = a.reduce((latest, curr) => new Date(curr.createdAt) > new Date(latest.createdAt) ? curr : latest);
-          const lastB = b.reduce((latest, curr) => new Date(curr.createdAt) > new Date(latest.createdAt) ? curr : latest);
-          return new Date(lastB.createdAt).getTime() - new Date(a[0].createdAt).getTime();
-      });
-  };
+  }, [authUser, selectedCharacterId, searchParams, groupCharacters]);
 
-  const characterGroups = useMemo(() => groupCharacters(characters), [characters]);
+  const characterGroups = useMemo(() => groupCharacters(characters), [characters, groupCharacters]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -352,16 +351,15 @@ export default function CharactersPage() {
     setCharacters(newCharacters);
 
     if (selectedCharacterId === deletedId) {
-      const groupKey = baseId || deletedId;
-      const group = newCharacters.filter(c => (c.baseCharacterId || c.id) === groupKey);
-      
+      const remainingGroups = groupCharacters(newCharacters);
       let nextSelectedId: string | null = null;
-      if (group.length > 0) {
-        nextSelectedId = group.sort((a, b) => b.version - a.version)[0].id;
-      } else {
-        const remainingGroups = groupCharacters(newCharacters);
-        if (remainingGroups.length > 0) {
-          nextSelectedId = remainingGroups[0].sort((a, b) => b.version - a.version)[0].id;
+      
+      if (remainingGroups.length > 0) {
+        const groupOfDeleted = baseId ? remainingGroups.find(g => g[0].baseCharacterId === baseId) : undefined;
+        if (groupOfDeleted && groupOfDeleted.length > 0) {
+           nextSelectedId = groupOfDeleted.sort((a, b) => b.version - a.version)[0].id;
+        } else {
+           nextSelectedId = remainingGroups[0].sort((a, b) => b.version - a.version)[0].id;
         }
       }
       
@@ -372,7 +370,7 @@ export default function CharactersPage() {
         router.push('/characters', { scroll: false });
       }
     }
-  }, [selectedCharacterId, router, characters]);
+  }, [selectedCharacterId, router, characters, groupCharacters]);
 
   const selectCharacter = (id: string) => {
     setSelectedCharacterId(id);
