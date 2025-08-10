@@ -61,13 +61,18 @@ function ProfileForm({ user }: { user: UserProfile }) {
   const [preview, setPreview] = useState<string | null>(user.photoURL);
 
   useEffect(() => {
+    // Sync preview with the user from auth context if it changes
+    setPreview(user.photoURL);
+  }, [user.photoURL]);
+
+  useEffect(() => {
     if (state.message) {
       if (state.success) {
         toast({ title: 'Success!', description: state.message });
         if (state.newAvatarUrl) {
-          // Update the global user profile state from the action's response
+          // The useAuth hook will eventually receive the updated user from Firebase,
+          // but we can pre-emptively update the context for a faster UI response.
           setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl } : null);
-          setPreview(state.newAvatarUrl);
         }
       } else {
         toast({ variant: 'destructive', title: 'Update Failed', description: state.message });
@@ -472,5 +477,3 @@ export default function ProfilePage() {
     </motion.div>
   );
 }
-
-    
