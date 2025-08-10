@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -228,7 +227,7 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
             <ScrollArea className="flex-grow my-4 pr-3 -mr-3">
                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {wizardSlots.map(slot => {
-                        if (!slot) return null;
+                        if (!slot || slot.isLocked) return null; // Do not render locked slots
 
                         if (slot.type === 'text') {
                              return (

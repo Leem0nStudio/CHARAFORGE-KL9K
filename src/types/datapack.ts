@@ -18,6 +18,7 @@ export interface Slot {
     options?: Option[];
     defaultOption?: string;
     placeholder?: string;
+    isLocked?: boolean; // New field to lock a slot
 }
 
 // This is the new, definitive structure for a DataPack's schema.
@@ -49,7 +50,4 @@ export interface UpsertDataPack {
     type: 'free' | 'premium' | 'temporal';
     price: number;
     tags: string[]; // Keep tags for passing to server action
-    schema: DataPackSchema; // The schema is now a structured object, not a string.
-}
-
-    
+    schema: DataPackSchema; // The schema is now
