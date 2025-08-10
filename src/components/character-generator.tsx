@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +39,8 @@ import { DataPackSelectorModal } from "./datapack-selector-modal";
 import { Badge } from "./ui/badge";
 import type { DataPack } from "@/types/datapack";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { cn } from "@/lib/utils";
 
 const generationFormSchema = z.object({
   description: z.string().min(20, {
@@ -47,6 +49,7 @@ const generationFormSchema = z.object({
     message: "Description must not be longer than 1000 characters."
   }),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
+  aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
 });
 
 const saveFormSchema = z.object({
@@ -62,6 +65,7 @@ type CharacterData = {
   imageUrl: string | null;
   description: string;
   dataPackId?: string | null;
+  aspectRatio: '1:1' | '16:9' | '9:16';
 };
 
 export function CharacterGenerator() {
@@ -87,6 +91,7 @@ export function CharacterGenerator() {
     defaultValues: {
       description: "",
       targetLanguage: 'English',
+      aspectRatio: '1:1',
     },
   });
 
@@ -178,6 +183,7 @@ export function CharacterGenerator() {
         imageUrl: null,
         description: data.description,
         dataPackId: dataPackId,
+        aspectRatio: data.aspectRatio,
       });
     } catch (err: unknown) {
        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during biography generation.";
@@ -198,7 +204,10 @@ export function CharacterGenerator() {
     setIsGeneratingImage(true);
     setImageError(null);
     try {
-        const imageResult = await generateCharacterImage({ description: characterData.description });
+        const imageResult = await generateCharacterImage({ 
+            description: characterData.description,
+            aspectRatio: characterData.aspectRatio,
+        });
         if (!imageResult.imageUrl) {
             throw new Error("AI model did not return an image. This could be due to safety filters or an API issue.");
         }
@@ -302,6 +311,73 @@ export function CharacterGenerator() {
                           disabled={!canInteract}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={generationForm.control}
+                  name="aspectRatio"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Aspect Ratio</FormLabel>
+                       <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="grid grid-cols-3 gap-2"
+                            disabled={!canInteract}
+                          >
+                            <FormItem>
+                              <FormControl>
+                                <RadioGroupItem value="1:1" id="square" className="sr-only" />
+                              </FormControl>
+                              <FormLabel 
+                                htmlFor="square"
+                                className={cn(
+                                  "flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                  field.value === '1:1' && "border-primary"
+                                )}
+                              >
+                                <Square className="mb-3 h-6 w-6" />
+                                Square
+                                <span className="text-xs text-muted-foreground mt-1">1024x1024</span>
+                              </FormLabel>
+                            </FormItem>
+                             <FormItem>
+                              <FormControl>
+                                <RadioGroupItem value="16:9" id="landscape" className="sr-only" />
+                              </FormControl>
+                              <FormLabel 
+                                htmlFor="landscape"
+                                className={cn(
+                                  "flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                  field.value === '16:9' && "border-primary"
+                                )}
+                              >
+                                <RectangleHorizontal className="mb-3 h-6 w-6" />
+                                Landscape
+                                <span className="text-xs text-muted-foreground mt-1">1216x832</span>
+                              </FormLabel>
+                            </FormItem>
+                             <FormItem>
+                              <FormControl>
+                                <RadioGroupItem value="9:16" id="portrait" className="sr-only" />
+                              </FormControl>
+                              <FormLabel 
+                                htmlFor="portrait"
+                                className={cn(
+                                  "flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                  field.value === '9:16' && "border-primary"
+                                )}
+                              >
+                                <RectangleVertical className="mb-3 h-6 w-6" />
+                                Portrait
+                                <span className="text-xs text-muted-foreground mt-1">832x1216</span>
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

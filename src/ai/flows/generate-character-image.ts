@@ -14,6 +14,7 @@ import {z} from 'genkit';
 
 const GenerateCharacterImageInputSchema = z.object({
   description: z.string().describe('The description of the character.'),
+  aspectRatio: z.enum(['1:1', '16:9', '9:16']).optional().default('1:1').describe('The desired aspect ratio for the image.'),
 });
 export type GenerateCharacterImageInput = z.infer<typeof GenerateCharacterImageInputSchema>;
 
@@ -46,8 +47,7 @@ const generateCharacterImageFlow = ai.defineFlow(
         config: {
             // Both TEXT and IMAGE modalities are required for this specific model to work correctly.
             responseModalities: ['TEXT', 'IMAGE'],
-            // Generating a slightly larger initial image can sometimes yield better details before resizing.
-            // Note: This parameter might vary in its effect and is used here for quality tuning.
+            aspectRatio: input.aspectRatio,
         },
         });
 
