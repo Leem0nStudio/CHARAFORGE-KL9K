@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useTransition } from 'react';
+import { useTransition, useEffect } from 'react';
 import Image from 'next/image';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,6 +39,15 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
     control: form.control,
     name: "images",
   });
+  
+  // Resets the form if the character prop changes (e.g. when switching versions)
+  useEffect(() => {
+    form.reset({
+        images: character.gallery || [character.imageUrl],
+        primaryImageUrl: character.imageUrl,
+    });
+  }, [character, form]);
+
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -102,6 +111,7 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
       });
       if (result.success) {
         onGalleryUpdate(data.images, data.primaryImageUrl);
+        form.reset(data); // Resets the form's dirty state
       }
     });
   };

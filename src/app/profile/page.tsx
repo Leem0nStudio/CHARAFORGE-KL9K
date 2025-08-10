@@ -61,12 +61,17 @@ function ProfileForm({ user }: { user: UserProfile }) {
   const [preview, setPreview] = useState<string | null>(user.photoURL);
 
   useEffect(() => {
+    // Sync preview with the latest user data from auth context
+    setPreview(user.photoURL);
+  }, [user.photoURL]);
+
+  useEffect(() => {
     if (state.message) {
       if (state.success) {
         toast({ title: 'Success!', description: state.message });
         if (state.newAvatarUrl) {
+          // Update the global user profile state
           setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl } : null);
-          setPreview(state.newAvatarUrl);
         }
       } else {
         toast({ variant: 'destructive', title: 'Update Failed', description: state.message });
@@ -95,7 +100,6 @@ function ProfileForm({ user }: { user: UserProfile }) {
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-6">
-            {/* AvatarUploader logic is now integrated here */}
             <div className="flex items-center gap-4">
                 <Avatar className="w-24 h-24 text-4xl">
                     <AvatarImage src={preview || undefined} alt={user.displayName || 'User Avatar'} key={preview} />

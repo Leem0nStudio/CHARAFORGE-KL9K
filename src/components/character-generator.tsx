@@ -116,32 +116,35 @@ export function CharacterGenerator() {
     }
   }, [searchParams, generationForm]);
 
+  // Effect to load installed packs for the modal and find the active pack name
   useEffect(() => {
-    const fetchPackName = async () => {
-      if (dataPackId && !activePackName) {
-        try {
-          const packs = await getInstalledDataPacks();
-          setInstalledPacks(packs);
-          const pack = packs.find((p: DataPack) => p.id === dataPackId);
-          if (pack) {
-            setActivePackName(pack.name);
-          }
-        } catch (error) {
-          console.error("Failed to fetch pack name on load:", error);
+    async function loadPacksAndSetActive() {
+        if (dataPackId) {
+            try {
+                const packs = await getInstalledDataPacks();
+                setInstalledPacks(packs);
+                const activePack = packs.find(p => p.id === dataPackId);
+                if (activePack) {
+                    setActivePackName(activePack.name);
+                }
+            } catch (error) {
+                 console.error("Failed to fetch pack name:", error);
+            }
+        } else {
+            setActivePackName(null);
         }
-      } else if (!dataPackId) {
-        setActivePackName(null);
-      }
-    };
-    fetchPackName();
-  }, [dataPackId, activePackName]);
-  
+    }
+    loadPacksAndSetActive();
+  }, [dataPackId]);
+
   const handleOpenModal = async () => {
     setIsLoadingPacks(true);
     setIsModalOpen(true);
     try {
-      const packs = await getInstalledDataPacks();
-      setInstalledPacks(packs);
+      if (installedPacks.length === 0) {
+        const packs = await getInstalledDataPacks();
+        setInstalledPacks(packs);
+      }
     } catch(err) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not load your DataPacks.' });
     } finally {

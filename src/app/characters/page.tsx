@@ -218,7 +218,7 @@ function CharacterDetailPanel({
                                     </DropdownMenuItem>
                                 )}
                                 {wasMadeWithDataPack && (
-                                <DropdownMenuItem onClick={handleToggleDataPackSharing} disabled={isUpdating}>
+                                <DropdownMenuItem onClick={handleToggleDataPackSharing} disabled={isUpdating || !isPublic}>
                                         <GalleryHorizontal className="mr-2"/>
                                         {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to Gallery"}
                                     </DropdownMenuItem>
