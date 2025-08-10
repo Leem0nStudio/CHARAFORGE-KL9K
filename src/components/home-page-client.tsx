@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -118,6 +119,12 @@ const RankBadge = ({ rank }: { rank: number }) => {
 
 export function HomePageClient({ featuredCreations, topCreators, newDataPacks }: HomePageClientProps) {
 
+  const heroCharacter = useMemo(() => {
+    if (featuredCreations.length === 0) return null;
+    const lastFive = featuredCreations.slice(0, 5);
+    return lastFive[Math.floor(Math.random() * lastFive.length)];
+  }, [featuredCreations]);
+
   return (
     <div className="flex flex-col min-h-screen">
         <div className="flex-1 space-y-20 md:space-y-28">
@@ -165,12 +172,13 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
                              transition={{ duration: 0.6, delay: 0.2 }}
                         >
                             <Image
-                                src="https://placehold.co/600x600.png"
-                                alt="Hero Character"
+                                src={heroCharacter?.imageUrl || "https://placehold.co/600x600.png"}
+                                alt={heroCharacter?.name || "Hero Character"}
                                 width={600}
                                 height={600}
                                 className="mx-auto aspect-square overflow-hidden rounded-xl object-contain sm:w-full lg:order-last"
                                 data-ai-hint="fantasy character portrait"
+                                priority
                             />
                         </motion.div>
                     </div>
@@ -265,5 +273,3 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
     </div>
   );
 }
-
-    
