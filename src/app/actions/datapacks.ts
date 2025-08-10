@@ -8,6 +8,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { DataPack, UpsertDataPack } from '@/types/datapack';
 import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
+import { generateDataPackSchema } from '@/ai/flows/generate-datapack-schema';
 
 export type ActionResponse = {
     success: boolean;
@@ -59,6 +60,9 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
         if (coverImage) {
             coverImageUrl = await uploadFileToStorage(packId, 'cover.png', coverImage, 'image/png');
         }
+        
+        // Generate intelligent tags from the name and description
+        const aiSchema = await generateDataPackSchema({ concept: `${data.name}: ${data.description}`});
 
         const docData = {
             name: data.name,
@@ -66,7 +70,7 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
             description: data.description,
             type: data.type,
             price: Number(data.price),
-            tags: data.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+            tags: aiSchema.tags || [],
             schema: data.schema, // The schema is now an object
             updatedAt: FieldValue.serverTimestamp(),
             coverImageUrl: coverImageUrl,
@@ -319,3 +323,5 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         return [];
     }
 }
+
+    

@@ -42,6 +42,7 @@ const SlotSchema = z.object({
 const GenerateDataPackSchemaOutputSchema = z.object({
   promptTemplate: z.string().describe("A detailed Handlebars-style prompt template string. It must include placeholders for all defined slot IDs, e.g., 'A {style} portrait of a {race} {class}.'."),
   slots: z.array(SlotSchema).describe("An array of 7-10 diverse and creative slot objects that define the customizable options for the DataPack."),
+  tags: z.array(z.string()).describe("An array of 3-5 relevant, single-word, lowercase tags that categorize the datapack (e.g., ['fantasy', 'sci-fi', 'horror']).")
 });
 export type GenerateDataPackSchemaOutput = z.infer<typeof GenerateDataPackSchemaOutputSchema>;
 
@@ -60,7 +61,7 @@ const prompt = ai.definePrompt({
   model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are an expert game designer and world-builder, specializing in creating rich, thematic character generation systems. Your task is to generate a complete DataPack schema for a character creator based on a given concept.
 
-The output must be a valid JSON object matching the provided schema, with a 'promptTemplate' and a 'slots' array.
+The output must be a valid JSON object matching the provided schema, with a 'promptTemplate', a 'slots' array, and a 'tags' array.
 
 Concept: {{{concept}}}
 
@@ -74,7 +75,8 @@ Instructions:
     *   For at least one or two slots, try to include an 'exclusions' rule to show logical dependencies (e.g., a 'Mage' class shouldn't be able to select 'Heavy Plate Armor').
     *   You can include a 'text' type slot for things like a character's name.
     *   Set a sensible 'defaultOption' for each slot, referencing one of the option 'value's.
-3.  **Creativity**: Be imaginative! The options should be evocative and fit the theme. Think about appearance, equipment, background, and mood. Avoid generic fantasy tropes unless the concept calls for it. Ensure the generated content is unique and compelling.
+3.  **Tags**: Based on the concept, generate an array of 3-5 relevant, single-word, lowercase tags that categorize the datapack. Examples: "fantasy", "sci-fi", "horror", "cyberpunk", "post-apocalyptic", "anime".
+4.  **Creativity**: Be imaginative! The options should be evocative and fit the theme. Think about appearance, equipment, background, and mood. Avoid generic fantasy tropes unless the concept calls for it. Ensure the generated content is unique and compelling.
 `,
 });
 
@@ -93,3 +95,5 @@ const generateDataPackSchemaFlow = ai.defineFlow(
     return output;
   }
 );
+
+    

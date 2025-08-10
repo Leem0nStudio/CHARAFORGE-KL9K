@@ -2,7 +2,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { getCreationsForDataPack, getPublicDataPacks } from '@/app/actions/datapacks';
-import { User, GalleryVertical, Package, GitBranch } from 'lucide-react';
+import { User, GalleryVertical, Package, GitBranch, Quote } from 'lucide-react';
 import { DataPackClient } from './client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import Link from 'next/link';
@@ -42,7 +42,7 @@ const CreationCard = ({ creation }: { creation: Character }) => {
                             {isBranch && (
                             <TooltipProvider>
                                 <Tooltip>
-                                    <TooltipTrigger>
+                                    <TooltipTrigger asChild>
                                         <Badge variant="secondary" className="flex items-center gap-1">
                                             <GitBranch className="h-3 w-3" />
                                         </Badge>
@@ -92,7 +92,7 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
     <div className="container py-8">
       <div className="mx-auto grid w-full max-w-7xl gap-8">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row gap-8">
+        <div className="flex flex-col md:flex-row gap-8 items-start">
             <div className="md:w-1/3">
                  <Image
                     src={pack.coverImageUrl || 'https://placehold.co/600x400.png'}
@@ -109,38 +109,61 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                     <User className="h-5 w-5" /> 
                     <span>by @{pack.author}</span>
                 </p>
-                <p className="mt-4 text-base text-muted-foreground">{pack.description}</p>
+                 <div className="flex flex-wrap gap-2 mt-4">
+                    {pack.tags.map(tag => (
+                        <Badge key={tag} variant="secondary">{tag}</Badge>
+                    ))}
+                </div>
+                <p className="mt-4 text-base text-card-foreground/80">{pack.description}</p>
                  <DataPackClient pack={pack} />
             </div>
         </div>
         
-        {/* Community Creations Section */}
-        <div>
-           <Card>
-             <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-headline text-2xl">
-                    <GalleryVertical className="text-primary" />
-                    Community Creations
-                </CardTitle>
-                <CardDescription>Creations from the community using this DataPack.</CardDescription>
-             </CardHeader>
-             <CardContent>
-                {communityCreations.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {communityCreations.map(creation => (
-                            <CreationCard key={creation.id} creation={creation} />
-                        ))}
+        <div className="grid md:grid-cols-2 gap-8">
+            {/* Prompt Template Section */}
+             <Card>
+                 <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-headline text-2xl">
+                        <Quote className="text-primary" />
+                        Prompt Template
+                    </CardTitle>
+                    <CardDescription>This is the underlying template used to generate characters.</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                    <div className="bg-muted/50 p-4 rounded-lg text-sm text-muted-foreground font-mono break-words">
+                        {pack.schema.promptTemplate}
                     </div>
-                ) : (
-                    <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
-                        <p className="mb-2 font-semibold">Be the First!</p>
-                        <p>No creations have been shared for this DataPack yet.</p>
-                    </div>
-                )}
-             </CardContent>
-           </Card>
+                 </CardContent>
+            </Card>
+
+            {/* Community Creations Section */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-headline text-2xl">
+                        <GalleryVertical className="text-primary" />
+                        Community Creations
+                    </CardTitle>
+                    <CardDescription>Creations from the community using this DataPack.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {communityCreations.length > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {communityCreations.map(creation => (
+                                <CreationCard key={creation.id} creation={creation} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
+                            <p className="mb-2 font-semibold">Be the First!</p>
+                            <p>No creations have been shared for this DataPack yet.</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
       </div>
     </div>
   );
 }
+
+    

@@ -24,6 +24,7 @@ export interface Slot {
 export interface DataPackSchema {
     promptTemplate: string;
     slots: Slot[];
+    tags?: string[];
 }
 
 export interface DataPack {
@@ -47,6 +48,8 @@ export interface UpsertDataPack {
     description: string;
     type: 'free' | 'premium' | 'temporal';
     price: number;
-    tags: string; // Comma-separated tags
+    tags: string[]; // Keep tags for passing to server action
     schema: DataPackSchema; // The schema is now a structured object, not a string.
 }
+
+    

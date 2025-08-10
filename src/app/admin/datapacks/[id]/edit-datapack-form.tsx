@@ -120,7 +120,6 @@ const FormSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   type: z.enum(['free', 'premium', 'temporal']),
   price: z.number().min(0),
-  tags: z.string().optional(),
   schema: DataPackSchemaSchema,
 });
 
@@ -140,7 +139,6 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
       description: initialData?.description || '',
       type: initialData?.type || 'free',
       price: initialData?.price || 0,
-      tags: initialData?.tags?.join(', ') || '',
       schema: initialData?.schema || {
         promptTemplate: 'A {style} portrait of a {race} {class}.',
         slots: [],
@@ -154,7 +152,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
     mode: 'onChange',
   });
 
-  const { fields: slotFields, append: appendSlot, remove: removeSlot, move: moveSlot } = useFieldArray({
+  const { fields: slotFields, append: appendSlot, remove: removeSlot } = useFieldArray({
     control: form.control,
     name: "schema.slots",
   });
@@ -178,7 +176,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
         description: values.description,
         type: values.type,
         price: values.price,
-        tags: values.tags || '',
+        tags: initialData?.tags || [],
         schema: values.schema,
       };
 
@@ -252,10 +250,9 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Type</Label><Select onValueChange={(v) => form.setValue('type', v as any)} defaultValue={form.getValues('type')}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="free">Free</SelectItem><SelectItem value="premium">Premium</SelectItem><SelectItem value="temporal">Temporal</SelectItem></SelectContent></Select></div>
+                  <div><Label>Type</Label><Controller control={form.control} name="type" render={({field}) => <Select onValueChange={field.onChange} value={field.value}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="free">Free</SelectItem><SelectItem value="premium">Premium</SelectItem><SelectItem value="temporal">Temporal</SelectItem></SelectContent></Select>} /></div>
                   <div><Label>Price</Label><Input type="number" {...form.register('price', { valueAsNumber: true })} /></div>
                 </div>
-                <div><Label>Tags (comma-separated)</Label><Input {...form.register('tags')} /></div>
                 <div><Label>Cover Image</Label><Input type="file" accept="image/png" onChange={e => setCoverImage(e.target.files?.[0] || null)} /></div>
               </div>
             </CardContent>
@@ -290,7 +287,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="pt-4">
-                                        <SlotEditor control={form.control} watch={form.watch} slotIndex={slotIndex} removeSlot={removeSlot} />
+                                        <SlotEditor form={form} slotIndex={slotIndex} removeSlot={removeSlot} />
                                     </AccordionContent>
                                 </div>
                             </AccordionItem>
@@ -310,7 +307,8 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
 }
 
 // Sub-component for editing a single slot
-function SlotEditor({ control, watch, slotIndex, removeSlot }: { control: any, watch: any, slotIndex: number, removeSlot: (index: number) => void }) {
+function SlotEditor({ form, slotIndex, removeSlot }: { form: any, slotIndex: number, removeSlot: (index: number) => void }) {
+    const { control, watch } = form;
     const { fields: optionFields, append: appendOption, remove: removeOption } = useFieldArray({
         control,
         name: `schema.slots.${slotIndex}.options`,
@@ -335,7 +333,7 @@ function SlotEditor({ control, watch, slotIndex, removeSlot }: { control: any, w
                         control={control}
                         name={`schema.slots.${slotIndex}.type`}
                         render={({ field }) => (
-                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                             <Select onValueChange={field.onChange} value={field.value}>
                                 <SelectTrigger><SelectValue/></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="select">Select (List of Options)</SelectItem>
@@ -393,3 +391,5 @@ function SlotEditor({ control, watch, slotIndex, removeSlot }: { control: any, w
         </div>
     )
 }
+
+    
