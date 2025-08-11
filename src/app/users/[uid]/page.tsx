@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getPublicUserProfile } from '@/app/actions/user';
 import { getPublicCharactersForUser } from '@/app/actions/creations';
-import { PageHeader } from '@/components/page-header';
+import { BackButton } from '@/components/back-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -45,7 +45,7 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
 
     return (
         <div className="container py-8">
-            <PageHeader 
+            <BackButton 
                 title={userProfile.displayName || 'Public Profile'}
                 description="Explore the gallery of this creator."
             />

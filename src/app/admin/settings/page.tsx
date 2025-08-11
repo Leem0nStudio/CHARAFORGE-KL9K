@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { updateLogo, type ActionResponse } from './actions';
 import { useToast } from '@/hooks/use-toast';
-import { SubmitButton } from './submit-button';
 import { AdminPageLayout } from '@/components/admin/admin-page-layout';
+import { SubmitButton } from '@/components/ui/submit-button';
 
 
 export default function AdminSettingsPage() {
@@ -38,7 +38,7 @@ export default function AdminSettingsPage() {
                              <Label htmlFor="logo">Logo Image (PNG only)</Label>
                              <Input id="logo" name="logo" type="file" accept="image/png" required />
                         </div>
-                        <SubmitButton />
+                        <SubmitButton>Upload Logo</SubmitButton>
                     </form>
                 </CardContent>
             </Card>

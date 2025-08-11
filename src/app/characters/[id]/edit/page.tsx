@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { getAuth } from 'firebase-admin/auth';
 import { adminDb, adminApp } from '@/lib/firebase/server';
-import { PageHeader } from '@/components/page-header';
+import { BackButton } from '@/components/back-button';
 import { EditCharacterForm } from './edit-character-form';
 import type { Character } from '@/types/character';
 
@@ -88,7 +88,7 @@ export default async function EditCharacterPage({ params }: { params: { id: stri
     
     return (
       <div className="container py-8">
-          <PageHeader 
+          <BackButton 
               title="Character Workshop"
               description="Refine, regenerate, and manage every aspect of your creation."
           />

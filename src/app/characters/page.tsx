@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { PageHeader } from '@/components/page-header';
+import { BackButton } from '@/components/back-button';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
 import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2, GalleryHorizontal, Plus, GitBranch, Settings, ArrowLeft, Layers } from 'lucide-react';
@@ -382,7 +382,7 @@ export default function CharactersPage() {
 
   return (
     <div className="container py-8">
-        <PageHeader 
+        <BackButton 
             title="My Characters"
             description="Select a character from your collection to view their details."
         />

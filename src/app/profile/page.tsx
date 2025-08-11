@@ -31,7 +31,7 @@ import { Loader2, User, Swords, Heart, Package, Gem, Calendar, Wand2, Camera, Al
 import type { UserProfile, UserPreferences } from '@/types/user';
 import type { DataPack } from '@/types/datapack';
 import { format } from 'date-fns';
-import { PageHeader } from '@/components/page-header';
+import { BackButton } from '@/components/back-button';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SubmitButton } from '@/components/ui/submit-button';
@@ -456,7 +456,7 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
     >
-      <PageHeader
+      <BackButton
         title="Profile Settings"
         description="Manage your account, preferences, and more."
        />

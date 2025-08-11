@@ -14,7 +14,7 @@ import type { Character } from '@/types/character';
 import { getUserCasts, createStoryCast, updateStoryCastCharacters, generateStory } from '@/app/actions/stories';
 import { getCharacters } from '@/app/actions/characters';
 
-import { PageHeader } from '@/components/page-header';
+import { BackButton } from '@/components/back-button';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -389,7 +389,7 @@ export default function StoryForgePage() {
 
     return (
         <div className="container py-8">
-            <PageHeader title="Story Forge" description="Create epic tales starring your own characters." />
+            <BackButton title="Story Forge" description="Create epic tales starring your own characters." />
             <div className="grid lg:grid-cols-3 gap-8 items-start max-w-7xl mx-auto">
                 <div className="lg:col-span-1">
                     <CastsList

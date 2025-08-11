@@ -2,7 +2,7 @@
 'use client';
 
 import { CharacterGenerator } from '@/components/character-generator';
-import { PageHeader } from '@/components/page-header';
+import { BackButton } from '@/components/back-button';
 import { motion } from 'framer-motion';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -15,7 +15,7 @@ function CharacterGeneratorWrapper() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-        <PageHeader 
+        <BackButton 
             title="Character Generator"
             description="Bring your vision to life. Describe your character, or use a DataPack to get started."
         />
