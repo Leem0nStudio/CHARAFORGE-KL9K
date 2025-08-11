@@ -77,6 +77,7 @@ async function getCharacter(characterId: string): Promise<{
             branchingPermissions: data.branchingPermissions || 'private',
             versions: data.versions || [{ id: doc.id, name: data.versionName || 'v.1', version: data.version || 1 }],
             alignment: data.alignment || 'True Neutral',
+            timeline: data.timeline || [],
             tags: data.tags || [],
             isNsfw: data.isNsfw || false,
         } as Character;
@@ -224,11 +225,29 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                           {/* Biography & Timeline Section */}
                           <CardContent className="pt-6 flex-1 flex flex-col min-h-0">
                               <ScrollArea className="flex-grow h-[600px] pr-4">
-                                <div>
-                                    <h3 className="text-xl font-headline mb-2 flex items-center gap-2"><ScrollText className="w-5 h-5 text-primary" /> Biography</h3>
-                                    <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                                        {character.biography}
-                                    </p>
+                                <div className="space-y-8">
+                                    <div>
+                                        <h3 className="text-xl font-headline mb-2 flex items-center gap-2"><ScrollText className="w-5 h-5 text-primary" /> Biography</h3>
+                                        <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                                            {character.biography}
+                                        </p>
+                                    </div>
+                                    {character.timeline && character.timeline.length > 0 && (
+                                        <div>
+                                            <h3 className="text-xl font-headline mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-primary" /> Timeline</h3>
+                                            <div className="relative pl-6">
+                                                <div className="absolute left-0 top-0 h-full w-0.5 bg-border/70 -translate-x-1/2 ml-2"></div>
+                                                {character.timeline.map((event, index) => (
+                                                    <div key={event.id || index} className="mb-8 relative">
+                                                        <div className="absolute -left-[30px] top-1 h-4 w-4 rounded-full bg-primary ring-4 ring-background"></div>
+                                                        <p className="font-semibold text-primary">{event.date}</p>
+                                                        <h4 className="font-bold mt-1">{event.title}</h4>
+                                                        <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                               </ScrollArea>
                           </CardContent>

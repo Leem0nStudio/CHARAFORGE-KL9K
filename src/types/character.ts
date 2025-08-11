@@ -28,6 +28,7 @@ export type Character = {
   createdAt: Date; 
   userName?: string;
   dataPackId?: string | null;
+  isNsfw?: boolean; // Added for explicit NSFW content marking
   isSharedToDataPack?: boolean; // Controls visibility in DataPack gallery
   version: number;
   versionName: string;
@@ -40,5 +41,6 @@ export type Character = {
   originalAuthorName?: string | null;
   dataPackName?: string | null; // Added for display purposes
   alignment: 'Lawful Good' | 'Neutral Good' | 'Chaotic Good' | 'Lawful Neutral' | 'True Neutral' | 'Chaotic Neutral' | 'Lawful Evil' | 'Neutral Evil' | 'Chaotic Evil';
+  tags?: string[];
   timeline?: TimelineEvent[]; // New field for the character's timeline
 };
