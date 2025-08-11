@@ -180,3 +180,5 @@ export async function generateStory(castId: string, storyPrompt: string): Promis
         return { success: false, message, error: message };
     }
 }
+
+    
