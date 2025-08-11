@@ -1,4 +1,5 @@
 
+
 import { notFound } from 'next/navigation';
 import { getCreationsForDataPack, getPublicDataPacks } from '@/app/actions/datapacks';
 import { User, GalleryVertical, Package, Quote } from 'lucide-react';
@@ -9,7 +10,7 @@ import { CharacterCard } from '@/components/character/character-card';
 import { SectionTitle } from '@/components/section-title';
 import Image from 'next/image';
 import Link from 'next/link';
-import { chartColors } from '@/lib/app-config';
+import { getSlotColorClass } from '@/lib/app-config';
 import { cn } from '@/lib/utils';
 
 
@@ -62,7 +63,7 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                         <Badge 
                             key={tag}
                             variant="outline"
-                            className={cn(`text-chart-${(index % 5) + 1}`)}
+                            className={cn(getSlotColorClass(tag))}
                         >
                             {tag}
                         </Badge>
@@ -101,11 +102,11 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                 </CardHeader>
                  <CardContent>
                     <div className="flex flex-wrap gap-2">
-                         {pack.schema.slots.map((slot, index) => (
+                         {pack.schema.slots.map((slot) => (
                             <Badge 
                                 key={slot.id} 
                                 variant="outline"
-                                className={cn(`text-chart-${(index % 5) + 1}`)}
+                                className={cn(getSlotColorClass(slot.id))}
                             >
                                 {slot.label}
                             </Badge>
