@@ -139,8 +139,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       if (newAuthUser) {
         const token = await newAuthUser.getIdToken();
-        // This is the critical change: ensure the server-side cookie is set
-        // before we proceed, solving the race condition.
         await setCookie(token);
 
         setAuthUser(newAuthUser);
