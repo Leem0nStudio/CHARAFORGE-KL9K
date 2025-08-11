@@ -20,19 +20,15 @@ type ActionResponse = {
     newImageUrl?: string;
 };
 
-// Helper function to upload an arbitrary image file for a user
-export async function uploadCharacterImage(characterId: string, file: File): Promise<string> {
-    const uid = await verifyAndGetUid(); // Security check
+// This is now a more generic helper function to upload any file.
+export async function uploadFileToStorage(file: File, destinationPath: string): Promise<string> {
     if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
         throw new Error('Firebase Storage bucket is not configured.');
     }
     const storage = getStorage();
     const bucket = storage.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
     
-    // Create a unique file name to avoid collisions
-    const fileName = `${randomUUID()}-${file.name}`;
-    const filePath = `usersImg/${uid}/${characterId}/${fileName}`;
-    const fileRef = bucket.file(filePath);
+    const fileRef = bucket.file(destinationPath);
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -46,6 +42,7 @@ export async function uploadCharacterImage(characterId: string, file: File): Pro
     
     return fileRef.publicUrl();
 }
+
 
 /**
  * A generalized helper to upload an image from a Data URI to a user-specific folder in Firebase Storage.
@@ -706,3 +703,5 @@ export async function getCharacter(characterId: string): Promise<Character | nul
         return null;
     }
 }
+
+    

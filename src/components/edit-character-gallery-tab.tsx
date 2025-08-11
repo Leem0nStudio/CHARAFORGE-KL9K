@@ -14,7 +14,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Star, Trash2, FileUp, Wand2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { randomUUID } from 'crypto';
 
 const UpdateImagesSchema = z.object({
     images: z.array(z.string().url()).min(1, "At least one image is required.").max(10, "You can add a maximum of 10 images."),
@@ -36,7 +35,7 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "images",
     keyName: "id",
@@ -62,8 +61,7 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
 
     startUploadTransition(async () => {
         try {
-            const fileName = `${randomUUID()}-${file.name}`;
-            const destinationPath = `usersImg/${character.userId}/${character.id}/${fileName}`;
+            const destinationPath = `usersImg/${character.userId}/${character.id}/${file.name}`;
             const newImageUrl = await uploadFileToStorage(file, destinationPath);
             append(newImageUrl);
             onGalleryUpdate([...fields.map(f => f.value), newImageUrl]);

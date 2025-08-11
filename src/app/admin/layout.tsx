@@ -13,7 +13,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { AnvilIcon } from "@/hooks/use-auth";
+import { AnvilIcon } from "@/components/app-logo";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { adminNavItems } from "@/lib/app-config";
 
@@ -79,3 +79,5 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
     );
 }
+
+    

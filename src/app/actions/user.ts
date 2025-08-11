@@ -4,10 +4,10 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { adminDb, adminAuth } from '@/lib/firebase/server';
-import { getStorage } from 'firebase-admin/storage';
 import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { UserPreferences, UserProfile } from '@/types/user';
+import { uploadFileToStorage } from './characters'; // Re-use the generic uploader
 
 export type ActionResponse = {
   success: boolean;
@@ -20,31 +20,6 @@ export type ActionResponse = {
 const UpdateProfileSchema = z.object({
   displayName: z.string().min(1, 'Display Name is required').max(50, 'Display Name must be less than 50 characters'),
 });
-
-
-async function uploadAvatar(userId: string, file: File): Promise<string> {
-    if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
-        throw new Error('Firebase Storage bucket is not configured.');
-    }
-    const storage = getStorage();
-    const bucket = storage.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-    
-    const filePath = `usersImg/${userId}/avatar.png`;
-    const fileRef = bucket.file(filePath);
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    await fileRef.save(buffer, {
-        metadata: { 
-            contentType: file.type,
-            cacheControl: 'public, max-age=3600', // Cache for 1 hour, then revalidate
-        },
-        public: true,
-    });
-    
-    // Return the public URL with a timestamp to bust the cache immediately
-    return `${fileRef.publicUrl()}?t=${new Date().getTime()}`;
-}
 
 
 export async function updateUserProfile(prevState: any, formData: FormData): Promise<ActionResponse> {
@@ -74,7 +49,11 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
             if (photoFile.size > 5 * 1024 * 1024) { // 5MB limit
                 return { success: false, message: 'File is too large. Please upload an image smaller than 5MB.' };
             }
-            finalPhotoUrl = await uploadAvatar(uid, photoFile);
+            // Use the centralized uploader from characters.ts
+            const destinationPath = `usersImg/${uid}/avatar.png`;
+            const publicUrl = await uploadFileToStorage(photoFile, destinationPath);
+            // Add a timestamp to bust the cache immediately after upload
+            finalPhotoUrl = `${publicUrl}?t=${new Date().getTime()}`;
         }
 
         const userRef = adminDb.collection('users').doc(uid);
@@ -227,3 +206,5 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     return null;
   }
 }
+
+    

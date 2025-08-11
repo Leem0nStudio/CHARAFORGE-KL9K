@@ -4,8 +4,8 @@
 import { cn } from '@/lib/utils';
 
 /**
- * A reusable SVG icon component.
- * This is defined here to make the AppLogo component self-contained.
+ * A reusable SVG icon component. This is the single source of truth for the app icon.
+ * It is exported so other components like the loading screen can use it.
  */
 export function AnvilIcon({ className }: { className?: string }) {
   return (
@@ -47,3 +47,5 @@ export function AppLogo({ className, iconClassName }: { className?: string, icon
         </div>
     );
 }
+
+    

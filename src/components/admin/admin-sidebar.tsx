@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AnvilIcon } from "@/hooks/use-auth";
+import { AnvilIcon } from "@/components/app-logo";
 import { adminNavItems } from "@/lib/app-config";
 
 export function AdminSidebar() {
@@ -47,3 +47,5 @@ export function AdminSidebar() {
         </div>
     )
 }
+
+    
