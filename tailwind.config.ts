@@ -18,7 +18,7 @@ export default {
         body: ['var(--font-body)', 'sans-serif'],
         headline: ['var(--font-headline)', 'sans-serif'],
         logo: ['var(--font-headline)', 'sans-serif'], // Use headline for logo too
-        button: ['var(--font-headline)', 'sans-serif'], // Use headline for buttons
+        button: ['var(--font-button)', 'sans-serif'], // Use headline for buttons
       },
       colors: {
         border: 'hsl(var(--border))',
