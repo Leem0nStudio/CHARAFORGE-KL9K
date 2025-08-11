@@ -489,7 +489,7 @@ export function CharacterGenerator() {
                     name="lora"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>LoRA (Opcional)</FormLabel>
+                        <FormLabel>LoRA (Optional)</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="username/lora-name"

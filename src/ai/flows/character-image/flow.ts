@@ -43,12 +43,15 @@ const generateCharacterImageFlow = ai.defineFlow(
     if (imageEngine === 'gemini') {
         // This branch uses Google's native image generation model.
         try {
+            const { width, height } = getDimensions(aspectRatio);
+
             const { media } = await ai.generate({
                 model: 'googleai/gemini-2.0-flash-preview-image-generation',
                 prompt: description,
                 config: {
                     responseModalities: ['TEXT', 'IMAGE'],
-                    aspectRatio: aspectRatio,
+                    width,
+                    height,
                 },
             });
             const imageUrl = media?.url;
