@@ -52,7 +52,7 @@ const generationFormSchema = z.object({
   tags: z.string().optional(), // Hidden field for tags
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
-  engine: z.enum(['gradio', 'gemini']).default('gradio'),
+  imageEngine: z.enum(['gradio', 'gemini']).default('gradio'),
 });
 
 const saveFormSchema = z.object({
@@ -70,7 +70,7 @@ type CharacterData = {
   tags: string;
   dataPackId?: string | null;
   aspectRatio: '1:1' | '16:9' | '9:16';
-  engine: 'gradio' | 'gemini';
+  imageEngine: 'gradio' | 'gemini';
 };
 
 export function CharacterGenerator() {
@@ -99,7 +99,7 @@ export function CharacterGenerator() {
       tags: "",
       targetLanguage: 'English',
       aspectRatio: '1:1',
-      engine: 'gradio',
+      imageEngine: 'gradio',
     },
   });
 
@@ -207,7 +207,7 @@ export function CharacterGenerator() {
         tags: data.tags || '',
         dataPackId: dataPackIdFromUrl,
         aspectRatio: data.aspectRatio,
-        engine: data.engine,
+        imageEngine: data.imageEngine,
       });
     } catch (err: unknown) {
        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during biography generation.";
@@ -231,7 +231,7 @@ export function CharacterGenerator() {
         const imageResult = await generateCharacterImage({ 
             description: characterData.description,
             aspectRatio: characterData.aspectRatio,
-            engine: characterData.engine,
+            imageEngine: characterData.imageEngine,
         });
         if (!imageResult.imageUrl) {
             throw new Error("AI model did not return an image. This could be due to safety filters or an API issue.");
@@ -429,7 +429,7 @@ export function CharacterGenerator() {
                 />
                  <FormField
                   control={generationForm.control}
-                  name="engine"
+                  name="imageEngine"
                   render={({ field }) => (
                     <FormItem className="space-y-3">
                       <FormLabel>AI Engine</FormLabel>
@@ -452,7 +452,7 @@ export function CharacterGenerator() {
                                 )}
                               >
                                 <span className="text-xs font-bold">Stable Diffusion</span>
-                                <span className="text-xs text-muted-foreground">via Gradio</span>
+                                <span className="text-xs text-muted-foreground">Community Model</span>
                               </FormLabel>
                             </FormItem>
                              <FormItem>
@@ -467,7 +467,7 @@ export function CharacterGenerator() {
                                 )}
                               >
                                <span className="text-xs font-bold">Gemini Image</span>
-                                <span className="text-xs text-muted-foreground">via Google</span>
+                                <span className="text-xs text-muted-foreground">Google Model</span>
                               </FormLabel>
                             </FormItem>
                           </RadioGroup>
@@ -593,7 +593,7 @@ export function CharacterGenerator() {
                                     <AlertDescription>
                                         <p className="mb-2">{imageError}</p>
                                         {imageError.includes('Gradio') && (
-                                            <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => generationForm.setValue('engine', 'gemini')}>
+                                            <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => generationForm.setValue('imageEngine', 'gemini')}>
                                                 Switch to Gemini Engine
                                             </Button>
                                         )}

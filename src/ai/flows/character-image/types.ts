@@ -4,7 +4,7 @@ import {z} from 'genkit';
 export const GenerateCharacterImageInputSchema = z.object({
   description: z.string().describe('The description of the character.'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).optional().default('1:1').describe('The desired aspect ratio for the image.'),
-  engine: z.enum(['gradio', 'gemini']).default('gradio').describe('The generation engine to use.'),
+  imageEngine: z.enum(['gradio', 'gemini']).default('gradio').describe('The generation engine to use. "gradio" connects to a Stable Diffusion model on Hugging Face.'),
 });
 export type GenerateCharacterImageInput = z.infer<typeof GenerateCharacterImageInputSchema>;
 

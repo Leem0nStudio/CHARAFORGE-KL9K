@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview An AI agent for generating character images based on a description,
- * using a selectable engine (Gradio or Gemini).
+ * using a selectable engine (Gradio for Stable Diffusion or Gemini).
  */
 
 import { ai } from '@/ai/genkit';
@@ -38,9 +38,10 @@ const generateCharacterImageFlow = ai.defineFlow(
     outputSchema: GenerateCharacterImageOutputSchema,
   },
   async (input) => {
-    const { description, aspectRatio, engine } = input;
+    const { description, aspectRatio, imageEngine } = input;
 
-    if (engine === 'gemini') {
+    if (imageEngine === 'gemini') {
+        // This branch uses Google's native image generation model.
         try {
             const { media } = await ai.generate({
                 model: 'googleai/gemini-2.0-flash-preview-image-generation',
@@ -60,11 +61,18 @@ const generateCharacterImageFlow = ai.defineFlow(
             const message = error instanceof Error ? error.message : "An unknown error occurred with the Gemini engine.";
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
-    } else { // Default to Gradio
+    } else { 
+        // This branch connects to a community-hosted Stable Diffusion model on Hugging Face
+        // using the Gradio client library.
         try {
             const { width, height } = getDimensions(aspectRatio);
+            
+            // Step 1: Connect to the Gradio app running on a Hugging Face Space.
+            // The string "el-el-san/t2i-illustrious-xl-v2.0" is the ID of the Space.
             const client = await Client.connect("el-el-san/t2i-illustrious-xl-v2.0");
 
+            // Step 2: Call the prediction function of that Gradio app.
+            // We pass the prompt and other parameters to the model.
             const result = await client.predict("/infer", {
                 prompt: description,
                 negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
@@ -76,6 +84,7 @@ const generateCharacterImageFlow = ai.defineFlow(
                 num_inference_steps: 25,
             });
 
+            // Step 3: Process the result. The image comes back as a Data URI.
             const imageUrl = Array.isArray(result.data) ? result.data[0] : null;
             if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('data:image')) {
                 throw new Error('The Gradio API did not return a valid image data URI. The remote service might be down or the request was rejected.');
@@ -83,10 +92,10 @@ const generateCharacterImageFlow = ai.defineFlow(
             return { imageUrl };
 
         } catch (error) {
-            console.error("Error in generateCharacterImageFlow (Gradio):", error);
+            console.error("Error in generateCharacterImageFlow (Gradio/Stable Diffusion):", error);
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
              if (message.includes('Space metadata could not be loaded')) {
-                throw new Error('The Gradio service is currently unavailable. Please try again later or switch to the Gemini engine.');
+                throw new Error('The Gradio service (Stable Diffusion) is currently unavailable. Please try again later or switch to the Gemini engine.');
             }
             throw new Error(`Failed to generate character image via the external API. ${message}`);
         }
