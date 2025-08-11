@@ -204,7 +204,7 @@ async function fetchProfilesInBatches(uids: string[]): Promise<Map<string, UserP
   for (let i = 0; i < uids.length; i += 10) {
     const batchUids = uids.slice(i, i + 10);
     if (batchUids.length > 0) {
-      const snapshot = await userRef.where(FieldValue.documentId(), 'in', batchUids).get();
+      const snapshot = await userRef.where(FieldValue.documentId, 'in', batchUids).get();
       snapshot.forEach(doc => profiles.set(doc.id, doc.data() as UserProfile));
     }
   }
