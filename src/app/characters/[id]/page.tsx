@@ -135,7 +135,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                       />
                                   </div>
                                 </DialogTrigger>
-                               <DialogContent className="max-w-3xl p-0 bg-transparent border-0">
+                               <DialogContent className="max-w-3xl p-0 bg-transparent border-0" aria-describedby={`dialog-description-${character.id}`}>
                                   <DialogTitle className="sr-only">{character.name}</DialogTitle>
                                   <DialogDescription className="sr-only" id={`dialog-description-${character.id}`}>{character.description}</DialogDescription>
                                   <Image
