@@ -8,7 +8,7 @@ import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription }
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { DataPack } from '@/types/datapack';
-import { getSlotColorClass, chartColors } from '@/lib/app-config';
+import { chartColors } from '@/lib/app-config';
 
 interface DataPackCardProps {
     pack: DataPack;
