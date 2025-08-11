@@ -3,7 +3,7 @@ import { getPublicDataPacks } from '@/app/actions/datapacks';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import Image from 'next/image';
 import Link from 'next/link';
-import { User } from 'lucide-react';
+import { User, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -36,12 +36,15 @@ export default async function DataPacksPage() {
                                             className="object-contain transition-transform duration-300 group-hover:scale-105"
                                             data-ai-hint="datapack cover image"
                                         />
-                                        <Badge className={cn(
-                                            "absolute top-2 right-2 font-bold",
-                                            pack.type === 'premium' && "bg-yellow-500 text-black",
-                                            pack.type === 'free' && "bg-green-500",
-                                            pack.type === 'temporal' && "bg-blue-500"
-                                        )}>{pack.type}</Badge>
+                                        <div className="absolute top-2 right-2 flex items-center gap-2">
+                                            {pack.isNsfw && <Badge variant="destructive" className="font-bold"><AlertTriangle className="w-3 h-3 mr-1"/>NSFW</Badge>}
+                                            <Badge className={cn(
+                                                "font-bold",
+                                                pack.type === 'premium' && "bg-yellow-500 text-black",
+                                                pack.type === 'free' && "bg-green-500",
+                                                pack.type === 'temporal' && "bg-blue-500"
+                                            )}>{pack.type}</Badge>
+                                        </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-4 flex-grow">
@@ -68,3 +71,5 @@ export default async function DataPacksPage() {
         </div>
     );
 }
+
+    

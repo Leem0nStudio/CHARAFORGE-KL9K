@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -154,7 +155,7 @@ function OptionSelectModal({
     )
 }
 
-function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPromptGenerated: (prompt: string, packId: string, packName: string) => void, onBack: () => void }) {
+function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPromptGenerated: (prompt: string, pack: DataPack) => void, onBack: () => void }) {
     const { control, handleSubmit, watch, setValue } = useForm();
     const formValues = watch();
 
@@ -200,7 +201,7 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
             }
         }
         prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/, ,/g, ',').replace(/, /g, ' ').replace(/,$/g, '').trim();
-        onPromptGenerated(prompt, pack.id, pack.name);
+        onPromptGenerated(prompt, pack);
     };
 
     return (
@@ -274,7 +275,7 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
 interface DataPackSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onPromptGenerated: (prompt: string, packId: string, packName: string) => void;
+    onPromptGenerated: (prompt: string, pack: DataPack) => void;
     installedPacks: DataPack[];
     isLoading: boolean;
 }
@@ -305,8 +306,8 @@ export function DataPackSelectorModal({
 
     }, [isOpen, isLoading, packs, selectedPack, wizardPack]);
     
-    const handlePromptGeneratedAndClose = useCallback((prompt: string, packId: string, packName: string) => {
-        onPromptGenerated(prompt, packId, packName);
+    const handlePromptGeneratedAndClose = useCallback((prompt: string, pack: DataPack) => {
+        onPromptGenerated(prompt, pack);
         onClose();
     }, [onPromptGenerated, onClose]);
     
@@ -386,3 +387,5 @@ export function DataPackSelectorModal({
         </Dialog>
     )
 }
+
+    

@@ -5,11 +5,11 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { adminDb } from '@/lib/firebase/server';
 import type { Character, TimelineEvent } from '@/types/character';
-import { User, Calendar, Tag, GitBranch, Shield, ScrollText } from 'lucide-react';
+import { User, Calendar, Tag, GitBranch, Shield, ScrollText, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BackButton } from '@/components/back-button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -188,11 +188,14 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                 <AvatarImage src={authorForAvatar.photoURL || undefined} alt={authorForAvatar.displayName || 'Author'} />
                                 <AvatarFallback>{authorForAvatar.displayName?.charAt(0) || '?'}</AvatarFallback>
                               </Avatar>
-                              <h2 className="text-4xl font-headline tracking-wider">{character.name}</h2>
+                              <div className="flex items-center gap-4">
+                                <h2 className="text-4xl font-headline tracking-wider">{character.name}</h2>
+                                {character.isNsfw && <Badge variant="destructive"><AlertTriangle className="w-4 h-4 mr-1.5"/> NSFW</Badge>}
+                              </div>
                           </div>
                           
                           {/* Metadata Section */}
-                          <div className="p-4 border-b border-t border-border space-y-2">
+                          <div className="p-4 border-b border-t border-border space-y-3">
                               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                                   <div className="flex items-center gap-1.5">
                                       <User className="h-3 w-3" />
@@ -224,6 +227,13 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                       </Link>
                                   )}
                               </div>
+                               {character.tags && character.tags.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {character.tags.map(tag => (
+                                      <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+                                  ))}
+                                </div>
+                              )}
                           </div>
                           
                           {/* Biography & Timeline Section */}

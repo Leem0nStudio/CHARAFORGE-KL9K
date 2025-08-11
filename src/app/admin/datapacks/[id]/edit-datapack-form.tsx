@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, PlusCircle, Trash2, Wand2, GripVertical } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Wand2, GripVertical, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   AlertDialog,
@@ -256,9 +256,9 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
                     control={form.control}
                     name="isNsfw"
                     render={({ field }) => (
-                      <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm border-destructive/50">
                         <div className="space-y-0.5">
-                            <Label htmlFor="isNsfw-switch">Mark as NSFW</Label>
+                            <Label htmlFor="isNsfw-switch" className="flex items-center gap-2 font-semibold text-destructive"><AlertTriangle/> Mark as NSFW</Label>
                              <p className="text-xs text-muted-foreground">Enable if this pack contains adult content.</p>
                         </div>
                         <Switch
@@ -426,3 +426,5 @@ function SlotEditor({ form, slotIndex, removeSlot }: { form: any, slotIndex: num
         </div>
     )
 }
+
+    

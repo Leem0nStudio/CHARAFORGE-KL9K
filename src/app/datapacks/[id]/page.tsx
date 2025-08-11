@@ -2,7 +2,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { getCreationsForDataPack, getPublicDataPacks } from '@/app/actions/datapacks';
-import { User, GalleryVertical, Package, GitBranch, Quote } from 'lucide-react';
+import { User, GalleryVertical, Package, GitBranch, Quote, AlertTriangle } from 'lucide-react';
 import { DataPackClient } from './client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import Link from 'next/link';
@@ -104,7 +104,10 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                 />
             </div>
             <div className="w-full md:w-2/3">
-                <h1 className="text-4xl font-bold tracking-tight font-headline">{pack.name}</h1>
+                <div className="flex items-center gap-4 mb-2">
+                    <h1 className="text-4xl font-bold tracking-tight font-headline">{pack.name}</h1>
+                    {pack.isNsfw && <Badge variant="destructive"><AlertTriangle className="w-4 h-4 mr-1.5"/> NSFW</Badge>}
+                </div>
                 <p className="text-lg text-muted-foreground mt-2 flex items-center gap-2">
                     <User className="h-5 w-5" /> 
                     <span>by @{pack.author}</span>
@@ -165,3 +168,5 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
     </div>
   );
 }
+
+    

@@ -36,7 +36,7 @@ export function EditSharingTab({ character, onUpdate }: { character: Character, 
 
     const handleTogglePublicStatus = (checked: boolean) => {
         const newStatus = checked ? 'public' : 'private';
-        handleUpdate(() => updateCharacterStatus(character.id, newStatus), { status: newStatus });
+        handleUpdate(() => updateCharacterStatus(character.id, newStatus, character.isNsfw), { status: newStatus });
     };
 
     const handleToggleDataPackSharing = (checked: boolean) => {
@@ -108,3 +108,5 @@ export function EditSharingTab({ character, onUpdate }: { character: Character, 
         </Card>
     );
 }
+
+    

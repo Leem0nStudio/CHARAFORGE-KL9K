@@ -65,6 +65,8 @@ type CharacterData = {
   imageUrl: string | null;
   description: string;
   dataPackId?: string | null;
+  tags?: string[];
+  isNsfw?: boolean;
   aspectRatio: '1:1' | '16:9' | '9:16';
 };
 
@@ -79,6 +81,7 @@ export function CharacterGenerator() {
   const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
   const [isLoadingPacks, setIsLoadingPacks] = useState(false);
   const [activePackName, setActivePackName] = useState<string | null>(null);
+  const [activePack, setActivePack] = useState<DataPack | null>(null);
 
   const { toast } = useToast();
   const { authUser, loading: authLoading } = useAuth();
@@ -102,12 +105,13 @@ export function CharacterGenerator() {
     },
   });
 
-  const handlePromptGenerated = useCallback((prompt: string, packId: string, packName: string) => {
+  const handlePromptGenerated = useCallback((prompt: string, pack: DataPack) => {
     generationForm.setValue('description', prompt, { shouldValidate: true });
-    setActivePackName(packName);
+    setActivePack(pack);
+    setActivePackName(pack.name);
     
     const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('packId', packId);
+    currentUrl.searchParams.set('packId', pack.id);
     currentUrl.searchParams.set('prompt', encodeURIComponent(prompt));
     router.replace(currentUrl.toString(), { scroll: false });
     setIsModalOpen(false);
@@ -128,14 +132,16 @@ export function CharacterGenerator() {
             try {
                 const packs = await getInstalledDataPacks();
                 setInstalledPacks(packs);
-                const activePack = packs.find(p => p.id === dataPackId);
-                if (activePack) {
-                    setActivePackName(activePack.name);
+                const currentActivePack = packs.find(p => p.id === dataPackId);
+                if (currentActivePack) {
+                    setActivePack(currentActivePack);
+                    setActivePackName(currentActivePack.name);
                 }
             } catch (error) {
                  console.error("Failed to fetch pack name:", error);
             }
         } else {
+            setActivePack(null);
             setActivePackName(null);
         }
     }
@@ -182,7 +188,9 @@ export function CharacterGenerator() {
         biography: bioResult.biography,
         imageUrl: null,
         description: data.description,
-        dataPackId: dataPackId,
+        dataPackId: activePack?.id,
+        tags: activePack?.tags || [],
+        isNsfw: activePack?.isNsfw || false,
         aspectRatio: data.aspectRatio,
       });
     } catch (err: unknown) {
@@ -243,6 +251,8 @@ export function CharacterGenerator() {
         biography: characterData.biography,
         imageUrl: characterData.imageUrl,
         dataPackId: characterData.dataPackId,
+        tags: characterData.tags,
+        isNsfw: characterData.isNsfw,
       });
 
       toast({
@@ -555,3 +565,5 @@ export function CharacterGenerator() {
     </>
   );
 }
+
+    
