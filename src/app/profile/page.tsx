@@ -235,8 +235,8 @@ PreferencesForm.displayName = "PreferencesForm";
 function StatsTab({ userStats }: { userStats?: UserProfile['stats'] }) {
     const memberSince = userStats?.memberSince;
     let memberSinceDate = 'N/A';
-    if (memberSince) {
-      // The value is already a number (milliseconds), safe to use directly
+    // Ensure memberSince is a number before creating a Date object
+    if (typeof memberSince === 'number') {
       const date = new Date(memberSince);
       memberSinceDate = format(date, 'PPP');
     }
