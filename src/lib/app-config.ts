@@ -1,4 +1,4 @@
-import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, LucideIcon } from 'lucide-react';
+import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon } from 'lucide-react';
 
 export interface NavItem {
     href: string;
@@ -19,6 +19,7 @@ export const mainNavItems: NavItem[] = [
 export const adminNavItems: NavItem[] = [
     { href: '/admin', label: 'Dashboard', icon: BarChart },
     { href: '/admin/datapacks', label: 'DataPacks', icon: Package },
+    { href: '/admin/models', label: 'AI Models', icon: Bot },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

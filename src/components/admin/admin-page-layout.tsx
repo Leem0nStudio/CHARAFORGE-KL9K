@@ -4,7 +4,8 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator, BreadcrumbEllipsis } from '@/components/ui/breadcrumb';
+import Link from 'next/link';
 
 interface AdminPageLayoutProps {
     title: string;
@@ -13,17 +14,16 @@ interface AdminPageLayoutProps {
 }
 
 // Helper to capitalize strings
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const capitalize = (s: string) => {
+    if (s === 'id') return 'ID';
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 export function AdminPageLayout({ title, children, actions }: AdminPageLayoutProps) {
     const pathname = usePathname();
-    const pathSegments = pathname.split('/').filter(Boolean); // Filter out empty strings
+    const pathSegments = pathname.split('/').filter(Boolean);
 
-    // Build breadcrumbs dynamically from the path
-    const breadcrumbs = pathSegments.slice(1, -1).map((segment, index) => {
-        const href = `/${pathSegments.slice(0, index + 2).join('/')}`;
-        return { label: capitalize(segment), href };
-    });
+    const breadcrumbs = pathSegments.slice(1);
 
     return (
         <motion.div
@@ -38,17 +38,21 @@ export function AdminPageLayout({ title, children, actions }: AdminPageLayoutPro
                      <Breadcrumb className="mb-2 hidden sm:flex">
                         <BreadcrumbList>
                              <BreadcrumbItem>
-                                <BreadcrumbLink href="/admin">Dashboard</BreadcrumbLink>
+                                <BreadcrumbLink asChild>
+                                    <Link href="/admin">Dashboard</Link>
+                                </BreadcrumbLink>
                             </BreadcrumbItem>
-                            {breadcrumbs.map((crumb, index) => (
-                                <React.Fragment key={crumb.href}>
-                                    <BreadcrumbSeparator />
+                            {breadcrumbs.length > 1 && <BreadcrumbSeparator />}
+                            {breadcrumbs.slice(0, -1).map((segment, index) => (
+                                <React.Fragment key={segment}>
                                     <BreadcrumbItem>
-                                        <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
+                                        <BreadcrumbLink asChild>
+                                            <Link href={`/${pathSegments.slice(0, index + 2).join('/')}`}>{capitalize(segment)}</Link>
+                                        </BreadcrumbLink>
                                     </BreadcrumbItem>
+                                    <BreadcrumbSeparator />
                                 </React.Fragment>
                             ))}
-                             <BreadcrumbSeparator />
                              <BreadcrumbItem>
                                 <BreadcrumbPage>{title}</BreadcrumbPage>
                             </BreadcrumbItem>
