@@ -139,6 +139,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       if (newAuthUser) {
         const token = await newAuthUser.getIdToken();
+        // **CRITICAL CHANGE**: Wait for the cookie to be set on the server
+        // before proceeding to update the client-side state. This ensures
+        // that any subsequent Server Action calls will have the session.
         await setCookie(token);
 
         setAuthUser(newAuthUser);
@@ -160,6 +163,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setAuthUser(null);
         setUserProfile(null);
       }
+      // **CRITICAL CHANGE**: Only set loading to false after all async
+      // operations (cookie setting, firestore doc check) are complete.
       setLoading(false);
     });
 
