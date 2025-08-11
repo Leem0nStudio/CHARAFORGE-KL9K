@@ -87,38 +87,7 @@ const config = {
     },
   },
   plugins: [require('tailwindcss-animate')],
-} satisfies Omit<Config, 'images'> & { images: any };
+} satisfies Config;
 
-// Separar la configuración de Next.js para mayor claridad
-const nextConfig = {
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'huggingface.co',
-        port: '',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '**',
-      },
-       {
-        protocol: 'https',
-        hostname: 'storage.googleapis.com',
-        port: '',
-        pathname: '**',
-      }
-    ],
-  },
-};
 
-// Fusionar las configuraciones
-const finalConfig = {
-  ...config,
-  ...nextConfig,
-};
-
-export default finalConfig;
+export default config;
