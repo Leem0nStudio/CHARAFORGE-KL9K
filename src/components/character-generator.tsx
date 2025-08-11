@@ -1,13 +1,14 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -85,6 +86,43 @@ type CharacterData = {
   triggerWords?: string;
 };
 
+// Sub-component for the main action buttons
+function ActionButtons({ onForge, onUsePack, canInteract, isGeneratingBio }: {
+  onForge: () => void;
+  onUsePack: () => void;
+  canInteract: boolean;
+  isGeneratingBio: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <Button onClick={onForge} size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90 transition-transform hover:scale-105" disabled={!canInteract}>
+        {isGeneratingBio ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Bio</>)}
+      </Button>
+      <Button type="button" size="lg" className="w-full" variant="secondary" onClick={onUsePack} disabled={!canInteract}>
+        <Package className="mr-2" />
+        Use DataPack
+      </Button>
+    </div>
+  );
+}
+
+// Sub-component for the floating action button
+function FloatingActionButton({ onForge, canInteract }: { onForge: () => void; canInteract: boolean; }) {
+  return (
+    <motion.div
+      initial={{ scale: 0, y: 50 }}
+      animate={{ scale: 1, y: 0 }}
+      exit={{ scale: 0, y: 50 }}
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      className="fixed bottom-20 right-4 z-40 sm:hidden"
+    >
+      <Button onClick={onForge} size="icon" className="w-16 h-16 rounded-full shadow-lg bg-accent text-accent-foreground" disabled={!canInteract}>
+        <Wand2 className="w-8 h-8" />
+      </Button>
+    </motion.div>
+  );
+}
+
 export function CharacterGenerator() {
   const [characterData, setCharacterData] = useState<CharacterData | null>(null);
   const [isGeneratingBio, setIsGeneratingBio] = useState(false);
@@ -97,7 +135,9 @@ export function CharacterGenerator() {
   const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
   const [isLoadingPacks, setIsLoadingPacks] = useState(false);
   const [activePackName, setActivePackName] = useState<string | null>(null);
+  const [showFab, setShowFab] = useState(false);
 
+  const actionButtonsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { authUser, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -138,6 +178,22 @@ export function CharacterGenerator() {
     setIsPackModalOpen(false);
   }, [generationForm, router]);
   
+  // Effect for scroll detection to show/hide FAB
+  useEffect(() => {
+    const handleScroll = () => {
+      if (actionButtonsRef.current) {
+        const { bottom } = actionButtonsRef.current.getBoundingClientRect();
+        // Show FAB if the bottom of the original buttons is above the viewport
+        setShowFab(bottom < window.innerHeight - 80); // 80px buffer for bottom nav
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     const promptFromUrl = searchParams.get('prompt');
     if (promptFromUrl) {
@@ -317,6 +373,10 @@ export function CharacterGenerator() {
   const isImageReadyForSave = !!characterData?.imageUrl;
   const watchImageEngine = generationForm.watch('imageEngine');
 
+  const handleForgeBioClick = () => {
+    generationForm.handleSubmit(onGenerateBio)();
+  };
+
   return (
     <>
     <DataPackSelectorModal 
@@ -342,7 +402,7 @@ export function CharacterGenerator() {
           </CardHeader>
           <CardContent>
             <Form {...generationForm}>
-              <form onSubmit={(e) => { e.preventDefault(); generationForm.handleSubmit(onGenerateBio)(); }} className="space-y-6">
+              <form onSubmit={(e) => { e.preventDefault(); handleForgeBioClick(); }} className="space-y-6">
                 
                 <Tabs defaultValue="prompt">
                     <TabsList className="grid w-full grid-cols-2">
@@ -490,14 +550,13 @@ export function CharacterGenerator() {
           </CardContent>
         </Card>
         
-        <div className="sticky bottom-20 space-y-2">
-            <Button onClick={generationForm.handleSubmit(onGenerateBio)} size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90 transition-transform hover:scale-105" disabled={!canInteract}>
-              {isGeneratingBio ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Bio</>)}
-            </Button>
-            <Button type="button" size="lg" className="w-full" variant="secondary" onClick={handleOpenPackModal} disabled={!canInteract}>
-              <Package className="mr-2" />
-              Use DataPack
-            </Button>
+         <div ref={actionButtonsRef} className="pt-4 sm:block">
+            <ActionButtons
+                onForge={handleForgeBioClick}
+                onUsePack={handleOpenPackModal}
+                canInteract={!!canInteract}
+                isGeneratingBio={isGeneratingBio}
+            />
         </div>
       </div>
 
@@ -631,6 +690,11 @@ export function CharacterGenerator() {
         </Card>
       </div>
     </div>
+    <AnimatePresence>
+        {showFab && (
+            <FloatingActionButton onForge={handleForgeBioClick} canInteract={!!canInteract} />
+        )}
+    </AnimatePresence>
     </>
   );
 }
