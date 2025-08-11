@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +40,7 @@ import type { DataPack } from "@/types/datapack";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { cn } from "@/lib/utils";
+import { TagAssistantModal } from "./tag-assistant-modal";
 
 const generationFormSchema = z.object({
   description: z.string().min(20, {
@@ -76,7 +77,8 @@ export function CharacterGenerator() {
   const [isSaving, setIsSaving] = useState(false);
   const [bioError, setBioError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPackModalOpen, setIsPackModalOpen] = useState(false);
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
   const [isLoadingPacks, setIsLoadingPacks] = useState(false);
   const [activePackName, setActivePackName] = useState<string | null>(null);
@@ -113,8 +115,14 @@ export function CharacterGenerator() {
     currentUrl.searchParams.set('packId', pack.id);
     currentUrl.searchParams.set('prompt', encodeURIComponent(prompt));
     router.replace(currentUrl.toString(), { scroll: false });
-    setIsModalOpen(false);
+    setIsPackModalOpen(false);
   }, [generationForm, router]);
+
+  const handleAppendTags = useCallback((tags: string[]) => {
+    const currentDescription = generationForm.getValues('description');
+    const newDescription = [currentDescription.trim(), ...tags].filter(Boolean).join(', ');
+    generationForm.setValue('description', newDescription, { shouldValidate: true });
+  }, [generationForm]);
   
   // Effect to read prompt from URL and set it in the form
   useEffect(() => {
@@ -147,9 +155,9 @@ export function CharacterGenerator() {
     loadPacksAndSetActive();
   }, [dataPackId]);
 
-  const handleOpenModal = async () => {
+  const handleOpenPackModal = async () => {
     setIsLoadingPacks(true);
-    setIsModalOpen(true);
+    setIsPackModalOpen(true);
     try {
       if (installedPacks.length === 0) {
         const packs = await getInstalledDataPacks();
@@ -280,11 +288,16 @@ export function CharacterGenerator() {
   return (
     <>
     <DataPackSelectorModal 
-      isOpen={isModalOpen}
-      onClose={() => setIsModalOpen(false)}
+      isOpen={isPackModalOpen}
+      onClose={() => setIsPackModalOpen(false)}
       onPromptGenerated={handlePromptGenerated}
       installedPacks={installedPacks}
       isLoading={isLoadingPacks}
+    />
+    <TagAssistantModal
+        isOpen={isTagModalOpen}
+        onClose={() => setIsTagModalOpen(false)}
+        onAppendTags={handleAppendTags}
     />
     <div className="grid gap-8 lg:grid-cols-5">
       <div className="lg:col-span-2">
@@ -305,12 +318,9 @@ export function CharacterGenerator() {
                     <FormItem>
                       <div className="flex justify-between items-center mb-2">
                         <FormLabel>Character Description</FormLabel>
-                        {activePackName && (
-                          <Badge variant="secondary" className="flex items-center gap-1.5">
-                            <Package className="h-3 w-3" />
-                            {activePackName}
-                          </Badge>
-                        )}
+                        <Button type="button" variant="outline" size="sm" onClick={() => setIsTagModalOpen(true)} disabled={!canInteract}>
+                          <Tags className="mr-2 h-3 w-3" /> Suggest Tags
+                        </Button>
                       </div>
                       <FormControl>
                         <Textarea
@@ -320,6 +330,12 @@ export function CharacterGenerator() {
                           disabled={!canInteract}
                         />
                       </FormControl>
+                      {activePackName && (
+                          <Badge variant="secondary" className="flex items-center gap-1.5 mt-2 w-fit">
+                            <Package className="h-3 w-3" />
+                            {activePackName}
+                          </Badge>
+                        )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -428,7 +444,7 @@ export function CharacterGenerator() {
                         </>
                       )}
                     </Button>
-                    <Button type="button" size="lg" className="w-full" variant="secondary" onClick={handleOpenModal} disabled={!canInteract}>
+                    <Button type="button" size="lg" className="w-full" variant="secondary" onClick={handleOpenPackModal} disabled={!canInteract}>
                       <Package className="mr-2" />
                       Use DataPack
                     </Button>
