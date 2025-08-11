@@ -4,41 +4,41 @@
 
 @layer base {
   :root {
-    --background: 220 4% 12%; /* #1D1F21 */
+    --background: 210 33% 10%; /* #101820 */
     --foreground: 0 0% 100%; /* #FFFFFF */
 
-    --card: 240 2% 23%; /* #3A3A3C */
+    --card: 226 10% 19%; /* #2C2F36 */
     --card-foreground: 0 0% 100%; /* #FFFFFF */
-    --card-highlight: 220 7% 19%; /* #2C2F36 */
+    --card-highlight: 226 10% 22%; /* Darker version of card */
 
-    --popover: 220 4% 12%; /* #1D1F21 */
+    --popover: 210 33% 10%; /* #101820 */
     --popover-foreground: 0 0% 100%; /* #FFFFFF */
 
-    /* Primary - Cian vivo */
-    --primary: 197 100% 47%; /* #00AEEF */
-    --primary-foreground: 0 0% 100%; /* #FFFFFF */
-    --primary-hover: 195 100% 50%; /* #00D2FF */
+    /* Primary - Azul plasma brillante */
+    --primary: 191 100% 50%; /* #00D2FF */
+    --primary-foreground: 210 33% 10%; /* Dark for contrast */
+    --primary-hover: 191 100% 55%; /* Lighter version */
 
-    /* Secondary - Azul intenso */
-    --secondary: 203 65% 40%; /* #2376A9 */
+    /* Secondary - Azul petróleo metálico */
+    --secondary: 199 69% 34%; /* #1B6F92 */
     --secondary-foreground: 0 0% 100%; /* #FFFFFF */
-    --secondary-hover: 202 68% 34%; /* #1B6F92 */
+    --secondary-hover: 199 69% 40%; /* Lighter version */
 
-    --muted: 240 2% 23%; /* #3A3A3C */
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 226 10% 19%; /* #2C2F36 */
+    --muted-foreground: 220 9% 64%; /* #9CA3AF */
 
-    /* Accent - Cian vivo */
-    --accent: 197 100% 47%; /* #00AEEF */
-    --accent-foreground: 0 0% 100%; /* #FFFFFF */
+    /* Accent - Azul plasma brillante */
+    --accent: 191 100% 50%; /* #00D2FF */
+    --accent-foreground: 210 33% 10%; /* Dark for contrast */
 
-    /* Destructive - Rojo oscuro */
-    --destructive: 0 59% 41%; /* #A52A2A */
+    /* Destructive - Rojo rubí intenso */
+    --destructive: 355 70% 52%; /* #D93240 */
     --destructive-foreground: 0 0% 100%;
-    --destructive-hover: 355 70% 52%; /* #D93240 */
+    --destructive-hover: 355 70% 58%; /* Lighter version */
 
-    --border: 240 2% 23%; /* #3A3A3C */
-    --input: 240 2% 23%; /* #3A3A3C */
-    --ring: 197 68% 34%; /* #1B6F92 */
+    --border: 214 13% 15%; /* #21262C */
+    --input: 214 13% 15%; /* #21262C */
+    --ring: 214 13% 15%; /* #21262C */
     
     --radius: 0.5rem;
 
@@ -55,52 +55,52 @@
   }
 
   .dark {
-    --background: 220 4% 12%; /* #1D1F21 */
+    --background: 210 33% 10%; /* #101820 */
     --foreground: 0 0% 100%; /* #FFFFFF */
 
-    --card: 240 2% 23%; /* #3A3A3C */
+    --card: 226 10% 19%; /* #2C2F36 */
     --card-foreground: 0 0% 100%; /* #FFFFFF */
-    --card-highlight: 220 7% 19%; /* #2C2F36 */
+    --card-highlight: 226 10% 22%;
 
-    --popover: 220 4% 12%; /* #1D1F21 */
+    --popover: 210 33% 10%; /* #101820 */
     --popover-foreground: 0 0% 100%; /* #FFFFFF */
 
-    /* Primary - Cian vivo */
-    --primary: 197 100% 47%; /* #00AEEF */
-    --primary-foreground: 0 0% 100%; /* #FFFFFF */
-    --primary-hover: 195 100% 50%; /* #00D2FF */
+    /* Primary - Azul plasma brillante */
+    --primary: 191 100% 50%; /* #00D2FF */
+    --primary-foreground: 210 33% 10%;
+    --primary-hover: 191 100% 55%;
 
-    /* Secondary - Azul intenso */
-    --secondary: 203 65% 40%; /* #2376A9 */
+    /* Secondary - Azul petróleo metálico */
+    --secondary: 199 69% 34%; /* #1B6F92 */
     --secondary-foreground: 0 0% 100%; /* #FFFFFF */
-    --secondary-hover: 202 68% 34%; /* #1B6F92 */
+    --secondary-hover: 199 69% 40%;
 
-    --muted: 240 2% 23%; /* #3A3A3C */
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 226 10% 19%; /* #2C2F36 */
+    --muted-foreground: 220 9% 64%; /* #9CA3AF */
     
-    /* Accent - Cian vivo */
-    --accent: 197 100% 47%; /* #00AEEF */
-    --accent-foreground: 0 0% 100%; /* #FFFFFF */
+    /* Accent - Rojo rubí intenso */
+    --accent: 355 70% 52%; /* #D93240 */
+    --accent-foreground: 0 0% 100%;
 
-    /* Destructive - Rojo oscuro */
-    --destructive: 0 59% 41%; /* #A52A2A */
+    /* Destructive - Rojo rubí intenso */
+    --destructive: 355 70% 52%; /* #D93240 */
     --destructive-foreground: 0 0% 100%;
-    --destructive-hover: 355 70% 52%; /* #D93240 */
+    --destructive-hover: 355 70% 58%;
 
-    --border: 240 2% 23%; /* #3A3A3C */
-    --input: 240 2% 23%; /* #3A3A3C */
-    --ring: 197 68% 34%; /* #1B6F92 */
+    --border: 214 13% 15%; /* #21262C */
+    --input: 214 13% 15%; /* #21262C */
+    --ring: 199 69% 34%; /* #1B6F92 */
     
     /* New custom color for an epic, parchment-like card header */
     --info-card-header: 35 33% 85%;
     --info-card-header-foreground: 35 25% 20%;
 
     /* Chart Colors */
-    --chart-1: 203 65% 40%;
-    --chart-2: 150 60% 45%;
+    --chart-1: 191 100% 50%;
+    --chart-2: 199 69% 34%;
     --chart-3: 45 100% 50%;
     --chart-4: 25 95% 55%;
-    --chart-5: 0 70% 60%;
+    --chart-5: 355 70% 52%;
   }
 }
 
@@ -130,11 +130,11 @@
   @keyframes pulse-glow {
     0%, 100% {
       transform: scale(1);
-      filter: drop-shadow(0 0 4px hsl(var(--accent) / 0.6));
+      filter: drop-shadow(0 0 4px hsl(var(--primary) / 0.6));
     }
     50% {
       transform: scale(1.05);
-      filter: drop-shadow(0 0 8px hsl(var(--accent) / 0.8));
+      filter: drop-shadow(0 0 8px hsl(var(--primary) / 0.8));
     }
   }
   
