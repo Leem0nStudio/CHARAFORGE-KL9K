@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +41,7 @@ import type { DataPack } from "@/types/datapack";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { cn } from "@/lib/utils";
+import { TagAssistantModal } from "./tag-assistant-modal";
 
 const generationFormSchema = z.object({
   description: z.string().min(20, {
@@ -76,6 +77,7 @@ export function CharacterGenerator() {
   const [bioError, setBioError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [isPackModalOpen, setIsPackModalOpen] = useState(false);
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
   const [isLoadingPacks, setIsLoadingPacks] = useState(false);
   const [activePackName, setActivePackName] = useState<string | null>(null);
@@ -275,6 +277,14 @@ export function CharacterGenerator() {
       installedPacks={installedPacks}
       isLoading={isLoadingPacks}
     />
+    <TagAssistantModal
+        isOpen={isTagModalOpen}
+        onClose={() => setIsTagModalOpen(false)}
+        onAppendTags={(tags) => {
+            const currentDesc = generationForm.getValues('description');
+            generationForm.setValue('description', `${currentDesc}, ${tags.join(', ')}`.trim());
+        }}
+    />
     <div className="grid gap-8 lg:grid-cols-5">
       <div className="lg:col-span-2">
         <Card className="sticky top-20 shadow-lg">
@@ -292,7 +302,12 @@ export function CharacterGenerator() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Character Description</FormLabel>
+                      <div className="flex justify-between items-center">
+                        <FormLabel>Character Description</FormLabel>
+                        <Button type="button" variant="outline" size="sm" onClick={() => setIsTagModalOpen(true)}>
+                            <Tags className="mr-2 h-3 w-3"/> Tag Assistant
+                        </Button>
+                      </div>
                       <FormControl>
                         <Textarea
                           placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder. They are haunted by a past betrayal..."
