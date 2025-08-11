@@ -106,6 +106,13 @@ export function CharacterGenerator() {
     },
   });
 
+  const saveForm = useForm<z.infer<typeof saveFormSchema>>({
+    resolver: zodResolver(saveFormSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
+
   const handlePromptGenerated = useCallback((prompt: string, packName: string, tags: string[], packId: string) => {
     generationForm.setValue('description', prompt, { shouldValidate: true });
     generationForm.setValue('tags', tags.join(','));
