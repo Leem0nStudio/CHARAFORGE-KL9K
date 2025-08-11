@@ -1,4 +1,3 @@
-
 export interface Exclusion {
     slotId: string;
     optionValues: string[];
