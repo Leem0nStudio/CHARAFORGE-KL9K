@@ -90,7 +90,7 @@ export function CharacterGenerator() {
   const { authUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const dataPackId = searchParams.get('packId');
+  const dataPackIdFromUrl = searchParams.get('packId');
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
     resolver: zodResolver(generationFormSchema),
@@ -110,17 +110,17 @@ export function CharacterGenerator() {
     },
   });
 
-  const handlePromptGenerated = useCallback((prompt: string, packName: string, tags: string[]) => {
+  const handlePromptGenerated = useCallback((prompt: string, packName: string, tags: string[], packId: string) => {
     generationForm.setValue('description', prompt, { shouldValidate: true });
-    generationForm.setValue('tags', tags.join(', '));
+    generationForm.setValue('tags', tags.join(','));
     setActivePackName(packName);
     
     const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('packId', dataPackId || '');
+    currentUrl.searchParams.set('packId', packId);
     currentUrl.searchParams.set('prompt', encodeURIComponent(prompt));
     router.replace(currentUrl.toString(), { scroll: false });
     setIsPackModalOpen(false);
-  }, [generationForm, dataPackId, router]);
+  }, [generationForm, router]);
   
   // Effect to read prompt from URL and set it in the form
   useEffect(() => {
@@ -133,11 +133,11 @@ export function CharacterGenerator() {
   // Effect to load installed packs for the modal and find the active pack name
   useEffect(() => {
     async function loadPacksAndSetActive() {
-        if (dataPackId) {
+        if (dataPackIdFromUrl) {
             try {
                 const packs = await getInstalledDataPacks();
                 setInstalledPacks(packs);
-                const activePack = packs.find(p => p.id === dataPackId);
+                const activePack = packs.find(p => p.id === dataPackIdFromUrl);
                 if (activePack) {
                     setActivePackName(activePack.name);
                 }
@@ -147,7 +147,7 @@ export function CharacterGenerator() {
         }
     }
     loadPacksAndSetActive();
-  }, [dataPackId]);
+  }, [dataPackIdFromUrl]);
 
   const handleOpenPackModal = async () => {
     setIsLoadingPacks(true);
@@ -166,10 +166,17 @@ export function CharacterGenerator() {
 
   const handleAppendTags = (tags: string[]) => {
     const currentDesc = generationForm.getValues('description');
-    const currentTags = generationForm.getValues('tags');
+    const currentTags = generationForm.getValues('tags') || '';
     
-    generationForm.setValue('description', `${currentDesc}, ${tags.join(', ')}`.trim());
-    generationForm.setValue('tags', `${currentTags ? currentTags + ',' : ''}${tags.join(',')}`);
+    // Avoid adding duplicate tags to the description
+    const newTags = tags.filter(t => !currentDesc.includes(t));
+    if (newTags.length > 0) {
+        generationForm.setValue('description', `${currentDesc}, ${newTags.join(', ')}`.trim());
+    }
+    
+    // Add all tags to the hidden tags field for metadata
+    const allTags = new Set([...currentTags.split(',').filter(Boolean), ...tags]);
+    generationForm.setValue('tags', Array.from(allTags).join(','));
   };
 
   async function onGenerateBio(data: z.infer<typeof generationFormSchema>) {
@@ -198,7 +205,7 @@ export function CharacterGenerator() {
         imageUrl: null,
         description: data.description,
         tags: data.tags || '',
-        dataPackId: dataPackId,
+        dataPackId: dataPackIdFromUrl,
         aspectRatio: data.aspectRatio,
         engine: data.engine,
       });
@@ -335,7 +342,7 @@ export function CharacterGenerator() {
                       {activePackName && (
                           <Badge variant="secondary" className="flex items-center gap-1.5 mt-2 w-fit">
                             <Package className="h-3 w-3" />
-                            {activePackName}
+                            Using: {activePackName}
                           </Badge>
                         )}
                       <FormMessage />

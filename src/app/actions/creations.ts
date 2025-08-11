@@ -218,8 +218,10 @@ async function fetchDataPacksInBatches(packIds: string[]): Promise<Map<string, {
 
     for (let i = 0; i < packIds.length; i += 10) {
         const batch = packIds.slice(i, i + 10);
-        const snapshot = await packRef.where(FieldPath.documentId(), 'in', batch).get();
-        snapshot.forEach(doc => packs.set(doc.id, { name: doc.data().name }));
+        if (batch.length > 0) {
+            const snapshot = await packRef.where(FieldPath.documentId(), 'in', batch).get();
+            snapshot.forEach(doc => packs.set(doc.id, { name: doc.data().name }));
+        }
     }
     return packs;
 }
