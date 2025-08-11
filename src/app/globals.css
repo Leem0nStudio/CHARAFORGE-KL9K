@@ -4,35 +4,37 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 220 4% 12%; /* #1D1F21 */
+    --foreground: 0 0% 100%; /* #FFFFFF */
 
-    --card: 222.2 84% 6.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 240 2% 23%; /* #3A3A3C */
+    --card-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 4% 12%; /* #1D1F21 */
+    --popover-foreground: 0 0% 100%; /* #FFFFFF */
 
-    /* Corporate Blue */
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Cian vivo */
+    --primary: 197 100% 47%; /* #00AEEF */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary - Azul intenso */
+    --secondary: 203 65% 40%; /* #2376A9 */
+    --secondary-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 240 2% 23%; /* #3A3A3C */
     --muted-foreground: 215 20.2% 65.1%;
 
-    /* Vibrant Amber */
-    --accent: 38.3 91.6% 50.4%;
-    --accent-foreground: 222.2 84% 4.9%;
+    /* Accent - Cian vivo */
+    --accent: 197 100% 47%; /* #00AEEF */
+    --accent-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive - Rojo oscuro */
+    --destructive: 0 59% 41%; /* #A52A2A */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 221.2 83.2% 53.3%;
+    --border: 240 2% 23%; /* #3A3A3C */
+    --input: 240 2% 23%; /* #3A3A3C */
+    --ring: 197 68% 34%; /* #1B6F92 */
     
     --radius: 0.5rem;
 
@@ -42,35 +44,37 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%; /* #080D17 -> Equivalent to your #111827 */
-    --foreground: 210 40% 98%;
+    --background: 220 4% 12%; /* #1D1F21 */
+    --foreground: 0 0% 100%; /* #FFFFFF */
 
-    --card: 222.2 84% 6.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 240 2% 23%; /* #3A3A3C */
+    --card-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 4% 12%; /* #1D1F21 */
+    --popover-foreground: 0 0% 100%; /* #FFFFFF */
 
-    /* Corporate Blue */
-    --primary: 221.2 83.2% 53.3%; /* #2563EB */
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Cian vivo */
+    --primary: 197 100% 47%; /* #00AEEF */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary - Azul intenso */
+    --secondary: 203 65% 40%; /* #2376A9 */
+    --secondary-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 240 2% 23%; /* #3A3A3C */
     --muted-foreground: 215 20.2% 65.1%;
     
-    /* Vibrant Amber */
-    --accent: 38.3 91.6% 50.4%; /* #F59E0B */
-    --accent-foreground: 222.2 84% 4.9%;
+    /* Accent - Cian vivo */
+    --accent: 197 100% 47%; /* #00AEEF */
+    --accent-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive - Rojo oscuro */
+    --destructive: 0 59% 41%; /* #A52A2A */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 221.2 83.2% 53.3%;
+    --border: 240 2% 23%; /* #3A3A3C */
+    --input: 240 2% 23%; /* #3A3A3C */
+    --ring: 197 68% 34%; /* #1B6F92 */
     
     /* New custom color for an epic, parchment-like card header */
     --info-card-header: 35 33% 85%;
