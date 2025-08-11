@@ -4,10 +4,10 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,13 +38,15 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { DataPackSelectorModal } from "./datapack-selector-modal";
 import { Badge } from "./ui/badge";
 import type { DataPack } from "@/types/datapack";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { cn } from "@/lib/utils";
 import { TagAssistantModal } from "./tag-assistant-modal";
 import { Slider } from "./ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
+import { ScrollArea } from "./ui/scroll-area";
 
-// Form schemas remain largely the same, but default values might change
+
 const generationFormSchema = z.object({
   description: z.string().min(20, {
     message: "Please enter a more detailed description (at least 20 characters).",
@@ -55,7 +57,7 @@ const generationFormSchema = z.object({
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
   imageEngine: z.enum(['huggingface', 'gemini']).default('huggingface'),
-  hfModelId: z.string().optional(), // Will be populated from the model management system
+  hfModelId: z.string().optional(),
   lora: z.string().optional(),
   loraWeight: z.number().min(0).max(1).optional(),
   triggerWords: z.string().optional(),
@@ -77,7 +79,7 @@ type CharacterData = {
   dataPackId?: string | null;
   aspectRatio: '1:1' | '16:9' | '9:16';
   imageEngine: 'huggingface' | 'gemini';
-  hfModelId?: string; // New field
+  hfModelId?: string;
   lora?: string;
   loraWeight?: number;
   triggerWords?: string;
@@ -110,7 +112,7 @@ export function CharacterGenerator() {
       targetLanguage: 'English',
       aspectRatio: '1:1',
       imageEngine: 'huggingface',
-      hfModelId: "stabilityai/stable-diffusion-xl-base-1.0", // Default model
+      hfModelId: "stabilityai/stable-diffusion-xl-base-1.0",
       lora: "",
       loraWeight: 0.75,
       triggerWords: "",
@@ -333,272 +335,148 @@ export function CharacterGenerator() {
       <div className="lg:col-span-2">
         <Card className="sticky top-20 shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline text-3xl">1. Character Details</CardTitle>
+            <CardTitle className="font-headline text-3xl">1. The Forge</CardTitle>
             <CardDescription>
-              Provide a description, or select a DataPack to build one.
+              Provide a description or use a DataPack, then adjust the AI settings.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...generationForm}>
               <form onSubmit={generationForm.handleSubmit(onGenerateBio)} className="space-y-6">
-                <FormField
-                  control={generationForm.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex justify-between items-center">
-                        <FormLabel>Character Description</FormLabel>
-                        <Button type="button" variant="outline" size="sm" onClick={() => setIsTagModalOpen(true)}>
-                            <Tags className="mr-2 h-3 w-3"/> Tag Assistant
-                        </Button>
-                      </div>
-                      <FormControl>
-                        <Textarea
-                          placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder. They are haunted by a past betrayal..."
-                          className="min-h-[150px] resize-none"
-                          {...field}
-                          disabled={!canInteract}
+                
+                <Tabs defaultValue="prompt">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="prompt">Prompt</TabsTrigger>
+                        <TabsTrigger value="settings">AI Settings</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="prompt" className="pt-4">
+                        <FormField
+                          control={generationForm.control}
+                          name="description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex justify-between items-center">
+                                <FormLabel>Character Description</FormLabel>
+                                <Button type="button" variant="outline" size="sm" onClick={() => setIsTagModalOpen(true)}>
+                                    <Tags className="mr-2 h-3 w-3"/> Tag Assistant
+                                </Button>
+                              </div>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder..."
+                                  className="min-h-[250px] resize-none"
+                                  {...field}
+                                  disabled={!canInteract}
+                                />
+                              </FormControl>
+                              {activePackName && (
+                                  <Badge variant="secondary" className="flex items-center gap-1.5 mt-2 w-fit">
+                                    <Package className="h-3 w-3" />
+                                    Using: {activePackName}
+                                  </Badge>
+                                )}
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
-                      </FormControl>
-                      {activePackName && (
-                          <Badge variant="secondary" className="flex items-center gap-1.5 mt-2 w-fit">
-                            <Package className="h-3 w-3" />
-                            Using: {activePackName}
-                          </Badge>
-                        )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={generationForm.control}
-                  name="tags"
-                  render={({ field }) => (
-                    <FormItem className="hidden">
-                      <FormControl>
-                        <Input type="hidden" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                 <FormField
-                  control={generationForm.control}
-                  name="aspectRatio"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Aspect Ratio</FormLabel>
-                       <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="grid grid-cols-3 gap-2"
-                            disabled={!canInteract}
-                          >
-                            <FormItem>
-                              <FormControl>
-                                <RadioGroupItem value="1:1" id="square" className="sr-only" />
-                              </FormControl>
-                              <FormLabel 
-                                htmlFor="square"
-                                className={cn(
-                                  "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center",
-                                  field.value === '1:1' && "border-primary"
-                                )}
-                              >
-                                <Square className="mb-2 h-5 w-5" />
-                                <span className="text-xs">Square</span>
-                              </FormLabel>
+                    </TabsContent>
+                    <TabsContent value="settings" className="space-y-6 pt-4">
+                       <FormField
+                          control={generationForm.control}
+                          name="aspectRatio"
+                          render={({ field }) => (
+                            <FormItem className="space-y-3">
+                              <FormLabel>Aspect Ratio</FormLabel>
+                               <FormControl>
+                                  <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="grid grid-cols-3 gap-2"
+                                    disabled={!canInteract}
+                                  >
+                                    <FormItem><FormControl><RadioGroupItem value="1:1" id="square" className="sr-only" /></FormControl><FormLabel htmlFor="square" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === '1:1' && "border-primary")}><Square className="mb-2 h-5 w-5" /><span className="text-xs">Square</span></FormLabel></FormItem>
+                                     <FormItem><FormControl><RadioGroupItem value="16:9" id="landscape" className="sr-only" /></FormControl><FormLabel htmlFor="landscape" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === '16:9' && "border-primary")}><RectangleHorizontal className="mb-2 h-5 w-5" /><span className="text-xs">Landscape</span></FormLabel></FormItem>
+                                     <FormItem><FormControl><RadioGroupItem value="9:16" id="portrait" className="sr-only" /></FormControl><FormLabel htmlFor="portrait" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === '9:16' && "border-primary")}><RectangleVertical className="mb-2 h-5 w-5" /><span className="text-xs">Portrait</span></FormLabel></FormItem>
+                                  </RadioGroup>
+                               </FormControl>
+                              <FormMessage />
                             </FormItem>
-                             <FormItem>
-                              <FormControl>
-                                <RadioGroupItem value="16:9" id="landscape" className="sr-only" />
-                              </FormControl>
-                              <FormLabel 
-                                htmlFor="landscape"
-                                className={cn(
-                                  "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center",
-                                  field.value === '16:9' && "border-primary"
-                                )}
-                              >
-                                <RectangleHorizontal className="mb-2 h-5 w-5" />
-                                <span className="text-xs">Landscape</span>
-                              </FormLabel>
-                            </FormItem>
-                             <FormItem>
-                              <FormControl>
-                                <RadioGroupItem value="9:16" id="portrait" className="sr-only" />
-                              </FormControl>
-                              <FormLabel 
-                                htmlFor="portrait"
-                                className={cn(
-                                  "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center",
-                                  field.value === '9:16' && "border-primary"
-                                )}
-                              >
-                                <RectangleVertical className="mb-2 h-5 w-5" />
-                                <span className="text-xs">Portrait</span>
-                              </FormLabel>
-                            </FormItem>
-                          </RadioGroup>
-                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={generationForm.control}
-                  name="imageEngine"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>AI Engine</FormLabel>
-                       <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="grid grid-cols-1 gap-2"
-                            disabled={!canInteract}
-                          >
-                            <FormItem>
-                              <FormControl>
-                                <RadioGroupItem value="huggingface" id="huggingface" className="sr-only" />
-                              </FormControl>
-                              <FormLabel 
-                                htmlFor="huggingface"
-                                className={cn(
-                                  "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center h-full",
-                                  field.value === 'huggingface' && "border-primary"
-                                )}
-                              >
-                                <span className="text-xs font-bold">Stable Diffusion</span>
-                                <span className="text-xs text-muted-foreground">via Hugging Face API</span>
-                              </FormLabel>
-                            </FormItem>
-                             <FormItem>
-                              <FormControl>
-                                <RadioGroupItem value="gemini" id="gemini" className="sr-only" />
-                              </FormControl>
-                              <FormLabel 
-                                htmlFor="gemini"
-                                className={cn(
-                                  "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center h-full",
-                                  field.value === 'gemini' && "border-primary"
-                                )}
-                              >
-                               <span className="text-xs font-bold">Gemini Image</span>
-                                <span className="text-xs text-muted-foreground">Google Model</span>
-                              </FormLabel>
-                            </FormItem>
-                          </RadioGroup>
-                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                </div>
-                {watchImageEngine === 'huggingface' && (
-                  <div className="space-y-4 rounded-md border p-4 bg-muted/20">
-                    <Alert>
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Hugging Face Engine</AlertTitle>
-                        <AlertDescription>
-                            This engine is now powered by the robust Inference API. You can dynamically select models and LoRAs. (UI coming soon!)
-                        </AlertDescription>
-                    </Alert>
+                          )}
+                        />
 
-                    <FormField
-                      control={generationForm.control}
-                      name="lora"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>LoRA (Optional)</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="username/lora-name"
-                              {...field}
-                              disabled={!canInteract}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                     <FormField
-                      control={generationForm.control}
-                      name="triggerWords"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Trigger Words</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="e.g., best quality, masterpiece"
-                              {...field}
-                              disabled={!canInteract}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={generationForm.control}
-                      name="loraWeight"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex justify-between">
-                            <FormLabel>LoRA Weight</FormLabel>
-                            <span className="text-sm font-medium">{field.value?.toFixed(2)}</span>
-                          </div>
-                          <FormControl>
-                             <Slider
-                                defaultValue={[field.value || 0.75]}
-                                max={1}
-                                step={0.05}
-                                onValueChange={(value) => field.onChange(value[0])}
-                                disabled={!canInteract}
-                             />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-                 <FormField
-                  control={generationForm.control}
-                  name="targetLanguage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Output Language</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!canInteract}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a language" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="English">English</SelectItem>
-                          <SelectItem value="Spanish">Spanish</SelectItem>
-                          <SelectItem value="French">French</SelectItem>
-                          <SelectItem value="German">German</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex flex-col sm:flex-row gap-2">
+                        <Accordion type="single" collapsible defaultValue="engine">
+                            <AccordionItem value="engine">
+                                <AccordionTrigger>AI Engine</AccordionTrigger>
+                                <AccordionContent>
+                                     <FormField
+                                      control={generationForm.control}
+                                      name="imageEngine"
+                                      render={({ field }) => (
+                                        <FormItem className="space-y-3">
+                                           <FormControl>
+                                              <RadioGroup
+                                                onValueChange={field.onChange}
+                                                defaultValue={field.value}
+                                                className="grid grid-cols-2 gap-4"
+                                                disabled={!canInteract}
+                                              >
+                                                <FormItem>
+                                                  <FormControl><RadioGroupItem value="huggingface" id="huggingface" className="sr-only" /></FormControl>
+                                                  <FormLabel htmlFor="huggingface" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-full", field.value === 'huggingface' && "border-primary")}>
+                                                    <span className="font-bold">Stable Diffusion</span>
+                                                    <span className="text-xs text-muted-foreground">via Hugging Face</span>
+                                                  </FormLabel>
+                                                </FormItem>
+                                                 <FormItem>
+                                                  <FormControl><RadioGroupItem value="gemini" id="gemini" className="sr-only" /></FormControl>
+                                                  <FormLabel htmlFor="gemini" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-full", field.value === 'gemini' && "border-primary")}>
+                                                   <span className="font-bold">Gemini Image</span>
+                                                    <span className="text-xs text-muted-foreground">Google Model</span>
+                                                  </FormLabel>
+                                                </FormItem>
+                                              </RadioGroup>
+                                           </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    {watchImageEngine === 'huggingface' && (
+                                        <div className="space-y-4 mt-4 rounded-md border p-4 bg-muted/20">
+                                            <FormField
+                                              control={generationForm.control}
+                                              name="lora"
+                                              render={({ field }) => (
+                                                <FormItem><FormLabel>LoRA (Optional)</FormLabel><FormControl><Input placeholder="username/lora-name" {...field} disabled={!canInteract}/></FormControl><FormMessage /></FormItem>
+                                              )}
+                                            />
+                                             <FormField
+                                              control={generationForm.control}
+                                              name="triggerWords"
+                                              render={({ field }) => (
+                                                <FormItem><FormLabel>Trigger Words</FormLabel><FormControl><Input placeholder="e.g., best quality" {...field} disabled={!canInteract}/></FormControl><FormMessage /></FormItem>
+                                              )}
+                                            />
+                                            <Controller
+                                                control={generationForm.control}
+                                                name="loraWeight"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <div className="flex justify-between"><FormLabel>LoRA Weight</FormLabel><span className="text-sm font-medium">{field.value?.toFixed(2)}</span></div>
+                                                        <FormControl><Slider defaultValue={[field.value || 0.75]} max={1} step={0.05} onValueChange={(value) => field.onChange(value[0])} disabled={!canInteract}/></FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                          </div>
+                                    )}
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    </TabsContent>
+                </Tabs>
+                 
+                <div className="flex flex-col sm:flex-row gap-2 pt-4">
                     <Button type="submit" size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90 transition-transform hover:scale-105" disabled={!canInteract}>
-                      {isGeneratingBio ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Forging...
-                        </>
-                      ) : (
-                        <>
-                          <Wand2 className="mr-2 h-4 w-4" />
-                          Forge Bio
-                        </>
-                      )}
+                      {isGeneratingBio ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Bio</>)}
                     </Button>
                     <Button type="button" size="lg" className="w-full" variant="secondary" onClick={handleOpenPackModal} disabled={!canInteract}>
                       <Package className="mr-2" />
@@ -696,12 +574,15 @@ export function CharacterGenerator() {
                   </div>
 
                   <div className="md:col-span-3">
-                      <h3 className="font-headline text-2xl flex items-center mb-4"><FileText className="w-5 h-5 mr-2 text-primary" /> Biography</h3>
-                      <div className="space-y-4 text-muted-foreground mb-6 text-sm max-h-80 overflow-y-auto pr-2">
-                        {characterData.biography.split('\n').filter(p => p.trim() !== '').map((paragraph, index) => (
-                          <p key={index}>{paragraph}</p>
-                        ))}
-                      </div>
+                      <h3 className="font-headline text-2xl flex items-center mb-2"><FileText className="w-5 h-5 mr-2 text-primary" /> Biography</h3>
+                      <ScrollArea className="h-80 pr-4 mb-6">
+                        <div className="space-y-4 text-muted-foreground text-sm">
+                            {characterData.biography.split('\n').filter(p => p.trim() !== '').map((paragraph, index) => (
+                            <p key={index}>{paragraph}</p>
+                            ))}
+                        </div>
+                      </ScrollArea>
+
                       <Form {...saveForm}>
                         <form onSubmit={saveForm.handleSubmit(onSave)} className="space-y-4">
                            <FormField
@@ -709,7 +590,7 @@ export function CharacterGenerator() {
                               name="name"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>3. Character Name</FormLabel>
+                                  <FormLabel className="font-headline text-2xl flex items-center"><Save className="w-5 h-5 mr-2 text-primary"/> Character Name</FormLabel>
                                   <FormControl>
                                     <Input placeholder="e.g., Captain Kaelen" {...field} disabled={!canInteract || !isImageReadyForSave} />
                                   </FormControl>
@@ -742,3 +623,5 @@ export function CharacterGenerator() {
     </>
   );
 }
+
+    

@@ -16,10 +16,10 @@
     --popover: 210 60% 11%; /* #0C1C2C */
     --popover-foreground: 210 14% 96%; /* #F4F6F7 */
 
-    /* Primario (Acciones principales, Peligro) - Rojo */
-    --primary: 4 67% 42%; /* #C0392B */
+    /* Primario (Acciones principales) - Azul Acento */
+    --primary: 206 65% 47%; /* #2E86C1 */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 4 67% 48%;
+    --primary-hover: 206 65% 52%; /* Slightly lighter blue */
 
     /* Secundario (Elementos de UI) - Azul Medio */
     --secondary: 206 62% 27%; /* #1B4F72 */
@@ -30,11 +30,11 @@
     --muted: 206 6% 57%; /* #8A9494 - derived for theme */
     --muted-foreground: 206 6% 57%; /* #7B8A8B */
     
-    /* Acento (Hover states, etc) - Azul Claro */
-    --accent: 206 65% 47%; /* #2E86C1 */
+    /* Acento (Hover states, etc) - Rojo (ahora usado para énfasis) */
+    --accent: 4 67% 42%; /* #C0392B */
     --accent-foreground: 0 0% 100%;
 
-    /* Destructive (igual que primario para consistencia) */
+    /* Destructive (Peligro) - Rojo */
     --destructive: 4 67% 42%; /* #C0392B */
     --destructive-foreground: 0 0% 100%;
     --destructive-hover: 4 67% 48%;
@@ -58,9 +58,9 @@
     --popover: 210 60% 11%; /* #0C1C2C */
     --popover-foreground: 210 14% 96%; /* #F4F6F7 */
 
-    --primary: 4 67% 42%; /* #C0392B */
+    --primary: 206 65% 47%; /* #2E86C1 */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 4 67% 48%;
+    --primary-hover: 206 65% 52%;
 
     --secondary: 206 62% 27%; /* #1B4F72 */
     --secondary-foreground: 0 0% 100%;
@@ -69,7 +69,7 @@
     --muted: 206 6% 57%;
     --muted-foreground: 206 6% 57%;
     
-    --accent: 206 65% 47%; /* #2E86C1 */
+    --accent: 4 67% 42%; /* #C0392B */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 4 67% 42%;
@@ -95,3 +95,5 @@
     font-family: 'Bebas Neue', sans-serif;
   }
 }
+
+    
