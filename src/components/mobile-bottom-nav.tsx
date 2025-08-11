@@ -3,26 +3,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Package, Swords, Users, UserCircle, ScrollText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
+import { mainNavItems } from '@/lib/app-config';
 
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { authUser } = useAuth();
 
-  const navItems = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/datapacks', label: 'DataPacks', icon: Package },
-    { href: '/character-generator', label: 'Create', icon: Swords, isPrimary: true },
-    { href: '/story-forge', label: 'Story Forge', icon: ScrollText, requiresAuth: true },
-    { href: '/profile', label: 'Profile', icon: UserCircle, requiresAuth: true },
-  ];
-
   return (
     <div className="sm:hidden fixed bottom-0 left-0 z-50 w-full h-16 bg-background border-t border-border">
       <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
-        {navItems.map((item) => {
+        {mainNavItems.map((item) => {
           const isActive = (item.href === '/' && pathname === '/') || (item.href !== '/' && pathname.startsWith(item.href));
           
           if (item.requiresAuth && !authUser) {

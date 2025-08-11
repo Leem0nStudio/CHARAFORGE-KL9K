@@ -2,11 +2,8 @@
 import Link from "next/link";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import {
-  Package,
   Home,
-  Settings,
   PanelLeft,
-  BarChart,
 } from "lucide-react";
 import {
   Sheet,
@@ -18,21 +15,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { AnvilIcon } from "@/hooks/use-auth";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { adminNavItems } from "@/lib/app-config";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
-    { href: '/admin', label: 'Dashboard', icon: BarChart },
-    { href: '/admin/datapacks', label: 'DataPacks', icon: Package },
-    { href: '/admin/settings', label: 'Settings', icon: Settings },
-];
-
 export default function AdminLayout({ children }: AdminLayoutProps) {
     return (
         <div className="flex min-h-screen w-full bg-muted/40">
-            <AdminSidebar navItems={navItems} />
+            <AdminSidebar navItems={adminNavItems} />
             <div className="flex flex-col w-full">
                 <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
                      <Sheet>
@@ -54,7 +46,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                     <AnvilIcon className="h-6 w-6 transition-all group-hover:scale-110" />
                                     <span className="sr-only">CharaForge</span>
                                 </Link>
-                                {navItems.map(item => (
+                                {adminNavItems.map(item => (
                                     <Link
                                         key={item.label}
                                         href={item.href}

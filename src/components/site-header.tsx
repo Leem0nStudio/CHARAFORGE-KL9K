@@ -2,10 +2,12 @@
 'use server';
 
 import Link from "next/link";
-import { Swords, Package, ScrollText } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LoginButton } from "./login-button";
 import { AppLogo } from "./app-logo";
+import { mainNavItems } from "@/lib/app-config";
+import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
 
 
 export async function SiteHeader() {
@@ -20,29 +22,26 @@ export async function SiteHeader() {
           </div>
         </Link>
         <div className="hidden sm:flex items-center gap-2">
-             <Link
-              href="/datapacks"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 font-button tracking-wider h-10 px-4 py-2 hover:bg-accent hover:text-accent-foreground"
-            >
-              <Package className="mr-2" />
-              DataPacks
-            </Link>
-             <Link
-              href="/story-forge"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 font-button tracking-wider h-10 px-4 py-2 hover:bg-accent hover:text-accent-foreground"
-            >
-              <ScrollText className="mr-2" />
-              Story Forge
-            </Link>
+             {mainNavItems.filter(item => !item.isPrimary && item.href !== '/').map(item => (
+                 <Link
+                    key={item.href}
+                    href={item.href}
+                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 font-button tracking-wider h-10 px-4 py-2 hover:bg-accent hover:text-accent-foreground"
+                 >
+                    <item.icon className="mr-2" />
+                    {item.label}
+                 </Link>
+             ))}
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-           <Link
-              href="/character-generator"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 font-button tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 hidden sm:flex"
-            >
-              <Swords className="mr-2" />
-              Create
-            </Link>
+           {mainNavItems.filter(item => item.isPrimary).map(item => (
+                <Button key={item.href} asChild className="hidden sm:flex">
+                     <Link href={item.href}>
+                        <item.icon className="mr-2" />
+                        {item.label}
+                    </Link>
+                </Button>
+           ))}
           <LoginButton />
           <ThemeToggle />
         </div>
@@ -50,5 +49,3 @@ export async function SiteHeader() {
     </header>
   );
 }
-
-    
