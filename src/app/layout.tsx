@@ -7,7 +7,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
-import { Exo_2, Bebas_Neue, Anton } from 'next/font/google';
+import { Exo_2, Bebas_Neue } from 'next/font/google';
 
 const exo2 = Exo_2({
   subsets: ['latin'],
@@ -19,12 +19,6 @@ const bebasNeue = Bebas_Neue({
   subsets: ['latin'],
   weight: ['400'],
   variable: '--font-headline',
-});
-
-const anton = Anton({
-    subsets: ['latin'],
-    weight: ['400'],
-    variable: '--font-button',
 });
 
 export const metadata: Metadata = {
@@ -39,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('min-h-screen bg-background font-body antialiased', exo2.variable, bebasNeue.variable, anton.variable)}>
+      <body className={cn('min-h-screen bg-background font-body antialiased', exo2.variable, bebasNeue.variable)}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
