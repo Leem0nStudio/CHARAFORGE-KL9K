@@ -18,7 +18,7 @@ const requiredServerVars = [
 ];
 
 // This is now an optional variable for the validator.
-const optionalServerVars = ['GEMINI_API_KEY'];
+const optionalServerVars = ['GEMINI_API_KEY', 'HUGGING_FACE_API_KEY'];
 
 let allKeysPresent = true;
 let hasPlaceholderValues = false;
@@ -73,8 +73,8 @@ requiredServerVars.forEach(key => {
 console.log(chalk.yellow('\nChecking Optional AI Variables...'));
 optionalServerVars.forEach(key => {
     const value = process.env[key];
-    if (!value || value === 'TU_API_KEY_AQUI') {
-        console.warn(chalk.yellowBright(`[WARN] Optional AI variable ${key} is not set. AI features will not work until this is configured.`));
+    if (!value || value === 'changeme' || value.startsWith('TU_') || value.startsWith('YOUR_')) {
+        console.warn(chalk.yellowBright(`[WARN] Optional AI variable ${key} is not set. AI features related to this key will not work.`));
     } else {
         console.log(chalk.green(`[OK] ${key} is set.`));
     }

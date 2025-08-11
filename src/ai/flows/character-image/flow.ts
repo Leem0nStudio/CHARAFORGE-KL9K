@@ -3,15 +3,13 @@
 
 /**
  * @fileOverview An AI agent for generating character images based on a description,
- * using a selectable engine (Gradio for Stable Diffusion or Gemini).
+ * using a selectable engine (Hugging Face Inference API for Stable Diffusion or Gemini).
  */
 
 import { ai } from '@/ai/genkit';
-import { Client } from '@gradio/client';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
 
-
-// Helper function to determine the image dimensions based on the desired aspect ratio.
+// Helper function to get image dimensions in pixels.
 function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
   switch (aspectRatio) {
     case '16:9':
@@ -20,10 +18,47 @@ function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
       return { width: 832, height: 1216 };
     case '1:1':
     default:
-      // Using a higher resolution for better quality.
       return { width: 1024, height: 1024 };
   }
 }
+
+/**
+ * Queries the Hugging Face Inference API for a specific model.
+ * This is the new, more robust method for generating images with Stable Diffusion.
+ * @param {object} data The payload to send to the model.
+ * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
+ */
+async function queryHuggingFaceInferenceAPI(data: object): Promise<string> {
+    const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
+    if (!HUGGING_FACE_API_KEY) {
+        throw new Error("Hugging Face API key is not configured on the server.");
+    }
+    
+    // Using a recommended open-source model for high-quality images.
+    const API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
+    
+    const response = await fetch(API_URL, {
+        headers: {
+            "Authorization": `Bearer ${HUGGING_FACE_API_KEY}`,
+            "Content-Type": "application/json"
+        },
+        method: "POST",
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("Hugging Face API Error:", errorBody);
+        throw new Error(`Failed to generate image via Hugging Face API. Status: ${response.status}. Message: ${errorBody}`);
+    }
+
+    const imageBlob = await response.blob();
+    const arrayBuffer = await imageBlob.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    
+    return `data:${imageBlob.type};base64,${base64}`;
+}
+
 
 export async function generateCharacterImage(
   input: GenerateCharacterImageInput
@@ -41,7 +76,6 @@ const generateCharacterImageFlow = ai.defineFlow(
     const { description, aspectRatio, imageEngine, lora } = input;
 
     if (imageEngine === 'gemini') {
-        // This branch uses Google's native image generation model.
         try {
             const { width, height } = getDimensions(aspectRatio);
 
@@ -65,43 +99,25 @@ const generateCharacterImageFlow = ai.defineFlow(
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
     } else { 
-        // This branch connects to a community-hosted Stable Diffusion model on Hugging Face
-        // using the Gradio client library.
+        // This branch now uses the robust Hugging Face Inference API.
         try {
-            const { width, height } = getDimensions(aspectRatio);
-            
-            // Step 1: Connect to a Gradio app that supports LoRAs.
-            // The string "hysts/SD-XL-Lightning-Gradio" is the ID of a powerful Space.
-            const client = await Client.connect("hysts/SD-XL-Lightning-Gradio");
-
-            // Step 2: Call the prediction function of that Gradio app.
-            // We pass the prompt, LoRA, and other parameters to the model.
-            const result = await client.predict("/run", {
-                prompt: description,
-                lora: lora || "None", // Pass the LoRA name or "None"
-                negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
-                seed: Math.floor(Math.random() * 1_000_000_000),
-                width: width,
-                height: height,
-                guidance_scale: 0,
-                num_inference_steps: 4, // SDXL-Lightning is very fast
-                sampler: "DPM++ SDE Karras",
+            const promptWithLora = lora ? `${description}, in the style of ${lora}` : description;
+            const imageUrl = await queryHuggingFaceInferenceAPI({ 
+                inputs: promptWithLora,
+                parameters: {
+                    negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
+                }
             });
-
-            // Step 3: Process the result. The image comes back as a Data URI.
-            const imageUrl = Array.isArray(result.data) ? result.data[0] : null;
-            if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('data:image')) {
-                throw new Error('The Gradio API did not return a valid image data URI. The remote service might be down or the request was rejected.');
+            
+            if (!imageUrl) {
+                 throw new Error('The Hugging Face API did not return a valid image.');
             }
             return { imageUrl };
 
         } catch (error) {
-            console.error("Error in generateCharacterImageFlow (Gradio/Stable Diffusion):", error);
+            console.error("Error in generateCharacterImageFlow (Hugging Face API):", error);
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
-             if (message.includes('Space metadata could not be loaded')) {
-                throw new Error('The Gradio service (Stable Diffusion) is currently unavailable. Please try again later or switch to the Gemini engine.');
-            }
-            throw new Error(`Failed to generate character image via the external API. ${message}`);
+            throw new Error(`Failed to generate character image via the Hugging Face API. ${message}`);
         }
     }
   }
