@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { User, AlertTriangle, ArrowRight, Tag } from 'lucide-react';
+import { User, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -16,7 +16,7 @@ interface DataPackCardProps {
 
 export function DataPackCard({ pack }: DataPackCardProps) {
     return (
-         <Card key={pack.id} className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
+         <Card className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
             <CardHeader className="p-0">
                 <Link href={`/datapacks/${pack.id}`} className="relative aspect-square bg-muted/20 block">
                     <Image
