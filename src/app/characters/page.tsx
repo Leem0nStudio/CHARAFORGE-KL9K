@@ -81,20 +81,21 @@ export default function CharactersPage() {
       <div className="max-w-7xl mx-auto">
           {characterGroups.length > 0 ? (
                 <motion.div 
-                    className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                    className="space-y-8"
                     initial="hidden"
                     animate="visible"
                     variants={{
                         hidden: {},
                         visible: {
                             transition: {
-                                staggerChildren: 0.05,
+                                staggerChildren: 0.1,
                             },
                         },
                     }}
                 >
                     {characterGroups.map(group => {
                         const latestVersion = group.sort((a,b) => b.version - a.version)[0];
+                        const olderVersions = group.filter(c => c.id !== latestVersion.id).sort((a,b) => b.version - a.version);
                         const isBranched = group.some(v => !!v.branchedFromId);
 
                         return (
@@ -104,44 +105,71 @@ export default function CharactersPage() {
                                     hidden: { opacity: 0, y: 20 },
                                     visible: { opacity: 1, y: 0 },
                                 }}
+                                className="group relative"
                             >
-                                <Link href={`/characters/${latestVersion.id}`} className="block group">
-                                    <div className="relative aspect-square w-full rounded-lg overflow-hidden border-2 border-transparent group-hover:border-primary transition-all duration-300 bg-muted/20">
-                                        <Image src={latestVersion.imageUrl} alt={latestVersion.name} fill className="object-contain transition-transform group-hover:scale-105" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                                        <div className="absolute bottom-2 left-2 text-white">
-                                            <p className="font-semibold drop-shadow-md">{latestVersion.name}</p>
+                                <Link href={`/characters/${latestVersion.id}/edit`}>
+                                    <div className="relative grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 rounded-lg overflow-hidden border bg-card/50 p-4 transition-all duration-300 hover:border-primary hover:shadow-xl hover:shadow-primary/10">
+                                        {/* Main Image */}
+                                        <div className="md:col-span-1 lg:col-span-1">
+                                            <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-muted/20">
+                                                <Image src={latestVersion.imageUrl} alt={latestVersion.name} fill className="object-contain transition-transform group-hover:scale-105" />
+                                            </div>
                                         </div>
+
+                                        {/* Details and Versions */}
+                                        <div className="md:col-span-2 lg:col-span-3 flex flex-col justify-center">
+                                            <div className="flex items-center gap-2">
+                                                <h2 className="text-2xl font-bold font-headline">{latestVersion.name}</h2>
+                                                <Badge variant="secondary">{latestVersion.versionName}</Badge>
+                                            </div>
+                                            <p className="text-muted-foreground line-clamp-2 mt-2">{latestVersion.description}</p>
+                                            
+                                            {olderVersions.length > 0 && (
+                                                <div className="mt-4">
+                                                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">Other Versions</h4>
+                                                     <div className="flex items-center gap-2 flex-wrap">
+                                                        {olderVersions.map(v => (
+                                                            <TooltipProvider key={v.id}>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                         <Link href={`/characters/${v.id}/edit`} className="block">
+                                                                            <div className="h-12 w-12 rounded-md border-2 border-muted/50 overflow-hidden relative transition-all hover:border-primary hover:scale-110">
+                                                                                <Image src={v.imageUrl} alt={v.name} fill className="object-cover" />
+                                                                                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                                                                    <p className="text-white font-bold text-xs">{v.versionName}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </Link>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>Edit {v.name} {v.versionName}</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Badges top right */}
                                          <div className="absolute top-2 right-2 flex items-center gap-1">
                                             {isBranched && (
                                                 <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Badge variant="secondary" className="flex items-center gap-1">
-                                                            <GitBranch className="h-3 w-3" />
+                                                        <Badge variant="secondary" className="flex items-center gap-1 bg-purple-500/20 text-purple-300 border-purple-500/50">
+                                                            <GitBranch className="h-3 w-3" /> Branch
                                                         </Badge>
                                                     </TooltipTrigger>
                                                     <TooltipContent>
-                                                        <p>This character is a branch</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                            )}
-                                            {group.length > 1 && (
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                         <Badge variant="secondary" className="flex items-center gap-1">
-                                                            <Layers className="h-3 w-3"/> {group.length}
-                                                        </Badge>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>{group.length} versions</p>
+                                                        <p>This character is a branch of another creation.</p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
                                             )}
                                         </div>
+
                                     </div>
                                 </Link>
                             </motion.div>
@@ -163,5 +191,3 @@ export default function CharactersPage() {
     </div>
   );
 }
-
-    
