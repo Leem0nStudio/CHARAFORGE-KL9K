@@ -1,4 +1,3 @@
-
 'use server';
 
 import { notFound } from 'next/navigation';
@@ -7,7 +6,7 @@ import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
 import { User, Calendar, Tag, GitBranch, Shield, ScrollText, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
-import { cookies } from 'next/headers';
+import { cookies } from 'next/server';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BackButton } from '@/components/back-button';
@@ -188,7 +187,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                               </div>
 
                               <div className="flex flex-wrap items-center gap-2">
-                                  <Badge variant="outline" className={cn(getSlotColorClass('alignment'), "text-muted-foreground")}>
+                                  <Badge variant="outline" className="text-muted-foreground">
                                       <Shield className="h-3 w-3 mr-1.5" />
                                       {character.alignment}
                                   </Badge>

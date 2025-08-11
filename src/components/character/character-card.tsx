@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -29,8 +28,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
             className="h-full"
         >
             <Card className="overflow-hidden group relative h-full flex flex-col border-2 border-transparent hover:border-primary transition-colors duration-300">
-                <div className="relative aspect-square w-full bg-muted/20">
-                    <Link href={`/characters/${character.id}`}>
+                <Link href={`/characters/${character.id}`} className="relative aspect-square w-full bg-muted/20">
                         <Image
                             src={character.imageUrl}
                             alt={character.name}
@@ -72,8 +70,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
                         <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
                              <h3 className="font-bold text-lg leading-tight drop-shadow-md truncate">{character.name}</h3>
                         </div>
-                    </Link>
-                </div>
+                </Link>
                  <CardContent className="p-3 bg-card flex-col items-start flex-grow">
                      {character.tags && character.tags.length > 0 ? (
                         <div className="flex flex-wrap items-center gap-1 mb-2">
