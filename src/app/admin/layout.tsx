@@ -1,6 +1,4 @@
 
-'use server';
-
 import Link from "next/link";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import {
