@@ -8,7 +8,7 @@ import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription }
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { DataPack } from '@/types/datapack';
-import { getSlotColorClass } from '@/lib/app-config';
+import { getSlotColorClass, chartColors } from '@/lib/app-config';
 
 interface DataPackCardProps {
     pack: DataPack;
@@ -48,11 +48,11 @@ export function DataPackCard({ pack }: DataPackCardProps) {
                     <p className="mt-3 text-sm text-muted-foreground line-clamp-2">{pack.description}</p>
                      {pack.tags && pack.tags.length > 0 && (
                         <div className="flex flex-wrap items-center gap-2 pt-3">
-                            {pack.tags.slice(0, 3).map((tag) => (
+                            {pack.tags.slice(0, 3).map((tag, index) => (
                             <Badge 
                                 key={tag} 
                                 variant="outline"
-                                className={cn(getSlotColorClass(tag))}
+                                className={cn(chartColors[index % chartColors.length])}
                             >
                                 {tag.replace(/_/g, ' ')}
                             </Badge>
