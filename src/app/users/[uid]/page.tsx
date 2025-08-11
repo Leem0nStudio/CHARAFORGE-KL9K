@@ -1,35 +1,13 @@
 
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
 import { getPublicUserProfile } from '@/app/actions/user';
 import { getPublicCharactersForUser } from '@/app/actions/creations';
 import { BackButton } from '@/components/back-button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Swords, Heart } from 'lucide-react';
-import type { Character } from '@/types/character';
+import { CharacterCard } from '@/components/character/character-card';
 
-const CreationCard = ({ creation }: { creation: Character }) => {
-    return (
-        <Link href={`/characters/${creation.id}`}>
-            <Card className="overflow-hidden group hover:shadow-lg transition-shadow">
-                <div className="aspect-square relative w-full bg-muted/20">
-                    <Image
-                        src={creation.imageUrl}
-                        alt={creation.name}
-                        fill
-                        className="object-contain w-full transition-transform duration-300 group-hover:scale-105"
-                    />
-                </div>
-                <CardHeader className="p-4">
-                    <CardTitle className="text-lg truncate">{creation.name}</CardTitle>
-                </CardHeader>
-            </Card>
-        </Link>
-    );
-};
 
 export default async function UserProfilePage({ params }: { params: { uid: string } }) {
     const [userProfile, userCreations] = await Promise.all([
@@ -77,7 +55,7 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
                 {userCreations.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {userCreations.map(creation => (
-                            <CreationCard key={creation.id} creation={creation} />
+                            <CharacterCard key={creation.id} character={creation} />
                         ))}
                     </div>
                 ) : (

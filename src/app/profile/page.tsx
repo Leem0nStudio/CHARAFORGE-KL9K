@@ -3,7 +3,6 @@
 
 import { useEffect, useState, useTransition, useActionState, ChangeEvent, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -35,24 +34,10 @@ import { BackButton } from '@/components/back-button';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SubmitButton } from '@/components/ui/submit-button';
+import { StatCard } from '@/components/ui/stat-card';
 
 
 // #region Sub-components for each Tab
-
-const StatCard = ({ icon, label, value }: { icon: ReactNode, label: string, value: string | number }) => (
-    <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{label}</CardTitle>
-            <div className="text-muted-foreground">{icon}</div>
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
-        </CardContent>
-    </Card>
-);
-StatCard.displayName = "StatCard";
-
-
 function ProfileForm({ user }: { user: UserProfile }) {
   const { toast } = useToast();
   const { setUserProfile } = useAuth();

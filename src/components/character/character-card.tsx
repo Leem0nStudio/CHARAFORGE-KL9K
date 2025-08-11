@@ -1,0 +1,98 @@
+
+'use client';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { User, GitBranch, Layers, Package } from 'lucide-react';
+import { Card, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import type { Character } from '@/types/character';
+
+interface CharacterCardProps {
+    character: Character;
+}
+
+export function CharacterCard({ character }: CharacterCardProps) {
+    const isBranch = !!character.branchedFromId;
+    const hasVersions = character.versions && character.versions.length > 1;
+
+    return (
+        <motion.div
+            key={character.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="h-full"
+        >
+            <Card className="overflow-hidden group relative h-full flex flex-col border-2 border-transparent hover:border-primary transition-colors duration-300">
+                <div className="aspect-square relative w-full bg-muted/20">
+                    <Link href={`/characters/${character.id}`}>
+                        <Image
+                            src={character.imageUrl}
+                            alt={character.name}
+                            fill
+                            className="object-contain w-full transition-transform duration-300 group-hover:scale-105"
+                        />
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        <div className="absolute top-2 right-2 flex items-center gap-1">
+                             {hasVersions && (
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Badge variant="secondary" className="flex items-center gap-1">
+                                                <Layers className="h-3 w-3" /> {character.versions.length}
+                                            </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{character.versions.length} versions</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                             )}
+                             {isBranch && (
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Badge variant="secondary" className="flex items-center gap-1">
+                                                <GitBranch className="h-3 w-3" />
+                                            </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Branched</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                             )}
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                             <h3 className="font-bold text-lg leading-tight drop-shadow-md truncate">{character.name}</h3>
+                        </div>
+                    </Link>
+                </div>
+                <CardFooter className="p-3 bg-card flex-col items-start flex-grow">
+                     <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-grow">{character.description}</p>
+                     {character.dataPackName && (
+                        <Badge variant="outline" className="mb-2">
+                            <Package className="h-3 w-3 mr-1.5" />
+                            {character.dataPackName}
+                        </Badge>
+                       )}
+                    <div className="w-full">
+                        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <User className="h-3 w-3" />
+                            <span>by {character.userName}</span>
+                        </div>
+                        {isBranch && (
+                            <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+                                <GitBranch className="h-3 w-3" />
+                                <span>from {character.originalAuthorName || 'Unknown'}</span>
+                            </div>
+                        )}
+                    </div>
+                </CardFooter>
+            </Card>
+        </motion.div>
+    );
+}

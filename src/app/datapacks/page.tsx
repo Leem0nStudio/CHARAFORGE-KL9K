@@ -1,10 +1,6 @@
+
 import { getPublicDataPacks } from '@/app/actions/datapacks';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import Image from 'next/image';
-import Link from 'next/link';
-import { User, AlertTriangle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { DataPackCard } from '@/components/datapack/datapack-card';
 
 export default async function DataPacksPage() {
     const dataPacks = await getPublicDataPacks();
@@ -23,42 +19,7 @@ export default async function DataPacksPage() {
             {dataPacks.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
                     {dataPacks.map(pack => (
-                        <Card key={pack.id} className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
-                           <Link href={`/datapacks/${pack.id}`} className="flex flex-col h-full">
-                                <CardHeader className="p-0">
-                                    <div className="relative aspect-square bg-muted/20">
-                                        <Image
-                                            src={pack.coverImageUrl || 'https://placehold.co/600x600.png'}
-                                            alt={pack.name}
-                                            fill
-                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                            className="object-contain transition-transform duration-300 group-hover:scale-105"
-                                            data-ai-hint="datapack cover image"
-                                        />
-                                        <div className="absolute top-2 right-2 flex items-center gap-2">
-                                            {pack.isNsfw && <Badge variant="destructive" className="font-bold"><AlertTriangle className="w-3 h-3 mr-1"/>NSFW</Badge>}
-                                            <Badge className={cn(
-                                                "font-bold",
-                                                pack.type === 'premium' && "bg-yellow-500 text-black",
-                                                pack.type === 'free' && "bg-green-500",
-                                                pack.type === 'temporal' && "bg-blue-500"
-                                            )}>{pack.type}</Badge>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="p-4 flex-grow">
-                                    <CardTitle className="font-bold">{pack.name}</CardTitle>
-                                    <CardDescription className="mt-2 flex items-center gap-2">
-                                        <User className="h-4 w-4" /> 
-                                        <span>by @{pack.author}</span>
-                                    </CardDescription>
-                                    <p className="mt-3 text-sm text-muted-foreground line-clamp-2">{pack.description}</p>
-                                </CardContent>
-                                <CardFooter className="mt-auto p-4">
-                                   <p className="text-sm text-primary font-semibold">View Details →</p>
-                                </CardFooter>
-                           </Link>
-                        </Card>
+                       <DataPackCard key={pack.id} pack={pack} />
                     ))}
                 </div>
             ) : (

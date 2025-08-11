@@ -1,14 +1,14 @@
 
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
 import { getCreationsForDataPack, getPublicDataPacks } from '@/app/actions/datapacks';
-import { User, GalleryVertical, Package, GitBranch, Quote } from 'lucide-react';
+import { User, GalleryVertical, Package, Quote } from 'lucide-react';
 import { DataPackClient } from './client';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
-import Link from 'next/link';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import type { Character } from '@/types/character';
+import { CharacterCard } from '@/components/character/character-card';
+import { SectionTitle } from '@/components/section-title';
+import Image from 'next/image';
+import Link from 'next/link';
 
 
 interface DataPackDetailPageProps {
@@ -21,60 +21,6 @@ interface DataPackDetailPageProps {
 async function getDataPack(packId: string) {
     const allPacks = await getPublicDataPacks();
     return allPacks.find(p => p.id === packId) || null;
-}
-
-const CreationCard = ({ creation }: { creation: Character }) => {
-    const isBranch = !!creation.branchedFromId;
-
-    return (
-        <Card className="overflow-hidden group relative h-full flex flex-col border-2 border-transparent hover:border-primary transition-colors duration-300">
-            <div className="aspect-square relative w-full bg-muted/20">
-                <Link href={`/characters/${creation.id}`}>
-                    <Image
-                        src={creation.imageUrl}
-                        alt={creation.name}
-                        fill
-                        className="object-contain w-full transition-transform duration-300 group-hover:scale-105"
-                    />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    <div className="absolute top-2 right-2 flex items-center gap-1">
-                             {creation.versionName && <Badge variant="secondary" className="text-xs">{creation.versionName}</Badge>}
-                            {isBranch && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Badge variant="secondary" className="flex items-center gap-1">
-                                            <GitBranch className="h-3 w-3" />
-                                        </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Branched</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                            )}
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                            <h3 className="font-bold text-lg leading-tight drop-shadow-md truncate">{creation.name}</h3>
-                    </div>
-                </Link>
-            </div>
-            <CardFooter className="p-3 bg-card flex-col items-start flex-grow">
-                    <div className="w-full">
-                    <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <User className="h-3 w-3" />
-                        <span>by {creation.userName}</span>
-                    </div>
-                    {isBranch && (
-                        <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
-                            <GitBranch className="h-3 w-3" />
-                            <span>from {creation.originalAuthorName || 'Unknown'}</span>
-                        </div>
-                    )}
-                </div>
-            </CardFooter>
-        </Card>
-    )
 }
 
 
@@ -136,31 +82,41 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                  </CardContent>
             </Card>
 
-            {/* Community Creations Section */}
-            <Card>
+            {/* Slots Section */}
+             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 font-headline text-2xl">
-                        <GalleryVertical className="text-primary" />
-                        Community Creations
+                        <Package className="text-primary" />
+                        Wizard Slots
                     </CardTitle>
-                    <CardDescription>Creations from the community using this DataPack.</CardDescription>
+                    <CardDescription>The building blocks available in the generation wizard.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    {communityCreations.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {communityCreations.map(creation => (
-                                <CreationCard key={creation.id} creation={creation} />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
-                            <p className="mb-2 font-semibold">Be the First!</p>
-                            <p>No creations have been shared for this DataPack yet.</p>
-                        </div>
-                    )}
+                 <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                         {pack.schema.slots.map(slot => (
+                            <Badge key={slot.id} variant="outline">
+                                {slot.label}
+                            </Badge>
+                        ))}
+                    </div>
                 </CardContent>
             </Card>
         </div>
+
+        {/* Community Creations Section */}
+        {communityCreations.length > 0 && (
+            <div className="w-full">
+                <SectionTitle 
+                    title="Community Creations"
+                    subtitle="Creations from the community using this DataPack."
+                />
+                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {communityCreations.map(creation => (
+                        <CharacterCard key={creation.id} character={creation} />
+                    ))}
+                </div>
+            </div>
+        )}
       </div>
     </div>
   );
