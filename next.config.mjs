@@ -8,9 +8,9 @@ const nextConfig = {
                 port: '',
                 pathname: '/**',
             },
-             {
+            {
                 protocol: 'https',
-                hostname: 'placehold.co',
+                hostname: 'image.civitai.com',
                 port: '',
                 pathname: '/**',
             }
