@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, FieldPath } from 'firebase-admin/firestore';
 import type { DataPack, UpsertDataPack } from '@/types/datapack';
 import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
@@ -292,7 +292,6 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
             throw new Error('Database service not available.');
         }
         
-        // Correctly fetch the user document directly by its ID (UID).
         const userDoc = await adminDb.collection('users').doc(uid).get();
         if (!userDoc.exists) {
              console.log(`User document not found for UID: ${uid}`);
@@ -301,19 +300,16 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         
         const installedPackIds = userDoc.data()?.stats?.installedPacks || [];
         if (installedPackIds.length === 0) {
-            console.log(`User ${uid} has no installed packs.`);
             return [];
         }
 
         const allPacks: DataPack[] = [];
         const packsRef = adminDb.collection('datapacks');
 
-        // Firestore 'in' queries are limited to 30 items. We must batch.
         for (let i = 0; i < installedPackIds.length; i += 10) {
             const batchIds = installedPackIds.slice(i, i + 10);
             if (batchIds.length > 0) {
-                // Correctly use FieldValue.documentId to query by document ID.
-                const packsQuery = packsRef.where(FieldValue.documentId(), 'in', batchIds);
+                const packsQuery = packsRef.where(FieldPath.documentId(), 'in', batchIds);
                 const packsSnapshot = await packsQuery.get();
                 const batchPacks = packsSnapshot.docs.map(doc => {
                     const data = doc.data();

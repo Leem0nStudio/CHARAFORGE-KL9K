@@ -4,7 +4,7 @@
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, FieldPath } from 'firebase-admin/firestore';
 
 /**
  * Fetches public characters and ensures their image URLs are directly accessible.
@@ -204,7 +204,7 @@ async function fetchProfilesInBatches(uids: string[]): Promise<Map<string, UserP
   for (let i = 0; i < uids.length; i += 10) {
     const batchUids = uids.slice(i, i + 10);
     if (batchUids.length > 0) {
-      const snapshot = await userRef.where(FieldValue.documentId, 'in', batchUids).get();
+      const snapshot = await userRef.where(FieldPath.documentId(), 'in', batchUids).get();
       snapshot.forEach(doc => profiles.set(doc.id, doc.data() as UserProfile));
     }
   }
@@ -218,7 +218,7 @@ async function fetchDataPacksInBatches(packIds: string[]): Promise<Map<string, {
 
     for (let i = 0; i < packIds.length; i += 10) {
         const batch = packIds.slice(i, i + 10);
-        const snapshot = await packRef.where(FieldValue.documentId(), 'in', batch).get();
+        const snapshot = await packRef.where(FieldPath.documentId(), 'in', batch).get();
         snapshot.forEach(doc => packs.set(doc.id, { name: doc.data().name }));
     }
     return packs;

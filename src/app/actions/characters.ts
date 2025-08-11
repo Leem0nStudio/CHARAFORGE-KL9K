@@ -7,7 +7,7 @@ import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character, TimelineEvent } from '@/types/character';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, FieldPath } from 'firebase-admin/firestore';
 import type { UserProfile } from '@/types/user';
 import { randomUUID } from 'crypto';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
@@ -657,5 +657,52 @@ export async function updateCharacterTimeline(characterId: string, timeline: Tim
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Could not update timeline.';
         return { success: false, message };
+    }
+}
+
+/**
+ * Fetches a single public character and enriches it with author and datapack names.
+ * @param characterId The ID of the character to fetch.
+ * @returns {Promise<Character | null>}
+ */
+export async function getCharacter(characterId: string): Promise<Character | null> {
+    if (!adminDb) {
+        console.error('Database service is unavailable.');
+        return null;
+    }
+    try {
+        const characterRef = adminDb.collection('characters').doc(characterId);
+        const characterDoc = await characterRef.get();
+
+        if (!characterDoc.exists) {
+            return null;
+        }
+
+        const data = characterDoc.data() as Character;
+        
+        // Fetch user and datapack names in parallel
+        const [userProfile, dataPack] = await Promise.all([
+            data.userId ? adminDb.collection('users').doc(data.userId).get() : Promise.resolve(null),
+            data.dataPackId ? adminDb.collection('datapacks').doc(data.dataPackId).get() : Promise.resolve(null)
+        ]);
+
+        const userName = userProfile?.data()?.displayName || 'Anonymous';
+        const dataPackName = dataPack?.data()?.name || null;
+        const originalAuthorName = data.originalAuthorId 
+            ? (await adminDb.collection('users').doc(data.originalAuthorId).get())?.data()?.displayName || 'Anonymous' 
+            : null;
+
+        return {
+            id: characterDoc.id,
+            ...data,
+            createdAt: (data.createdAt as any).toDate(),
+            userName,
+            dataPackName,
+            originalAuthorName,
+        } as Character;
+
+    } catch (error) {
+        console.error(`Error fetching character ${characterId}:`, error);
+        return null;
     }
 }

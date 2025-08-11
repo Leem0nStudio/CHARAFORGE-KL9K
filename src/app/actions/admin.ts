@@ -82,3 +82,24 @@ export async function getLogoUrl(): Promise<string | null> {
         return null;
     }
 }
+
+/**
+ * Fetches general application settings.
+ * @returns {Promise<{enableAdminFeatures: boolean} | null>}
+ */
+export async function getUserSettings(): Promise<{enableAdminFeatures: boolean} | null> {
+    if (!adminDb) {
+        console.error("Database service is unavailable.");
+        return null;
+    }
+    try {
+        const settingsDoc = await adminDb.collection('settings').doc('appDetails').get();
+        if (settingsDoc.exists) {
+            return settingsDoc.data() as {enableAdminFeatures: boolean};
+        }
+        return null;
+    } catch (error) {
+        console.error("Error fetching user settings:", error);
+        return null;
+    }
+}

@@ -204,3 +204,26 @@ export async function getPublicUserProfile(uid: string): Promise<Partial<UserPro
         return null;
     }
 }
+
+/**
+ * Fetches the user profile from Firestore.
+ * @param uid The user ID.
+ * @returns The user profile object or null.
+ */
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  if (!adminDb) {
+    console.error('Database service is unavailable.');
+    return null;
+  }
+  try {
+    const userRef = adminDb.collection('users').doc(uid);
+    const doc = await userRef.get();
+    if (!doc.exists) {
+      return null;
+    }
+    return doc.data() as UserProfile;
+  } catch (error) {
+    console.error(`Error fetching user profile for ${uid}:`, error);
+    return null;
+  }
+}
