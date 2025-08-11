@@ -6,22 +6,10 @@ import { usePathname } from "next/navigation";
 import { Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnvilIcon } from "@/hooks/use-auth";
+import { adminNavItems } from "@/lib/app-config";
 
-interface NavItem {
-    href: string;
-    label: string;
-    icon: React.ElementType;
-}
-
-interface AdminSidebarProps {
-    navItems: NavItem[];
-}
-
-export function AdminSidebar({ navItems }: AdminSidebarProps) {
+export function AdminSidebar() {
     const pathname = usePathname();
-
-    // In a real app, you might fetch this URL or have it in a context
-    const logoUrl = null; // Placeholder
 
     return (
          <div className="hidden border-r bg-muted/40 md:block">
@@ -34,7 +22,7 @@ export function AdminSidebar({ navItems }: AdminSidebarProps) {
                 </div>
                  <div className="flex-1">
                     <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-                        {navItems.map(item => (
+                        {adminNavItems.map(item => (
                             <Link
                                 key={item.label}
                                 href={item.href}
