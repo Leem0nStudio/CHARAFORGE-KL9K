@@ -1,4 +1,3 @@
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -665,5 +664,3 @@ export async function updateCharacterTimeline(
         return { success: false, message };
     }
 }
-
-    

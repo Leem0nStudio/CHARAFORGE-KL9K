@@ -1,4 +1,3 @@
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -61,16 +60,13 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
             coverImageUrl = await uploadFileToStorage(packId, 'cover.png', coverImage, 'image/png');
         }
         
-        // Generate intelligent tags from the name and description
-        const aiSchema = await generateDataPackSchema({ concept: `${data.name}: ${data.description}`});
-
         const docData = {
             name: data.name,
             author: data.author,
             description: data.description,
             type: data.type,
             price: Number(data.price),
-            tags: aiSchema.tags || [],
+            tags: data.tags || [],
             schema: data.schema, // The schema is now an object
             updatedAt: FieldValue.serverTimestamp(),
             coverImageUrl: coverImageUrl,
@@ -324,5 +320,3 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         return [];
     }
 }
-
-    

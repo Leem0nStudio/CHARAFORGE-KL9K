@@ -1,4 +1,3 @@
-
 import { getPublicDataPacks } from '@/app/actions/datapacks';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import Image from 'next/image';
@@ -71,5 +70,3 @@ export default async function DataPacksPage() {
         </div>
     );
 }
-
-    

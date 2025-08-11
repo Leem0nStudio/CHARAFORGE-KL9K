@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useTransition } from 'react';
@@ -108,5 +107,3 @@ export function EditSharingTab({ character, onUpdate }: { character: Character, 
         </Card>
     );
 }
-
-    

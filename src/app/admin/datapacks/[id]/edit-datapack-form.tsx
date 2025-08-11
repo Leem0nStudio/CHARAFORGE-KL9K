@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
@@ -7,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { upsertDataPack, deleteDataPack } from '@/app/actions/datapacks';
-import { generateDataPackSchema } from '@/ai/flows/generate-datapack-schema';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,8 +29,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DataPack, UpsertDataPack, DataPackSchema, Slot } from '@/types/datapack';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
+import { generateDataPackSchema } from '@/ai/flows/generate-datapack-schema';
 
-// #region AI Generator Dialog
+// This dialog is now internal and doesn't need to be exported
 function AiGeneratorDialog({ onSchemaGenerated }: { onSchemaGenerated: (schema: DataPackSchema) => void }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isGenerating, startTransition] = useTransition();
@@ -87,7 +86,6 @@ function AiGeneratorDialog({ onSchemaGenerated }: { onSchemaGenerated: (schema: 
         </AlertDialog>
     )
 }
-// #endregion
 
 // Zod schemas for the new structured format
 const ExclusionSchema = z.object({
@@ -114,6 +112,7 @@ const SlotSchema = z.object({
 const DataPackSchemaSchema = z.object({
     promptTemplate: z.string().min(1, 'Prompt template is required.'),
     slots: z.array(SlotSchema).min(1, 'At least one slot is required.'),
+    tags: z.array(z.string()).optional(),
 });
 
 const FormSchema = z.object({
@@ -145,6 +144,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
       schema: initialData?.schema || {
         promptTemplate: 'A {style} portrait of a {race} {class}.',
         slots: [],
+        tags: [],
       },
       isNsfw: initialData?.isNsfw || false,
     };
@@ -163,6 +163,10 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
   
   const handleAiSchemaGenerated = (generatedSchema: DataPackSchema) => {
     form.setValue('schema', generatedSchema, { shouldValidate: true });
+    // Also update tags if the AI provides them
+    if (generatedSchema.tags) {
+        form.setValue('schema.tags', generatedSchema.tags, { shouldValidate: true });
+    }
   };
 
   const onSubmit = (values: FormValues) => {
@@ -176,6 +180,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
       const dataToSave: UpsertDataPack = {
         id: initialData?.id,
         ...values,
+        tags: values.schema.tags, // Pass tags to the top level
       };
 
       const result = await upsertDataPack(dataToSave, imageBuffer);
@@ -245,6 +250,15 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
                 <div><Label>Name</Label><Input {...form.register('name')} />{form.formState.errors.name && <p className="text-destructive text-sm mt-1">{form.formState.errors.name.message}</p>}</div>
                 <div><Label>Author</Label><Input {...form.register('author')} />{form.formState.errors.author && <p className="text-destructive text-sm mt-1">{form.formState.errors.author.message}</p>}</div>
                 <div><Label>Description</Label><Textarea {...form.register('description')} />{form.formState.errors.description && <p className="text-destructive text-sm mt-1">{form.formState.errors.description.message}</p>}</div>
+                 <div>
+                    <Label>Tags (comma-separated)</Label>
+                    <Input 
+                        {...form.register('schema.tags', { 
+                            setValueAs: (value) => typeof value === 'string' ? value.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean) : value 
+                        })} 
+                        defaultValue={initialData?.schema.tags?.join(', ')}
+                    />
+                </div>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -426,5 +440,3 @@ function SlotEditor({ form, slotIndex, removeSlot }: { form: any, slotIndex: num
         </div>
     )
 }
-
-    

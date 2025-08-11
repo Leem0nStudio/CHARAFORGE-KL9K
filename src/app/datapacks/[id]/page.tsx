@@ -1,4 +1,3 @@
-
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { getCreationsForDataPack, getPublicDataPacks } from '@/app/actions/datapacks';
@@ -168,5 +167,3 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
     </div>
   );
 }
-
-    
