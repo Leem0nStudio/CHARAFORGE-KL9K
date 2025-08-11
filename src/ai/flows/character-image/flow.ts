@@ -63,7 +63,7 @@ const generateCharacterImageFlow = ai.defineFlow(
     } else { // Default to Gradio
         try {
             const { width, height } = getDimensions(aspectRatio);
-            const client = await Client.connect("dhead/waiNSFWIllustrious_v130_Space");
+            const client = await Client.connect("el-el-san/t2i-illustrious-xl-v2.0");
 
             const result = await client.predict("/infer", {
                 prompt: description,
@@ -72,7 +72,7 @@ const generateCharacterImageFlow = ai.defineFlow(
                 randomize_seed: true,
                 width: width,
                 height: height,
-                guidance_scale: 7,
+                quality: 9,
                 num_inference_steps: 25,
             });
 
