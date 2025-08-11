@@ -108,7 +108,7 @@ export default function CharactersPage() {
                                 className="group relative"
                             >
                                 <Link href={`/characters/${latestVersion.id}/edit`}>
-                                    <div className="relative grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 rounded-lg overflow-hidden border bg-card/50 p-4 transition-all duration-300 hover:border-primary hover:shadow-xl hover:shadow-primary/10">
+                                    <div className="relative grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 rounded-lg overflow-hidden border bg-card/50 p-4 transition-all duration-300 hover:bg-card-highlight hover:border-primary hover:shadow-xl hover:shadow-primary/10">
                                         {/* Main Image */}
                                         <div className="md:col-span-1 lg:col-span-1">
                                             <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-muted/20">

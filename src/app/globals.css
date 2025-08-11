@@ -9,6 +9,7 @@
 
     --card: 240 2% 23%; /* #3A3A3C */
     --card-foreground: 0 0% 100%; /* #FFFFFF */
+    --card-highlight: 220 7% 19%; /* #2C2F36 */
 
     --popover: 220 4% 12%; /* #1D1F21 */
     --popover-foreground: 0 0% 100%; /* #FFFFFF */
@@ -16,10 +17,12 @@
     /* Primary - Cian vivo */
     --primary: 197 100% 47%; /* #00AEEF */
     --primary-foreground: 0 0% 100%; /* #FFFFFF */
+    --primary-hover: 195 100% 50%; /* #00D2FF */
 
     /* Secondary - Azul intenso */
     --secondary: 203 65% 40%; /* #2376A9 */
     --secondary-foreground: 0 0% 100%; /* #FFFFFF */
+    --secondary-hover: 202 68% 34%; /* #1B6F92 */
 
     --muted: 240 2% 23%; /* #3A3A3C */
     --muted-foreground: 215 20.2% 65.1%;
@@ -31,6 +34,7 @@
     /* Destructive - Rojo oscuro */
     --destructive: 0 59% 41%; /* #A52A2A */
     --destructive-foreground: 0 0% 100%;
+    --destructive-hover: 355 70% 52%; /* #D93240 */
 
     --border: 240 2% 23%; /* #3A3A3C */
     --input: 240 2% 23%; /* #3A3A3C */
@@ -49,6 +53,7 @@
 
     --card: 240 2% 23%; /* #3A3A3C */
     --card-foreground: 0 0% 100%; /* #FFFFFF */
+    --card-highlight: 220 7% 19%; /* #2C2F36 */
 
     --popover: 220 4% 12%; /* #1D1F21 */
     --popover-foreground: 0 0% 100%; /* #FFFFFF */
@@ -56,10 +61,12 @@
     /* Primary - Cian vivo */
     --primary: 197 100% 47%; /* #00AEEF */
     --primary-foreground: 0 0% 100%; /* #FFFFFF */
+    --primary-hover: 195 100% 50%; /* #00D2FF */
 
     /* Secondary - Azul intenso */
     --secondary: 203 65% 40%; /* #2376A9 */
     --secondary-foreground: 0 0% 100%; /* #FFFFFF */
+    --secondary-hover: 202 68% 34%; /* #1B6F92 */
 
     --muted: 240 2% 23%; /* #3A3A3C */
     --muted-foreground: 215 20.2% 65.1%;
@@ -71,6 +78,7 @@
     /* Destructive - Rojo oscuro */
     --destructive: 0 59% 41%; /* #A52A2A */
     --destructive-foreground: 0 0% 100%;
+    --destructive-hover: 355 70% 52%; /* #D93240 */
 
     --border: 240 2% 23%; /* #3A3A3C */
     --input: 240 2% 23%; /* #3A3A3C */

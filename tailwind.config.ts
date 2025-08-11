@@ -17,8 +17,8 @@ export default {
       fontFamily: {
         body: ['var(--font-body)', 'sans-serif'],
         headline: ['var(--font-headline)', 'sans-serif'],
-        logo: ['var(--font-headline)', 'sans-serif'], // Use headline for logo too
-        button: ['var(--font-body)', 'sans-serif'], // Use body font for buttons
+        logo: ['var(--font-logo)', 'sans-serif'],
+        button: ['var(--font-body)', 'sans-serif'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -29,14 +29,17 @@ export default {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
+          hover: 'hsl(var(--primary-hover))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))',
+          hover: 'hsl(var(--secondary-hover))',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
+          hover: 'hsl(var(--destructive-hover))',
         },
         muted: {
           DEFAULT: 'hsl(var(--muted))',
@@ -53,6 +56,7 @@ export default {
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
+          highlight: 'hsl(var(--card-highlight))',
         },
         'info-card-header': {
           DEFAULT: 'hsl(var(--info-card-header))',
