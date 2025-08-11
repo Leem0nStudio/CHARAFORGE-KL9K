@@ -122,4 +122,3 @@ export function TagAssistantModal({ isOpen, onClose, onAppendTags }: TagAssistan
         </Dialog>
     );
 }
-
