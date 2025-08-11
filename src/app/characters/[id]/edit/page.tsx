@@ -75,6 +75,8 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
       baseCharacterId: characterData.baseCharacterId || null,
       versions: characterData.versions || [{ id: characterDoc.id, name: characterData.versionName || 'v.1', version: characterData.version || 1 }],
       branchingPermissions: characterData.branchingPermissions,
+      alignment: characterData.alignment || 'True Neutral',
+      timeline: characterData.timeline || [],
   };
 
   return character;

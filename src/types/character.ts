@@ -2,6 +2,18 @@
 'use server';
 
 /**
+ * Represents a single event in a character's history.
+ */
+export interface TimelineEvent {
+  id: string; // Unique identifier for the event
+  date: string; // A descriptive date, e.g., "Age 25", "Year of the Comet"
+  title: string;
+  description: string;
+  relatedCharacterIds?: string[];
+}
+
+
+/**
  * Represents the structure of a Character object throughout the application.
  */
 export type Character = {
@@ -30,4 +42,5 @@ export type Character = {
   tags?: string[];
   isNsfw?: boolean;
   alignment: 'Lawful Good' | 'Neutral Good' | 'Chaotic Good' | 'Lawful Neutral' | 'True Neutral' | 'Chaotic Neutral' | 'Lawful Evil' | 'Neutral Evil' | 'Chaotic Evil';
+  timeline?: TimelineEvent[]; // New field for the character's timeline
 };

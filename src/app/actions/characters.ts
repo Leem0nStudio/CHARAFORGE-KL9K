@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import { verifyAndGetUid } from '@/lib/auth/server';
-import type { Character } from '@/types/character';
+import type { Character, TimelineEvent } from '@/types/character';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { UserProfile } from '@/types/user';
 import { randomUUID } from 'crypto';
@@ -437,6 +437,7 @@ export async function getCharacters(): Promise<Character[]> {
         versions: versions,
         branchingPermissions: data.branchingPermissions || 'private',
         alignment: data.alignment || 'True Neutral',
+        timeline: data.timeline || [],
       } as Character;
     });
 
@@ -609,6 +610,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
             tags: tags || [],
             isNsfw: isNsfw || false,
             alignment: 'True Neutral',
+            timeline: [], // Initialize with an empty timeline
         };
 
         transaction.set(characterRef, characterData);
@@ -632,4 +634,34 @@ export async function saveCharacter(input: SaveCharacterInput) {
     const errorMessage = error instanceof Error ? error.message : 'Could not save character due to a server error.';
     throw new Error(errorMessage);
   }
+}
+
+// New action to update the timeline
+export async function updateCharacterTimeline(
+    characterId: string, 
+    timeline: TimelineEvent[]
+): Promise<ActionResponse> {
+    if (!adminDb) {
+        return { success: false, message: 'Database service is unavailable.' };
+    }
+    
+    try {
+        const uid = await verifyAndGetUid();
+        const characterRef = adminDb.collection('characters').doc(characterId);
+        const characterDoc = await characterRef.get();
+
+        if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+            return { success: false, message: 'Permission denied or character not found.' };
+        }
+      
+        await characterRef.update({ timeline });
+
+        revalidatePath(`/characters/${characterId}/edit`);
+        
+        return { success: true, message: 'Character timeline updated successfully!' };
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Could not update timeline due to a server error.';
+        return { success: false, message };
+    }
 }
