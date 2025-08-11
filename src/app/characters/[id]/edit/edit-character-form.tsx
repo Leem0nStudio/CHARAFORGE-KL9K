@@ -86,3 +86,5 @@ export function EditCharacterForm({ character }: { character: Character }) {
         </div>
     );
 }
+
+    

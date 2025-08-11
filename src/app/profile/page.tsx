@@ -1,10 +1,11 @@
+
 'use client';
 
-import { useEffect, useState, useTransition, useActionState, ChangeEvent, ReactNode } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
-import type { UserProfile, UserPreferences } from '@/types/user';
+import type { UserPreferences } from '@/types/user';
 import { BackButton } from '@/components/back-button';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -84,3 +85,5 @@ export default function ProfilePage() {
     </motion.div>
   );
 }
+
+    
