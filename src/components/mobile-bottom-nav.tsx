@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Package, Swords, Users, UserCircle } from 'lucide-react';
+import { Home, Package, Swords, Users, UserCircle, ScrollText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -14,7 +15,7 @@ export function MobileBottomNav() {
     { href: '/', label: 'Home', icon: Home },
     { href: '/datapacks', label: 'DataPacks', icon: Package },
     { href: '/character-generator', label: 'Create', icon: Swords, isPrimary: true },
-    { href: '/characters', label: 'Characters', icon: Users, requiresAuth: true },
+    { href: '/story-forge', label: 'Stories', icon: ScrollText, requiresAuth: true },
     { href: '/profile', label: 'Profile', icon: UserCircle, requiresAuth: true },
   ];
 

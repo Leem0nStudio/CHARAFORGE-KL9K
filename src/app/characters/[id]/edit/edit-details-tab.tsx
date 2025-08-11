@@ -2,7 +2,7 @@
 'use client';
 
 import { useTransition } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
@@ -15,10 +15,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Wand2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const alignmentOptions = [
+    'Lawful Good', 'Neutral Good', 'Chaotic Good', 
+    'Lawful Neutral', 'True Neutral', 'Chaotic Neutral',
+    'Lawful Evil', 'Neutral Evil', 'Chaotic Evil'
+] as const;
 
 const FormSchema = z.object({
   name: z.string().min(1, "Name is required.").max(100, "Name cannot exceed 100 characters."),
   biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
+  alignment: z.enum(alignmentOptions),
 });
 type FormValues = z.infer<typeof FormSchema>;
 
@@ -32,6 +40,7 @@ export function EditDetailsTab({ character, onUpdate }: { character: Character, 
         defaultValues: {
             name: character.name,
             biography: character.biography,
+            alignment: character.alignment || 'True Neutral',
         },
     });
 
@@ -73,11 +82,32 @@ export function EditDetailsTab({ character, onUpdate }: { character: Character, 
             </CardHeader>
             <CardContent>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Character Name</Label>
-                        <Input id="name" {...form.register('name')} />
-                        {form.formState.errors.name && <p className="text-sm font-medium text-destructive">{form.formState.errors.name.message}</p>}
+                    <div className="grid md:grid-cols-2 gap-6">
+                         <div className="space-y-2">
+                            <Label htmlFor="name">Character Name</Label>
+                            <Input id="name" {...form.register('name')} />
+                            {form.formState.errors.name && <p className="text-sm font-medium text-destructive">{form.formState.errors.name.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="alignment">Alignment</Label>
+                            <Controller
+                                name="alignment"
+                                control={form.control}
+                                render={({ field }) => (
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            {alignmentOptions.map(option => (
+                                                <SelectItem key={option} value={option}>{option}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {form.formState.errors.alignment && <p className="text-sm font-medium text-destructive">{form.formState.errors.alignment.message}</p>}
+                        </div>
                     </div>
+                   
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="biography">Biography</Label>

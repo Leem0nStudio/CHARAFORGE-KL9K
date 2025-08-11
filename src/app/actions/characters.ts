@@ -319,11 +319,12 @@ export async function updateCharacterDataPackSharing(characterId: string, isShar
 const UpdateCharacterSchema = z.object({
   name: z.string().min(1, "Name is required.").max(100, "Name cannot exceed 100 characters."),
   biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
+  alignment: z.enum(['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil']),
 });
 
 export async function updateCharacter(
     characterId: string, 
-    data: { name: string, biography: string }
+    data: { name: string, biography: string, alignment: Character['alignment'] }
 ): Promise<ActionResponse> {
   if (!adminDb) {
       return { success: false, message: 'Database service is unavailable.' };
@@ -341,7 +342,7 @@ export async function updateCharacter(
         };
     }
     
-    const { name, biography } = validatedFields.data;
+    const { name, biography, alignment } = validatedFields.data;
     const characterRef = adminDb.collection('characters').doc(characterId);
     
     const characterDoc = await characterRef.get();
@@ -350,7 +351,7 @@ export async function updateCharacter(
         return { success: false, message: 'Permission denied or character not found.' };
     }
   
-    await characterRef.update({ name, biography });
+    await characterRef.update({ name, biography, alignment });
 
     revalidatePath(`/characters/${characterId}/edit`);
     revalidatePath('/characters');
@@ -435,6 +436,7 @@ export async function getCharacters(): Promise<Character[]> {
         baseCharacterId: data.baseCharacterId || null,
         versions: versions,
         branchingPermissions: data.branchingPermissions || 'private',
+        alignment: data.alignment || 'True Neutral',
       } as Character;
     });
 
@@ -606,6 +608,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
             branchingPermissions: 'private',
             tags: tags || [],
             isNsfw: isNsfw || false,
+            alignment: 'True Neutral',
         };
 
         transaction.set(characterRef, characterData);

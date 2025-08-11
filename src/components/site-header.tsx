@@ -2,7 +2,7 @@
 'use server';
 
 import Link from "next/link";
-import { Swords, Package } from "lucide-react";
+import { Swords, Package, ScrollText } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LoginButton } from "./login-button";
 import { AppLogo } from "./app-logo";
@@ -19,14 +19,23 @@ export async function SiteHeader() {
               <span className="bg-gradient-to-tr from-accent to-yellow-500 bg-clip-text text-transparent">Forge</span>
           </div>
         </Link>
-        <div className="flex flex-1 items-center justify-end space-x-2">
-            <Link
+        <div className="hidden sm:flex items-center gap-2">
+             <Link
               href="/datapacks"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 font-headline tracking-wider h-10 px-4 py-2 hover:bg-accent hover:text-accent-foreground hidden sm:flex"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 font-headline tracking-wider h-10 px-4 py-2 hover:bg-accent hover:text-accent-foreground"
             >
               <Package className="mr-2" />
               DataPacks
             </Link>
+             <Link
+              href="/story-forge"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 font-headline tracking-wider h-10 px-4 py-2 hover:bg-accent hover:text-accent-foreground"
+            >
+              <ScrollText className="mr-2" />
+              Story Forge
+            </Link>
+        </div>
+        <div className="flex flex-1 items-center justify-end space-x-2">
            <Link
               href="/character-generator"
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 font-headline tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 hidden sm:flex"

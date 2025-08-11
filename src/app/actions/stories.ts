@@ -19,6 +19,31 @@ type ActionResponse<T = null> = {
 // Placeholder for full character details needed by the AI flow
 type CharacterDetailsForAI = Pick<Character, 'name' | 'biography' | 'alignment'>;
 
+export async function getUserCasts(): Promise<StoryCast[]> {
+    const uid = await verifyAndGetUid();
+     if (!adminDb) {
+        return [];
+    }
+    const castsRef = adminDb.collection('storyCasts');
+    const q = castsRef.where('userId', '==', uid).orderBy('updatedAt', 'desc');
+    const snapshot = await q.get();
+
+    if (snapshot.empty) {
+        return [];
+    }
+    
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            ...data,
+            id: doc.id,
+            createdAt: data.createdAt.toDate(),
+            updatedAt: data.updatedAt.toDate(),
+        } as StoryCast;
+    });
+}
+
+
 export async function createStoryCast(data: { name: string; description: string }): Promise<ActionResponse<StoryCast>> {
     const uid = await verifyAndGetUid();
     if (!adminDb) {
