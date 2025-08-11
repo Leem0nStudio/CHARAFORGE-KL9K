@@ -1,67 +1,23 @@
-
 'use client';
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { deleteCharacter, updateCharacterStatus, updateCharacterDataPackSharing, branchCharacter } from '@/app/actions/characters';
+import { deleteCharacter, updateCharacterStatus, updateCharacterDataPackSharing } from '@/app/actions/characters';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Loader2, Settings, Pencil, Trash2, ShieldCheck, ShieldOff, GalleryHorizontal, GitBranch } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import type { Character } from '@/types/character';
+import { BranchButton } from './branch-button';
+
 
 interface CharacterImageActionsProps {
     character: Character;
     currentUserId: string | null;
     isOwner: boolean;
-}
-
-function BranchButton({ characterId, isIcon = false }: { characterId: string, isIcon?: boolean }) {
-    const [isPending, startTransition] = useTransition();
-    const router = useRouter();
-    const { toast } = useToast();
-
-    const handleBranch = () => {
-        startTransition(async () => {
-            const result = await branchCharacter(characterId);
-            if (result.success) {
-                toast({
-                    title: 'Success!',
-                    description: result.message,
-                });
-                router.push(`/characters?id=${result.characterId}`);
-            } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'Branching Failed',
-                    description: result.message,
-                });
-            }
-        });
-    };
-    
-    if (isIcon) {
-        return (
-             <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="secondary" size="icon" onClick={handleBranch} disabled={isPending}>
-                        {isPending ? <Loader2 className="animate-spin" /> : <GitBranch />}
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Branch this Character</p></TooltipContent>
-            </Tooltip>
-        )
-    }
-
-    return (
-        <Button onClick={handleBranch} disabled={isPending} className="w-full">
-            {isPending ? <Loader2 className="mr-2 animate-spin" /> : <GitBranch className="mr-2" />}
-            Branch this Character
-        </Button>
-    );
 }
 
 export function CharacterImageActions({ character, currentUserId, isOwner }: CharacterImageActionsProps) {
