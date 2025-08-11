@@ -7,7 +7,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
-import { Exo_2, Bebas_Neue, Rowdies } from 'next/font/google';
+import { Exo_2, Bebas_Neue } from 'next/font/google';
 
 const exo2 = Exo_2({
   subsets: ['latin'],
@@ -21,13 +21,6 @@ const bebasNeue = Bebas_Neue({
   variable: '--font-headline',
 });
 
-const rowdies = Rowdies({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-logo',
-});
-
-
 export const metadata: Metadata = {
   title: 'CharaForge',
   description: 'AI-powered character and image generation.',
@@ -40,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('min-h-screen bg-background font-body antialiased', exo2.variable, bebasNeue.variable, rowdies.variable)}>
+      <body className={cn('min-h-screen bg-background font-body antialiased', exo2.variable, bebasNeue.variable)}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

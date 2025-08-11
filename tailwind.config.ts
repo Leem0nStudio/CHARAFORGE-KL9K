@@ -17,8 +17,6 @@ export default {
       fontFamily: {
         body: ['var(--font-body)', 'sans-serif'],
         headline: ['var(--font-headline)', 'sans-serif'],
-        logo: ['var(--font-logo)', 'sans-serif'],
-        button: ['var(--font-body)', 'sans-serif'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -58,20 +56,11 @@ export default {
           foreground: 'hsl(var(--card-foreground))',
           highlight: 'hsl(var(--card-highlight))',
         },
-        'info-card-header': {
-          DEFAULT: 'hsl(var(--info-card-header))',
-          foreground: 'hsl(var(--info-card-header-foreground))',
-        },
-        'chart-1': 'hsl(var(--chart-1))',
-        'chart-2': 'hsl(var(--chart-2))',
-        'chart-3': 'hsl(var(--chart-3))',
-        'chart-4': 'hsl(var(--chart-4))',
-        'chart-5': 'hsl(var(--chart-5))',
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        lg: 'calc(var(--radius) + 4px)',
+        md: 'var(--radius)',
+        sm: 'calc(var(--radius) - 2px)',
       },
       keyframes: {
         'accordion-down': {

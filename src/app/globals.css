@@ -4,103 +4,81 @@
 
 @layer base {
   :root {
-    --background: 210 33% 10%; /* #101820 */
-    --foreground: 0 0% 100%; /* #FFFFFF */
+    /* Nueva Paleta - Base Oscura */
+    --background: 210 60% 11%; /* #0C1C2C */
+    --foreground: 210 14% 96%; /* #F4F6F7 */
 
-    --card: 226 10% 19%; /* #2C2F36 */
-    --card-foreground: 0 0% 100%; /* #FFFFFF */
-    --card-highlight: 226 10% 22%; /* Darker version of card */
+    /* Card y Popover con un tono ligeramente más claro */
+    --card: 210 55% 15%; /* #12263A */
+    --card-foreground: 210 14% 96%; /* #F4F6F7 */
+    --card-highlight: 210 55% 18%; /* Darker version for hover */
 
-    --popover: 210 33% 10%; /* #101820 */
-    --popover-foreground: 0 0% 100%; /* #FFFFFF */
+    --popover: 210 60% 11%; /* #0C1C2C */
+    --popover-foreground: 210 14% 96%; /* #F4F6F7 */
 
-    /* Primary - Azul plasma brillante */
-    --primary: 191 100% 50%; /* #00D2FF */
-    --primary-foreground: 210 33% 10%; /* Dark for contrast */
-    --primary-hover: 191 100% 55%; /* Lighter version */
+    /* Primario (Acciones principales, Peligro) - Rojo */
+    --primary: 4 67% 42%; /* #C0392B */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 4 67% 48%;
 
-    /* Secondary - Azul petróleo metálico */
-    --secondary: 199 69% 34%; /* #1B6F92 */
-    --secondary-foreground: 0 0% 100%; /* #FFFFFF */
-    --secondary-hover: 199 69% 40%; /* Lighter version */
+    /* Secundario (Elementos de UI) - Azul Medio */
+    --secondary: 206 62% 27%; /* #1B4F72 */
+    --secondary-foreground: 0 0% 100%;
+    --secondary-hover: 206 62% 32%;
 
-    --muted: 226 10% 19%; /* #2C2F36 */
-    --muted-foreground: 220 9% 64%; /* #9CA3AF */
-
-    /* Accent - Azul plasma brillante */
-    --accent: 191 100% 50%; /* #00D2FF */
-    --accent-foreground: 210 33% 10%; /* Dark for contrast */
-
-    /* Destructive - Rojo rubí intenso */
-    --destructive: 355 70% 52%; /* #D93240 */
-    --destructive-foreground: 0 0% 100%;
-    --destructive-hover: 355 70% 58%; /* Lighter version */
-
-    --border: 214 13% 15%; /* #21262C */
-    --input: 214 13% 15%; /* #21262C */
-    --ring: 214 13% 15%; /* #21262C */
+    /* Muted (Texto secundario) - Gris */
+    --muted: 206 6% 57%; /* #8A9494 - derived for theme */
+    --muted-foreground: 206 6% 57%; /* #7B8A8B */
     
-    --radius: 0.5rem;
+    /* Acento (Hover states, etc) - Azul Claro */
+    --accent: 206 65% 47%; /* #2E86C1 */
+    --accent-foreground: 0 0% 100%;
 
-    /* New custom color for an epic, parchment-like card header */
-    --info-card-header: 35 33% 85%; /* A light, parchment-like color */
-    --info-card-header-foreground: 35 25% 20%; /* A dark, warm brown for the text */
+    /* Destructive (igual que primario para consistencia) */
+    --destructive: 4 67% 42%; /* #C0392B */
+    --destructive-foreground: 0 0% 100%;
+    --destructive-hover: 4 67% 48%;
 
-    /* Chart Colors */
-    --chart-1: 203 65% 40%; /* Azul Intenso */
-    --chart-2: 150 60% 45%; /* Verde Esmeralda */
-    --chart-3: 45 100% 50%; /* Amarillo Dorado */
-    --chart-4: 25 95% 55%;  /* Naranja Cálido */
-    --chart-5: 0 70% 60%;   /* Rojo Suave */
+    --border: 206 62% 27%; /* Azul Medio */
+    --input: 210 55% 15%; /* Tono de tarjeta */
+    --ring: 206 65% 47%; /* Azul Claro para focus */
+    
+    --radius: 0.25rem; /* Bordes más rectos, 4px */
   }
 
   .dark {
-    --background: 210 33% 10%; /* #101820 */
-    --foreground: 0 0% 100%; /* #FFFFFF */
+     /* La paleta ya está diseñada para ser oscura, así que la mantenemos */
+    --background: 210 60% 11%; /* #0C1C2C */
+    --foreground: 210 14% 96%; /* #F4F6F7 */
 
-    --card: 226 10% 19%; /* #2C2F36 */
-    --card-foreground: 0 0% 100%; /* #FFFFFF */
-    --card-highlight: 226 10% 22%;
+    --card: 210 55% 15%; /* #12263A */
+    --card-foreground: 210 14% 96%; /* #F4F6F7 */
+    --card-highlight: 210 55% 18%;
 
-    --popover: 210 33% 10%; /* #101820 */
-    --popover-foreground: 0 0% 100%; /* #FFFFFF */
+    --popover: 210 60% 11%; /* #0C1C2C */
+    --popover-foreground: 210 14% 96%; /* #F4F6F7 */
 
-    /* Primary - Azul plasma brillante */
-    --primary: 191 100% 50%; /* #00D2FF */
-    --primary-foreground: 210 33% 10%;
-    --primary-hover: 191 100% 55%;
+    --primary: 4 67% 42%; /* #C0392B */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 4 67% 48%;
 
-    /* Secondary - Azul petróleo metálico */
-    --secondary: 199 69% 34%; /* #1B6F92 */
-    --secondary-foreground: 0 0% 100%; /* #FFFFFF */
-    --secondary-hover: 199 69% 40%;
+    --secondary: 206 62% 27%; /* #1B4F72 */
+    --secondary-foreground: 0 0% 100%;
+    --secondary-hover: 206 62% 32%;
 
-    --muted: 226 10% 19%; /* #2C2F36 */
-    --muted-foreground: 220 9% 64%; /* #9CA3AF */
+    --muted: 206 6% 57%;
+    --muted-foreground: 206 6% 57%;
     
-    /* Accent - Rojo rubí intenso */
-    --accent: 355 70% 52%; /* #D93240 */
+    --accent: 206 65% 47%; /* #2E86C1 */
     --accent-foreground: 0 0% 100%;
 
-    /* Destructive - Rojo rubí intenso */
-    --destructive: 355 70% 52%; /* #D93240 */
+    --destructive: 4 67% 42%;
     --destructive-foreground: 0 0% 100%;
-    --destructive-hover: 355 70% 58%;
+    --destructive-hover: 4 67% 48%;
 
-    --border: 214 13% 15%; /* #21262C */
-    --input: 214 13% 15%; /* #21262C */
-    --ring: 199 69% 34%; /* #1B6F92 */
-    
-    /* New custom color for an epic, parchment-like card header */
-    --info-card-header: 35 33% 85%;
-    --info-card-header-foreground: 35 25% 20%;
-
-    /* Chart Colors */
-    --chart-1: 191 100% 50%;
-    --chart-2: 199 69% 34%;
-    --chart-3: 45 100% 50%;
-    --chart-4: 25 95% 55%;
-    --chart-5: 355 70% 52%;
+    --border: 206 62% 27%;
+    --input: 210 55% 15%;
+    --ring: 206 65% 47%;
   }
 }
 
@@ -110,48 +88,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   .font-headline {
     font-family: 'Bebas Neue', sans-serif;
-  }
-  .embla {
-    overflow: hidden;
-  }
-  .embla__container {
-    display: flex;
-  }
-  .embla__slide {
-    flex: 0 0 100%;
-    min-width: 0;
-  }
-}
-
-@layer utilities {
-  @keyframes pulse-glow {
-    0%, 100% {
-      transform: scale(1);
-      filter: drop-shadow(0 0 4px hsl(var(--primary) / 0.6));
-    }
-    50% {
-      transform: scale(1.05);
-      filter: drop-shadow(0 0 8px hsl(var(--primary) / 0.8));
-    }
-  }
-  
-  @keyframes subtle-pulse {
-    0%, 100% {
-      opacity: 0.75;
-    }
-    50% {
-      opacity: 1;
-    }
-  }
-
-  .animate-pulse-glow {
-    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-  
-  .animate-subtle-pulse {
-      animation: subtle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
