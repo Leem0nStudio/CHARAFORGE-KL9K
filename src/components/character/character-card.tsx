@@ -78,13 +78,14 @@ export function CharacterCard({ character }: CharacterCardProps) {
                      {character.tags && character.tags.length > 0 ? (
                         <div className="flex flex-wrap items-center gap-1 mb-2">
                             {character.tags.slice(0, 3).map((tag) => (
-                                <Badge
-                                    key={tag}
-                                    variant="outline"
-                                    className={cn(getSlotColorClass(tag))}
-                                >
-                                    {tag.replace(/_/g, ' ')}
-                                </Badge>
+                                <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
+                                    <Badge
+                                        variant="outline"
+                                        className={cn('cursor-pointer hover:border-primary/50', getSlotColorClass(tag))}
+                                    >
+                                      {tag.replace(/_/g, ' ')}
+                                    </Badge>
+                                </Link>
                             ))}
                             {character.tags.length > 3 && <Badge variant="outline" className="text-xs">...</Badge>}
                         </div>
@@ -92,10 +93,12 @@ export function CharacterCard({ character }: CharacterCardProps) {
                         <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-grow">{character.description}</p>
                      )}
                      {character.dataPackName && (
-                        <Badge variant="outline" className="mb-2 text-xs">
-                            <Package className="h-3 w-3 mr-1.5" />
-                            {character.dataPackName}
-                        </Badge>
+                        <Link href={`/datapacks/${character.dataPackId}`}>
+                            <Badge variant="outline" className="mb-2 text-xs cursor-pointer hover:border-primary/50">
+                                <Package className="h-3 w-3 mr-1.5" />
+                                {character.dataPackName}
+                            </Badge>
+                        </Link>
                        )}
                 </CardContent>
                 <CardFooter className="p-3 bg-card/50">

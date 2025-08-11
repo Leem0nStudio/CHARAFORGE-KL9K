@@ -188,7 +188,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                               </div>
 
                               <div className="flex flex-wrap items-center gap-2">
-                                  <Badge variant="outline" className="text-muted-foreground">
+                                  <Badge variant="outline" className={cn(getSlotColorClass('alignment'), "text-muted-foreground")}>
                                       <Shield className="h-3 w-3 mr-1.5" />
                                       {character.alignment}
                                   </Badge>
@@ -206,7 +206,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                   )}
                                   {character.dataPackId && character.dataPackName && (
                                      <Link href={`/datapacks/${character.dataPackId}`}>
-                                        <Badge variant="outline" className="text-muted-foreground hover:bg-accent/20 hover:text-primary transition-colors">
+                                        <Badge variant="outline" className="text-muted-foreground hover:border-primary/50 cursor-pointer">
                                            <Tag className="h-3 w-3 mr-1.5" />
                                             {character.dataPackName}
                                         </Badge>
@@ -216,14 +216,15 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
 
                                {character.tags && character.tags.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-2 pt-2">
-                                  {character.tags.map((tag, index) => (
-                                    <Badge 
-                                        key={tag} 
-                                        variant="outline"
-                                        className={cn(getSlotColorClass(tag))}
-                                    >
-                                      {tag.replace(/_/g, ' ')}
-                                    </Badge>
+                                  {character.tags.map((tag) => (
+                                    <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
+                                        <Badge
+                                            variant="outline"
+                                            className={cn("cursor-pointer hover:border-primary/50", getSlotColorClass(tag))}
+                                        >
+                                          {tag.replace(/_/g, ' ')}
+                                        </Badge>
+                                    </Link>
                                   ))}
                                 </div>
                               )}

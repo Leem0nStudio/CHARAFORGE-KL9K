@@ -59,14 +59,15 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                     <span>by @{pack.author}</span>
                 </p>
                  <div className="flex flex-wrap gap-2 mt-4">
-                    {pack.tags.map((tag, index) => (
-                        <Badge 
-                            key={tag}
-                            variant="outline"
-                            className={cn(getSlotColorClass(tag))}
-                        >
-                            {tag}
-                        </Badge>
+                    {pack.tags.map((tag) => (
+                        <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
+                            <Badge 
+                                variant="outline"
+                                className={cn('cursor-pointer hover:border-primary/50', getSlotColorClass(tag))}
+                            >
+                                {tag}
+                            </Badge>
+                        </Link>
                     ))}
                 </div>
                 <p className="mt-4 text-base text-card-foreground/80">{pack.description}</p>
