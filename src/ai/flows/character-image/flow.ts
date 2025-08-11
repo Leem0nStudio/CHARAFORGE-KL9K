@@ -8,6 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
+import { Client } from "@gradio/client";
 
 // Helper function to get image dimensions in pixels.
 function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
@@ -73,7 +74,7 @@ const generateCharacterImageFlow = ai.defineFlow(
     outputSchema: GenerateCharacterImageOutputSchema,
   },
   async (input) => {
-    const { description, aspectRatio, imageEngine, lora } = input;
+    const { description, aspectRatio, imageEngine, lora, loraWeight, triggerWords } = input;
 
     if (imageEngine === 'gemini') {
         try {
@@ -101,7 +102,14 @@ const generateCharacterImageFlow = ai.defineFlow(
     } else { 
         // This branch now uses the robust Hugging Face Inference API.
         try {
-            const promptWithLora = lora ? `${description}, in the style of ${lora}` : description;
+            let promptWithLora = description;
+            if (lora) {
+                const weight = loraWeight || 0.75;
+                const loraTag = `<lora:${lora}:${weight}>`;
+                const words = triggerWords ? `${triggerWords}, ` : '';
+                promptWithLora = `${words}${description}, ${loraTag}`;
+            }
+
             const imageUrl = await queryHuggingFaceInferenceAPI({ 
                 inputs: promptWithLora,
                 parameters: {

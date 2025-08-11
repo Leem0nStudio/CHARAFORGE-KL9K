@@ -42,6 +42,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { cn } from "@/lib/utils";
 import { TagAssistantModal } from "./tag-assistant-modal";
+import { Slider } from "./ui/slider";
 
 const generationFormSchema = z.object({
   description: z.string().min(20, {
@@ -54,6 +55,8 @@ const generationFormSchema = z.object({
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
   imageEngine: z.enum(['gradio', 'gemini']).default('gradio'),
   lora: z.string().optional(),
+  loraWeight: z.number().min(0).max(1).optional(),
+  triggerWords: z.string().optional(),
 });
 
 const saveFormSchema = z.object({
@@ -73,6 +76,8 @@ type CharacterData = {
   aspectRatio: '1:1' | '16:9' | '9:16';
   imageEngine: 'gradio' | 'gemini';
   lora?: string;
+  loraWeight?: number;
+  triggerWords?: string;
 };
 
 export function CharacterGenerator() {
@@ -103,6 +108,8 @@ export function CharacterGenerator() {
       aspectRatio: '1:1',
       imageEngine: 'gradio',
       lora: "",
+      loraWeight: 0.75,
+      triggerWords: "",
     },
   });
 
@@ -212,6 +219,8 @@ export function CharacterGenerator() {
         aspectRatio: data.aspectRatio,
         imageEngine: data.imageEngine,
         lora: data.lora,
+        loraWeight: data.loraWeight,
+        triggerWords: data.triggerWords,
       });
     } catch (err: unknown) {
        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during biography generation.";
@@ -237,6 +246,8 @@ export function CharacterGenerator() {
             aspectRatio: characterData.aspectRatio,
             imageEngine: characterData.imageEngine,
             lora: characterData.lora,
+            loraWeight: characterData.loraWeight,
+            triggerWords: characterData.triggerWords,
         });
         if (!imageResult.imageUrl) {
             throw new Error("AI model did not return an image. This could be due to safety filters or an API issue.");
@@ -484,23 +495,63 @@ export function CharacterGenerator() {
                 />
                 </div>
                 {watchImageEngine === 'gradio' && (
-                  <FormField
-                    control={generationForm.control}
-                    name="lora"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>LoRA (Optional)</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="username/lora-name"
-                            {...field}
-                            disabled={!canInteract}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-4 rounded-md border p-4 bg-muted/20">
+                    <FormField
+                      control={generationForm.control}
+                      name="lora"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>LoRA (Optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="username/lora-name"
+                              {...field}
+                              disabled={!canInteract}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={generationForm.control}
+                      name="triggerWords"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Trigger Words</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="e.g., best quality, masterpiece"
+                              {...field}
+                              disabled={!canInteract}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={generationForm.control}
+                      name="loraWeight"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex justify-between">
+                            <FormLabel>LoRA Weight</FormLabel>
+                            <span className="text-sm font-medium">{field.value?.toFixed(2)}</span>
+                          </div>
+                          <FormControl>
+                             <Slider
+                                defaultValue={[field.value || 0.75]}
+                                max={1}
+                                step={0.05}
+                                onValueChange={(value) => field.onChange(value[0])}
+                                disabled={!canInteract}
+                             />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 )}
                  <FormField
                   control={generationForm.control}
