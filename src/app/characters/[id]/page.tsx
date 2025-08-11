@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { UserProfile } from '@/types/user';
 import { CharacterImageActions } from '@/components/character/character-image-actions';
+import { chartColors } from '@/lib/app-config';
 
 
 async function getCharacter(characterId: string): Promise<{
@@ -214,8 +215,16 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
 
                                {character.tags && character.tags.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-2 pt-2">
-                                  {character.tags.map(tag => (
-                                    <Badge key={tag} variant="emphasis" className="text-xs">
+                                  {character.tags.map((tag, index) => (
+                                    <Badge 
+                                        key={tag} 
+                                        variant="default"
+                                        style={{ 
+                                            backgroundColor: `hsl(var(${chartColors[index % chartColors.length]}))`,
+                                            color: `hsl(var(--primary-foreground))`,
+                                        }}
+                                        className="text-xs"
+                                    >
                                       {tag.replace(/_/g, ' ')}
                                     </Badge>
                                   ))}

@@ -45,6 +45,13 @@
     /* New custom color for an epic, parchment-like card header */
     --info-card-header: 35 33% 85%; /* A light, parchment-like color */
     --info-card-header-foreground: 35 25% 20%; /* A dark, warm brown for the text */
+
+    /* Chart Colors */
+    --chart-1: 203 65% 40%; /* Azul Intenso */
+    --chart-2: 150 60% 45%; /* Verde Esmeralda */
+    --chart-3: 45 100% 50%; /* Amarillo Dorado */
+    --chart-4: 25 95% 55%;  /* Naranja Cálido */
+    --chart-5: 0 70% 60%;   /* Rojo Suave */
   }
 
   .dark {
@@ -87,6 +94,13 @@
     /* New custom color for an epic, parchment-like card header */
     --info-card-header: 35 33% 85%;
     --info-card-header-foreground: 35 25% 20%;
+
+    /* Chart Colors */
+    --chart-1: 203 65% 40%;
+    --chart-2: 150 60% 45%;
+    --chart-3: 45 100% 50%;
+    --chart-4: 25 95% 55%;
+    --chart-5: 0 70% 60%;
   }
 }
 

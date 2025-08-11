@@ -21,3 +21,11 @@ export const adminNavItems: NavItem[] = [
     { href: '/admin/datapacks', label: 'DataPacks', icon: Package },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
+
+export const chartColors = [
+  '--chart-1',
+  '--chart-2',
+  '--chart-3',
+  '--chart-4',
+  '--chart-5',
+];
