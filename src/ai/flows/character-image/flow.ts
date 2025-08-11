@@ -46,12 +46,8 @@ const generateCharacterImageFlow = ai.defineFlow(
         // Log the detailed error on the server for debugging purposes.
         console.error("Error in generateCharacterImageFlow:", error);
 
-        // Provide a more user-friendly error message to the client.
-        if (error instanceof Error && error.message.includes('SAFETY')) {
-             throw new Error("Failed to generate character image. The prompt was rejected by safety filters. Please try a less graphic description.");
-        }
-        
-        throw new Error("Failed to generate character image. The AI service may be temporarily unavailable or the prompt was rejected.");
+        // Provide a more user-friendly error message to the client. This is a robust catch-all.
+        throw new Error("Failed to generate character image. The AI service may be temporarily unavailable or the prompt was rejected for content reasons.");
     }
   }
 );
