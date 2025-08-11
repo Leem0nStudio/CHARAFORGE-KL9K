@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { UserProfile } from '@/types/user';
 import { CharacterImageActions } from '@/components/character/character-image-actions';
-import { chartColors } from '@/lib/app-config';
+import { getSlotColorClass } from '@/lib/app-config';
 import { cn } from '@/lib/utils';
 
 
@@ -216,11 +216,11 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
 
                                {character.tags && character.tags.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-2 pt-2">
-                                  {character.tags.map((tag, index) => (
+                                  {character.tags.map((tag) => (
                                     <Badge 
                                         key={tag} 
                                         variant="outline"
-                                        className={cn(`text-chart-${(index % 5) + 1}`)}
+                                        className={cn(getSlotColorClass(tag))}
                                     >
                                       {tag.replace(/_/g, ' ')}
                                     </Badge>

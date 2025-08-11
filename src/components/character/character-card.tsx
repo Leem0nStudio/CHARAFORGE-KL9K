@@ -9,7 +9,7 @@ import { Card, CardFooter, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import type { Character } from '@/types/character';
-import { chartColors } from '@/lib/app-config';
+import { getSlotColorClass } from '@/lib/app-config';
 import { cn } from '@/lib/utils';
 
 interface CharacterCardProps {
@@ -77,11 +77,11 @@ export function CharacterCard({ character }: CharacterCardProps) {
                  <CardContent className="p-3 bg-card flex-col items-start flex-grow">
                      {character.tags && character.tags.length > 0 ? (
                         <div className="flex flex-wrap items-center gap-1 mb-2">
-                            {character.tags.slice(0, 3).map((tag, index) => (
+                            {character.tags.slice(0, 3).map((tag) => (
                                 <Badge
                                     key={tag}
                                     variant="outline"
-                                    className={cn(`text-chart-${(index % 5) + 1}`)}
+                                    className={cn(getSlotColorClass(tag))}
                                 >
                                     {tag.replace(/_/g, ' ')}
                                 </Badge>
