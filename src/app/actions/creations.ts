@@ -64,6 +64,50 @@ export async function getPublicCharacters(): Promise<Character[]> {
 }
 
 /**
+ * Searches for public characters that contain a specific tag in their 'tags' array.
+ * @param {string} tag The tag to search for.
+ * @returns {Promise<Character[]>} A promise resolving to an array of matching characters.
+ */
+export async function searchCharactersByTag(tag: string): Promise<Character[]> {
+    if (!adminDb) {
+        console.error('Database service is unavailable.');
+        return [];
+    }
+    if (!tag) {
+        return [];
+    }
+
+    try {
+        const charactersRef = adminDb.collection('characters');
+        const q = charactersRef
+            .where('status', '==', 'public')
+            .where('tags', 'array-contains', tag)
+            .orderBy('createdAt', 'desc')
+            .limit(50); // Limit to 50 results for performance
+        
+        const snapshot = await q.get();
+
+        if (snapshot.empty) {
+            return [];
+        }
+
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt.toDate(),
+            } as Character;
+        });
+
+    } catch (error) {
+        console.error(`Error searching for tag "${tag}":`, error);
+        return [];
+    }
+}
+
+
+/**
  * Fetches the top 4 creators based on the number of characters they have created
  * and who have set their profile to public.
  * @returns {Promise<UserProfile[]>} A promise that resolves to an array of user profile objects.
