@@ -31,7 +31,7 @@ async function getCharacter(characterId: string): Promise<{
     
     let currentUserId: string | null = null;
     try {
-        const cookieStore = cookies();
+        const cookieStore = await cookies();
         const idToken = cookieStore.get('firebaseIdToken')?.value;
         if (idToken) {
             const decodedToken = await adminDb.app.auth().verifyIdToken(idToken);
@@ -215,7 +215,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                {character.tags && character.tags.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-2 pt-2">
                                   {character.tags.map(tag => (
-                                    <Badge key={tag} variant="outline" className="text-xs">
+                                    <Badge key={tag} variant="emphasis" className="text-xs">
                                       {tag.replace(/_/g, ' ')}
                                     </Badge>
                                   ))}
