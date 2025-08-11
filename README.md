@@ -69,3 +69,80 @@ The application includes a script to manage user roles directly from the command
 *   **UI:** [React](https://react.dev/), [ShadCN UI](https://ui.shadcn.com/), [Tailwind CSS](https://tailwindcss.com/)
 *   **Icons:** [Lucide React](https://lucide.dev/guide/packages/lucide-react)
 *   **Forms:** [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
+
+
+---
+
+## For AIs: Technical Overview
+
+### 1. Project Purpose
+
+**CharaForge** is a web application for generating fictional characters using generative AI. Users can describe a character concept to receive a detailed biography and a unique portrait. The core experience is enhanced by "DataPacks," which are thematic templates that guide the AI to create characters within specific genres (e.g., fantasy, cyberpunk). The application also includes social features like public galleries, character branching, and a "Story Forge" to create narratives with the generated characters.
+
+### 2. Tech Stack
+
+- **Framework:** Next.js 15.3+ (using the App Router).
+- **Language:** TypeScript.
+- **UI:** React 18.3+, ShadCN UI component library, Tailwind CSS for styling. `framer-motion` is used for animations.
+- **Backend & Database:** Firebase is the primary backend service provider.
+  - **Authentication:** Firebase Authentication (Email/Password).
+  - **Database:** Firestore is used as the primary NoSQL database.
+  - **Storage:** Firebase Storage for user-uploaded images (avatars) and AI-generated content.
+- **AI Layer:** Genkit is used to define and manage all AI-related tasks.
+  - **Model Provider:** `@genkit-ai/googleai` for interfacing with Google's Gemini models (1.5 Flash for text, 2.0 Flash for images).
+- **State Management:** Primarily React hooks (`useState`, `useEffect`) and Context API (`useAuth`).
+- **Forms:** React Hook Form with Zod for schema validation.
+
+### 3. Architecture
+
+#### 3.1. Frontend (Client Components & RSC)
+
+- The UI is built using React Server Components (RSC) by default, with client-side interactivity introduced via `'use client'` directives where necessary.
+- UI components are sourced from `shadcn/ui` and located in `src/components/ui`. Custom, reusable application components are in `src/components`.
+- The main application layout is defined in `src/app/layout.tsx`, which sets up theme providers, fonts, and the main `AuthProvider`.
+
+#### 3.2. Backend (Server Actions)
+
+- All backend logic (database interactions, business logic) is implemented as **Next.js Server Actions**.
+- These actions are located in `src/app/actions/`. This co-location of backend logic with the frontend framework simplifies the architecture by eliminating the need for separate API routes for most operations.
+- Actions are strongly typed and often use Zod for input validation.
+
+#### 3.3. Authentication Flow
+
+- A custom `useAuth` hook (`src/hooks/use-auth.tsx`) manages the user's authentication state on the client.
+- Upon login, the Firebase client SDK provides an ID token. This token is sent to a custom API route (`src/app/api/auth/set-cookie/route.ts`) which sets a secure, **HTTPOnly cookie** named `firebaseIdToken`.
+- All Server Actions are protected by calling a helper function, `verifyAndGetUid` (`src/lib/auth/server.ts`), which reads the cookie, verifies the token using the Firebase Admin SDK, and returns the user's UID or throws an error. This is the critical mechanism for securing server-side logic.
+
+#### 3.4. AI Layer (Genkit Flows)
+
+- All interactions with the generative AI models are abstracted into **Genkit Flows**, located in `src/ai/flows/`.
+- Each flow defines its input and output schemas using Zod (`types.ts`) and the core logic for calling the AI model (`flow.ts`).
+- **Key Flows:**
+  - `character-bio`: Generates a text biography from a description.
+  - `character-image`: Generates a character portrait. It includes specific error handling for safety filter rejections.
+  - `datapack-schema`: Generates a complete JSON schema for a DataPack based on a user's concept.
+  - `story-generation`: Takes a cast of characters and a prompt to write a short story.
+  - `danbooru-tag-suggestion`: Uses a Genkit Tool (`searchTagsTool`) to query a local tag database and suggest relevant tags to the user.
+
+#### 3.5. Database Schema (Firestore)
+
+- `users`: Stores public user profiles, preferences, roles, and stats (e.g., `installedPacks`).
+- `characters`: The core collection. Stores all generated character data, including the prompt, bio, image URLs, owner's ID, versioning info, and sharing status.
+- `datapacks`: Contains the DataPack definitions, including their name, description, and the crucial `schema` object which dictates how the generation wizard behaves.
+- `storyCasts`: Stores user-created "casts" (collections of character IDs) used by the Story Forge.
+
+### 4. Key Features (Technical Implementation)
+
+- **Character Generation:** The main generator (`src/components/character-generator.tsx`) is a client component that calls the `generateCharacterBio` and `generateCharacterImage` flows. It manages the multi-step state of generation (bio first, then image).
+- **DataPack System:**
+  - DataPacks are defined by `datapack.json` files in `data/datapacks/`. A seeding script (`scripts/seed-datapacks.ts`) uploads this data to Firestore.
+  - The `DataPackSelectorModal` (`src/components/datapack-selector-modal.tsx`) allows users to choose an *installed* pack and use its schema to generate a detailed prompt via a dynamic form wizard.
+- **Story Forge:**
+  - Located at `src/app/story-forge/page.tsx`, this feature allows users to create `StoryCast` documents.
+  - They can then select a cast, provide a prompt, and call the `generateStory` action, which in turn executes the corresponding Genkit flow.
+- **Admin Panel:**
+  - A dedicated section under `/admin` protected by an admin role check.
+  - Allows for CRUD operations on DataPacks via the `EditDataPackForm`.
+- **Versioning & Branching:**
+  - When a user creates a "new version" of their character, the `createCharacterVersion` action duplicates the character data but increments the `version` number and updates the `versions` array on all related documents.
+  - "Branching" (`branchCharacter` action) is similar but changes the `userId` to the new owner and preserves lineage information (`branchedFromId`, `originalAuthorId`).
