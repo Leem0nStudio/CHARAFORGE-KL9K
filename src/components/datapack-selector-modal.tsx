@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import Link from 'next/link';
-import { Input } from './ui/input';
 
 function PackPreview({ pack, onChoose }: { pack: DataPack | null, onChoose: () => void }) {
     if (!pack) {
@@ -59,11 +58,10 @@ function PackPreview({ pack, onChoose }: { pack: DataPack | null, onChoose: () =
     )
 }
 
-function PackSelector({ packs, onSelect, selectedPackId, onChoose }: {
+function PackSelector({ packs, onSelect, selectedPackId }: {
     packs: DataPack[],
     selectedPackId: string | null,
-    onSelect: (pack: DataPack) => void,
-    onChoose: (pack: DataPack) => void
+    onSelect: (pack: DataPack) => void
 }) {
     return (
         <div className="flex flex-col h-full">
@@ -87,13 +85,10 @@ function PackSelector({ packs, onSelect, selectedPackId, onChoose }: {
                              <div className="relative w-16 h-12 rounded-md overflow-hidden shrink-0 bg-muted/20">
                                 <Image src={pack.coverImageUrl || 'https://placehold.co/200x150.png'} alt={pack.name} fill className="object-contain" data-ai-hint="datapack cover image" />
                             </div>
-                            <div className='flex-grow'>
+                            <div>
                                 <p className="font-semibold text-card-foreground">{pack.name}</p>
                                 <p className="text-xs text-muted-foreground">by {pack.author}</p>
                             </div>
-                            <Button variant="ghost" size="icon" className="sm:hidden" onClick={(e) => { e.stopPropagation(); onChoose(pack); }}>
-                                <ArrowRight className="h-4 w-4" />
-                            </Button>
                         </div>
                     ))}
                 </div>
@@ -155,17 +150,17 @@ function OptionSelectModal({
     )
 }
 
-function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPromptGenerated: (prompt: string, pack: DataPack) => void, onBack: () => void }) {
+function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPromptGenerated: (prompt: string, packName: string) => void, onBack: () => void }) {
     const { control, handleSubmit, watch, setValue } = useForm();
     const formValues = watch();
 
     const [activeSlot, setActiveSlot] = useState<Slot | null>(null);
 
-    const wizardSlots = useMemo(() => pack.schema.slots || [], [pack.schema]);
+    const wizardSlots = useMemo(() => pack.schema.slots.filter(slot => !slot.isLocked), [pack.schema.slots]);
 
     const disabledOptions = useMemo(() => {
         const disabled = new Map<string, Set<string>>();
-        wizardSlots.forEach(slot => {
+        pack.schema.slots.forEach(slot => {
             const selectedValue = formValues[slot.id];
             if (!selectedValue) return;
 
@@ -181,27 +176,34 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
             });
         });
         return disabled;
-    }, [formValues, wizardSlots]);
+    }, [formValues, pack.schema.slots]);
 
     useEffect(() => {
-        wizardSlots.forEach(slot => {
+        pack.schema.slots.forEach(slot => {
             if (slot.defaultOption) {
                 setValue(slot.id, slot.defaultOption);
-            } else if (slot.options && slot.options.length > 0) {
+            } else if (slot.type === 'select' && slot.options && slot.options.length > 0) {
                  setValue(slot.id, slot.options[0].value);
             }
         });
-    }, [wizardSlots, setValue]);
+    }, [pack.schema.slots, setValue]);
 
     const onSubmit = (data: any) => {
         let prompt = pack.schema.promptTemplate || '';
+        // Include locked slots in the data for prompt generation
+        pack.schema.slots.forEach(slot => {
+            if (slot.isLocked && slot.defaultOption) {
+                data[slot.id] = slot.defaultOption;
+            }
+        });
+
         for (const key in data) {
             if (data[key]) {
                prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), data[key]);
             }
         }
         prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/, ,/g, ',').replace(/, /g, ' ').replace(/,$/g, '').trim();
-        onPromptGenerated(prompt, pack);
+        onPromptGenerated(prompt, pack.name);
     };
 
     return (
@@ -228,21 +230,6 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
             <ScrollArea className="flex-grow my-4 pr-3 -mr-3">
                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {wizardSlots.map(slot => {
-                        if (!slot || slot.isLocked) return null; // Do not render locked slots
-
-                        if (slot.type === 'text') {
-                             return (
-                                 <div key={slot.id} className="p-4 border rounded-lg col-span-2">
-                                     <Label>{slot.label}</Label>
-                                     <Input
-                                         {...control.register(slot.id)}
-                                         placeholder={slot.placeholder}
-                                         className="w-full"
-                                     />
-                                 </div>
-                             );
-                        }
-                        
                         const selectedValue = formValues[slot.id];
                         const selectedOption = slot.options?.find(o => o.value === selectedValue);
 
@@ -275,7 +262,7 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
 interface DataPackSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onPromptGenerated: (prompt: string, pack: DataPack) => void;
+    onPromptGenerated: (prompt: string, packName: string) => void;
     installedPacks: DataPack[];
     isLoading: boolean;
 }
@@ -306,8 +293,8 @@ export function DataPackSelectorModal({
 
     }, [isOpen, isLoading, packs, selectedPack, wizardPack]);
     
-    const handlePromptGeneratedAndClose = useCallback((prompt: string, pack: DataPack) => {
-        onPromptGenerated(prompt, pack);
+    const handlePromptGeneratedAndClose = useCallback((prompt: string, packName: string) => {
+        onPromptGenerated(prompt, packName);
         onClose();
     }, [onPromptGenerated, onClose]);
     
@@ -343,26 +330,11 @@ export function DataPackSelectorModal({
         
         return (
              <>
-                <DialogHeader className="hidden sm:block">
+                <DialogHeader>
                     <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
                     <DialogDescription>Choose one of your installed packs to start building a prompt.</DialogDescription>
                 </DialogHeader>
-
-                <div className="sm:hidden">
-                    <DialogHeader>
-                        <DialogTitle className="font-headline text-2xl">Select a DataPack</DialogTitle>
-                    </DialogHeader>
-                    <div className="mt-4">
-                        <PackSelector
-                            packs={packs}
-                            onSelect={() => {}} 
-                            selectedPackId={null}
-                            onChoose={(pack) => setWizardPack(pack)}
-                        />
-                    </div>
-                </div>
-
-                <div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-8 pt-4 min-h-[60vh]">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4 min-h-[60vh]">
                     <div className="md:col-span-2">
                         <PackPreview pack={selectedPack} onChoose={() => {if (selectedPack) setWizardPack(selectedPack)}} />
                     </div>
@@ -371,7 +343,6 @@ export function DataPackSelectorModal({
                             packs={packs}
                             onSelect={setSelectedPack}
                             selectedPackId={selectedPack?.id || null}
-                            onChoose={() => {}}
                         />
                     </div>
                 </div>
@@ -381,11 +352,9 @@ export function DataPackSelectorModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className={cn("sm:max-w-4xl", wizardPack ? "sm:max-w-4xl" : "sm:max-w-4xl")}>
+            <DialogContent className={cn("sm:max-w-4xl", wizardPack ? "sm:max-w-2xl" : "sm:max-w-5xl")}>
                 {renderContent()}
             </DialogContent>
         </Dialog>
     )
 }
-
-    

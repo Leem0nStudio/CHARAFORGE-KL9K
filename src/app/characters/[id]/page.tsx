@@ -1,10 +1,11 @@
+
 'use server';
 
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { adminDb } from '@/lib/firebase/server';
-import type { Character, TimelineEvent } from '@/types/character';
-import { User, Calendar, Tag, GitBranch, Shield, ScrollText, AlertTriangle } from 'lucide-react';
+import type { Character } from '@/types/character';
+import { User, Calendar, Tag, GitBranch, Shield, ScrollText } from 'lucide-react';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,6 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { UserProfile } from '@/types/user';
 import { CharacterImageActions } from '@/components/character/character-image-actions';
-import { Separator } from '@/components/ui/separator';
 
 
 async function getCharacter(characterId: string): Promise<{
@@ -77,7 +77,6 @@ async function getCharacter(characterId: string): Promise<{
             branchingPermissions: data.branchingPermissions || 'private',
             versions: data.versions || [{ id: doc.id, name: data.versionName || 'v.1', version: data.version || 1 }],
             alignment: data.alignment || 'True Neutral',
-            timeline: data.timeline || [],
         } as Character;
 
         return { character, currentUserId, creatorProfile, originalAuthorProfile };
@@ -86,31 +85,6 @@ async function getCharacter(characterId: string): Promise<{
         console.error(`Error fetching character ${characterId}:`, error);
         return { character: null, currentUserId: null, creatorProfile: null, originalAuthorProfile: null };
     }
-}
-
-function TimelineSection({ timeline }: { timeline: TimelineEvent[] }) {
-    if (!timeline || timeline.length === 0) {
-        return null;
-    }
-
-    return (
-        <div className="mt-6">
-            <h3 className="text-xl font-headline flex items-center gap-2 mb-4"><ScrollText className="w-5 h-5 text-primary" /> Timeline</h3>
-            <div className="space-y-4">
-                {timeline.map((event, index) => (
-                    <Card key={event.id || index} className="bg-muted/30">
-                        <CardHeader className="p-4">
-                            <CardTitle className="text-base font-semibold">{event.title}</CardTitle>
-                            <CardDescription>{event.date}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <p className="text-sm text-muted-foreground">{event.description}</p>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-        </div>
-    )
 }
 
 
@@ -187,10 +161,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                 <AvatarImage src={authorForAvatar.photoURL || undefined} alt={authorForAvatar.displayName || 'Author'} />
                                 <AvatarFallback>{authorForAvatar.displayName?.charAt(0) || '?'}</AvatarFallback>
                               </Avatar>
-                              <div className="flex items-center gap-4">
-                                <h2 className="text-4xl font-headline tracking-wider">{character.name}</h2>
-                                {character.isNsfw && <Badge variant="destructive"><AlertTriangle className="w-4 h-4 mr-1.5"/> NSFW</Badge>}
-                              </div>
+                              <h2 className="text-4xl font-headline tracking-wider">{character.name}</h2>
                           </div>
                           
                           {/* Metadata Section */}
@@ -226,26 +197,17 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                       </Link>
                                   )}
                               </div>
-                               {character.tags && character.tags.length > 0 && (
-                                <div className="flex flex-wrap items-center gap-2">
-                                  {character.tags.map(tag => (
-                                      <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
-                                  ))}
-                                </div>
-                              )}
                           </div>
                           
                           {/* Biography & Timeline Section */}
                           <CardContent className="pt-6 flex-1 flex flex-col min-h-0">
                               <ScrollArea className="flex-grow h-[600px] pr-4">
                                 <div>
-                                    <h3 className="text-xl font-headline mb-2">Biography</h3>
+                                    <h3 className="text-xl font-headline mb-2 flex items-center gap-2"><ScrollText className="w-5 h-5 text-primary" /> Biography</h3>
                                     <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
                                         {character.biography}
                                     </p>
                                 </div>
-                                <Separator className="my-6" />
-                                <TimelineSection timeline={character.timeline || []} />
                               </ScrollArea>
                           </CardContent>
                       </Card>

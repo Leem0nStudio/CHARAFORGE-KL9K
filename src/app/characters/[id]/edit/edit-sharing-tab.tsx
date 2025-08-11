@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useTransition } from 'react';
@@ -7,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { ShieldCheck, GalleryHorizontal, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, GalleryHorizontal } from 'lucide-react';
 
 export function EditSharingTab({ character, onUpdate }: { character: Character, onUpdate: (data: Partial<Character>) => void }) {
     const { toast } = useToast();
@@ -24,27 +25,19 @@ export function EditSharingTab({ character, onUpdate }: { character: Character, 
             });
             if (!result.success) {
                 // Revert on failure
-                onUpdate({ 
-                    status: character.status, 
-                    isSharedToDataPack: character.isSharedToDataPack,
-                    isNsfw: character.isNsfw,
-                });
+                onUpdate({ status: character.status, isSharedToDataPack: character.isSharedToDataPack });
             }
         });
     };
 
     const handleTogglePublicStatus = (checked: boolean) => {
         const newStatus = checked ? 'public' : 'private';
-        handleUpdate(() => updateCharacterStatus(character.id, newStatus, character.isNsfw), { status: newStatus });
+        handleUpdate(() => updateCharacterStatus(character.id, newStatus), { status: newStatus });
     };
 
     const handleToggleDataPackSharing = (checked: boolean) => {
         handleUpdate(() => updateCharacterDataPackSharing(character.id, checked), { isSharedToDataPack: checked });
     };
-
-    const handleToggleNsfw = (checked: boolean) => {
-        handleUpdate(() => updateCharacterStatus(character.id, character.status, checked), { isNsfw: checked });
-    }
 
     return (
         <Card>
@@ -87,22 +80,6 @@ export function EditSharingTab({ character, onUpdate }: { character: Character, 
                  {character.dataPackId && character.status !== 'public' && (
                     <p className="text-xs text-muted-foreground text-center">Character must be public to be shared in a DataPack gallery.</p>
                  )}
-
-                <div className="flex items-center justify-between rounded-lg border p-4 border-destructive/50">
-                    <div className="space-y-0.5">
-                        <Label htmlFor="nsfw-switch" className="flex items-center gap-2 font-semibold text-destructive">
-                            <AlertTriangle /> Mark as NSFW
-                        </Label>
-                        <p className="text-sm text-muted-foreground">Mark this character as Not Safe For Work (adult content).</p>
-                    </div>
-                    <Switch
-                        id="nsfw-switch"
-                        checked={!!character.isNsfw}
-                        onCheckedChange={handleToggleNsfw}
-                        disabled={isUpdating}
-                    />
-                </div>
-
             </CardContent>
         </Card>
     );

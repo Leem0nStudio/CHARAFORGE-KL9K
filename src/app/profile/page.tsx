@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { updateUserProfile, deleteUserAccount, updateUserPreferences, type ActionResponse } from '@/app/actions/user';
 import { getInstalledDataPacks } from '@/app/actions/datapacks';
-import { Loader2, User, Swords, Heart, Package, Gem, Calendar, Wand2, Camera, AlertTriangle } from 'lucide-react';
+import { Loader2, User, Swords, Heart, Package, Gem, Calendar, Wand2, Camera } from 'lucide-react';
 import type { UserProfile, UserPreferences } from '@/types/user';
 import type { DataPack } from '@/types/datapack';
 import { format } from 'date-fns';
@@ -236,18 +236,6 @@ function PreferencesForm({ initialPreferences }: { initialPreferences: UserPrefe
                    onCheckedChange={(checked) => handleNestedPreferencesChange('privacy', 'profileVisibility', checked ? 'public' : 'private')}
                 />
             </div>
-             <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                <div className="space-y-0.5">
-                    <Label className="flex items-center gap-2">
-                        <AlertTriangle className="text-destructive"/> Show NSFW Content
-                    </Label>
-                    <CardDescription>Display content marked as "Not Safe For Work".</CardDescription>
-                </div>
-                <Switch
-                   checked={preferences.privacy.showNsfw}
-                   onCheckedChange={(checked) => handleNestedPreferencesChange('privacy', 'showNsfw', checked)}
-                />
-            </div>
         </div>
          <Button onClick={handleSavePreferences} disabled={isSavingPrefs}>
             {isSavingPrefs && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -443,7 +431,7 @@ export default function ProfilePage() {
   const defaultPreferences: UserPreferences = {
     theme: 'system',
     notifications: { email: false },
-    privacy: { profileVisibility: 'private', showNsfw: false },
+    privacy: { profileVisibility: 'private' },
   };
 
   const userPreferences = (userProfile?.preferences as UserPreferences) || defaultPreferences;

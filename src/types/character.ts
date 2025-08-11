@@ -39,10 +39,6 @@ export type Character = {
   originalAuthorId?: string | null;
   originalAuthorName?: string | null;
   dataPackName?: string | null; // Added for display purposes
-  tags?: string[];
-  isNsfw?: boolean;
   alignment: 'Lawful Good' | 'Neutral Good' | 'Chaotic Good' | 'Lawful Neutral' | 'True Neutral' | 'Chaotic Neutral' | 'Lawful Evil' | 'Neutral Evil' | 'Chaotic Evil';
   timeline?: TimelineEvent[]; // New field for the character's timeline
 };
-
-    

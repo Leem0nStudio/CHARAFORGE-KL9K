@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +41,6 @@ import type { DataPack } from "@/types/datapack";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { cn } from "@/lib/utils";
-import { TagAssistantModal } from "./tag-assistant-modal";
 
 const generationFormSchema = z.object({
   description: z.string().min(20, {
@@ -66,8 +65,6 @@ type CharacterData = {
   imageUrl: string | null;
   description: string;
   dataPackId?: string | null;
-  tags?: string[];
-  isNsfw?: boolean;
   aspectRatio: '1:1' | '16:9' | '9:16';
 };
 
@@ -79,11 +76,9 @@ export function CharacterGenerator() {
   const [bioError, setBioError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [isPackModalOpen, setIsPackModalOpen] = useState(false);
-  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
   const [isLoadingPacks, setIsLoadingPacks] = useState(false);
   const [activePackName, setActivePackName] = useState<string | null>(null);
-  const [activePack, setActivePack] = useState<DataPack | null>(null);
 
   const { toast } = useToast();
   const { authUser, loading: authLoading } = useAuth();
@@ -107,23 +102,16 @@ export function CharacterGenerator() {
     },
   });
 
-  const handlePromptGenerated = useCallback((prompt: string, pack: DataPack) => {
+  const handlePromptGenerated = useCallback((prompt: string, packName: string) => {
     generationForm.setValue('description', prompt, { shouldValidate: true });
-    setActivePack(pack);
-    setActivePackName(pack.name);
+    setActivePackName(packName);
     
     const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('packId', pack.id);
+    currentUrl.searchParams.set('packId', dataPackId || '');
     currentUrl.searchParams.set('prompt', encodeURIComponent(prompt));
     router.replace(currentUrl.toString(), { scroll: false });
     setIsPackModalOpen(false);
-  }, [generationForm, router]);
-
-  const handleAppendTags = useCallback((tags: string[]) => {
-    const currentDescription = generationForm.getValues('description');
-    const newDescription = [currentDescription.trim(), ...tags].filter(Boolean).join(', ');
-    generationForm.setValue('description', newDescription, { shouldValidate: true });
-  }, [generationForm]);
+  }, [generationForm, dataPackId, router]);
   
   // Effect to read prompt from URL and set it in the form
   useEffect(() => {
@@ -140,17 +128,13 @@ export function CharacterGenerator() {
             try {
                 const packs = await getInstalledDataPacks();
                 setInstalledPacks(packs);
-                const currentActivePack = packs.find(p => p.id === dataPackId);
-                if (currentActivePack) {
-                    setActivePack(currentActivePack);
-                    setActivePackName(currentActivePack.name);
+                const activePack = packs.find(p => p.id === dataPackId);
+                if (activePack) {
+                    setActivePackName(activePack.name);
                 }
             } catch (error) {
                  console.error("Failed to fetch pack name:", error);
             }
-        } else {
-            setActivePack(null);
-            setActivePackName(null);
         }
     }
     loadPacksAndSetActive();
@@ -196,9 +180,7 @@ export function CharacterGenerator() {
         biography: bioResult.biography,
         imageUrl: null,
         description: data.description,
-        dataPackId: activePack?.id,
-        tags: activePack?.tags || [],
-        isNsfw: activePack?.isNsfw || false,
+        dataPackId: dataPackId,
         aspectRatio: data.aspectRatio,
       });
     } catch (err: unknown) {
@@ -259,8 +241,6 @@ export function CharacterGenerator() {
         biography: characterData.biography,
         imageUrl: characterData.imageUrl,
         dataPackId: characterData.dataPackId,
-        tags: characterData.tags,
-        isNsfw: characterData.isNsfw,
       });
 
       toast({
@@ -295,11 +275,6 @@ export function CharacterGenerator() {
       installedPacks={installedPacks}
       isLoading={isLoadingPacks}
     />
-    <TagAssistantModal
-        isOpen={isTagModalOpen}
-        onClose={() => setIsTagModalOpen(false)}
-        onAppendTags={handleAppendTags}
-    />
     <div className="grid gap-8 lg:grid-cols-5">
       <div className="lg:col-span-2">
         <Card className="sticky top-20 shadow-lg">
@@ -317,12 +292,7 @@ export function CharacterGenerator() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="flex justify-between items-center mb-2">
-                        <FormLabel>Character Description</FormLabel>
-                        <Button type="button" variant="outline" size="sm" onClick={() => setIsTagModalOpen(true)} disabled={!canInteract}>
-                          <Tags className="mr-2 h-3 w-3" /> Suggest Tags
-                        </Button>
-                      </div>
+                      <FormLabel>Character Description</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder. They are haunted by a past betrayal..."
