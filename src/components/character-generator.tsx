@@ -44,16 +44,18 @@ import { cn } from "@/lib/utils";
 import { TagAssistantModal } from "./tag-assistant-modal";
 import { Slider } from "./ui/slider";
 
+// Form schemas remain largely the same, but default values might change
 const generationFormSchema = z.object({
   description: z.string().min(20, {
     message: "Please enter a more detailed description (at least 20 characters).",
   }).max(1000, {
     message: "Description must not be longer than 1000 characters."
   }),
-  tags: z.string().optional(), // Hidden field for tags
+  tags: z.string().optional(),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
-  imageEngine: z.enum(['gradio', 'gemini']).default('gradio'),
+  imageEngine: z.enum(['huggingface', 'gemini']).default('huggingface'),
+  hfModelId: z.string().optional(), // Will be populated from the model management system
   lora: z.string().optional(),
   loraWeight: z.number().min(0).max(1).optional(),
   triggerWords: z.string().optional(),
@@ -74,7 +76,8 @@ type CharacterData = {
   tags: string;
   dataPackId?: string | null;
   aspectRatio: '1:1' | '16:9' | '9:16';
-  imageEngine: 'gradio' | 'gemini';
+  imageEngine: 'huggingface' | 'gemini';
+  hfModelId?: string; // New field
   lora?: string;
   loraWeight?: number;
   triggerWords?: string;
@@ -106,7 +109,8 @@ export function CharacterGenerator() {
       tags: "",
       targetLanguage: 'English',
       aspectRatio: '1:1',
-      imageEngine: 'gradio',
+      imageEngine: 'huggingface',
+      hfModelId: "stabilityai/stable-diffusion-xl-base-1.0", // Default model
       lora: "",
       loraWeight: 0.75,
       triggerWords: "",
@@ -132,7 +136,6 @@ export function CharacterGenerator() {
     setIsPackModalOpen(false);
   }, [generationForm, router]);
   
-  // Effect to read prompt from URL and set it in the form
   useEffect(() => {
     const promptFromUrl = searchParams.get('prompt');
     if (promptFromUrl) {
@@ -140,7 +143,6 @@ export function CharacterGenerator() {
     }
   }, [searchParams, generationForm]);
 
-  // Effect to load installed packs for the modal and find the active pack name
   useEffect(() => {
     async function loadPacksAndSetActive() {
         if (dataPackIdFromUrl) {
@@ -178,13 +180,11 @@ export function CharacterGenerator() {
     const currentDesc = generationForm.getValues('description');
     const currentTags = generationForm.getValues('tags') || '';
     
-    // Avoid adding duplicate tags to the description
     const newTags = tags.filter(t => !currentDesc.includes(t));
     if (newTags.length > 0) {
         generationForm.setValue('description', `${currentDesc}, ${newTags.join(', ')}`.trim());
     }
     
-    // Add all tags to the hidden tags field for metadata
     const allTags = new Set([...currentTags.split(',').filter(Boolean), ...tags]);
     generationForm.setValue('tags', Array.from(allTags).join(','));
   };
@@ -218,6 +218,7 @@ export function CharacterGenerator() {
         dataPackId: dataPackIdFromUrl,
         aspectRatio: data.aspectRatio,
         imageEngine: data.imageEngine,
+        hfModelId: data.hfModelId,
         lora: data.lora,
         loraWeight: data.loraWeight,
         triggerWords: data.triggerWords,
@@ -245,6 +246,7 @@ export function CharacterGenerator() {
             description: characterData.description,
             aspectRatio: characterData.aspectRatio,
             imageEngine: characterData.imageEngine,
+            hfModelId: characterData.hfModelId,
             lora: characterData.lora,
             loraWeight: characterData.loraWeight,
             triggerWords: characterData.triggerWords,
@@ -256,7 +258,7 @@ export function CharacterGenerator() {
     } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during image generation.";
         setImageError(errorMessage);
-        if (!errorMessage.includes('Gradio')) {
+        if (!errorMessage.includes('Hugging Face')) {
             toast({
                 variant: "destructive",
                 title: "Image Generation Failed",
@@ -459,17 +461,17 @@ export function CharacterGenerator() {
                           >
                             <FormItem>
                               <FormControl>
-                                <RadioGroupItem value="gradio" id="gradio" className="sr-only" />
+                                <RadioGroupItem value="huggingface" id="huggingface" className="sr-only" />
                               </FormControl>
                               <FormLabel 
-                                htmlFor="gradio"
+                                htmlFor="huggingface"
                                 className={cn(
                                   "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center h-full",
-                                  field.value === 'gradio' && "border-primary"
+                                  field.value === 'huggingface' && "border-primary"
                                 )}
                               >
                                 <span className="text-xs font-bold">Stable Diffusion</span>
-                                <span className="text-xs text-muted-foreground">Community Model</span>
+                                <span className="text-xs text-muted-foreground">via Hugging Face API</span>
                               </FormLabel>
                             </FormItem>
                              <FormItem>
@@ -494,8 +496,16 @@ export function CharacterGenerator() {
                   )}
                 />
                 </div>
-                {watchImageEngine === 'gradio' && (
+                {watchImageEngine === 'huggingface' && (
                   <div className="space-y-4 rounded-md border p-4 bg-muted/20">
+                    <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Hugging Face Engine</AlertTitle>
+                        <AlertDescription>
+                            This engine is now powered by the robust Inference API. You can dynamically select models and LoRAs. (UI coming soon!)
+                        </AlertDescription>
+                    </Alert>
+
                     <FormField
                       control={generationForm.control}
                       name="lora"
@@ -668,7 +678,7 @@ export function CharacterGenerator() {
                                     <AlertTitle>Image Error</AlertTitle>
                                     <AlertDescription>
                                         <p className="mb-2">{imageError}</p>
-                                        {imageError.includes('Gradio') && (
+                                        {imageError.includes('Hugging Face') && (
                                             <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => generationForm.setValue('imageEngine', 'gemini')}>
                                                 Switch to Gemini Engine
                                             </Button>

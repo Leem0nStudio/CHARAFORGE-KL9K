@@ -2,8 +2,8 @@
 'use server';
 
 /**
- * @fileOverview An AI agent for generating character images based on a description,
- * using a selectable engine (Hugging Face Inference API for Stable Diffusion or Gemini).
+ * @fileOverview An AI agent for generating character images based on a description.
+ * This flow is now more flexible, supporting dynamic model and LoRA selection.
  */
 
 import { ai } from '@/ai/genkit';
@@ -25,18 +25,16 @@ function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
 
 /**
  * Queries the Hugging Face Inference API for a specific model.
- * This is the new, more robust method for generating images with Stable Diffusion.
- * @param {object} data The payload to send to the model.
+ * @param {object} data The payload to send to the model, including the prompt and model ID.
  * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
  */
-async function queryHuggingFaceInferenceAPI(data: object): Promise<string> {
+async function queryHuggingFaceInferenceAPI(data: { inputs: string, model: string }): Promise<string> {
     const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
     if (!HUGGING_FACE_API_KEY) {
         throw new Error("Hugging Face API key is not configured on the server.");
     }
     
-    // Using a recommended open-source model for high-quality images.
-    const API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
+    const API_URL = `https://api-inference.huggingface.co/models/${data.model}`;
     
     const response = await fetch(API_URL, {
         headers: {
@@ -44,7 +42,12 @@ async function queryHuggingFaceInferenceAPI(data: object): Promise<string> {
             "Content-Type": "application/json"
         },
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+            inputs: data.inputs,
+            parameters: {
+                negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
+            }
+        }),
     });
 
     if (!response.ok) {
@@ -74,7 +77,15 @@ const generateCharacterImageFlow = ai.defineFlow(
     outputSchema: GenerateCharacterImageOutputSchema,
   },
   async (input) => {
-    const { description, aspectRatio, imageEngine, lora, loraWeight, triggerWords } = input;
+    const { 
+        description, 
+        aspectRatio, 
+        imageEngine, 
+        hfModelId, // New: HF ID for the base model
+        lora, 
+        loraWeight, 
+        triggerWords 
+    } = input;
 
     if (imageEngine === 'gemini') {
         try {
@@ -100,21 +111,24 @@ const generateCharacterImageFlow = ai.defineFlow(
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
     } else { 
-        // This branch now uses the robust Hugging Face Inference API.
+        // This branch now uses the robust Hugging Face Inference API with dynamic models.
         try {
+            if (!hfModelId) {
+                throw new Error("Hugging Face model ID is required for this engine.");
+            }
+
             let promptWithLora = description;
             if (lora) {
                 const weight = loraWeight || 0.75;
-                const loraTag = `<lora:${lora}:${weight}>`;
+                // Standard syntax for applying a LoRA with weight
+                const loraTag = `<lora:${lora}:${weight}>`; 
                 const words = triggerWords ? `${triggerWords}, ` : '';
                 promptWithLora = `${words}${description}, ${loraTag}`;
             }
 
             const imageUrl = await queryHuggingFaceInferenceAPI({ 
                 inputs: promptWithLora,
-                parameters: {
-                    negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
-                }
+                model: hfModelId,
             });
             
             if (!imageUrl) {
