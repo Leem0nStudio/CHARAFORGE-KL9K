@@ -130,12 +130,13 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                           fill
                                           priority
                                           className="object-contain p-2"
+                                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                       />
                                   </div>
                                 </DialogTrigger>
                                <DialogContent className="max-w-3xl p-0 bg-transparent border-0">
                                   <DialogTitle className="sr-only">{character.name}</DialogTitle>
-                                  <DialogDescription className="sr-only">{character.description}</DialogDescription>
+                                  <DialogDescription className="sr-only" id={`dialog-description-${character.id}`}>{character.description}</DialogDescription>
                                   <Image
                                     src={character.imageUrl}
                                     alt={character.name}

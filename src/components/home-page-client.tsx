@@ -77,6 +77,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
                              initial={{ opacity: 0, scale: 0.8 }}
                              animate={{ opacity: 1, scale: 1 }}
                              transition={{ duration: 0.6, delay: 0.2 }}
+                             className="relative"
                         >
                             <Image
                                 src={heroCharacter?.imageUrl || "https://placehold.co/600x600.png"}
@@ -86,6 +87,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
                                 className="mx-auto aspect-square overflow-hidden rounded-xl object-contain sm:w-full lg:order-last"
                                 data-ai-hint="fantasy character portrait"
                                 priority
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                             />
                         </motion.div>
                     </div>

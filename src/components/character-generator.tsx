@@ -491,6 +491,7 @@ export function CharacterGenerator() {
                                 alt="Generated character portrait"
                                 fill
                                 className="object-contain"
+                                sizes="100vw"
                             />
                              <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-green-600 text-white text-xs font-bold py-1 px-2 rounded-full shadow">
                                 <Check className="w-3 h-3"/>

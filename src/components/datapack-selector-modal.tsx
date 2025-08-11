@@ -29,7 +29,7 @@ function PackPreview({ pack, onChoose }: { pack: DataPack | null, onChoose: () =
 
     return (
         <Card className="flex flex-col h-full">
-            <CardHeader className="p-0">
+            <CardHeader className="p-0 relative">
                  <div className="relative rounded-t-lg overflow-hidden bg-muted/20 max-h-[400px]">
                     <Image
                         src={pack.coverImageUrl || 'https://placehold.co/600x400.png'}
@@ -38,6 +38,7 @@ function PackPreview({ pack, onChoose }: { pack: DataPack | null, onChoose: () =
                         height={400}
                         className="w-full h-auto object-contain"
                         data-ai-hint="datapack cover image"
+                        sizes="(max-width: 768px) 100vw, 50vw"
                     />
                 </div>
             </CardHeader>
@@ -83,7 +84,7 @@ function PackSelector({ packs, onSelect, selectedPackId }: {
                             )}
                         >
                              <div className="relative w-16 h-12 rounded-md overflow-hidden shrink-0 bg-muted/20">
-                                <Image src={pack.coverImageUrl || 'https://placehold.co/200x150.png'} alt={pack.name} fill className="object-contain" data-ai-hint="datapack cover image" />
+                                <Image src={pack.coverImageUrl || 'https://placehold.co/200x150.png'} alt={pack.name} fill className="object-contain" data-ai-hint="datapack cover image" sizes="64px" />
                             </div>
                             <div>
                                 <p className="font-semibold text-card-foreground">{pack.name}</p>

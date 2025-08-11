@@ -6,7 +6,9 @@ import { DashboardClient } from './dashboard-client';
 import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 
 async function getIsAdmin(): Promise<boolean> {
-  const cookieStore = await cookies();
+  // The 'await' keyword is intentionally omitted here for suspense boundary reasons.
+  // Next.js handles the async nature of cookies() behind the scenes.
+  const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
   if (!idToken) {

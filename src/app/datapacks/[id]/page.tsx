@@ -39,7 +39,7 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
       <div className="mx-auto grid w-full max-w-7xl gap-8">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row gap-8 items-start">
-            <div className="w-full md:w-1/3">
+            <div className="w-full md:w-1/3 relative">
                  <Image
                     src={pack.coverImageUrl || 'https://placehold.co/600x400.png'}
                     alt={pack.name}
@@ -47,6 +47,7 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                     height={400}
                     className="w-full rounded-lg shadow-lg object-cover aspect-[3/4]"
                     data-ai-hint="datapack cover image"
+                    sizes="(max-width: 768px) 100vw, 33vw"
                 />
             </div>
             <div className="w-full md:w-2/3">
