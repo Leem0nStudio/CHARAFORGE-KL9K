@@ -15,10 +15,10 @@ function CharacterGeneratorWrapper() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-        <BackButton 
-            title="Character Generator"
-            description="Bring your vision to life. Describe your character, or use a DataPack to get started."
-        />
+        <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
+             <h1 className="text-3xl font-bold tracking-tight font-headline">Character Generator</h1>
+             <p className="text-muted-foreground">Bring your vision to life. Describe your character, or use a DataPack to get started.</p>
+        </div>
         <CharacterGenerator />
     </motion.div>
   )

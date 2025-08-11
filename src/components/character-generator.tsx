@@ -191,7 +191,7 @@ export function CharacterGenerator() {
     generationForm.setValue('tags', Array.from(allTags).join(','));
   };
 
-  async function onGenerateBio(data: z.infer<typeof generationFormSchema>) {
+  const onGenerateBio = useCallback(async (data: z.infer<typeof generationFormSchema>) => {
     if (!authUser) {
       toast({
         variant: "destructive",
@@ -236,9 +236,9 @@ export function CharacterGenerator() {
     } finally {
       setIsGeneratingBio(false);
     }
-  }
+  }, [authUser, toast, dataPackIdFromUrl, saveForm]);
 
-  async function onGenerateImage() {
+  const onGenerateImage = useCallback(async () => {
     if (!characterData) return;
 
     setIsGeneratingImage(true);
@@ -270,7 +270,7 @@ export function CharacterGenerator() {
     } finally {
         setIsGeneratingImage(false);
     }
-  }
+  }, [characterData, toast]);
 
   async function onSave(data: z.infer<typeof saveFormSchema>) {
     if (!characterData || !characterData.imageUrl || !authUser) {
@@ -331,9 +331,9 @@ export function CharacterGenerator() {
         onClose={() => setIsTagModalOpen(false)}
         onAppendTags={handleAppendTags}
     />
-    <div className="grid gap-8 lg:grid-cols-5">
-      <div className="lg:col-span-2">
-        <Card className="sticky top-20 shadow-lg">
+    <div className="grid gap-8 lg:grid-cols-5 items-start">
+      <div className="lg:col-span-2 flex flex-col gap-4">
+        <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline text-3xl">1. The Forge</CardTitle>
             <CardDescription>
@@ -342,7 +342,7 @@ export function CharacterGenerator() {
           </CardHeader>
           <CardContent>
             <Form {...generationForm}>
-              <form onSubmit={generationForm.handleSubmit(onGenerateBio)} className="space-y-6">
+              <form onSubmit={(e) => { e.preventDefault(); generationForm.handleSubmit(onGenerateBio)(); }} className="space-y-6">
                 
                 <Tabs defaultValue="prompt">
                     <TabsList className="grid w-full grid-cols-2">
@@ -444,6 +444,13 @@ export function CharacterGenerator() {
                                         <div className="space-y-4 mt-4 rounded-md border p-4 bg-muted/20">
                                             <FormField
                                               control={generationForm.control}
+                                              name="hfModelId"
+                                              render={({ field }) => (
+                                                <FormItem><FormLabel>Base Model</FormLabel><FormControl><Input placeholder="stabilityai/stable-diffusion-xl-base-1.0" {...field} disabled={!canInteract}/></FormControl><FormMessage /></FormItem>
+                                              )}
+                                            />
+                                            <FormField
+                                              control={generationForm.control}
                                               name="lora"
                                               render={({ field }) => (
                                                 <FormItem><FormLabel>LoRA (Optional)</FormLabel><FormControl><Input placeholder="username/lora-name" {...field} disabled={!canInteract}/></FormControl><FormMessage /></FormItem>
@@ -475,19 +482,23 @@ export function CharacterGenerator() {
                 </Tabs>
                  
                 <div className="flex flex-col sm:flex-row gap-2 pt-4">
-                    <Button type="submit" size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90 transition-transform hover:scale-105" disabled={!canInteract}>
-                      {isGeneratingBio ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Bio</>)}
-                    </Button>
-                    <Button type="button" size="lg" className="w-full" variant="secondary" onClick={handleOpenPackModal} disabled={!canInteract}>
-                      <Package className="mr-2" />
-                      Use DataPack
-                    </Button>
+                  
                 </div>
                 {!authUser && !authLoading && <p className="text-xs text-center text-muted-foreground">You must be logged in to forge a character.</p>}
               </form>
             </Form>
           </CardContent>
         </Card>
+        
+        <div className="sticky bottom-20 space-y-2">
+            <Button onClick={generationForm.handleSubmit(onGenerateBio)} size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90 transition-transform hover:scale-105" disabled={!canInteract}>
+              {isGeneratingBio ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Bio</>)}
+            </Button>
+            <Button type="button" size="lg" className="w-full" variant="secondary" onClick={handleOpenPackModal} disabled={!canInteract}>
+              <Package className="mr-2" />
+              Use DataPack
+            </Button>
+        </div>
       </div>
 
       <div className="lg:col-span-3">
@@ -623,5 +634,3 @@ export function CharacterGenerator() {
     </>
   );
 }
-
-    
