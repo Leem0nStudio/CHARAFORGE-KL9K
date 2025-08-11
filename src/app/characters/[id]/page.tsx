@@ -8,12 +8,20 @@ import { getCreationsForDataPack } from '@/app/actions/datapacks';
 import { getUserProfile } from '@/app/actions/user';
 import { getUserSettings } from '@/app/actions/admin';
 import type { Character } from '@/types/character';
+import { verifyAndGetUid } from '@/lib/auth/server';
 
 
 export default async function CharacterPage({ params }: { params: { id: string } }) {
   const character = await getCharacter(params.id);
   if (!character) {
     notFound();
+  }
+
+  let currentUserId: string | null = null;
+  try {
+    currentUserId = await verifyAndGetUid();
+  } catch(e) {
+    // User is not logged in, which is fine for public pages
   }
 
   const [userProfile, userSettings, creationsForDataPack] = await Promise.all([
@@ -30,7 +38,7 @@ export default async function CharacterPage({ params }: { params: { id: string }
   return (
     <CharacterPageClient
       character={character}
-      userProfile={userProfile}
+      userProfile={currentUserId ? await getUserProfile(currentUserId) : null}
       showAdminFeatures={showAdminFeatures}
       creationsForDataPack={filteredCreations}
     />
