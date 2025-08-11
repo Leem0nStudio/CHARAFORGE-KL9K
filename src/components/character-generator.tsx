@@ -53,6 +53,7 @@ const generationFormSchema = z.object({
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
   imageEngine: z.enum(['gradio', 'gemini']).default('gradio'),
+  lora: z.string().optional(),
 });
 
 const saveFormSchema = z.object({
@@ -71,6 +72,7 @@ type CharacterData = {
   dataPackId?: string | null;
   aspectRatio: '1:1' | '16:9' | '9:16';
   imageEngine: 'gradio' | 'gemini';
+  lora?: string;
 };
 
 export function CharacterGenerator() {
@@ -100,13 +102,7 @@ export function CharacterGenerator() {
       targetLanguage: 'English',
       aspectRatio: '1:1',
       imageEngine: 'gradio',
-    },
-  });
-
-  const saveForm = useForm<z.infer<typeof saveFormSchema>>({
-    resolver: zodResolver(saveFormSchema),
-    defaultValues: {
-      name: "",
+      lora: "",
     },
   });
 
@@ -208,6 +204,7 @@ export function CharacterGenerator() {
         dataPackId: dataPackIdFromUrl,
         aspectRatio: data.aspectRatio,
         imageEngine: data.imageEngine,
+        lora: data.lora,
       });
     } catch (err: unknown) {
        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during biography generation.";
@@ -232,6 +229,7 @@ export function CharacterGenerator() {
             description: characterData.description,
             aspectRatio: characterData.aspectRatio,
             imageEngine: characterData.imageEngine,
+            lora: characterData.lora,
         });
         if (!imageResult.imageUrl) {
             throw new Error("AI model did not return an image. This could be due to safety filters or an API issue.");
@@ -295,6 +293,7 @@ export function CharacterGenerator() {
   const isLoading = isGeneratingBio || isSaving || authLoading;
   const canInteract = !isLoading && authUser;
   const isImageReadyForSave = !!characterData?.imageUrl;
+  const watchImageEngine = generationForm.watch('imageEngine');
 
   return (
     <>
@@ -477,6 +476,25 @@ export function CharacterGenerator() {
                   )}
                 />
                 </div>
+                {watchImageEngine === 'gradio' && (
+                  <FormField
+                    control={generationForm.control}
+                    name="lora"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>LoRA (Opcional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="username/lora-name"
+                            {...field}
+                            disabled={!canInteract}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
                  <FormField
                   control={generationForm.control}
                   name="targetLanguage"

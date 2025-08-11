@@ -38,7 +38,7 @@ const generateCharacterImageFlow = ai.defineFlow(
     outputSchema: GenerateCharacterImageOutputSchema,
   },
   async (input) => {
-    const { description, aspectRatio, imageEngine } = input;
+    const { description, aspectRatio, imageEngine, lora } = input;
 
     if (imageEngine === 'gemini') {
         // This branch uses Google's native image generation model.
@@ -67,21 +67,22 @@ const generateCharacterImageFlow = ai.defineFlow(
         try {
             const { width, height } = getDimensions(aspectRatio);
             
-            // Step 1: Connect to the Gradio app running on a Hugging Face Space.
-            // The string "el-el-san/t2i-illustrious-xl-v2.0" is the ID of the Space.
-            const client = await Client.connect("el-el-san/t2i-illustrious-xl-v2.0");
+            // Step 1: Connect to a Gradio app that supports LoRAs.
+            // The string "hysts/SD-XL-Lightning-Gradio" is the ID of a powerful Space.
+            const client = await Client.connect("hysts/SD-XL-Lightning-Gradio");
 
             // Step 2: Call the prediction function of that Gradio app.
-            // We pass the prompt and other parameters to the model.
-            const result = await client.predict("/infer", {
+            // We pass the prompt, LoRA, and other parameters to the model.
+            const result = await client.predict("/run", {
                 prompt: description,
+                lora: lora || "None", // Pass the LoRA name or "None"
                 negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
                 seed: Math.floor(Math.random() * 1_000_000_000),
-                randomize_seed: true,
                 width: width,
                 height: height,
-                quality: 9,
-                num_inference_steps: 25,
+                guidance_scale: 0,
+                num_inference_steps: 4, // SDXL-Lightning is very fast
+                sampler: "DPM++ SDE Karras",
             });
 
             // Step 3: Process the result. The image comes back as a Data URI.
