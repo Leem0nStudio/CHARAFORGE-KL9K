@@ -703,5 +703,3 @@ export async function getCharacter(characterId: string): Promise<Character | nul
         return null;
     }
 }
-
-    
