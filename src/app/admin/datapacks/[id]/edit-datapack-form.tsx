@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, PlusCircle, Trash2, Wand2, GripVertical, AlertTriangle } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Wand2, GripVertical, AlertTriangle, Save } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   AlertDialog,
@@ -209,80 +209,82 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      <Tabs defaultValue="metadata">
-        <div className="flex items-center justify-between mb-4">
-            <TabsList>
-                <TabsTrigger value="metadata">Metadata</TabsTrigger>
-                <TabsTrigger value="schema">Schema Editor</TabsTrigger>
-            </TabsList>
-             <div className="flex items-center gap-2">
-                {initialData && (
-                     <AlertDialog>
-                         <AlertDialogTrigger asChild>
-                            <Button type="button" variant="destructive" disabled={isPending}>Delete</Button>
-                         </AlertDialogTrigger>
-                         <AlertDialogContent>
-                             <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
-                             <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
-                             <AlertDialogFooter>
-                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                 <AlertDialogAction onClick={handleDelete} disabled={isPending}>
-                                     {isPending && <Loader2 className="animate-spin mr-2"/>}
-                                     Continue
-                                 </AlertDialogAction>
-                             </AlertDialogFooter>
-                         </AlertDialogContent>
-                     </AlertDialog>
-                 )}
-                <Button type="submit" disabled={isPending}>
-                    {isPending && <Loader2 className="animate-spin mr-2" />}
-                    {initialData ? 'Save Changes' : 'Create DataPack'}
-                </Button>
-            </div>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="pb-24 sm:pb-0">
+       {/* Desktop Action Buttons */}
+       <div className="hidden sm:flex items-center justify-end gap-2 mb-4">
+            {initialData && (
+                 <AlertDialog>
+                     <AlertDialogTrigger asChild>
+                        <Button type="button" variant="destructive" disabled={isPending}>Delete</Button>
+                     </AlertDialogTrigger>
+                     <AlertDialogContent>
+                         <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
+                         <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
+                         <AlertDialogFooter>
+                             <AlertDialogCancel>Cancel</AlertDialogCancel>
+                             <AlertDialogAction onClick={handleDelete} disabled={isPending}>
+                                 {isPending && <Loader2 className="animate-spin mr-2"/>}
+                                 Continue
+                             </AlertDialogAction>
+                         </AlertDialogFooter>
+                     </AlertDialogContent>
+                 </AlertDialog>
+             )}
+            <Button type="submit" disabled={isPending}>
+                {isPending && <Loader2 className="animate-spin mr-2" />}
+                {initialData ? 'Save Changes' : 'Create DataPack'}
+            </Button>
         </div>
+
+      <Tabs defaultValue="metadata">
+        <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="metadata">Metadata</TabsTrigger>
+            <TabsTrigger value="schema">Schema Editor</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="metadata">
           <Card>
             <CardHeader><CardTitle>DataPack Metadata</CardTitle><CardDescription>Information about the pack shown in the public catalog.</CardDescription></CardHeader>
-            <CardContent className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div><Label>Name</Label><Input {...form.register('name')} />{form.formState.errors.name && <p className="text-destructive text-sm mt-1">{form.formState.errors.name.message}</p>}</div>
-                <div><Label>Author</Label><Input {...form.register('author')} />{form.formState.errors.author && <p className="text-destructive text-sm mt-1">{form.formState.errors.author.message}</p>}</div>
-                <div><Label>Description</Label><Textarea {...form.register('description')} />{form.formState.errors.description && <p className="text-destructive text-sm mt-1">{form.formState.errors.description.message}</p>}</div>
-                 <div>
-                    <Label>Tags (comma-separated)</Label>
-                    <Input 
-                        {...form.register('schema.tags', { 
-                            setValueAs: (value) => typeof value === 'string' ? value.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean) : value 
-                        })} 
-                        defaultValue={initialData?.schema.tags?.join(', ')}
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div><Label>Name</Label><Input {...form.register('name')} />{form.formState.errors.name && <p className="text-destructive text-sm mt-1">{form.formState.errors.name.message}</p>}</div>
+                  <div><Label>Author</Label><Input {...form.register('author')} />{form.formState.errors.author && <p className="text-destructive text-sm mt-1">{form.formState.errors.author.message}</p>}</div>
+                  <div><Label>Description</Label><Textarea {...form.register('description')} />{form.formState.errors.description && <p className="text-destructive text-sm mt-1">{form.formState.errors.description.message}</p>}</div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                      <Label>Tags (comma-separated)</Label>
+                      <Input 
+                          {...form.register('schema.tags', { 
+                              setValueAs: (value) => typeof value === 'string' ? value.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean) : value 
+                          })} 
+                          defaultValue={initialData?.schema.tags?.join(', ')}
+                      />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><Label>Type</Label><Controller control={form.control} name="type" render={({field}) => <Select onValueChange={field.onChange} value={field.value}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="free">Free</SelectItem><SelectItem value="premium">Premium</SelectItem><SelectItem value="temporal">Temporal</SelectItem></SelectContent></Select>} /></div>
+                    <div><Label>Price</Label><Input type="number" {...form.register('price', { valueAsNumber: true })} /></div>
+                  </div>
+                  <div><Label>Cover Image</Label><Input type="file" accept="image/png" onChange={e => setCoverImage(e.target.files?.[0] || null)} /></div>
+                  <Controller
+                      control={form.control}
+                      name="isNsfw"
+                      render={({ field }) => (
+                        <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm border-destructive/50">
+                          <div className="space-y-0.5">
+                              <Label htmlFor="isNsfw-switch" className="flex items-center gap-2 font-semibold text-destructive"><AlertTriangle/> Mark as NSFW</Label>
+                              <p className="text-xs text-muted-foreground">Enable if this pack contains adult content.</p>
+                          </div>
+                          <Switch
+                              id="isNsfw-switch"
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                          />
+                        </div>
+                      )}
                     />
                 </div>
-              </div>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Type</Label><Controller control={form.control} name="type" render={({field}) => <Select onValueChange={field.onChange} value={field.value}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="free">Free</SelectItem><SelectItem value="premium">Premium</SelectItem><SelectItem value="temporal">Temporal</SelectItem></SelectContent></Select>} /></div>
-                  <div><Label>Price</Label><Input type="number" {...form.register('price', { valueAsNumber: true })} /></div>
-                </div>
-                <div><Label>Cover Image</Label><Input type="file" accept="image/png" onChange={e => setCoverImage(e.target.files?.[0] || null)} /></div>
-                 <Controller
-                    control={form.control}
-                    name="isNsfw"
-                    render={({ field }) => (
-                      <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm border-destructive/50">
-                        <div className="space-y-0.5">
-                            <Label htmlFor="isNsfw-switch" className="flex items-center gap-2 font-semibold text-destructive"><AlertTriangle/> Mark as NSFW</Label>
-                             <p className="text-xs text-muted-foreground">Enable if this pack contains adult content.</p>
-                        </div>
-                        <Switch
-                            id="isNsfw-switch"
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                        />
-                      </div>
-                    )}
-                  />
               </div>
             </CardContent>
           </Card>
@@ -331,6 +333,36 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
             </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Mobile Action Footer */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm p-4 border-t z-10">
+          <div className="flex items-center gap-2">
+            {initialData && (
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button type="button" variant="destructive" className="flex-1" disabled={isPending}>
+                          <Trash2 className="mr-2"/> Delete
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
+                        <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} disabled={isPending}>
+                                {isPending && <Loader2 className="animate-spin mr-2"/>}
+                                Continue
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
+            <Button type="submit" className="flex-1" disabled={isPending}>
+                {isPending ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2"/>}
+                {initialData ? 'Save Changes' : 'Create'}
+            </Button>
+          </div>
+      </div>
     </form>
   );
 }
