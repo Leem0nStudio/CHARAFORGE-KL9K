@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
-import { User, Calendar, Tag, GitBranch, Shield, ScrollText } from 'lucide-react';
+import { User, Calendar, Tag, GitBranch, Shield, ScrollText, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { Badge } from '@/components/ui/badge';
@@ -77,6 +77,8 @@ async function getCharacter(characterId: string): Promise<{
             branchingPermissions: data.branchingPermissions || 'private',
             versions: data.versions || [{ id: doc.id, name: data.versionName || 'v.1', version: data.version || 1 }],
             alignment: data.alignment || 'True Neutral',
+            tags: data.tags || [],
+            isNsfw: data.isNsfw || false,
         } as Character;
 
         return { character, currentUserId, creatorProfile, originalAuthorProfile };
@@ -182,6 +184,12 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                       <Shield className="h-3 w-3 mr-1.5" />
                                       {character.alignment}
                                   </Badge>
+                                   {character.isNsfw && (
+                                    <Badge variant="destructive">
+                                      <AlertTriangle className="h-3 w-3 mr-1.5" />
+                                      NSFW
+                                    </Badge>
+                                  )}
                                   {character.branchedFromId && originalAuthorProfile && (
                                       <Badge variant="secondary">
                                           <GitBranch className="h-3 w-3 mr-1.5" />
@@ -197,6 +205,16 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                       </Link>
                                   )}
                               </div>
+
+                               {character.tags && character.tags.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-2 pt-2">
+                                  {character.tags.map(tag => (
+                                    <Badge key={tag} variant="outline" className="text-xs">
+                                      {tag.replace(/_/g, ' ')}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
                           </div>
                           
                           {/* Biography & Timeline Section */}
@@ -218,3 +236,5 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
         </div>
     );
 }
+
+    

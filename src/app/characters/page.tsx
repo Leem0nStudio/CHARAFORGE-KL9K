@@ -1,302 +1,27 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useTransition } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { getCharacters, deleteCharacter, updateCharacterStatus, updateCharacterDataPackSharing, createCharacterVersion, updateCharacterBranchingPermissions } from '../actions/characters';
-import { useToast } from '@/hooks/use-toast';
+import { getCharacters } from '../actions/characters';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { BackButton } from '@/components/back-button';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
-import { Loader2, User, Swords, Pencil, Trash2, Copy, ShieldCheck, ShieldOff, Share2, GalleryHorizontal, Plus, GitBranch, Settings, ArrowLeft, Layers } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-
-
-function CharacterDetailPanel({ 
-  character, 
-  allVersions,
-  onCharacterDeleted, 
-  onCharacterUpdated, 
-  onBack,
-  onSelectVersion 
-}: { 
-  character: Character | null; 
-  allVersions: Character[];
-  onCharacterDeleted: (id: string, baseId: string | null) => void; 
-  onCharacterUpdated: () => void;
-  onBack: () => void; 
-  onSelectVersion: (id: string) => void;
-}) {
-  const { toast } = useToast();
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isUpdating, startUpdateTransition] = useTransition();
-
-  // ALL HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP
-  const handleCopyPrompt = useCallback(() => {
-    if (!character) return;
-    navigator.clipboard.writeText(character.description);
-    toast({
-      title: 'Prompt Copied!',
-      description: 'The original prompt has been copied to your clipboard.',
-    });
-  }, [character, toast]);
-
-  const handleDelete = useCallback(async () => {
-    if (!character) return;
-    setIsDeleting(true);
-    try {
-      await deleteCharacter(character.id);
-      toast({
-        title: 'Character Deleted',
-        description: `${character.name} has been removed.`,
-      });
-      onCharacterDeleted(character.id, character.baseCharacterId);
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Deletion Failed',
-        description: error instanceof Error ? error.message : 'Could not delete the character.',
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  }, [character, toast, onCharacterDeleted]);
-  
-  const handleUpdate = useCallback((updateAction: () => Promise<any>) => {
-    startUpdateTransition(async () => {
-      try {
-        const result = await updateAction();
-        toast({
-          title: result.success ? 'Success!' : 'Update Failed',
-          description: result.message,
-        });
-        if (result.success) onCharacterUpdated();
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Update Failed',
-          description: error instanceof Error ? error.message : 'An unexpected error occurred.',
-        });
-      }
-    });
-  }, [toast, onCharacterUpdated]);
-
-  const handleTogglePublicStatus = useCallback(() => {
-    if (!character) return;
-    const newStatus = character.status === 'public' ? 'private' : 'public';
-    handleUpdate(() => updateCharacterStatus(character.id, newStatus));
-  }, [character, handleUpdate]);
-
-  const handleToggleDataPackSharing = useCallback(() => {
-    if (!character) return;
-    const newSharingStatus = !character.isSharedToDataPack;
-    handleUpdate(() => updateCharacterDataPackSharing(character.id, newSharingStatus));
-  }, [character, handleUpdate]);
-  
-  const handleToggleBranchingPermissions = useCallback(() => {
-    if (!character) return;
-    const newPermissions = character.branchingPermissions === 'public' ? 'private' : 'public';
-    handleUpdate(() => updateCharacterBranchingPermissions(character.id, newPermissions));
-  }, [character, handleUpdate]);
-
-  const handleCreateVersion = useCallback(() => {
-    if (!character) return;
-    handleUpdate(() => createCharacterVersion(character.id));
-  }, [character, handleUpdate]);
-
-
-  // CONDITIONAL RENDERING HAPPENS *AFTER* ALL HOOKS ARE CALLED
-  if (!character) {
-    return (
-        <div className="w-full lg:w-3/4 flex-col gap-4 items-center justify-center h-full min-h-[600px] bg-card/30 rounded-lg border-2 border-dashed hidden lg:flex">
-            <User className="h-12 w-12 mx-auto text-muted-foreground" />
-            <p className="text-center text-muted-foreground">Select a character from the list to see their details.</p>
-        </div>
-    );
-  }
-  
-  const otherVersions = allVersions.filter(v => v.id !== character.id).sort((a, b) => b.version - a.version);
-  const isPublic = character.status === 'public';
-  const wasMadeWithDataPack = !!character.dataPackId;
-  const canBranch = character.branchingPermissions === 'public';
-  
-  return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={character.id}
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
-        transition={{ duration: 0.3 }}
-        className="w-full lg:w-3/4"
-      >
-        <Card className="h-full bg-card/50 border-0 shadow-none">
-          <CardContent className="p-0">
-            <div className="group relative aspect-square w-full rounded-t-lg overflow-hidden bg-muted/20">
-                <Button variant="ghost" size="icon" onClick={onBack} className="absolute top-4 left-4 z-10 lg:hidden bg-background/50 hover:bg-background/80">
-                    <ArrowLeft />
-                </Button>
-                <Image
-                    key={character.imageUrl}
-                    src={character.imageUrl}
-                    alt={character.name}
-                    fill
-                    className="object-contain"
-                    priority
-                />
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none" />
-                 <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 text-white">
-                    <h2 className="text-2xl sm:text-4xl font-extrabold font-headline tracking-wider drop-shadow-lg">{character.name}</h2>
-                    <div className="flex items-center gap-4 text-base sm:text-lg text-primary-foreground/80 drop-shadow-md">
-                      <p>{character.versionName}</p>
-                      <span>•</span>
-                      <p>{isPublic ? "Public" : "Private"}</p>
-                    </div>
-                 </div>
-
-                 <div className="absolute top-4 right-4">
-                    <div className="flex gap-2 p-2 rounded-lg bg-black/40 opacity-70 group-hover:opacity-100 transition-opacity duration-300">
-                      <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                  <Button variant="secondary" size="icon" asChild>
-                                    <Link href={`/characters/${character.id}/edit`}><Pencil /></Link>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Edit Character</p></TooltipContent>
-                        </Tooltip>
-                        
-                        <AlertDialog>
-                            <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="destructive" size="icon" disabled={isDeleting}>
-                                            {isDeleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Delete Character</p></TooltipContent>
-                            </Tooltip>
-                            <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                This will permanently delete your character and remove their data from our servers.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className={buttonVariants({ variant: "destructive" })}>
-                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                          <DropdownMenu>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="secondary" size="icon"><Settings /></Button>
-                                    </DropdownMenuTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent><p>More Actions</p></TooltipContent>
-                            </Tooltip>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={handleCopyPrompt}>
-                                    <Copy className="mr-2"/> Copy Original Prompt
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={handleTogglePublicStatus} disabled={isUpdating}>
-                                    {isPublic ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>}
-                                    {isPublic ? "Make Private" : "Make Public"}
-                                </DropdownMenuItem>
-                                {isPublic && (
-                                <DropdownMenuItem onClick={handleToggleBranchingPermissions} disabled={isUpdating}>
-                                        <GitBranch className="mr-2"/>
-                                        {canBranch ? "Disable Branching" : "Enable Branching"}
-                                    </DropdownMenuItem>
-                                )}
-                                {wasMadeWithDataPack && (
-                                <DropdownMenuItem onClick={handleToggleDataPackSharing} disabled={isUpdating || !isPublic}>
-                                        <GalleryHorizontal className="mr-2"/>
-                                        {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to Gallery"}
-                                    </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator />
-                                 <DropdownMenuItem onClick={handleCreateVersion} disabled={isUpdating}>
-                                    <Plus className="mr-2"/> Create New Version
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                      </TooltipProvider>
-                    </div>
-                 </div>
-            </div>
-            <div className="p-4 sm:p-6 space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Biography</CardTitle>
-                        <CardDescription>Created on {new Date(character.createdAt).toLocaleDateString()}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ScrollArea className="h-48 pr-4">
-                           <p className="text-sm text-muted-foreground whitespace-pre-wrap">{character.biography}</p>
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-
-                {otherVersions.length > 0 && (
-                  <Card>
-                      <CardHeader>
-                          <CardTitle className="flex items-center gap-2"><Layers /> Other Versions</CardTitle>
-                          <CardDescription>Explore other variations of this character.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                          {otherVersions.map(version => (
-                            <div key={version.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                              <div className="flex items-center gap-3">
-                                  <div className="relative w-12 h-12 rounded-md overflow-hidden shrink-0 bg-muted-foreground/20">
-                                      <Image src={version.imageUrl} alt={version.name} fill className="object-contain" />
-                                  </div>
-                                  <div>
-                                      <p className="font-semibold text-card-foreground">{version.name}</p>
-                                      <p className="text-xs text-muted-foreground">{version.versionName}</p>
-                                  </div>
-                              </div>
-                              <Button size="sm" variant="secondary" onClick={() => onSelectVersion(version.id)}>
-                                View
-                              </Button>
-                            </div>
-                          ))}
-                      </CardContent>
-                  </Card>
-                )}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
+import { Loader2, User, Swords, Layers, GitBranch } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 export default function CharactersPage() {
   const { authUser, loading: authLoading } = useAuth();
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const groupCharacters = useCallback((chars: Character[]): Character[][] => {
       const groups = new Map<string, Character[]>();
@@ -314,65 +39,31 @@ export default function CharactersPage() {
       });
   }, []);
   
-  const fetchCharacters = useCallback(async () => {
-    if (!authUser) return;
-    setLoading(true);
-    try {
-      const fetchedCharacters = await getCharacters();
-      setCharacters(fetchedCharacters);
-
-      const urlId = searchParams.get('id');
-      if (urlId && fetchedCharacters.some(c => c.id === urlId)) {
-        setSelectedCharacterId(urlId);
-      } else {
-        setSelectedCharacterId(null);
-      }
-    } catch (error) {
-      console.error("Failed to fetch characters:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [authUser, searchParams]);
-
-  const characterGroups = useMemo(() => groupCharacters(characters), [characters, groupCharacters]);
-
   useEffect(() => {
     if (authLoading) return;
     if (!authUser) {
       router.push('/login');
       return;
     }
-    fetchCharacters();
-  }, [authUser, authLoading, router, fetchCharacters]);
-  
-  const handleCharacterDeleted = useCallback((deletedId: string, baseId: string | null) => {
-    const newCharacters = characters.filter(c => c.id !== deletedId);
-    setCharacters(newCharacters);
-
-    if (selectedCharacterId === deletedId) {
-        setSelectedCharacterId(null);
-        router.push('/characters', { scroll: false });
+    
+    async function fetchCharacters() {
+        setLoading(true);
+        try {
+        const fetchedCharacters = await getCharacters();
+        setCharacters(fetchedCharacters);
+        } catch (error) {
+        console.error("Failed to fetch characters:", error);
+        } finally {
+        setLoading(false);
+        }
     }
-  }, [selectedCharacterId, router, characters]);
 
-  const selectCharacter = (id: string) => {
-    setSelectedCharacterId(id);
-    router.push(`/characters?id=${id}`, { scroll: false });
-  }
+    fetchCharacters();
+  }, [authUser, authLoading, router]);
   
-  const selectedCharacter = useMemo(() => {
-    return characters.find(c => c.id === selectedCharacterId) || null;
-  }, [characters, selectedCharacterId]);
-
-  const allVersionsOfSelected = useMemo(() => {
-    if (!selectedCharacter) return [];
-    const baseId = selectedCharacter.baseCharacterId || selectedCharacter.id;
-    return characters.filter(c => (c.baseCharacterId || c.id) === baseId);
-  }, [selectedCharacter, characters]);
-
-  const showDetailsMobile = !!selectedCharacterId;
+  const characterGroups = groupCharacters(characters);
   
-  if (authLoading || (loading && characters.length === 0 && !authUser)) {
+  if (authLoading || loading) {
      return (
       <div className="flex items-center justify-center h-screen w-full">
          <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -384,65 +75,79 @@ export default function CharactersPage() {
     <div className="container py-8">
         <BackButton 
             title="My Characters"
-            description="Select a character from your collection to view their details."
+            description="Your personal collection of forged characters."
         />
       
-      <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
-          {loading && characters.length === 0 ? (
-             <div className="w-full flex items-center justify-center p-8 min-h-[400px]">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : characterGroups.length > 0 ? (
-              <>
-                  <aside className={cn("w-full lg:w-1/4", showDetailsMobile && "hidden lg:block")}>
-                      <ScrollArea className="h-full max-h-[40vh] lg:max-h-[70vh] pr-4">
-                          <div className="space-y-2">
-                              {characterGroups.map(group => {
-                                  const latestVersion = group.sort((a,b) => b.version - a.version)[0];
-                                  return (
-                                    <button
-                                        key={latestVersion.baseCharacterId || latestVersion.id}
-                                        onClick={() => selectCharacter(latestVersion.id)}
-                                        className={cn(
-                                            "w-full text-left p-2 rounded-lg border-2 border-transparent transition-all duration-200 hover:bg-card/80",
-                                            selectedCharacterId === latestVersion.id && "bg-card border-primary shadow-md"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted/20">
-                                                <Image src={latestVersion.imageUrl} alt={latestVersion.name} fill className="object-contain" />
-                                                {group.length > 1 && (
-                                                  <div className="absolute bottom-0 right-0 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded-tl-md rounded-br-md flex items-center gap-1">
-                                                    <Layers className="h-3 w-3"/> {group.length}
-                                                  </div>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <p className="font-semibold text-card-foreground">{latestVersion.name}</p>
-                                                <p className="text-xs text-muted-foreground">{group.length} Version(s)</p>
-                                            </div>
+      <div className="max-w-7xl mx-auto">
+          {characterGroups.length > 0 ? (
+                <motion.div 
+                    className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                        hidden: {},
+                        visible: {
+                            transition: {
+                                staggerChildren: 0.05,
+                            },
+                        },
+                    }}
+                >
+                    {characterGroups.map(group => {
+                        const latestVersion = group.sort((a,b) => b.version - a.version)[0];
+                        const isBranched = group.some(v => !!v.branchedFromId);
+
+                        return (
+                            <motion.div
+                                key={latestVersion.baseCharacterId || latestVersion.id}
+                                variants={{
+                                    hidden: { opacity: 0, y: 20 },
+                                    visible: { opacity: 1, y: 0 },
+                                }}
+                            >
+                                <Link href={`/characters/${latestVersion.id}`} className="block group">
+                                    <div className="relative aspect-square w-full rounded-lg overflow-hidden border-2 border-transparent group-hover:border-primary transition-all duration-300 bg-muted/20">
+                                        <Image src={latestVersion.imageUrl} alt={latestVersion.name} fill className="object-contain transition-transform group-hover:scale-105" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                                        <div className="absolute bottom-2 left-2 text-white">
+                                            <p className="font-semibold drop-shadow-md">{latestVersion.name}</p>
                                         </div>
-                                    </button>
-                                  )
-                              })}
-                          </div>
-                      </ScrollArea>
-                  </aside>
-                  
-                  <div className={cn("w-full lg:w-3/4", !showDetailsMobile && "hidden lg:block")}>
-                    <CharacterDetailPanel 
-                        character={selectedCharacter} 
-                        allVersions={allVersionsOfSelected}
-                        onCharacterDeleted={handleCharacterDeleted}
-                        onCharacterUpdated={fetchCharacters}
-                        onBack={() => {
-                            setSelectedCharacterId(null);
-                            router.push('/characters', { scroll: false });
-                        }}
-                        onSelectVersion={selectCharacter}
-                    />
-                  </div>
-              </>
+                                         <div className="absolute top-2 right-2 flex items-center gap-1">
+                                            {isBranched && (
+                                                <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Badge variant="secondary" className="flex items-center gap-1">
+                                                            <GitBranch className="h-3 w-3" />
+                                                        </Badge>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>This character is a branch</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                            )}
+                                            {group.length > 1 && (
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                         <Badge variant="secondary" className="flex items-center gap-1">
+                                                            <Layers className="h-3 w-3"/> {group.length}
+                                                        </Badge>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>{group.length} versions</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                            )}
+                                        </div>
+                                    </div>
+                                </Link>
+                            </motion.div>
+                        )
+                    })}
+                </motion.div>
           ) : (
               <div className="col-span-full w-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
                   <User className="h-16 w-16 mb-4 text-primary/70" />
@@ -458,3 +163,5 @@ export default function CharactersPage() {
     </div>
   );
 }
+
+    
