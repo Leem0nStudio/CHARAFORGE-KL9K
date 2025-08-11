@@ -4,6 +4,7 @@
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
+import { FieldValue } from 'firebase-admin/firestore';
 
 /**
  * Fetches public characters and ensures their image URLs are directly accessible.
@@ -198,11 +199,12 @@ async function fetchProfilesInBatches(uids: string[]): Promise<Map<string, UserP
   const profiles = new Map<string, UserProfile>();
   const userRef = adminDb.collection('users');
 
-  // Firestore 'in' queries are limited to 10 items.
+  // Firestore 'in' queries are limited to 30 items in a single query.
+  // We'll use 10 for safety and to avoid large requests.
   for (let i = 0; i < uids.length; i += 10) {
     const batchUids = uids.slice(i, i + 10);
     if (batchUids.length > 0) {
-      const snapshot = await userRef.where('uid', 'in', batchUids).get();
+      const snapshot = await userRef.where(FieldValue.documentId(), 'in', batchUids).get();
       snapshot.forEach(doc => profiles.set(doc.id, doc.data() as UserProfile));
     }
   }
@@ -216,7 +218,7 @@ async function fetchDataPacksInBatches(packIds: string[]): Promise<Map<string, {
 
     for (let i = 0; i < packIds.length; i += 10) {
         const batch = packIds.slice(i, i + 10);
-        const snapshot = await packRef.where('id', 'in', batch).get();
+        const snapshot = await packRef.where(FieldValue.documentId(), 'in', batch).get();
         snapshot.forEach(doc => packs.set(doc.id, { name: doc.data().name }));
     }
     return packs;
