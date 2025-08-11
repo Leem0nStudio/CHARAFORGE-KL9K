@@ -306,6 +306,7 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         const allPacks: DataPack[] = [];
         const packsRef = adminDb.collection('datapacks');
 
+        // Firestore 'in' queries are limited to 30 items. We'll use 10 for safety.
         for (let i = 0; i < installedPackIds.length; i += 10) {
             const batchIds = installedPackIds.slice(i, i + 10);
             if (batchIds.length > 0) {
