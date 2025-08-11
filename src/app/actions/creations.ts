@@ -64,7 +64,8 @@ export async function getPublicCharacters(): Promise<Character[]> {
 }
 
 /**
- * Fetches the top 4 creators based on the number of characters they have created.
+ * Fetches the top 4 creators based on the number of characters they have created
+ * and who have set their profile to public.
  * @returns {Promise<UserProfile[]>} A promise that resolves to an array of user profile objects.
  */
 export async function getTopCreators(): Promise<UserProfile[]> {
@@ -74,7 +75,9 @@ export async function getTopCreators(): Promise<UserProfile[]> {
   }
   try {
     const usersRef = adminDb.collection('users');
+    // Only fetch users who have explicitly set their profile to public
     const q = usersRef
+      .where('preferences.privacy.profileVisibility', '==', 'public')
       .orderBy('stats.charactersCreated', 'desc')
       .limit(4);
     
@@ -106,6 +109,44 @@ export async function getTopCreators(): Promise<UserProfile[]> {
   }
 }
 
+/**
+ * Fetches all public characters for a specific user.
+ * @param {string} userId - The UID of the user whose characters to fetch.
+ * @returns {Promise<Character[]>} A promise that resolves to an array of character objects.
+ */
+export async function getPublicCharactersForUser(userId: string): Promise<Character[]> {
+  if (!adminDb) {
+    console.error('Database service is unavailable.');
+    return [];
+  }
+  try {
+    const charactersRef = adminDb.collection('characters');
+    const q = charactersRef
+      .where('userId', '==', userId)
+      .where('status', '==', 'public')
+      .orderBy('createdAt', 'desc')
+      .limit(50);
+    const snapshot = await q.get();
+
+    if (snapshot.empty) {
+      return [];
+    }
+
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt.toDate(),
+      } as Character;
+    });
+
+  } catch (error) {
+    console.error(`Error fetching public characters for user ${userId}:`, error);
+    return [];
+  }
+}
+
 
 // Helper to fetch documents in batches of 10 for 'in' queries
 async function fetchProfilesInBatches(uids: string[]): Promise<Map<string, UserProfile>> {
@@ -113,10 +154,13 @@ async function fetchProfilesInBatches(uids: string[]): Promise<Map<string, UserP
   const profiles = new Map<string, UserProfile>();
   const userRef = adminDb.collection('users');
 
+  // Firestore 'in' queries are limited to 10 items.
   for (let i = 0; i < uids.length; i += 10) {
-    const batch = uids.slice(i, i + 10);
-    const snapshot = await userRef.where('uid', 'in', batch).get();
-    snapshot.forEach(doc => profiles.set(doc.id, doc.data() as UserProfile));
+    const batchUids = uids.slice(i, i + 10);
+    if (batchUids.length > 0) {
+      const snapshot = await userRef.where('uid', 'in', batchUids).get();
+      snapshot.forEach(doc => profiles.set(doc.id, doc.data() as UserProfile));
+    }
   }
   return profiles;
 }
@@ -133,5 +177,3 @@ async function fetchDataPacksInBatches(packIds: string[]): Promise<Map<string, {
     }
     return packs;
 }
-
-    

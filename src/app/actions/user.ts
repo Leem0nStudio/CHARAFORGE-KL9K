@@ -7,7 +7,7 @@ import { adminDb, adminAuth } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
-import type { UserPreferences } from '@/types/user';
+import type { UserPreferences, UserProfile } from '@/types/user';
 
 export type ActionResponse = {
   success: boolean;
@@ -155,11 +155,52 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
         await userRef.set({ preferences }, { merge: true });
 
         revalidatePath('/profile');
+        // Revalidate home page as this affects the top creators list
+        revalidatePath('/');
 
         return { success: true, message: "Preferences updated!" };
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         console.error("Update Preferences Error:", error);
         return { success: false, message: "Failed to save preferences." };
+    }
+}
+
+/**
+ * Fetches the public profile information for a given user UID.
+ * Returns only the necessary public-safe data.
+ * @param {string} uid The UID of the user to fetch.
+ * @returns {Promise<Partial<UserProfile> | null>} A promise that resolves to the user profile or null.
+ */
+export async function getPublicUserProfile(uid: string): Promise<Partial<UserProfile> | null> {
+    if (!adminDb) {
+        console.error('Database service unavailable.');
+        return null;
+    }
+    try {
+        const userRef = adminDb.collection('users').doc(uid);
+        const userDoc = await userRef.get();
+        if (!userDoc.exists) {
+            return null;
+        }
+
+        const userData = userDoc.data();
+        if (userData?.preferences?.privacy?.profileVisibility !== 'public') {
+            return null; // Respect privacy settings
+        }
+        
+        // Return only a subset of public-safe fields
+        return {
+            uid: userData.uid,
+            displayName: userData.displayName || 'Anonymous',
+            photoURL: userData.photoURL || null,
+            stats: {
+                charactersCreated: userData.stats?.charactersCreated || 0,
+                totalLikes: userData.stats?.totalLikes || 0,
+            },
+        };
+    } catch(error) {
+        console.error(`Error fetching public profile for UID ${uid}:`, error);
+        return null;
     }
 }

@@ -241,30 +241,29 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
                          <CardHeader>
                             <CardTitle className="flex justify-between items-center">
                                 <span>Master Forgers</span>
-                                <Button variant="link" asChild>
-                                    <Link href="#">More <ArrowRight className="w-4 h-4 ml-1" /></Link>
-                                </Button>
                             </CardTitle>
                          </CardHeader>
                          <CardContent>
-                             <ul className="space-y-2">
+                             <ul className="space-y-4">
                                 {topCreators.map((creator, index) => (
                                      <li key={creator.uid}>
-                                         <div className="flex items-center gap-4">
-                                            <Avatar className="h-12 w-12">
+                                         <Link href={`/users/${creator.uid}`} className="flex items-center gap-4 group">
+                                            <Avatar className="h-12 w-12 group-hover:ring-2 ring-primary transition-all">
                                                 <AvatarImage src={creator.photoURL || undefined} alt={creator.displayName || 'Creator'} data-ai-hint="creator avatar" />
                                                 <AvatarFallback>{creator.displayName?.charAt(0) || 'C'}</AvatarFallback>
                                             </Avatar>
                                             <div className="flex-grow">
-                                                <p className="font-semibold text-lg">{creator.displayName}</p>
+                                                <p className="font-semibold text-lg group-hover:text-primary transition-colors">{creator.displayName}</p>
                                                 <p className="text-sm text-muted-foreground flex items-center gap-1.5"><Trophy className="w-4 h-4 text-amber-400" /> {creator.stats?.charactersCreated || 0} creations</p>
                                             </div>
                                              <RankBadge rank={index + 1} />
-                                         </div>
-                                        {index < topCreators.length - 1 && <Separator className="mt-2" />}
+                                         </Link>
                                      </li>
                                 ))}
                             </ul>
+                            {topCreators.length === 0 && (
+                                <p className="text-muted-foreground text-center py-4">No public creators found yet.</p>
+                            )}
                          </CardContent>
                      </Card>
                  </div>
