@@ -297,19 +297,30 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         
         const installedPackIds = userDoc.data()?.stats?.installedPacks || [];
         if (installedPackIds.length === 0) return [];
+
+        const allPacks: DataPack[] = [];
+        const packsRef = adminDb.collection('datapacks');
+
+        // Firestore 'in' queries are limited to 10 items. We must batch.
+        for (let i = 0; i < installedPackIds.length; i += 10) {
+            const batchIds = installedPackIds.slice(i, i + 10);
+            if (batchIds.length > 0) {
+                const packsQuery = packsRef.where('id', 'in', batchIds);
+                const packsSnapshot = await packsQuery.get();
+                const batchPacks = packsSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        ...data,
+                        id: doc.id,
+                        createdAt: data.createdAt.toDate(),
+                        updatedAt: data.updatedAt?.toDate() || null,
+                    } as DataPack;
+                });
+                allPacks.push(...batchPacks);
+            }
+        }
         
-        const packsQuery = adminDb.collection('datapacks').where('id', 'in', installedPackIds);
-        const packsSnapshot = await packsQuery.get();
-        
-        return packsSnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                ...data,
-                id: doc.id,
-                createdAt: data.createdAt.toDate(),
-                updatedAt: data.updatedAt?.toDate() || null,
-            } as DataPack
-        });
+        return allPacks;
 
     } catch (error) {
          if (error instanceof Error && (error.message.includes('User session not found') || error.message.includes('Invalid or expired'))) {
