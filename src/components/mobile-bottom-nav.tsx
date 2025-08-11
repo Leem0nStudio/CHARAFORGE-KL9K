@@ -1,5 +1,5 @@
 
-"use client";
+'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -15,7 +15,7 @@ export function MobileBottomNav() {
     { href: '/', label: 'Home', icon: Home },
     { href: '/datapacks', label: 'DataPacks', icon: Package },
     { href: '/character-generator', label: 'Create', icon: Swords, isPrimary: true },
-    { href: '/story-forge', label: 'Stories', icon: ScrollText, requiresAuth: true },
+    { href: '/story-forge', label: 'Story Forge', icon: ScrollText, requiresAuth: true },
     { href: '/profile', label: 'Profile', icon: UserCircle, requiresAuth: true },
   ];
 
@@ -65,5 +65,3 @@ export function MobileBottomNav() {
     </div>
   );
 }
-
-    

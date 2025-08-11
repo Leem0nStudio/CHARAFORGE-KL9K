@@ -3,17 +3,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart, Package, Home, Settings } from "lucide-react";
+import { Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnvilIcon } from "@/hooks/use-auth";
 
-const navItems = [
-    { href: '/admin', label: 'Dashboard', icon: BarChart },
-    { href: '/admin/datapacks', label: 'DataPacks', icon: Package },
-    { href: '/admin/settings', label: 'Settings', icon: Settings },
-]
+interface NavItem {
+    href: string;
+    label: string;
+    icon: React.ElementType;
+}
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+    navItems: NavItem[];
+}
+
+export function AdminSidebar({ navItems }: AdminSidebarProps) {
     const pathname = usePathname();
 
     // In a real app, you might fetch this URL or have it in a context

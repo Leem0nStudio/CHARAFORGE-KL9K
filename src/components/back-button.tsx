@@ -22,7 +22,7 @@ export function BackButton({ title, description }: BackButtonProps) {
                     <span className="sr-only">Back</span>
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-semibold font-headline tracking-wider">{title}</h1>
+                    <h1 className="text-3xl font-bold tracking-tight font-headline">{title}</h1>
                     <p className="text-muted-foreground">{description}</p>
                 </div>
             </div>

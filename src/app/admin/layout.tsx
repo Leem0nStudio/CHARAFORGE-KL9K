@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import {
@@ -17,7 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { AnvilIcon } from "@/hooks/use-auth";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AdminPageLayout } from "@/components/admin/admin-page-layout";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -32,7 +32,7 @@ const navItems = [
 export default function AdminLayout({ children }: AdminLayoutProps) {
     return (
         <div className="flex min-h-screen w-full bg-muted/40">
-            <AdminSidebar />
+            <AdminSidebar navItems={navItems} />
             <div className="flex flex-col w-full">
                 <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
                      <Sheet>
