@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A service for searching Danbooru tags from a pre-processed local file.
@@ -10,9 +9,9 @@
  * Tool by Genkit flows.
  */
 
-import { z } from 'zod';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import type { SearchTagsInput, SearchTagsOutput } from './danbooru-tag-search.types';
 
 // #region Type Definitions
 interface ProcessedTag {
@@ -50,16 +49,6 @@ async function getTagDatabase(): Promise<CategorizedTags> {
 
 
 // #region Tag Search Service
-export const SearchTagsInputSchema = z.object({
-  query: z.string().describe("A simple, one or two-word search term (e.g., 'hat', 'skirt', 'armor')."),
-  category: z.enum(['headwear', 'topwear', 'bottomwear', 'general']).optional().describe("The category to search within. If 'general', search all categories."),
-});
-export type SearchTagsInput = z.infer<typeof SearchTagsInputSchema>;
-
-export const SearchTagsOutputSchema = z.array(z.string()).describe("A list of matching tag names.");
-export type SearchTagsOutput = z.infer<typeof SearchTagsOutputSchema>;
-
-
 /**
  * Searches the pre-processed tag database file for relevant tags.
  * @param input - The search parameters, including the query and optional category.

@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -6,12 +5,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
-import { 
-    searchTags, 
-    SearchTagsInputSchema, 
-    SearchTagsOutputSchema 
-} from '@/services/danbooru-tag-search';
+import { searchTags } from '@/services/danbooru-tag-search';
+import { SearchTagsInputSchema, SearchTagsOutputSchema } from '@/services/danbooru-tag-search.types';
 import { SuggestDanbooruTagsInputSchema, SuggestDanbooruTagsOutputSchema, type SuggestDanbooruTagsInput, type SuggestDanbooruTagsOutput } from './types';
 
 
