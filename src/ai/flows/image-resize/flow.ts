@@ -3,30 +3,11 @@
 
 /**
  * @fileOverview An AI agent for resizing an image to a web-friendly dimension.
- *
- * - resizeImage - A function that takes a large image data URI and returns a smaller one.
- * - ResizeImageInput - The input type for the resizeImage function.
- * - ResizeImageOutput - The return type for the resizeImage function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ResizeImageInputSchema, ResizeImageOutputSchema, type ResizeImageInput, type ResizeImageOutput } from './types';
 
-const ResizeImageInputSchema = z.object({
-  imageUrl: z
-    .string()
-    .describe(
-      "The original image as a data URI, which must include a MIME type and Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-});
-export type ResizeImageInput = z.infer<typeof ResizeImageInputSchema>;
-
-const ResizeImageOutputSchema = z.object({
-  resizedImageUrl: z
-    .string()
-    .describe('The resized 512x512 image as a data URI.'),
-});
-export type ResizeImageOutput = z.infer<typeof ResizeImageOutputSchema>;
 
 export async function resizeImage(
   input: ResizeImageInput
@@ -68,5 +49,3 @@ const resizeImageFlow = ai.defineFlow(
     }
   }
 );
-
-    

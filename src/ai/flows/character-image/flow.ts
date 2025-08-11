@@ -3,27 +3,11 @@
 
 /**
  * @fileOverview An AI agent for generating character images based on a description.
- *
- * - generateCharacterImage - A function that handles the character image generation process.
- * - GenerateCharacterImageInput - The input type for the generateCharacterImage function.
- * - GenerateCharacterImageOutput - The return type for the generateCharacterImage function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
 
-const GenerateCharacterImageInputSchema = z.object({
-  description: z.string().describe('The description of the character.'),
-  aspectRatio: z.enum(['1:1', '16:9', '9:16']).optional().default('1:1').describe('The desired aspect ratio for the image.'),
-});
-export type GenerateCharacterImageInput = z.infer<typeof GenerateCharacterImageInputSchema>;
-
-const GenerateCharacterImageOutputSchema = z.object({
-  imageUrl: z
-    .string()
-    .describe('The generated image as a data URI, including MIME type and Base64 encoding.'),
-});
-export type GenerateCharacterImageOutput = z.infer<typeof GenerateCharacterImageOutputSchema>;
 
 export async function generateCharacterImage(
   input: GenerateCharacterImageInput

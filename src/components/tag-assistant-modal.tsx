@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { suggestDanbooruTags } from '@/ai/flows/suggest-danbooru-tags';
+import { suggestDanbooruTags } from '@/ai/flows/danbooru-tag-suggestion/flow';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';

@@ -2,32 +2,11 @@
 
 /**
  * @fileOverview Story generation AI agent.
- *
- * - generateStory - A function that generates a story from a prompt and a cast of characters.
- * - GenerateStoryInput - The input type for the function.
- * - GenerateStoryOutput - The return type for the function.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { GenerateStoryInputSchema, GenerateStoryOutputSchema, type GenerateStoryInput, type GenerateStoryOutput } from './types';
 
-const CharacterSchemaForStory = z.object({
-    name: z.string().describe("The character's name."),
-    biography: z.string().describe("A brief biography of the character."),
-    alignment: z.enum(['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil']).describe("The character's moral and ethical alignment (D&D style).")
-});
-
-const GenerateStoryInputSchema = z.object({
-  prompt: z.string().describe('A brief prompt or theme for the story.'),
-  cast: z.array(CharacterSchemaForStory).describe("The cast of characters to be included in the story."),
-});
-export type GenerateStoryInput = z.infer<typeof GenerateStoryInputSchema>;
-
-const GenerateStoryOutputSchema = z.object({
-  title: z.string().describe('A compelling title for the generated story.'),
-  story: z.string().describe('The full, generated story, written in a narrative format.'),
-});
-export type GenerateStoryOutput = z.infer<typeof GenerateStoryOutputSchema>;
 
 export async function generateStory(input: GenerateStoryInput): Promise<GenerateStoryOutput> {
   return generateStoryFlow(input);

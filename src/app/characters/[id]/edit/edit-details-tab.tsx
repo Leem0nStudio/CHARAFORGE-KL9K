@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
 import { updateCharacter } from '@/app/actions/characters';
-import { generateCharacterBio } from '@/ai/flows/generate-character-bio';
+import { generateCharacterBio } from '@/ai/flows/character-bio/flow';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

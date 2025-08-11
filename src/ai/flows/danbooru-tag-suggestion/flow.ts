@@ -3,13 +3,6 @@
 
 /**
  * @fileOverview This flow acts as an AI agent for suggesting Danbooru tags.
- * It uses a dedicated search service, exposed as a Genkit Tool, to find
- * relevant tags based on a user's natural language query. This abstracts
- * the data source from the AI's reasoning process.
- *
- * - suggestDanbooruTags - The main function that orchestrates the tag suggestion.
- * - SuggestDanbooruTagsInput - The input type for the flow.
- * - SuggestDanbooruTagsOutput - The return type for the flow.
  */
 
 import { ai } from '@/ai/genkit';
@@ -19,6 +12,8 @@ import {
     SearchTagsInputSchema, 
     SearchTagsOutputSchema 
 } from '@/services/danbooru-tag-search';
+import { SuggestDanbooruTagsInputSchema, SuggestDanbooruTagsOutputSchema, type SuggestDanbooruTagsInput, type SuggestDanbooruTagsOutput } from './types';
+
 
 // Define the Genkit Tool that wraps our search service.
 // This makes the search functionality available to the AI model.
@@ -32,17 +27,6 @@ const searchTagsTool = ai.defineTool(
   async (input) => searchTags(input)
 );
 
-
-export const SuggestDanbooruTagsInputSchema = z.object({
-  query: z.string().describe('The user\'s search query for tags (e.g., "a cool hat", "spiky armor").'),
-  category: z.enum(['headwear', 'topwear', 'bottomwear', 'general']).optional().describe('An optional category to narrow down the search.'),
-});
-export type SuggestDanbooruTagsInput = z.infer<typeof SuggestDanbooruTagsInputSchema>;
-
-const SuggestDanbooruTagsOutputSchema = z.object({
-  suggestedTags: z.array(z.string()).describe('A list of 3-5 relevant Danbooru tags based on the user\'s query.'),
-});
-export type SuggestDanbooruTagsOutput = z.infer<typeof SuggestDanbooruTagsOutputSchema>;
 
 export async function suggestDanbooruTags(
   input: SuggestDanbooruTagsInput

@@ -7,7 +7,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import type { DataPack, UpsertDataPack } from '@/types/datapack';
 import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
-import { generateDataPackSchema } from '@/ai/flows/generate-datapack-schema';
+import { generateDataPackSchema } from '@/ai/flows/datapack-schema/flow';
 
 export type ActionResponse = {
     success: boolean;

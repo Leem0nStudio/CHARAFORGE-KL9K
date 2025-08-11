@@ -9,7 +9,7 @@ import type { Character, TimelineEvent } from '@/types/character';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { UserProfile } from '@/types/user';
 import { randomUUID } from 'crypto';
-import { generateCharacterImage } from '@/ai/flows/generate-character-image';
+import { generateCharacterImage } from '@/ai/flows/character-image/flow';
 
 
 type ActionResponse = {

@@ -2,25 +2,11 @@
 
 /**
  * @fileOverview Character biography generation AI agent.
- *
- * - generateCharacterBio - A function that generates a character biography from a description.
- * - GenerateCharacterBioInput - The input type for the generateCharacterBio function.
- * - GenerateCharacterBioOutput - The return type for the generateCharacterBio function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { GenerateCharacterBioInputSchema, GenerateCharacterBioOutputSchema, type GenerateCharacterBioInput, type GenerateCharacterBioOutput } from './types';
 
-const GenerateCharacterBioInputSchema = z.object({
-  description: z.string().describe('A description of the character.'),
-  targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).optional().describe('The target language for the biography.'),
-});
-export type GenerateCharacterBioInput = z.infer<typeof GenerateCharacterBioInputSchema>;
-
-const GenerateCharacterBioOutputSchema = z.object({
-  biography: z.string().describe('The generated biography of the character.'),
-});
-export type GenerateCharacterBioOutput = z.infer<typeof GenerateCharacterBioOutputSchema>;
 
 export async function generateCharacterBio(input: GenerateCharacterBioInput): Promise<GenerateCharacterBioOutput> {
   return generateCharacterBioFlow(input);

@@ -29,7 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DataPack, UpsertDataPack, DataPackSchema, Slot } from '@/types/datapack';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
-import { generateDataPackSchema } from '@/ai/flows/generate-datapack-schema';
+import { generateDataPackSchema } from '@/ai/flows/datapack-schema/flow';
 
 // This dialog is now internal and doesn't need to be exported
 function AiGeneratorDialog({ onSchemaGenerated }: { onSchemaGenerated: (schema: DataPackSchema) => void }) {
