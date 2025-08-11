@@ -4,18 +4,19 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { adminDb } from '@/lib/firebase/server';
-import type { Character } from '@/types/character';
-import { User, Calendar, Tag, GitBranch } from 'lucide-react';
+import type { Character, TimelineEvent } from '@/types/character';
+import { User, Calendar, Tag, GitBranch, Shield, ScrollText } from 'lucide-react';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BackButton } from '@/components/back-button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { UserProfile } from '@/types/user';
 import { CharacterImageActions } from '@/components/character/character-image-actions';
+import { Separator } from '@/components/ui/separator';
 
 
 async function getCharacter(characterId: string): Promise<{
@@ -76,6 +77,8 @@ async function getCharacter(characterId: string): Promise<{
             dataPackName: dataPackName,
             branchingPermissions: data.branchingPermissions || 'private',
             versions: data.versions || [{ id: doc.id, name: data.versionName || 'v.1', version: data.version || 1 }],
+            alignment: data.alignment || 'True Neutral',
+            timeline: data.timeline || [],
         } as Character;
 
         return { character, currentUserId, creatorProfile, originalAuthorProfile };
@@ -85,6 +88,32 @@ async function getCharacter(characterId: string): Promise<{
         return { character: null, currentUserId: null, creatorProfile: null, originalAuthorProfile: null };
     }
 }
+
+function TimelineSection({ timeline }: { timeline: TimelineEvent[] }) {
+    if (!timeline || timeline.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="mt-6">
+            <h3 className="text-xl font-headline flex items-center gap-2 mb-4"><ScrollText className="w-5 h-5 text-primary" /> Timeline</h3>
+            <div className="space-y-4">
+                {timeline.map((event, index) => (
+                    <Card key={event.id || index} className="bg-muted/30">
+                        <CardHeader className="p-4">
+                            <CardTitle className="text-base font-semibold">{event.title}</CardTitle>
+                            <CardDescription>{event.date}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                            <p className="text-sm text-muted-foreground">{event.description}</p>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    )
+}
+
 
 export default async function CharacterDetailPage({ params }: { params: { id: string } }) {
     const { character, currentUserId, creatorProfile, originalAuthorProfile } = await getCharacter(params.id);
@@ -101,7 +130,6 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
     
     const authorForAvatar = creatorProfile || { displayName: character.userName || '?', photoURL: null };
 
-
     return (
         <div className="container py-8 max-w-7xl mx-auto">
              <div className="flex items-center gap-4 mb-4">
@@ -112,7 +140,46 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
             <Card className="w-full p-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                   
-                  {/* Left Column: Character Details */}
+                  {/* Left Column: Character Image */}
+                  <div className="w-full lg:sticky lg:top-20">
+                       <Card className="overflow-hidden group relative border-2 border-primary/20 shadow-lg">
+                           <Dialog>
+                              <DialogTrigger asChild>
+                                  <div className="w-full aspect-square relative bg-muted/20 cursor-pointer">
+                                      <Image
+                                          src={character.imageUrl}
+                                          alt={character.name}
+                                          fill
+                                          priority
+                                          className="object-contain p-2"
+                                      />
+                                  </div>
+                                </DialogTrigger>
+                               <DialogContent className="max-w-3xl p-0 bg-transparent border-0">
+                                  <DialogTitle className="sr-only">{character.name}</DialogTitle>
+                                  <DialogDescription className="sr-only">{character.description}</DialogDescription>
+                                  <Image
+                                    src={character.imageUrl}
+                                    alt={character.name}
+                                    width={1024}
+                                    height={1024}
+                                    className="object-contain rounded-lg w-full h-auto"
+                                  />
+                                </DialogContent>
+                            </Dialog>
+
+                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                           <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-black/30 backdrop-blur-sm p-2 rounded-lg">
+                              <CharacterImageActions 
+                                character={character}
+                                currentUserId={currentUserId}
+                                isOwner={isOwner}
+                              />
+                          </div>
+                       </Card>
+                  </div>
+
+                  {/* Right Column: Character Details */}
                   <div className="w-full">
                       <Card className="bg-card/50 overflow-hidden h-full flex flex-col">
                           {/* Header Section */}
@@ -138,15 +205,19 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                               </div>
 
                               <div className="flex flex-wrap items-center gap-2">
+                                  <Badge variant="secondary">
+                                      <Shield className="h-3 w-3 mr-1.5" />
+                                      {character.alignment}
+                                  </Badge>
                                   {character.branchedFromId && originalAuthorProfile && (
-                                      <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                                      <Badge variant="secondary">
                                           <GitBranch className="h-3 w-3 mr-1.5" />
                                           Branched from {originalAuthorProfile.displayName || 'Unknown'}
                                       </Badge>
                                   )}
                                   {character.dataPackId && character.dataPackName && (
                                      <Link href={`/datapacks/${character.dataPackId}`}>
-                                        <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 hover:bg-accent/20 transition-colors">
+                                        <Badge variant="secondary" className="hover:bg-accent/20 transition-colors">
                                            <Tag className="h-3 w-3 mr-1.5" />
                                             {character.dataPackName}
                                         </Badge>
@@ -155,56 +226,26 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                               </div>
                           </div>
                           
-                          {/* Biography Section */}
-                          <CardContent className="pt-6 flex-1 flex flex-col">
-                              <ScrollArea className="flex-grow h-96">
-                                <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed pr-4">
-                                    {character.biography}
-                                </p>
+                          {/* Biography & Timeline Section */}
+                          <CardContent className="pt-6 flex-1 flex flex-col min-h-0">
+                              <ScrollArea className="flex-grow h-[600px] pr-4">
+                                <div>
+                                    <h3 className="text-xl font-headline mb-2">Biography</h3>
+                                    <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                                        {character.biography}
+                                    </p>
+                                </div>
+                                <Separator className="my-6" />
+                                <TimelineSection timeline={character.timeline || []} />
                               </ScrollArea>
                           </CardContent>
                       </Card>
                   </div>
 
-                  {/* Right Column: Character Image */}
-                  <div className="w-full">
-                       <Card className="overflow-hidden group relative border-2 border-primary/20 shadow-lg">
-                           <Dialog>
-                              <DialogTrigger asChild>
-                                  <div className="w-full aspect-square relative bg-muted/20 cursor-pointer">
-                                      <Image
-                                          src={character.imageUrl}
-                                          alt={character.name}
-                                          fill
-                                          priority
-                                          className="object-contain p-2"
-                                      />
-                                  </div>
-                                </DialogTrigger>
-                               <DialogContent className="max-w-3xl p-0 bg-transparent border-0">
-                                  <DialogTitle className="sr-only">{character.name}</DialogTitle>
-                                  <Image
-                                    src={character.imageUrl}
-                                    alt={character.name}
-                                    width={1024}
-                                    height={1024}
-                                    className="object-contain rounded-lg w-full h-auto"
-                                  />
-                                </DialogContent>
-                            </Dialog>
-
-                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                           <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-black/30 backdrop-blur-sm p-2 rounded-lg">
-                              <CharacterImageActions 
-                                character={character}
-                                currentUserId={currentUserId}
-                                isOwner={isOwner}
-                              />
-                          </div>
-                       </Card>
-                  </div>
               </div>
             </Card>
         </div>
     );
 }
+
+    
