@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@radix-ui/resolvers/zod";
 import { z } from "zod";
 import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags } from "lucide-react";
 
@@ -51,6 +52,7 @@ const generationFormSchema = z.object({
   tags: z.string().optional(), // Hidden field for tags
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
+  engine: z.enum(['gradio', 'gemini']).default('gradio'),
 });
 
 const saveFormSchema = z.object({
@@ -68,6 +70,7 @@ type CharacterData = {
   tags: string;
   dataPackId?: string | null;
   aspectRatio: '1:1' | '16:9' | '9:16';
+  engine: 'gradio' | 'gemini';
 };
 
 export function CharacterGenerator() {
@@ -96,6 +99,7 @@ export function CharacterGenerator() {
       tags: "",
       targetLanguage: 'English',
       aspectRatio: '1:1',
+      engine: 'gradio',
     },
   });
 
@@ -196,6 +200,7 @@ export function CharacterGenerator() {
         tags: data.tags || '',
         dataPackId: dataPackId,
         aspectRatio: data.aspectRatio,
+        engine: data.engine,
       });
     } catch (err: unknown) {
        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during biography generation.";
@@ -219,6 +224,7 @@ export function CharacterGenerator() {
         const imageResult = await generateCharacterImage({ 
             description: characterData.description,
             aspectRatio: characterData.aspectRatio,
+            engine: characterData.engine,
         });
         if (!imageResult.imageUrl) {
             throw new Error("AI model did not return an image. This could be due to safety filters or an API issue.");
@@ -347,6 +353,7 @@ export function CharacterGenerator() {
                     </FormItem>
                   )}
                 />
+                <div className="grid grid-cols-2 gap-4">
                  <FormField
                   control={generationForm.control}
                   name="aspectRatio"
@@ -367,13 +374,12 @@ export function CharacterGenerator() {
                               <FormLabel 
                                 htmlFor="square"
                                 className={cn(
-                                  "flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                  "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center",
                                   field.value === '1:1' && "border-primary"
                                 )}
                               >
-                                <Square className="mb-3 h-6 w-6" />
-                                Square
-                                <span className="text-xs text-muted-foreground mt-1">1024x1024</span>
+                                <Square className="mb-2 h-5 w-5" />
+                                <span className="text-xs">Square</span>
                               </FormLabel>
                             </FormItem>
                              <FormItem>
@@ -383,13 +389,12 @@ export function CharacterGenerator() {
                               <FormLabel 
                                 htmlFor="landscape"
                                 className={cn(
-                                  "flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                  "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center",
                                   field.value === '16:9' && "border-primary"
                                 )}
                               >
-                                <RectangleHorizontal className="mb-3 h-6 w-6" />
-                                Landscape
-                                <span className="text-xs text-muted-foreground mt-1">1216x832</span>
+                                <RectangleHorizontal className="mb-2 h-5 w-5" />
+                                <span className="text-xs">Landscape</span>
                               </FormLabel>
                             </FormItem>
                              <FormItem>
@@ -399,13 +404,12 @@ export function CharacterGenerator() {
                               <FormLabel 
                                 htmlFor="portrait"
                                 className={cn(
-                                  "flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                  "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center",
                                   field.value === '9:16' && "border-primary"
                                 )}
                               >
-                                <RectangleVertical className="mb-3 h-6 w-6" />
-                                Portrait
-                                <span className="text-xs text-muted-foreground mt-1">832x1216</span>
+                                <RectangleVertical className="mb-2 h-5 w-5" />
+                                <span className="text-xs">Portrait</span>
                               </FormLabel>
                             </FormItem>
                           </RadioGroup>
@@ -414,6 +418,56 @@ export function CharacterGenerator() {
                     </FormItem>
                   )}
                 />
+                 <FormField
+                  control={generationForm.control}
+                  name="engine"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>AI Engine</FormLabel>
+                       <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="grid grid-cols-1 gap-2"
+                            disabled={!canInteract}
+                          >
+                            <FormItem>
+                              <FormControl>
+                                <RadioGroupItem value="gradio" id="gradio" className="sr-only" />
+                              </FormControl>
+                              <FormLabel 
+                                htmlFor="gradio"
+                                className={cn(
+                                  "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center h-full",
+                                  field.value === 'gradio' && "border-primary"
+                                )}
+                              >
+                                <span className="text-xs font-bold">Stable Diffusion</span>
+                                <span className="text-xs text-muted-foreground">via Gradio</span>
+                              </FormLabel>
+                            </FormItem>
+                             <FormItem>
+                              <FormControl>
+                                <RadioGroupItem value="gemini" id="gemini" className="sr-only" />
+                              </FormControl>
+                              <FormLabel 
+                                htmlFor="gemini"
+                                className={cn(
+                                  "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center h-full",
+                                  field.value === 'gemini' && "border-primary"
+                                )}
+                              >
+                               <span className="text-xs font-bold">Gemini Image</span>
+                                <span className="text-xs text-muted-foreground">via Google</span>
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                </div>
                  <FormField
                   control={generationForm.control}
                   name="targetLanguage"

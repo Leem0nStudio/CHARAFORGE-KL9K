@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview An AI agent for generating character images based on a description,
- * using a third-party Gradio API.
+ * using a selectable engine (Gradio or Gemini).
  */
 
 import { ai } from '@/ai/genkit';
@@ -38,44 +38,55 @@ const generateCharacterImageFlow = ai.defineFlow(
     outputSchema: GenerateCharacterImageOutputSchema,
   },
   async (input) => {
-    try {
-      const { width, height } = getDimensions(input.aspectRatio);
+    const { description, aspectRatio, engine } = input;
 
-      // Connect to the public Gradio Space API for image generation.
-      const client = await Client.connect("dhead/waiNSFWIllustrious_v130_Space");
+    if (engine === 'gemini') {
+        try {
+            const { media } = await ai.generate({
+                model: 'googleai/gemini-2.0-flash-preview-image-generation',
+                prompt: description,
+                config: {
+                    responseModalities: ['TEXT', 'IMAGE'],
+                    aspectRatio: aspectRatio,
+                },
+            });
+            const imageUrl = media?.url;
+            if (!imageUrl) {
+                throw new Error('Gemini AI model failed to generate an image.');
+            }
+            return { imageUrl };
+        } catch (error) {
+            console.error("Error generating image with Gemini:", error);
+            const message = error instanceof Error ? error.message : "An unknown error occurred with the Gemini engine.";
+            throw new Error(`Failed to generate character image via Gemini. ${message}`);
+        }
+    } else { // Default to Gradio
+        try {
+            const { width, height } = getDimensions(aspectRatio);
+            const client = await Client.connect("dhead/waiNSFWIllustrious_v130_Space");
 
-      // Call the 'predict' function on the '/infer' endpoint with the appropriate parameters.
-      const result = await client.predict("/infer", {
-        prompt: input.description,
-        negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
-        // Use a random seed for varied results on each generation.
-        seed: Math.floor(Math.random() * 1_000_000_000),
-        randomize_seed: true,
-        width: width,
-        height: height,
-        // These are common default values for stable diffusion models.
-        guidance_scale: 7,
-        num_inference_steps: 25,
-      });
+            const result = await client.predict("/infer", {
+                prompt: description,
+                negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
+                seed: Math.floor(Math.random() * 1_000_000_000),
+                randomize_seed: true,
+                width: width,
+                height: height,
+                guidance_scale: 7,
+                num_inference_steps: 25,
+            });
 
-      // The result.data from Gradio client is typically an array containing the image data URI.
-      // We extract the first element which should be the image.
-      const imageUrl = Array.isArray(result.data) ? result.data[0] : null;
+            const imageUrl = Array.isArray(result.data) ? result.data[0] : null;
+            if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('data:image')) {
+                throw new Error('The Gradio API did not return a valid image data URI. The remote service might be down or the request was rejected.');
+            }
+            return { imageUrl };
 
-      // Validate that the returned data is a valid image data URI.
-      if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.startsWith('data:image')) {
-        throw new Error('The Gradio API did not return a valid image data URI. The remote service might be down or the request was rejected.');
-      }
-
-      return { imageUrl };
-
-    } catch (error) {
-      // Log the detailed error on the server for easier debugging.
-      console.error("Error in generateCharacterImageFlow (Gradio):", error);
-      
-      // Provide a user-friendly error message.
-      const message = error instanceof Error ? error.message : "An unknown error occurred.";
-      throw new Error(`Failed to generate character image via the external API. ${message}`);
+        } catch (error) {
+            console.error("Error in generateCharacterImageFlow (Gradio):", error);
+            const message = error instanceof Error ? error.message : "An unknown error occurred.";
+            throw new Error(`Failed to generate character image via the external API. ${message}`);
+        }
     }
   }
 );
