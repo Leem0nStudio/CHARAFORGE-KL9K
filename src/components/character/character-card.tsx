@@ -4,11 +4,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { User, GitBranch, Layers, Package } from 'lucide-react';
-import { Card, CardFooter } from '@/components/ui/card';
+import { User, GitBranch, Layers, Package, Tag } from 'lucide-react';
+import { Card, CardFooter, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import type { Character } from '@/types/character';
+import { chartColors } from '@/lib/app-config';
 
 interface CharacterCardProps {
     character: Character;
@@ -72,14 +73,35 @@ export function CharacterCard({ character }: CharacterCardProps) {
                         </div>
                     </Link>
                 </div>
-                <CardFooter className="p-3 bg-card flex-col items-start flex-grow">
-                     <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-grow">{character.description}</p>
+                 <CardContent className="p-3 bg-card flex-col items-start flex-grow">
+                     {character.tags && character.tags.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-1 mb-2">
+                            {character.tags.slice(0, 3).map((tag, index) => (
+                                <Badge
+                                    key={tag}
+                                    variant="default"
+                                    style={{
+                                        backgroundColor: `hsl(var(${chartColors[index % chartColors.length]}))`,
+                                        color: `hsl(var(--primary-foreground))`,
+                                    }}
+                                    className="text-xs"
+                                >
+                                    {tag.replace(/_/g, ' ')}
+                                </Badge>
+                            ))}
+                            {character.tags.length > 3 && <Badge variant="outline" className="text-xs">...</Badge>}
+                        </div>
+                     ) : (
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-grow">{character.description}</p>
+                     )}
                      {character.dataPackName && (
-                        <Badge variant="outline" className="mb-2">
+                        <Badge variant="outline" className="mb-2 text-xs">
                             <Package className="h-3 w-3 mr-1.5" />
                             {character.dataPackName}
                         </Badge>
                        )}
+                </CardContent>
+                <CardFooter className="p-3 bg-card/50">
                     <div className="w-full">
                         <div className="text-xs text-muted-foreground flex items-center gap-1.5">
                             <User className="h-3 w-3" />

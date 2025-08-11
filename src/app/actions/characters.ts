@@ -437,6 +437,7 @@ export async function getCharacters(): Promise<Character[]> {
         versions: versions,
         branchingPermissions: data.branchingPermissions || 'private',
         alignment: data.alignment || 'True Neutral',
+        tags: data.tags || [],
       } as Character;
     });
 
@@ -556,6 +557,7 @@ const SaveCharacterInputSchema = z.object({
   biography: z.string(),
   imageUrl: z.string().startsWith('data:image/'),
   dataPackId: z.string().optional().nullable(),
+  tags: z.string().optional(), // Added tags as a comma-separated string
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
@@ -570,7 +572,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
     throw new Error(`Invalid input for ${firstError.path.join('.')}: ${firstError.message}`);
   }
   
-  const { name, description, biography, imageUrl: imageDataUri, dataPackId } = validation.data;
+  const { name, description, biography, imageUrl: imageDataUri, dataPackId, tags } = validation.data;
   
   try {
     const userId = await verifyAndGetUid();
@@ -588,6 +590,9 @@ export async function saveCharacter(input: SaveCharacterInput) {
         const version = 1;
         const versionName = `v.${version}`;
         const initialVersion = { id: characterRef.id, name: versionName, version: version };
+        
+        // Process tags from comma-separated string to an array of strings
+        const tagsArray = tags ? tags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
 
         const characterData = {
             userId,
@@ -605,6 +610,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
             versions: [initialVersion],
             branchingPermissions: 'private',
             alignment: 'True Neutral',
+            tags: tagsArray, // Store the processed tags
         };
 
         transaction.set(characterRef, characterData);

@@ -151,7 +151,7 @@ function OptionSelectModal({
     )
 }
 
-function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPromptGenerated: (prompt: string, packName: string) => void, onBack: () => void }) {
+function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPromptGenerated: (prompt: string, packName: string, tags: string[]) => void, onBack: () => void }) {
     const { control, handleSubmit, watch, setValue } = useForm();
     const formValues = watch();
 
@@ -197,14 +197,17 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                 data[slot.id] = slot.defaultOption;
             }
         });
-
+        
+        const tags: string[] = [];
         for (const key in data) {
             if (data[key]) {
                prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), data[key]);
+               tags.push(data[key]);
             }
         }
+        
         prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/, ,/g, ',').replace(/, /g, ' ').replace(/,$/g, '').trim();
-        onPromptGenerated(prompt, pack.name);
+        onPromptGenerated(prompt, pack.name, tags);
     };
 
     return (
@@ -263,7 +266,7 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
 interface DataPackSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onPromptGenerated: (prompt: string, packName: string) => void;
+    onPromptGenerated: (prompt: string, packName: string, tags: string[]) => void;
     installedPacks: DataPack[];
     isLoading: boolean;
 }
@@ -294,8 +297,8 @@ export function DataPackSelectorModal({
 
     }, [isOpen, isLoading, packs, selectedPack, wizardPack]);
     
-    const handlePromptGeneratedAndClose = useCallback((prompt: string, packName: string) => {
-        onPromptGenerated(prompt, packName);
+    const handlePromptGeneratedAndClose = useCallback((prompt: string, packName: string, tags: string[]) => {
+        onPromptGenerated(prompt, packName, tags);
         onClose();
     }, [onPromptGenerated, onClose]);
     

@@ -49,6 +49,7 @@ const generationFormSchema = z.object({
   }).max(1000, {
     message: "Description must not be longer than 1000 characters."
   }),
+  tags: z.string().optional(), // Hidden field for tags
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
 });
@@ -65,6 +66,7 @@ type CharacterData = {
   biography: string;
   imageUrl: string | null;
   description: string;
+  tags: string;
   dataPackId?: string | null;
   aspectRatio: '1:1' | '16:9' | '9:16';
 };
@@ -92,6 +94,7 @@ export function CharacterGenerator() {
     resolver: zodResolver(generationFormSchema),
     defaultValues: {
       description: "",
+      tags: "",
       targetLanguage: 'English',
       aspectRatio: '1:1',
     },
@@ -104,8 +107,9 @@ export function CharacterGenerator() {
     },
   });
 
-  const handlePromptGenerated = useCallback((prompt: string, packName: string) => {
+  const handlePromptGenerated = useCallback((prompt: string, packName: string, tags: string[]) => {
     generationForm.setValue('description', prompt, { shouldValidate: true });
+    generationForm.setValue('tags', tags.join(', '));
     setActivePackName(packName);
     
     const currentUrl = new URL(window.location.href);
@@ -157,6 +161,14 @@ export function CharacterGenerator() {
     }
   };
 
+  const handleAppendTags = (tags: string[]) => {
+    const currentDesc = generationForm.getValues('description');
+    const currentTags = generationForm.getValues('tags');
+    
+    generationForm.setValue('description', `${currentDesc}, ${tags.join(', ')}`.trim());
+    generationForm.setValue('tags', `${currentTags ? currentTags + ',' : ''}${tags.join(',')}`);
+  };
+
   async function onGenerateBio(data: z.infer<typeof generationFormSchema>) {
     if (!authUser) {
       toast({
@@ -182,6 +194,7 @@ export function CharacterGenerator() {
         biography: bioResult.biography,
         imageUrl: null,
         description: data.description,
+        tags: data.tags || '',
         dataPackId: dataPackId,
         aspectRatio: data.aspectRatio,
       });
@@ -243,6 +256,7 @@ export function CharacterGenerator() {
         biography: characterData.biography,
         imageUrl: characterData.imageUrl,
         dataPackId: characterData.dataPackId,
+        tags: characterData.tags,
       });
 
       toast({
@@ -280,10 +294,7 @@ export function CharacterGenerator() {
     <TagAssistantModal
         isOpen={isTagModalOpen}
         onClose={() => setIsTagModalOpen(false)}
-        onAppendTags={(tags) => {
-            const currentDesc = generationForm.getValues('description');
-            generationForm.setValue('description', `${currentDesc}, ${tags.join(', ')}`.trim());
-        }}
+        onAppendTags={handleAppendTags}
     />
     <div className="grid gap-8 lg:grid-cols-5">
       <div className="lg:col-span-2">
@@ -323,6 +334,17 @@ export function CharacterGenerator() {
                           </Badge>
                         )}
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={generationForm.control}
+                  name="tags"
+                  render={({ field }) => (
+                    <FormItem className="hidden">
+                      <FormControl>
+                        <Input type="hidden" {...field} />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
