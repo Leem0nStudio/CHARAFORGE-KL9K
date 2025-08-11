@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import { verifyAndGetUid } from '@/lib/auth/server';
-import type { Character } from '@/types/character';
+import type { Character, TimelineEvent } from '@/types/character';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { UserProfile } from '@/types/user';
 import { randomUUID } from 'crypto';
@@ -628,4 +628,28 @@ export async function saveCharacter(input: SaveCharacterInput) {
     const errorMessage = error instanceof Error ? error.message : 'Could not save character due to a server error.';
     throw new Error(errorMessage);
   }
+}
+
+export async function updateCharacterTimeline(characterId: string, timeline: TimelineEvent[]): Promise<ActionResponse> {
+    if (!adminDb) {
+        return { success: false, message: 'Database service unavailable.' };
+    }
+    const uid = await verifyAndGetUid();
+    
+    try {
+        const characterRef = adminDb.collection('characters').doc(characterId);
+        const characterDoc = await characterRef.get();
+        if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+            return { success: false, message: 'Permission denied or character not found.' };
+        }
+        
+        await characterRef.update({ timeline });
+        
+        revalidatePath(`/characters/${characterId}/edit`);
+        
+        return { success: true, message: 'Timeline updated successfully!' };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Could not update timeline.';
+        return { success: false, message };
+    }
 }

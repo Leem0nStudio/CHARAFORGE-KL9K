@@ -35,9 +35,10 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "images",
+    keyName: "id",
   });
   
   // Resets the form if the character prop changes (e.g. when switching versions)

@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ScrollText, Users, Wand2, FileText, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import Image from 'next/image';
 
 import type { StoryCast } from '@/types/story';
 import type { Character } from '@/types/character';
@@ -21,7 +20,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -333,6 +331,7 @@ export default function StoryForgePage() {
     }, [authLoading, userProfile, router]);
     
     const fetchData = useCallback(async () => {
+        if (!userProfile) return;
         setIsLoading(true);
         try {
             const [userCasts, userCharacters] = await Promise.all([
@@ -341,7 +340,7 @@ export default function StoryForgePage() {
             ]);
             setCasts(userCasts);
             setCharacters(userCharacters);
-            if (userCasts.length > 0) {
+            if (userCasts.length > 0 && !selectedCast) {
                 setSelectedCast(userCasts[0]);
             }
         } catch (error) {
@@ -349,13 +348,11 @@ export default function StoryForgePage() {
         } finally {
             setIsLoading(false);
         }
-    }, [toast]);
+    }, [toast, userProfile, selectedCast]);
 
     useEffect(() => {
-        if (userProfile) {
-            fetchData();
-        }
-    }, [userProfile, fetchData]);
+        fetchData();
+    }, [fetchData]);
     
     const handleAddCast = (newCast: StoryCast) => {
         const newCasts = [newCast, ...casts];
@@ -431,5 +428,3 @@ export default function StoryForgePage() {
         </div>
     )
 }
-
-    
