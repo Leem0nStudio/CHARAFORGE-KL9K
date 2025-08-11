@@ -85,6 +85,9 @@ const generateCharacterImageFlow = ai.defineFlow(
         } catch (error) {
             console.error("Error in generateCharacterImageFlow (Gradio):", error);
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
+             if (message.includes('Space metadata could not be loaded')) {
+                throw new Error('The Gradio service is currently unavailable. Please try again later or switch to the Gemini engine.');
+            }
             throw new Error(`Failed to generate character image via the external API. ${message}`);
         }
     }

@@ -240,11 +240,13 @@ export function CharacterGenerator() {
     } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during image generation.";
         setImageError(errorMessage);
-        toast({
-            variant: "destructive",
-            title: "Image Generation Failed",
-            description: errorMessage,
-        });
+        if (!errorMessage.includes('Gradio')) {
+            toast({
+                variant: "destructive",
+                title: "Image Generation Failed",
+                description: errorMessage,
+            });
+        }
     } finally {
         setIsGeneratingImage(false);
     }
@@ -589,7 +591,12 @@ export function CharacterGenerator() {
                                     <AlertCircle className="h-4 w-4" />
                                     <AlertTitle>Image Error</AlertTitle>
                                     <AlertDescription>
-                                        <p>{imageError}</p>
+                                        <p className="mb-2">{imageError}</p>
+                                        {imageError.includes('Gradio') && (
+                                            <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => generationForm.setValue('engine', 'gemini')}>
+                                                Switch to Gemini Engine
+                                            </Button>
+                                        )}
                                     </AlertDescription>
                                 </Alert>
                              ) : (
@@ -649,5 +656,3 @@ export function CharacterGenerator() {
     </>
   );
 }
-
-    

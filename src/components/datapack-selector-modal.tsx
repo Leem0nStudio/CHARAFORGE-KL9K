@@ -308,7 +308,10 @@ export function DataPackSelectorModal({
         if (isLoading) {
             return (
                 <div className="flex flex-col items-center justify-center h-96">
-                    <DialogHeader className="text-center mb-4"><DialogTitle>Loading Your DataPacks...</DialogTitle></DialogHeader>
+                    <DialogHeader className="text-center mb-4">
+                        <DialogTitle>Loading Your DataPacks...</DialogTitle>
+                        <DialogDescription>Please wait while we fetch your installed packs.</DialogDescription>
+                    </DialogHeader>
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
             )
@@ -321,7 +324,10 @@ export function DataPackSelectorModal({
         if (packs.length === 0) {
             return (
                 <>
-                    <DialogHeader><DialogTitle>No DataPacks Found</DialogTitle></DialogHeader>
+                    <DialogHeader>
+                        <DialogTitle>No DataPacks Found</DialogTitle>
+                        <DialogDescription>You haven't installed any DataPacks yet. Visit the catalog to add some.</DialogDescription>
+                    </DialogHeader>
                     <Alert>
                         <Package className="h-4 w-4" />
                         <AlertTitle>No DataPacks Installed</AlertTitle>

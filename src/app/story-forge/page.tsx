@@ -365,6 +365,7 @@ export default function StoryForgePage() {
         if (result.success) {
             toast({ title: "Cast Updated" });
             setCasts(prev => prev.map(c => c.id === castId ? {...c, characterIds, updatedAt: new Date()} : c));
+            setSelectedCast(prev => prev && prev.id === castId ? {...prev, characterIds} : prev);
         } else {
              toast({ variant: 'destructive', title: "Update Failed", description: result.message });
         }
