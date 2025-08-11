@@ -3,11 +3,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { User, AlertTriangle, ArrowRight } from 'lucide-react';
+import { User, AlertTriangle, ArrowRight, Tag } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { DataPack } from '@/types/datapack';
+import { chartColors } from '@/lib/app-config';
 
 interface DataPackCardProps {
     pack: DataPack;
@@ -45,6 +46,24 @@ export function DataPackCard({ pack }: DataPackCardProps) {
                         <span>by @{pack.author}</span>
                     </CardDescription>
                     <p className="mt-3 text-sm text-muted-foreground line-clamp-2">{pack.description}</p>
+                     {pack.tags && pack.tags.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 pt-3">
+                            {pack.tags.slice(0, 3).map((tag, index) => (
+                            <Badge 
+                                key={tag} 
+                                variant="default"
+                                style={{ 
+                                    backgroundColor: `hsl(var(${chartColors[index % chartColors.length]}))`,
+                                    color: `hsl(var(--primary-foreground))`,
+                                }}
+                                className="text-xs"
+                            >
+                                {tag.replace(/_/g, ' ')}
+                            </Badge>
+                            ))}
+                            {pack.tags.length > 3 && <Badge variant="outline">...</Badge>}
+                        </div>
+                    )}
                 </CardContent>
                 <CardFooter className="mt-auto p-4">
                    <p className="text-sm text-primary font-semibold group-hover:underline">View Details <ArrowRight className="inline-block h-4 w-4 transition-transform group-hover:translate-x-1" /></p>

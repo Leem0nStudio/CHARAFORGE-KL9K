@@ -9,6 +9,7 @@ import { CharacterCard } from '@/components/character/character-card';
 import { SectionTitle } from '@/components/section-title';
 import Image from 'next/image';
 import Link from 'next/link';
+import { chartColors } from '@/lib/app-config';
 
 
 interface DataPackDetailPageProps {
@@ -57,8 +58,16 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                     <span>by @{pack.author}</span>
                 </p>
                  <div className="flex flex-wrap gap-2 mt-4">
-                    {pack.tags.map(tag => (
-                        <Badge key={tag} variant="secondary">{tag}</Badge>
+                    {pack.tags.map((tag, index) => (
+                        <Badge 
+                            key={tag}
+                            style={{ 
+                                backgroundColor: `hsl(var(${chartColors[index % chartColors.length]}))`,
+                                color: `hsl(var(--primary-foreground))`,
+                            }}
+                        >
+                            {tag}
+                        </Badge>
                     ))}
                 </div>
                 <p className="mt-4 text-base text-card-foreground/80">{pack.description}</p>
@@ -94,8 +103,14 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                 </CardHeader>
                  <CardContent>
                     <div className="flex flex-wrap gap-2">
-                         {pack.schema.slots.map(slot => (
-                            <Badge key={slot.id} variant="outline">
+                         {pack.schema.slots.map((slot, index) => (
+                            <Badge 
+                                key={slot.id} 
+                                style={{ 
+                                    backgroundColor: `hsl(var(${chartColors[index % chartColors.length]}))`,
+                                    color: `hsl(var(--primary-foreground))`,
+                                }}
+                            >
                                 {slot.label}
                             </Badge>
                         ))}
