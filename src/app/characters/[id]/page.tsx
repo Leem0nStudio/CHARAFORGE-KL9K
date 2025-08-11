@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { UserProfile } from '@/types/user';
 import { CharacterImageActions } from '@/components/character/character-image-actions';
-import { getSlotColorClass } from '@/lib/app-config';
+import { getSlotColorClass, chartColors } from '@/lib/app-config';
 import { cn } from '@/lib/utils';
 
 
@@ -188,7 +188,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                               </div>
 
                               <div className="flex flex-wrap items-center gap-2">
-                                  <Badge variant="secondary">
+                                  <Badge variant="outline" className="text-muted-foreground">
                                       <Shield className="h-3 w-3 mr-1.5" />
                                       {character.alignment}
                                   </Badge>
@@ -199,14 +199,14 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                     </Badge>
                                   )}
                                   {character.branchedFromId && originalAuthorProfile && (
-                                      <Badge variant="secondary">
+                                      <Badge variant="outline" className="text-muted-foreground">
                                           <GitBranch className="h-3 w-3 mr-1.5" />
                                           Branched from {originalAuthorProfile.displayName || 'Unknown'}
                                       </Badge>
                                   )}
                                   {character.dataPackId && character.dataPackName && (
                                      <Link href={`/datapacks/${character.dataPackId}`}>
-                                        <Badge variant="secondary" className="hover:bg-accent/20 transition-colors">
+                                        <Badge variant="outline" className="text-muted-foreground hover:bg-accent/20 hover:text-primary transition-colors">
                                            <Tag className="h-3 w-3 mr-1.5" />
                                             {character.dataPackName}
                                         </Badge>
@@ -216,7 +216,7 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
 
                                {character.tags && character.tags.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-2 pt-2">
-                                  {character.tags.map((tag) => (
+                                  {character.tags.map((tag, index) => (
                                     <Badge 
                                         key={tag} 
                                         variant="outline"
