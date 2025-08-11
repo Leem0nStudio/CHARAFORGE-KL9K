@@ -9,7 +9,7 @@ import { Card, CardFooter, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import type { Character } from '@/types/character';
-import { getSlotColorClass } from '@/lib/app-config';
+import { getSlotColorClass, chartColors } from '@/lib/app-config';
 import { cn } from '@/lib/utils';
 
 interface CharacterCardProps {
@@ -29,7 +29,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
             className="h-full"
         >
             <Card className="overflow-hidden group relative h-full flex flex-col border-2 border-transparent hover:border-primary transition-colors duration-300">
-                <div className="aspect-square relative w-full bg-muted/20">
+                <div className="relative aspect-square w-full bg-muted/20">
                     <Link href={`/characters/${character.id}`}>
                         <Image
                             src={character.imageUrl}
@@ -77,11 +77,11 @@ export function CharacterCard({ character }: CharacterCardProps) {
                  <CardContent className="p-3 bg-card flex-col items-start flex-grow">
                      {character.tags && character.tags.length > 0 ? (
                         <div className="flex flex-wrap items-center gap-1 mb-2">
-                            {character.tags.slice(0, 3).map((tag) => (
+                            {character.tags.slice(0, 3).map((tag, index) => (
                                 <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
                                     <Badge
                                         variant="outline"
-                                        className={cn('cursor-pointer hover:border-primary/50', getSlotColorClass(tag))}
+                                        className={cn("cursor-pointer hover:border-primary/50", getSlotColorClass(tag))}
                                     >
                                       {tag.replace(/_/g, ' ')}
                                     </Badge>

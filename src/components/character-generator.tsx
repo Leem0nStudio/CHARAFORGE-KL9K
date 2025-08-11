@@ -250,7 +250,7 @@ export function CharacterGenerator() {
 
     setIsSaving(true);
     try {
-      await saveCharacter({
+      const result = await saveCharacter({
         name: data.name,
         description: characterData.description,
         biography: characterData.biography,
@@ -264,7 +264,7 @@ export function CharacterGenerator() {
         description: `${data.name} has been saved to your gallery.`,
       });
       
-      router.push('/characters');
+      router.push(`/characters/${result.characterId}`);
 
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Could not save your character. Please try again.";
@@ -507,7 +507,7 @@ export function CharacterGenerator() {
                      {isGeneratingImage && <Skeleton className="w-full aspect-square rounded-lg" />}
                      
                      {!isGeneratingImage && characterData.imageUrl && (
-                        <div className="aspect-square relative rounded-lg overflow-hidden border-2 border-green-500 shadow-lg bg-muted/20 p-1">
+                        <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500 shadow-lg bg-muted/20 p-1">
                             <Image
                                 src={characterData.imageUrl}
                                 alt="Generated character portrait"
