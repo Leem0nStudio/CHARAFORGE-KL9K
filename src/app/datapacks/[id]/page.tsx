@@ -10,6 +10,7 @@ import { SectionTitle } from '@/components/section-title';
 import Image from 'next/image';
 import Link from 'next/link';
 import { chartColors } from '@/lib/app-config';
+import { cn } from '@/lib/utils';
 
 
 interface DataPackDetailPageProps {
@@ -26,14 +27,13 @@ async function getDataPack(packId: string) {
 
 
 export default async function DataPackDetailPage({ params }: DataPackDetailPageProps) {
-  const { id } = params;
-  const pack = await getDataPack(id);
+  const pack = await getDataPack(params.id);
 
   if (!pack) {
     notFound();
   }
 
-  const communityCreations = await getCreationsForDataPack(id);
+  const communityCreations = await getCreationsForDataPack(pack.id);
 
   return (
     <div className="container py-8">
@@ -61,10 +61,8 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                     {pack.tags.map((tag, index) => (
                         <Badge 
                             key={tag}
-                            style={{ 
-                                backgroundColor: `hsl(var(${chartColors[index % chartColors.length]}))`,
-                                color: `hsl(var(--primary-foreground))`,
-                            }}
+                            variant="outline"
+                            className={cn(`text-chart-${(index % 5) + 1}`)}
                         >
                             {tag}
                         </Badge>
@@ -106,16 +104,14 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                          {pack.schema.slots.map((slot, index) => (
                             <Badge 
                                 key={slot.id} 
-                                style={{ 
-                                    backgroundColor: `hsl(var(${chartColors[index % chartColors.length]}))`,
-                                    color: `hsl(var(--primary-foreground))`,
-                                }}
+                                variant="outline"
+                                className={cn(`text-chart-${(index % 5) + 1}`)}
                             >
                                 {slot.label}
                             </Badge>
                         ))}
                     </div>
-                </CardContent>
+                 </CardContent>
             </Card>
         </div>
 

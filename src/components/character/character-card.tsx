@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import type { Character } from '@/types/character';
 import { chartColors } from '@/lib/app-config';
+import { cn } from '@/lib/utils';
 
 interface CharacterCardProps {
     character: Character;
@@ -79,12 +80,8 @@ export function CharacterCard({ character }: CharacterCardProps) {
                             {character.tags.slice(0, 3).map((tag, index) => (
                                 <Badge
                                     key={tag}
-                                    variant="default"
-                                    style={{
-                                        backgroundColor: `hsl(var(${chartColors[index % chartColors.length]}))`,
-                                        color: `hsl(var(--primary-foreground))`,
-                                    }}
-                                    className="text-xs"
+                                    variant="outline"
+                                    className={cn(`text-chart-${(index % 5) + 1}`)}
                                 >
                                     {tag.replace(/_/g, ' ')}
                                 </Badge>

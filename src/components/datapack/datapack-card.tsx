@@ -51,12 +51,8 @@ export function DataPackCard({ pack }: DataPackCardProps) {
                             {pack.tags.slice(0, 3).map((tag, index) => (
                             <Badge 
                                 key={tag} 
-                                variant="default"
-                                style={{ 
-                                    backgroundColor: `hsl(var(${chartColors[index % chartColors.length]}))`,
-                                    color: `hsl(var(--primary-foreground))`,
-                                }}
-                                className="text-xs"
+                                variant="outline"
+                                className={cn(`text-chart-${(index % 5) + 1}`)}
                             >
                                 {tag.replace(/_/g, ' ')}
                             </Badge>

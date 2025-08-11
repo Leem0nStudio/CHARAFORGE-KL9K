@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { UserProfile } from '@/types/user';
 import { CharacterImageActions } from '@/components/character/character-image-actions';
 import { chartColors } from '@/lib/app-config';
+import { cn } from '@/lib/utils';
 
 
 async function getCharacter(characterId: string): Promise<{
@@ -218,12 +219,8 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                                   {character.tags.map((tag, index) => (
                                     <Badge 
                                         key={tag} 
-                                        variant="default"
-                                        style={{ 
-                                            backgroundColor: `hsl(var(${chartColors[index % chartColors.length]}))`,
-                                            color: `hsl(var(--primary-foreground))`,
-                                        }}
-                                        className="text-xs"
+                                        variant="outline"
+                                        className={cn(`text-chart-${(index % 5) + 1}`)}
                                     >
                                       {tag.replace(/_/g, ' ')}
                                     </Badge>
