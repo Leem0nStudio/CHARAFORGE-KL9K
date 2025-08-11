@@ -6,13 +6,19 @@ const nextConfig = {
                 protocol: 'https',
                 hostname: 'storage.googleapis.com',
                 port: '',
-                pathname: '/**',
+                pathname: '**',
             },
             {
                 protocol: 'https',
                 hostname: 'image.civitai.com',
                 port: '',
-                pathname: '/**',
+                pathname: '**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'placehold.co',
+                port: '',
+                pathname: '**',
             }
         ],
     },
