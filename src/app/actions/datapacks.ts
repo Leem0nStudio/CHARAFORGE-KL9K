@@ -305,7 +305,7 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         for (let i = 0; i < installedPackIds.length; i += 10) {
             const batchIds = installedPackIds.slice(i, i + 10);
             if (batchIds.length > 0) {
-                const packsQuery = packsRef.where('id', 'in', batchIds);
+                const packsQuery = packsRef.where(FieldValue.documentId(), 'in', batchIds);
                 const packsSnapshot = await packsQuery.get();
                 const batchPacks = packsSnapshot.docs.map(doc => {
                     const data = doc.data();
