@@ -104,6 +104,8 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
     }
     
     const authorForAvatar = creatorProfile || { displayName: character.userName || '?', photoURL: null };
+    const canBranch = currentUserId && !isOwner && character.branchingPermissions === 'public' && character.status === 'public';
+    const showActions = isOwner || canBranch;
 
     return (
         <div className="container py-8 max-w-7xl mx-auto">
@@ -144,13 +146,15 @@ export default async function CharacterDetailPage({ params }: { params: { id: st
                             </Dialog>
 
                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                           <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-black/30 backdrop-blur-sm p-2 rounded-lg">
-                              <CharacterImageActions 
-                                character={character}
-                                currentUserId={currentUserId}
-                                isOwner={isOwner}
-                              />
-                          </div>
+                            {showActions && (
+                                <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-black/30 backdrop-blur-sm p-2 rounded-lg">
+                                    <CharacterImageActions 
+                                        character={character}
+                                        currentUserId={currentUserId}
+                                        isOwner={isOwner}
+                                    />
+                                </div>
+                            )}
                        </Card>
                   </div>
 
