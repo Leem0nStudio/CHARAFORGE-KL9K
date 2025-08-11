@@ -7,7 +7,7 @@ import { LoginButton } from "./login-button";
 import { AppLogo } from "./app-logo";
 import { mainNavItems } from "@/lib/app-config";
 import { cn } from "@/lib/utils";
-import { Button, buttonVariants } from "./ui/button";
+import { Button } from "./ui/button";
 import { getLogoUrl } from "@/app/actions/admin";
 
 
@@ -26,14 +26,12 @@ export async function SiteHeader() {
         </Link>
         <div className="hidden sm:flex items-center gap-2">
              {mainNavItems.filter(item => !item.isPrimary && item.href !== '/').map(item => (
-                 <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(buttonVariants({ variant: 'ghost' }))}
-                 >
-                    <item.icon className="mr-2" />
-                    {item.label}
-                 </Link>
+                 <Button key={item.href} variant="ghost" asChild>
+                    <Link href={item.href}>
+                        <item.icon className="mr-2" />
+                        {item.label}
+                    </Link>
+                 </Button>
              ))}
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
