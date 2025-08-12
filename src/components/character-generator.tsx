@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useTransition } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
@@ -30,9 +30,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { generateCharacterBio } from "@/ai/flows/character-bio/flow";
-import { generateCharacterImage } from "@/ai/flows/character-image/flow";
 import { saveCharacter } from "@/app/actions/characters";
+import { generateCharacter, type GenerateCharacterInput } from "@/app/actions/generation";
 import { getInstalledDataPacks } from "@/app/actions/datapacks";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
@@ -72,31 +71,25 @@ const saveFormSchema = z.object({
   }),
 });
 
-type CharacterData = {
+type GenerationResult = {
   biography: string;
-  imageUrl: string | null;
+  imageUrl: string;
   description: string;
   tags: string;
   dataPackId?: string | null;
-  aspectRatio: '1:1' | '16:9' | '9:16';
-  imageEngine: 'huggingface' | 'gemini';
-  hfModelId?: string;
-  lora?: string;
-  loraWeight?: number;
-  triggerWords?: string;
 };
 
 // Sub-component for the main action buttons
-function ActionButtons({ onForge, onUsePack, canInteract, isGeneratingBio }: {
+function ActionButtons({ onForge, onUsePack, canInteract, isGenerating }: {
   onForge: () => void;
   onUsePack: () => void;
   canInteract: boolean;
-  isGeneratingBio: boolean;
+  isGenerating: boolean;
 }) {
   return (
     <div className="space-y-2">
       <Button onClick={onForge} size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90 transition-transform hover:scale-105" disabled={!canInteract}>
-        {isGeneratingBio ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Bio</>)}
+        {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Character</>)}
       </Button>
       <Button type="button" size="lg" className="w-full" variant="secondary" onClick={onUsePack} disabled={!canInteract}>
         <Package className="mr-2" />
@@ -107,7 +100,7 @@ function ActionButtons({ onForge, onUsePack, canInteract, isGeneratingBio }: {
 }
 
 // Sub-component for the floating action button
-function FloatingActionButton({ onForge, canInteract }: { onForge: () => void; canInteract: boolean; }) {
+function FloatingActionButton({ onForge, canInteract, isGenerating }: { onForge: () => void; canInteract: boolean; isGenerating: boolean }) {
   return (
     <motion.div
       initial={{ scale: 0, y: 50 }}
@@ -117,19 +110,18 @@ function FloatingActionButton({ onForge, canInteract }: { onForge: () => void; c
       className="fixed bottom-20 right-4 z-40 sm:hidden"
     >
       <Button onClick={onForge} size="icon" className="w-16 h-16 rounded-full shadow-lg bg-accent text-accent-foreground" disabled={!canInteract}>
-        <Wand2 className="w-8 h-8" />
+         {isGenerating ? <Loader2 className="w-8 h-8 animate-spin" /> : <Wand2 className="w-8 h-8" />}
       </Button>
     </motion.div>
   );
 }
 
 export function CharacterGenerator() {
-  const [characterData, setCharacterData] = useState<CharacterData | null>(null);
-  const [isGeneratingBio, setIsGeneratingBio] = useState(false);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [bioError, setBioError] = useState<string | null>(null);
-  const [imageError, setImageError] = useState<string | null>(null);
+  const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null);
+  const [isGenerating, startGenerationTransition] = useTransition();
+  const [isSaving, startSavingTransition] = useTransition();
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
   const [isPackModalOpen, setIsPackModalOpen] = useState(false);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
@@ -247,7 +239,7 @@ export function CharacterGenerator() {
     generationForm.setValue('tags', Array.from(allTags).join(','));
   };
 
-  const onGenerateBio = useCallback(async (data: z.infer<typeof generationFormSchema>) => {
+  const onGenerate = useCallback(async (data: GenerateCharacterInput) => {
     if (!authUser) {
       toast({
         variant: "destructive",
@@ -257,79 +249,26 @@ export function CharacterGenerator() {
       return;
     }
     
-    setIsGeneratingBio(true);
-    setCharacterData(null);
-    setBioError(null);
-    setImageError(null);
+    setGenerationResult(null);
+    setGenerationError(null);
     saveForm.reset();
 
-    try {
-      const bioResult = await generateCharacterBio({ description: data.description, targetLanguage: data.targetLanguage });
-      if (!bioResult.biography) {
-        throw new Error("AI failed to generate a biography.");
+    startGenerationTransition(async () => {
+      const result = await generateCharacter({ ...data, dataPackId: dataPackIdFromUrl });
+      
+      if (result.success && result.data) {
+        setGenerationResult(result.data);
+        toast({ title: "Generation Complete!", description: "Your character is ready." });
+      } else {
+        const errorMessage = result.error || "An unknown error occurred during generation.";
+        setGenerationError(errorMessage);
+        toast({ variant: "destructive", title: "Generation Failed", description: errorMessage });
       }
-      setCharacterData({
-        biography: bioResult.biography,
-        imageUrl: null,
-        description: data.description,
-        tags: data.tags || '',
-        dataPackId: dataPackIdFromUrl,
-        aspectRatio: data.aspectRatio,
-        imageEngine: data.imageEngine,
-        hfModelId: data.hfModelId,
-        lora: data.lora,
-        loraWeight: data.loraWeight,
-        triggerWords: data.triggerWords,
-      });
-    } catch (err: unknown) {
-       const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during biography generation.";
-       setBioError(errorMessage);
-       toast({
-        variant: "destructive",
-        title: "Biography Failed",
-        description: errorMessage,
-      });
-    } finally {
-      setIsGeneratingBio(false);
-    }
+    });
   }, [authUser, toast, dataPackIdFromUrl, saveForm]);
 
-  const onGenerateImage = useCallback(async () => {
-    if (!characterData) return;
-
-    setIsGeneratingImage(true);
-    setImageError(null);
-    try {
-        const imageResult = await generateCharacterImage({ 
-            description: characterData.description,
-            aspectRatio: characterData.aspectRatio,
-            imageEngine: characterData.imageEngine,
-            hfModelId: characterData.hfModelId,
-            lora: characterData.lora,
-            loraWeight: characterData.loraWeight,
-            triggerWords: characterData.triggerWords,
-        });
-        if (!imageResult.imageUrl) {
-            throw new Error("AI model did not return an image. This could be due to safety filters or an API issue.");
-        }
-        setCharacterData(prev => prev ? {...prev, imageUrl: imageResult.imageUrl} : null);
-    } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during image generation.";
-        setImageError(errorMessage);
-        if (!errorMessage.includes('Hugging Face')) {
-            toast({
-                variant: "destructive",
-                title: "Image Generation Failed",
-                description: errorMessage,
-            });
-        }
-    } finally {
-        setIsGeneratingImage(false);
-    }
-  }, [characterData, toast]);
-
   async function onSave(data: z.infer<typeof saveFormSchema>) {
-    if (!characterData || !characterData.imageUrl || !authUser) {
+    if (!generationResult || !generationResult.imageUrl || !authUser) {
          toast({
             variant: "destructive",
             title: "Save Failed",
@@ -338,43 +277,42 @@ export function CharacterGenerator() {
         return;
     }
 
-    setIsSaving(true);
-    try {
-      const result = await saveCharacter({
-        name: data.name,
-        description: characterData.description,
-        biography: characterData.biography,
-        imageUrl: characterData.imageUrl,
-        dataPackId: characterData.dataPackId,
-        tags: characterData.tags,
-      });
+    startSavingTransition(async () => {
+      try {
+        const result = await saveCharacter({
+          name: data.name,
+          description: generationResult.description,
+          biography: generationResult.biography,
+          imageUrl: generationResult.imageUrl,
+          dataPackId: generationResult.dataPackId,
+          tags: generationResult.tags,
+        });
 
-      toast({
-        title: "Character Saved!",
-        description: `${data.name} has been saved to your gallery.`,
-      });
-      
-      router.push(`/characters/${result.characterId}`);
+        toast({
+          title: "Character Saved!",
+          description: `${data.name} has been saved to your gallery.`,
+        });
+        
+        router.push(`/characters/${result.characterId}`);
 
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Could not save your character. Please try again.";
-      toast({
-        variant: "destructive",
-        title: "Save Failed",
-        description: errorMessage,
-      });
-    } finally {
-      setIsSaving(false);
-    }
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : "Could not save your character. Please try again.";
+        toast({
+          variant: "destructive",
+          title: "Save Failed",
+          description: errorMessage,
+        });
+      }
+    });
   }
 
-  const isLoading = isGeneratingBio || isSaving || authLoading;
-  const canInteract = !isLoading && authUser;
-  const isImageReadyForSave = !!characterData?.imageUrl;
+  const isLoading = isGenerating || isSaving || authLoading;
+  const canInteract = !isLoading && !!authUser;
+  const isImageReadyForSave = !!generationResult?.imageUrl;
   const watchImageEngine = generationForm.watch('imageEngine');
 
-  const handleForgeBioClick = () => {
-    generationForm.handleSubmit(onGenerateBio)();
+  const handleForgeClick = () => {
+    generationForm.handleSubmit(onGenerate)();
   };
 
   return (
@@ -402,7 +340,7 @@ export function CharacterGenerator() {
           </CardHeader>
           <CardContent>
             <Form {...generationForm}>
-              <form onSubmit={(e) => { e.preventDefault(); handleForgeBioClick(); }} className="space-y-6">
+              <form onSubmit={(e) => { e.preventDefault(); handleForgeClick(); }} className="space-y-6">
                 
                 <Tabs defaultValue="prompt">
                     <TabsList className="grid w-full grid-cols-2">
@@ -552,10 +490,10 @@ export function CharacterGenerator() {
         
          <div ref={actionButtonsRef} className="pt-4 sm:block">
             <ActionButtons
-                onForge={handleForgeBioClick}
+                onForge={handleForgeClick}
                 onUsePack={handleOpenPackModal}
                 canInteract={!!canInteract}
-                isGeneratingBio={isGeneratingBio}
+                isGenerating={isGenerating}
             />
         </div>
       </div>
@@ -565,26 +503,26 @@ export function CharacterGenerator() {
           <CardHeader>
             <CardTitle className="font-headline text-3xl">2. Generated Character</CardTitle>
             <CardDescription>
-              Review the biography, then generate a portrait. Save your creation once complete.
+              Review the generated character. Once you're happy, give it a name and save it.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isGeneratingBio && (
-              <div className="space-y-4">
-                  <Skeleton className="h-8 w-1/3" />
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-4/5" />
+            {isGenerating && (
+               <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
+                    <Loader2 className="h-12 w-12 mb-4 animate-spin text-primary" />
+                    <p className="text-lg font-medium font-headline tracking-wider">Forging your character...</p>
+                    <p className="text-sm">This may take a moment. The AI is hard at work.</p>
               </div>
             )}
-            {!isGeneratingBio && !characterData && (
+
+            {!isGenerating && !generationResult && (
                <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
-                {bioError ? (
+                {generationError ? (
                    <Alert variant="destructive" className="text-left w-full max-w-sm">
                       <AlertCircle className="h-4 w-4" />
                       <AlertTitle>Generation Error</AlertTitle>
                       <AlertDescription>
-                         <p className="mb-4">{bioError}</p>
+                         <p className="mb-4">{generationError}</p>
                       </AlertDescription>
                   </Alert>
                 ) : (
@@ -596,58 +534,30 @@ export function CharacterGenerator() {
                 )}
               </div>
             )}
-            {characterData && (
+            {generationResult && (
                <div className="grid gap-8 md:grid-cols-5">
                   <div className="md:col-span-2 space-y-4">
                      <h3 className="font-headline text-2xl flex items-center"><ImageIcon className="w-5 h-5 mr-2 text-primary" /> Portrait</h3>
-                     {isGeneratingImage && <Skeleton className="w-full aspect-square rounded-lg" />}
-                     
-                     {!isGeneratingImage && characterData.imageUrl && (
-                        <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500 shadow-lg bg-muted/20 p-1">
-                            <Image
-                                src={characterData.imageUrl}
-                                alt="Generated character portrait"
-                                fill
-                                className="object-contain"
-                                sizes="100vw"
-                            />
-                             <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-green-600 text-white text-xs font-bold py-1 px-2 rounded-full shadow">
-                                <Check className="w-3 h-3"/>
-                                Ready
-                            </div>
-                        </div>
-                     )}
-
-                     {!characterData.imageUrl && !isGeneratingImage && (
-                        <div className="flex flex-col items-center justify-center text-center p-4 min-h-[200px] border-2 border-dashed rounded-lg bg-card/50">
-                             {imageError ? (
-                                <Alert variant="destructive" className="text-left w-full text-xs">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <AlertTitle>Image Error</AlertTitle>
-                                    <AlertDescription>
-                                        <p className="mb-2">{imageError}</p>
-                                        {imageError.includes('Hugging Face') && (
-                                            <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => generationForm.setValue('imageEngine', 'gemini')}>
-                                                Switch to Gemini Engine
-                                            </Button>
-                                        )}
-                                    </AlertDescription>
-                                </Alert>
-                             ) : (
-                                <p className="text-sm text-muted-foreground">Biography generated. Ready for a portrait.</p>
-                             )}
-                            <Button onClick={onGenerateImage} className="mt-4 w-full" disabled={isGeneratingImage}>
-                                {isGeneratingImage ? <Loader2 className="animate-spin" /> : "Generate Portrait"}
-                            </Button>
-                        </div>
-                     )}
+                      <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500 shadow-lg bg-muted/20 p-1">
+                          <Image
+                              src={generationResult.imageUrl}
+                              alt="Generated character portrait"
+                              fill
+                              className="object-contain"
+                              sizes="100vw"
+                          />
+                           <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-green-600 text-white text-xs font-bold py-1 px-2 rounded-full shadow">
+                              <Check className="w-3 h-3"/>
+                              Ready
+                          </div>
+                      </div>
                   </div>
 
                   <div className="md:col-span-3">
                       <h3 className="font-headline text-2xl flex items-center mb-2"><FileText className="w-5 h-5 mr-2 text-primary" /> Biography</h3>
                       <ScrollArea className="h-80 pr-4 mb-6">
                         <div className="space-y-4 text-muted-foreground text-sm">
-                            {characterData.biography.split('\n').filter(p => p.trim() !== '').map((paragraph, index) => (
+                            {generationResult.biography.split('\n').filter(p => p.trim() !== '').map((paragraph, index) => (
                             <p key={index}>{paragraph}</p>
                             ))}
                         </div>
@@ -662,25 +572,19 @@ export function CharacterGenerator() {
                                 <FormItem>
                                   <FormLabel className="font-headline text-2xl flex items-center"><Save className="w-5 h-5 mr-2 text-primary"/> Character Name</FormLabel>
                                   <FormControl>
-                                    <Input placeholder="e.g., Captain Kaelen" {...field} disabled={!canInteract || !isImageReadyForSave} />
+                                    <Input placeholder="e.g., Captain Kaelen" {...field} disabled={!canInteract} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
-                            <Button type="submit" className="w-full" disabled={!canInteract || isSaving || !isImageReadyForSave}>
+                            <Button type="submit" className="w-full" disabled={!canInteract || isSaving}>
                               {isSaving ? (
                                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
                               ) : (
                                 <><Save className="mr-2 h-4 w-4" /> Save to Gallery</>
                               )}
                             </Button>
-                            {isGeneratingImage && (
-                               <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-2">
-                                <Loader2 className="h-3 w-3 animate-spin" /> 
-                                Generating Portrait...
-                               </p>
-                            )}
                         </form>
                       </Form>
                   </div>
@@ -692,7 +596,7 @@ export function CharacterGenerator() {
     </div>
     <AnimatePresence>
         {showFab && (
-            <FloatingActionButton onForge={handleForgeBioClick} canInteract={!!canInteract} />
+            <FloatingActionButton onForge={handleForgeClick} canInteract={!!canInteract} isGenerating={isGenerating} />
         )}
     </AnimatePresence>
     </>
