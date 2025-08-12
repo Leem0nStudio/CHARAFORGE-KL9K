@@ -1,3 +1,8 @@
+/**
+ * @fileOverview Data schemas and types for the story generation flow.
+ * This file defines the Zod schemas for input and output validation,
+ * and exports the corresponding TypeScript types.
+ */
 
 import { z } from 'genkit';
 
@@ -18,4 +23,3 @@ export const GenerateStoryOutputSchema = z.object({
   story: z.string().describe('The full, generated story, written in a narrative format.'),
 });
 export type GenerateStoryOutput = z.infer<typeof GenerateStoryOutputSchema>;
-    

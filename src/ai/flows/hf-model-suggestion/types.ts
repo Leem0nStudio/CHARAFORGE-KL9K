@@ -1,3 +1,9 @@
+/**
+ * @fileOverview Data schemas and types for the Hugging Face model suggestion flow.
+ * This file defines the Zod schemas for input and output validation,
+ * and exports the corresponding TypeScript types.
+ */
+
 import { z } from 'zod';
 
 export const SuggestHfModelInputSchema = z.object({

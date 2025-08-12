@@ -75,3 +75,23 @@ Every Server Action that receives data from the client **MUST** validate that da
 
 ### Implementation Rule
 Any part of the application that needs to upload a file to Firebase Storage **MUST** call the `uploadToStorage` service. Server Actions **MUST NOT** contain their own implementation of Firebase Storage interactions.
+
+---
+
+## Pattern 4: Separation of Data Schemas from AI Logic
+
+**This is the mandatory pattern for defining the data contracts for all Genkit flows.**
+
+### The Problem It Solves
+-   **Eliminates Tight Coupling:** Prevents the logic of an AI flow from being intrinsically tied to its data structure definition.
+-   **Improves Maintainability:** Makes it easy to find and manage data types without having to navigate through implementation logic. Changes to the flow's logic don't risk accidentally altering the data contract.
+-   **Enables Safe Reusability:** Allows other parts of the application (React components, other server actions) to import and use the data types of a flow without importing the entire flow's logic, which prevents circular dependencies and keeps the dependency graph clean.
+
+### How It Works
+
+1.  **Dedicated Type Files (`*/types.ts`):** For every Genkit flow (e.g., `character-bio/flow.ts`), a corresponding `character-bio/types.ts` file exists.
+2.  **Schema Definitions:** All Zod schemas (`...Schema`) and their corresponding TypeScript types (`...Input`, `...Output`) are defined and exported **exclusively** from the `types.ts` file.
+3.  **Clean Flow Logic:** The `flow.ts` file is responsible only for the implementation of the AI agent. It imports its required types from its sibling `types.ts` file.
+
+### Implementation Rule
+All Zod schemas and TypeScript type definitions for a Genkit flow **MUST** reside in a dedicated `types.ts` file. The `flow.ts` file **MUST** contain only the flow's implementation logic and import its types.
