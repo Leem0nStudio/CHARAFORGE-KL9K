@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { getCharacters } from '../actions/characters';
+import { getCharacters } from '../actions/character-read';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { BackButton } from '@/components/back-button';
 import type { Character } from '@/types/character';

@@ -3,7 +3,7 @@
 
 import { useTransition } from 'react';
 import type { Character } from '@/types/character';
-import { updateCharacterStatus, updateCharacterDataPackSharing } from '@/app/actions/characters';
+import { updateCharacterStatus, updateCharacterDataPackSharing } from '@/app/actions/character-write';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';

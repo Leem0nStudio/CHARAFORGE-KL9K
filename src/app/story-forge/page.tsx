@@ -11,7 +11,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { StoryCast } from '@/types/story';
 import type { Character } from '@/types/character';
 import { getUserCasts, createStoryCast, updateStoryCastCharacters, generateStory } from '@/app/actions/stories';
-import { getCharacters } from '@/app/actions/characters';
+import { getCharacters } from '@/app/actions/character-read';
 
 import { BackButton } from '@/components/back-button';
 import { Button } from '@/components/ui/button';

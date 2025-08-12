@@ -3,7 +3,7 @@
 
 import { notFound } from 'next/navigation';
 import { CharacterPageClient } from './client';
-import { getCharacter } from '@/app/actions/characters';
+import { getCharacter } from '@/app/actions/character-read';
 import { getCreationsForDataPack } from '@/app/actions/datapacks';
 import { getUserProfile } from '@/app/actions/user';
 import { getUserSettings } from '@/app/actions/admin';

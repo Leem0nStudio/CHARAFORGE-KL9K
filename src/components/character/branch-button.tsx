@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { branchCharacter } from '@/app/actions/characters';
+import { branchCharacter } from '@/app/actions/character-versioning';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Loader2, GitBranch } from 'lucide-react';

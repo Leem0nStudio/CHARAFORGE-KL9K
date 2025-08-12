@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { saveCharacter } from "@/app/actions/characters";
+import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacter, type GenerateCharacterInput } from "@/app/actions/generation";
 import { getInstalledDataPacks } from "@/app/actions/datapacks";
 import { getModels } from "@/app/actions/ai-models";
@@ -184,7 +184,7 @@ export function CharacterGenerator() {
         try {
             const geminiPlaceholder: AiModel = {
                 id: 'gemini-placeholder',
-                civitaiModelId: '0', // Special ID for internal handling
+                civitaiModelId: '0', 
                 name: 'Gemini Image',
                 type: 'model',
                 hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
@@ -576,7 +576,7 @@ export function CharacterGenerator() {
                       <h3 className="font-headline text-2xl flex items-center mb-2"><FileText className="w-5 h-5 mr-2 text-primary" /> Biography</h3>
                       <ScrollArea className="h-80 pr-4 mb-6">
                         <div className="space-y-4 text-muted-foreground text-sm">
-                            {generationResult.biography.split('\n').filter(p => p.trim() !== '').map((paragraph, index) => (
+                            {generationResult.biography.split('\\n').filter(p => p.trim() !== '').map((paragraph, index) => (
                             <p key={index}>{paragraph}</p>
                             ))}
                         </div>
@@ -616,5 +616,3 @@ export function CharacterGenerator() {
     </>
   );
 }
-
-    

@@ -6,7 +6,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
-import { updateCharacter } from '@/app/actions/characters';
+import { updateCharacter } from '@/app/actions/character-write';
 import { generateCharacterBio } from '@/ai/flows/character-bio/flow';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';

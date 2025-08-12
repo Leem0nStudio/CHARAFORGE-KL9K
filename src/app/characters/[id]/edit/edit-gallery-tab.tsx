@@ -7,7 +7,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
-import { generateNewCharacterImage, updateCharacterImages } from '@/app/actions/characters';
+import { generateNewCharacterImage, updateCharacterImages } from '@/app/actions/character-image';
 import { uploadToStorage } from '@/services/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,6 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
     keyName: "id",
   });
   
-  // Resets the form if the character prop changes (e.g. when switching versions)
   useEffect(() => {
     form.reset({
         images: character.gallery || [character.imageUrl],
@@ -83,7 +82,7 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
     }
 
     startGenerateTransition(async () => {
-        const result = await generateNewCharacterImage(character.id, character.description);
+        const result = await generateNewCharacterImage(character.id, character.description, {} as any); // TODO: Pass engine config
         if (result.success && result.newImageUrl) {
             append(result.newImageUrl);
             onGalleryUpdate([...fields.map(f => f.value), result.newImageUrl]);
@@ -116,7 +115,7 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
       });
       if (result.success) {
         onGalleryUpdate(data.images, data.primaryImageUrl);
-        form.reset(data); // Resets the form's dirty state
+        form.reset(data); 
       }
     });
   };

@@ -3,7 +3,8 @@
 
 import { useTransition } from 'react';
 import type { Character } from '@/types/character';
-import { updateCharacterBranchingPermissions, createCharacterVersion } from '@/app/actions/characters';
+import { createCharacterVersion } from '@/app/actions/character-versioning';
+import { updateCharacterBranchingPermissions } from '@/app/actions/character-write';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -108,5 +109,3 @@ export function EditVersionsTab({ character, onUpdate }: { character: Character,
         </Card>
     );
 }
-
-    
