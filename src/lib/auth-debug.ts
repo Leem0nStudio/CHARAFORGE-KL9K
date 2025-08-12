@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview
  * This file provides server-side utilities for debugging authentication issues,

@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import { getAuthDebugInfo } from '@/lib/auth-debug';
 

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useTransition } from 'react';
@@ -14,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
-import { randomUUID } from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 
 const TimelineEventSchema = z.object({
     id: z.string(),
@@ -61,11 +60,7 @@ export function EditTimelineTab({ character, onUpdate }: { character: Character,
     };
     
     const addNewEvent = () => {
-        // In a real browser environment, crypto.randomUUID() would be better.
-        // For server components/actions, Node's crypto is used.
-        // Let's use a simple timestamp-based ID for client-side uniqueness.
-        const newId = `event_${Date.now()}`;
-        append({ id: newId, date: '', title: '', description: '' });
+        append({ id: uuidv4(), date: '', title: '', description: '' });
     }
 
     return (

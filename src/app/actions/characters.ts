@@ -1,4 +1,3 @@
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -9,7 +8,7 @@ import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character, TimelineEvent } from '@/types/character';
 import { FieldValue, FieldPath } from 'firebase-admin/firestore';
 import type { UserProfile } from '@/types/user';
-import { randomUUID } from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
 
 
@@ -64,8 +63,8 @@ async function uploadDataUriToStorage(dataUri: string, userId: string, character
     const base64Data = match[2];
     const imageBuffer = Buffer.from(base64Data, 'base64');
     
-    const id = characterId || randomUUID();
-    const fileName = `usersImg/${userId}/${id}/${randomUUID()}.png`;
+    const id = characterId || uuidv4();
+    const fileName = `usersImg/${userId}/${id}/${uuidv4()}.png`;
     const file = bucket.file(fileName);
 
     await file.save(imageBuffer, {
@@ -703,5 +702,3 @@ export async function getCharacter(characterId: string): Promise<Character | nul
         return null;
     }
 }
-
-    

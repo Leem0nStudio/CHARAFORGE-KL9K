@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -172,5 +171,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-    

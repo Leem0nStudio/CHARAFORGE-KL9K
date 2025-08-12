@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useTransition, useEffect } from 'react';
@@ -14,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Star, Trash2, FileUp, Wand2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { randomUUID } from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 
 const UpdateImagesSchema = z.object({
     images: z.array(z.string().url()).min(1, "At least one image is required.").max(10, "You can add a maximum of 10 images."),
@@ -62,7 +61,7 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
 
     startUploadTransition(async () => {
         try {
-            const fileName = `${randomUUID()}-${file.name}`;
+            const fileName = `${uuidv4()}-${file.name}`;
             const destinationPath = `usersImg/${character.userId}/${character.id}/${fileName}`;
             const newImageUrl = await uploadFileToStorage(file, destinationPath);
             append(newImageUrl);
@@ -182,5 +181,3 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
      </Card>
   );
 }
-
-    
