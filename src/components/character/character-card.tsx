@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -8,7 +9,7 @@ import { Card, CardFooter, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import type { Character } from '@/types/character';
-import { getSlotColorClass, chartColors } from '@/lib/app-config';
+import { getSlotColorClass } from '@/lib/app-config';
 import { cn } from '@/lib/utils';
 
 interface CharacterCardProps {
@@ -28,12 +29,12 @@ export function CharacterCard({ character }: CharacterCardProps) {
             className="h-full"
         >
             <Card className="overflow-hidden group relative h-full flex flex-col border-2 border-transparent hover:border-primary transition-colors duration-300">
-                <Link href={`/characters/${character.id}`} className="relative aspect-square w-full bg-muted/20">
+                <Link href={`/characters/${character.id}`} className="relative aspect-[3/4] w-full bg-muted/20">
                         <Image
                             src={character.imageUrl}
                             alt={character.name}
                             fill
-                            className="object-contain w-full transition-transform duration-300 group-hover:scale-105"
+                            className="object-cover w-full transition-transform duration-300 group-hover:scale-105"
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         />
                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -56,19 +57,19 @@ export function CharacterCard({ character }: CharacterCardProps) {
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger>
-                                            <Badge variant="secondary" className="flex items-center gap-1">
+                                            <Badge variant="secondary" className="flex items-center gap-1 bg-purple-500/20 text-purple-300 border-purple-500/50">
                                                 <GitBranch className="h-3 w-3" />
                                             </Badge>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            <p>Branched</p>
+                                            <p>Branched from another creation</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
                              )}
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                             <h3 className="font-bold text-lg leading-tight drop-shadow-md truncate">{character.name}</h3>
+                             <h3 className="font-bold text-lg leading-tight drop-shadow-md truncate font-headline">{character.name}</h3>
                         </div>
                 </Link>
                  <CardContent className="p-3 bg-card flex-col items-start flex-grow">
@@ -98,12 +99,12 @@ export function CharacterCard({ character }: CharacterCardProps) {
                         </Link>
                        )}
                 </CardContent>
-                <CardFooter className="p-3 bg-card/50">
+                <CardFooter className="p-3 bg-card/50 mt-auto">
                     <div className="w-full">
-                        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <Link href={`/users/${character.userId}`} className="text-xs text-muted-foreground flex items-center gap-1.5 hover:text-primary">
                             <User className="h-3 w-3" />
                             <span>by {character.userName}</span>
-                        </div>
+                        </Link>
                         {isBranch && (
                             <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
                                 <GitBranch className="h-3 w-3" />

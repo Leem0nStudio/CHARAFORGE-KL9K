@@ -589,7 +589,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
         const initialVersion = { id: characterRef.id, name: versionName, version: version };
         
         // Process tags from comma-separated string to an array of strings
-        const tagsArray = tags ? tags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
+        const tagsArray = tags ? tags.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean) : [];
 
         const characterData = {
             userId,

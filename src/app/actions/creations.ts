@@ -82,7 +82,7 @@ export async function searchCharactersByTag(tag: string): Promise<Character[]> {
         const charactersRef = adminDb.collection('characters');
         const q = charactersRef
             .where('status', '==', 'public')
-            .where('tags', 'array-contains', tag)
+            .where('tags', 'array-contains', tag.toLowerCase())
             .orderBy('createdAt', 'desc')
             .limit(50); // Limit to 50 results for performance
         
@@ -91,13 +91,26 @@ export async function searchCharactersByTag(tag: string): Promise<Character[]> {
         if (snapshot.empty) {
             return [];
         }
+        
+        const userIds = new Set<string>();
+        snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            if (data.userId) userIds.add(data.userId);
+            if (data.originalAuthorId) userIds.add(data.originalAuthorId);
+        });
+
+        const userProfiles = await fetchProfilesInBatches(Array.from(userIds));
 
         return snapshot.docs.map(doc => {
             const data = doc.data();
+            const userName = userProfiles.get(data.userId)?.displayName || 'Anonymous';
+            const originalAuthorName = userProfiles.get(data.originalAuthorId)?.displayName || data.originalAuthorName || null;
             return {
                 id: doc.id,
                 ...data,
                 createdAt: data.createdAt.toDate(),
+                userName,
+                originalAuthorName,
             } as Character;
         });
 

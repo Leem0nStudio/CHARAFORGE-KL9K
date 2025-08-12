@@ -38,7 +38,7 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
                             <AvatarFallback>{fallback}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 text-center sm:text-left">
-                            <h2 className="text-2xl font-bold">{userProfile.displayName}</h2>
+                            <h2 className="text-2xl font-bold font-headline">{userProfile.displayName}</h2>
                             <div className="flex items-center justify-center sm:justify-start gap-4 mt-2 text-muted-foreground">
                                 <div className="flex items-center gap-1.5">
                                     <Swords className="h-4 w-4" />
