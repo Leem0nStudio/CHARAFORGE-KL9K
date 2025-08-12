@@ -666,5 +666,3 @@ export function CharacterGenerator() {
     </>
   );
 }
-
-    
