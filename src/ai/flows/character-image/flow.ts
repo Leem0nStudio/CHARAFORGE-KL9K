@@ -8,7 +8,6 @@
 
 import { ai } from '@/ai/genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
-import { Client } from "@gradio/client";
 
 // Helper function to get image dimensions in pixels.
 function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
@@ -34,6 +33,7 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, model: strin
         throw new Error("Hugging Face API key is not configured on the server.");
     }
     
+    // The API URL MUST use the base model ID, not the LoRA's ID.
     const API_URL = `https://api-inference.huggingface.co/models/${data.model}`;
     
     const response = await fetch(API_URL, {
@@ -81,8 +81,8 @@ const generateCharacterImageFlow = ai.defineFlow(
         description, 
         aspectRatio, 
         imageEngine, 
-        hfModelId, // New: HF ID for the base model
-        lora, 
+        hfModelId,
+        lora,
         loraWeight, 
         triggerWords 
     } = input;
@@ -111,24 +111,25 @@ const generateCharacterImageFlow = ai.defineFlow(
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
     } else { 
-        // This branch now uses the robust Hugging Face Inference API with dynamic models.
         try {
             if (!hfModelId) {
                 throw new Error("Hugging Face model ID is required for this engine.");
             }
 
             let promptWithLora = description;
+            // Correctly append LoRA information to the prompt, not the model URL.
             if (lora) {
                 const weight = loraWeight || 0.75;
-                // Standard syntax for applying a LoRA with weight
-                const loraTag = `<lora:${lora}:${weight}>`; 
                 const words = triggerWords ? `${triggerWords}, ` : '';
-                promptWithLora = `${words}${description}, ${loraTag}`;
+                // The syntax for HF inference API might just be adding words and concepts.
+                // The <lora:> syntax is specific to some UIs like A1111.
+                // For HF API, we rely on the trigger words and the description.
+                promptWithLora = `${words}${description}`;
             }
 
             const imageUrl = await queryHuggingFaceInferenceAPI({ 
                 inputs: promptWithLora,
-                model: hfModelId,
+                model: hfModelId, // Always use the base model ID here.
             });
             
             if (!imageUrl) {
