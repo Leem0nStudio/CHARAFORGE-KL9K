@@ -7,9 +7,27 @@ import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character, TimelineEvent } from '@/types/character';
 import { FieldValue } from 'firebase-admin/firestore';
 import { v4 as uuidv4 } from 'uuid';
-import { generateNewCharacterImage } from './character-image';
 import { uploadToStorage } from '@/services/storage';
-import { SaveCharacterInputSchema, UpdateCharacterSchema, UpdateStatusSchema, type SaveCharacterInput } from './characters';
+import { z } from 'zod';
+
+// Zod validation schemas, co-located with the actions that use them.
+export const UpdateStatusSchema = z.enum(['private', 'public']);
+export const UpdateCharacterSchema = z.object({
+  name: z.string().min(1, "Name is required.").max(100, "Name cannot exceed 100 characters."),
+  biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
+  alignment: z.enum(['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil']),
+});
+
+export const SaveCharacterInputSchema = z.object({
+  name: z.string().min(1, 'Name is required.'),
+  description: z.string(),
+  biography: z.string(),
+  imageUrl: z.string().startsWith('data:image/'),
+  dataPackId: z.string().optional().nullable(),
+  tags: z.string().optional(),
+});
+export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
+
 
 type ActionResponse = {
     success: boolean;
@@ -276,4 +294,34 @@ export async function updateCharacterTimeline(characterId: string, timeline: Tim
         const message = error instanceof Error ? error.message : 'Could not update timeline.';
         return { success: false, message };
     }
+}
+
+
+export async function updateCharacterBranchingPermissions(characterId: string, permissions: 'private' | 'public'): Promise<ActionResponse> {
+  const uid = await verifyAndGetUid();
+  if (!adminDb) {
+    return { success: false, message: 'Database service is unavailable.' };
+  }
+
+  try {
+    const characterRef = adminDb.collection('characters').doc(characterId);
+    const characterDoc = await characterRef.get();
+
+    if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+      return { success: false, message: 'Permission denied or character not found.' };
+    }
+
+    if (permissions === 'public' && characterDoc.data()?.status !== 'public') {
+        return { success: false, message: 'Character must be public to allow branching.' };
+    }
+
+    await characterRef.update({ branchingPermissions: permissions });
+
+    revalidatePath(`/characters/${characterId}/edit`);
+    return { success: true, message: 'Branching permissions updated.' };
+
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not update permissions.';
+    return { success: false, message };
+  }
 }
