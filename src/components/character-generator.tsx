@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useTransition } from "react";
@@ -35,6 +34,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/characters";
 import { generateCharacter, type GenerateCharacterInput } from "@/app/actions/generation";
 import { getInstalledDataPacks } from "@/app/actions/datapacks";
+import { getModels } from "@/app/actions/ai-models";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { DataPackSelectorModal } from "./datapack-selector-modal";
@@ -118,7 +118,23 @@ function FloatingActionButton({ onForge, canInteract, isGenerating }: { onForge:
 }
 
 // Sub-component for the visual model selector button
-function VisualModelSelector({ label, model, onOpen, disabled }: { label: string, model?: AiModel | null, onOpen: () => void, disabled: boolean }) {
+function VisualModelSelector({ label, model, onOpen, disabled, isLoading }: { label: string, model?: AiModel | null, onOpen: () => void, disabled: boolean, isLoading?: boolean }) {
+    
+    if (isLoading) {
+        return (
+             <div>
+                <Label>{label}</Label>
+                <div className="h-auto w-full justify-start p-2 mt-1 flex items-center">
+                    <Skeleton className="w-16 h-16 rounded-md shrink-0 mr-4" />
+                    <div className="w-full space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                    </div>
+                </div>
+            </div>
+        )
+    }
+    
     return (
         <div>
             <Label>{label}</Label>
@@ -155,6 +171,7 @@ export function CharacterGenerator() {
   const [activePackName, setActivePackName] = useState<string | null>(null);
   const [showFab, setShowFab] = useState(false);
   
+  const [isLoadingDefaults, setIsLoadingDefaults] = useState(true);
   const [selectedModel, setSelectedModel] = useState<AiModel | null>(null);
   const [selectedLora, setSelectedLora] = useState<AiModel | null>(null);
 
@@ -199,6 +216,25 @@ export function CharacterGenerator() {
     router.replace(currentUrl.toString(), { scroll: false });
     setIsPackModalOpen(false);
   }, [generationForm, router]);
+  
+  useEffect(() => {
+    async function loadDefaultModel() {
+      setIsLoadingDefaults(true);
+      try {
+        const baseModels = await getModels('model');
+        if (baseModels.length > 0) {
+          const defaultModel = baseModels[0];
+          setSelectedModel(defaultModel);
+          generationForm.setValue('hfModelId', defaultModel.hf_id);
+        }
+      } catch (error) {
+        console.error("Failed to load default models:", error);
+      } finally {
+        setIsLoadingDefaults(false);
+      }
+    }
+    loadDefaultModel();
+  }, [generationForm]);
   
   // Effect for scroll detection to show/hide FAB
   useEffect(() => {
@@ -463,7 +499,7 @@ export function CharacterGenerator() {
                                 )}
                                  <Button type="button" variant="link" size="sm" onClick={() => setIsTagModalOpen(true)} className="ml-auto">
                                     <Tags className="mr-2 h-3 w-3"/> Tag Assistant
-                                </Button>
+                                 </Button>
                                </div>
                               <FormMessage />
                             </FormItem>
@@ -537,6 +573,7 @@ export function CharacterGenerator() {
                                                 model={selectedModel}
                                                 onOpen={() => handleOpenModelModal('model')}
                                                 disabled={!canInteract}
+                                                isLoading={isLoadingDefaults}
                                             />
                                              <VisualModelSelector
                                                 label="LoRA (Optional)"
@@ -712,3 +749,5 @@ export function CharacterGenerator() {
     </>
   );
 }
+
+    
