@@ -1,14 +1,11 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { suggestDanbooruTags } from '@/ai/flows/danbooru-tag-suggestion/flow';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Tags, PlusCircle } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
@@ -17,26 +14,32 @@ interface TagAssistantModalProps {
     isOpen: boolean;
     onClose: () => void;
     onAppendTags: (tags: string[]) => void;
+    currentDescription: string;
 }
 
-export function TagAssistantModal({ isOpen, onClose, onAppendTags }: TagAssistantModalProps) {
-    const [query, setQuery] = useState('');
-    const [category, setCategory] = useState<'headwear' | 'topwear' | 'bottomwear' | 'general'>('general');
+export function TagAssistantModal({ isOpen, onClose, onAppendTags, currentDescription }: TagAssistantModalProps) {
     const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
     const [isSuggesting, startSuggestionTransition] = useTransition();
     const { toast } = useToast();
 
+    // Reset state when modal is closed
+    useEffect(() => {
+        if (!isOpen) {
+            setSuggestedTags([]);
+        }
+    }, [isOpen]);
+
     const handleSuggestTags = () => {
-        if (!query.trim()) {
-            toast({ variant: 'destructive', title: 'Query Required', description: 'Please enter a description for the tags you want.' });
+        if (!currentDescription.trim()) {
+            toast({ variant: 'destructive', title: 'Description Required', description: 'Please enter a character description before using the assistant.' });
             return;
         }
         startSuggestionTransition(async () => {
             try {
-                const result = await suggestDanbooruTags({ query, category });
+                const result = await suggestDanbooruTags({ description: currentDescription });
                 setSuggestedTags(result.suggestedTags);
                 if (result.suggestedTags.length === 0) {
-                     toast({ title: 'No tags found', description: 'Try a different query or category.' });
+                     toast({ title: 'No new tags found', description: 'Try adding more details to your description.' });
                 }
             } catch (error) {
                 const message = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -59,43 +62,23 @@ export function TagAssistantModal({ isOpen, onClose, onAppendTags }: TagAssistan
                         <Tags className="text-primary"/> Tag Assistant
                     </DialogTitle>
                     <DialogDescription>
-                        Describe what you're looking for, and the AI will suggest relevant tags to improve your prompt.
+                        Let the AI analyze your prompt and suggest relevant tags to improve image generation quality.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="col-span-2 space-y-2">
-                             <Label htmlFor="tag-query">Search Query</Label>
-                            <Input
-                                id="tag-query"
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                placeholder="e.g., metal shoulder pads"
-                                disabled={isSuggesting}
-                            />
-                        </div>
-                        <div className="col-span-1 space-y-2">
-                            <Label htmlFor="tag-category">Category</Label>
-                             <Select
-                                value={category}
-                                onValueChange={(value: any) => setCategory(value)}
-                                disabled={isSuggesting}
-                            >
-                                <SelectTrigger id="tag-category"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="general">General</SelectItem>
-                                    <SelectItem value="headwear">Headwear</SelectItem>
-                                    <SelectItem value="topwear">Topwear</SelectItem>
-                                    <SelectItem value="bottomwear">Bottomwear</SelectItem>
-                                </SelectContent>
-                             </Select>
-                        </div>
+                    <div>
+                        <h4 className="font-semibold mb-2 text-sm">Analyzing Description:</h4>
+                        <p className="text-sm text-muted-foreground border p-2 rounded-md max-h-24 overflow-y-auto bg-muted/50">
+                            {currentDescription || "No description provided."}
+                        </p>
                     </div>
-                    <Button onClick={handleSuggestTags} disabled={isSuggesting} className="w-full">
+
+                    <Button onClick={handleSuggestTags} disabled={isSuggesting || !currentDescription} className="w-full">
                         {isSuggesting && <Loader2 className="mr-2 animate-spin" />}
                         Suggest Tags
                     </Button>
                 </div>
+
                 {suggestedTags.length > 0 && (
                     <div className="space-y-3">
                          <Separator />

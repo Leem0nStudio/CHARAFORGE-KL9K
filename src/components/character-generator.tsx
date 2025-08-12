@@ -369,6 +369,7 @@ export function CharacterGenerator() {
   const canInteract = !isLoading && !!authUser;
   const isImageReadyForSave = !!generationResult?.imageUrl;
   const watchImageEngine = generationForm.watch('imageEngine');
+  const watchDescription = generationForm.watch('description');
 
   const handleForgeClick = () => {
     const formData = generationForm.getValues();
@@ -388,6 +389,7 @@ export function CharacterGenerator() {
         isOpen={isTagModalOpen}
         onClose={() => setIsTagModalOpen(false)}
         onAppendTags={handleAppendTags}
+        currentDescription={watchDescription}
     />
     <ModelSelectorModal
         isOpen={isModelModalOpen}

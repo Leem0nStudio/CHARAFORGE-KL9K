@@ -2,6 +2,7 @@
 
 /**
  * @fileOverview This flow acts as an AI agent for suggesting Danbooru tags.
+ * It now intelligently analyzes a full description to suggest relevant tags.
  */
 
 import { ai } from '@/ai/genkit';
@@ -15,7 +16,7 @@ import { SuggestDanbooruTagsInputSchema, SuggestDanbooruTagsOutputSchema, type S
 const searchTagsTool = ai.defineTool(
   {
     name: 'searchTagsTool',
-    description: 'Searches a curated tag database for tags matching a query and optional category. Useful for finding specific, existing tags to build an image prompt.',
+    description: 'Searches a curated tag database for tags matching a query. Useful for finding specific, existing tags to build an image prompt.',
     inputSchema: SearchTagsInputSchema,
     outputSchema: SearchTagsOutputSchema,
   },
@@ -38,11 +39,11 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert at mapping user descriptions to precise Danbooru tags. Your goal is to help a user build a high-quality prompt for an image generation AI.
 
   Instructions:
-  1. Analyze the user's query: {{{query}}}.
-  2. If a category is provided ({{#if category}}Category: {{{category}}}{{/if}}), use it to narrow your focus.
-  3. Use the 'searchTagsTool' to find relevant tags from the tag database. You might need to call the tool with a simplified version of the user's query to get good results.
-  4. From the search results, select the 3-5 most relevant and specific tags that match the user's intent.
-  5. Return these tags in the 'suggestedTags' array. Do not suggest tags that were not returned by the tool.
+  1. Analyze the user's full character description: {{{description}}}.
+  2. Identify the key concepts, objects, and styles within the description (e.g., "a red cloak", "spiky shoulder pads", "cybernetic eyes").
+  3. For each concept, use the 'searchTagsTool' to find relevant tags from the tag database. You might need to call the tool multiple times with simplified queries to get good results.
+  4. From all the search results, select the 5-7 most relevant and specific tags that best represent the character description.
+  5. Return these tags in the 'suggestedTags' array. Do not suggest tags that were not returned by the tool. Prioritize tags that add specific visual detail.
   `,
 });
 
