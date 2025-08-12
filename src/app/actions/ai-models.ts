@@ -27,14 +27,12 @@ async function getCivitaiModelInfo(modelId: string): Promise<any> {
     if (!response.ok) {
         let errorBody = `Status: ${response.status}`;
         try {
-            // Try to parse the error response from Civitai for more details
             const errorJson = await response.json();
             const errorMessage = errorJson.error || JSON.stringify(errorJson);
             errorBody += ` ${errorMessage}`;
         } catch(e) {
              errorBody += ` ${response.statusText}`;
         }
-        // Throw an error that will be caught by the calling action handler
         throw new Error(`Failed to fetch model info from Civitai for ${modelId}. ${errorBody}`);
     }
     return response.json();
@@ -57,12 +55,22 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
     
     const latestVersion = modelInfo.modelVersions?.[0];
 
-    let coverImageUrl = null;
-    if (latestVersion?.images?.[0]?.url) {
-        coverImageUrl = latestVersion.images[0].url;
-    } else if (modelInfo.image?.url) { // some models have a single root image
-        coverImageUrl = modelInfo.image.url;
+    // Find the first available image, preferring static images over videos.
+    let coverMediaUrl: string | null = null;
+    let coverMediaType: 'image' | 'video' = 'image';
+
+    const images = latestVersion?.images || modelInfo.images || [];
+    const firstImage = images.find((img: any) => img.type === 'image' && img.url);
+
+    if (firstImage) {
+        coverMediaUrl = firstImage.url;
+        coverMediaType = 'image';
+    } else if (images.length > 0) {
+        // Fallback to the first media item if no static image is found
+        coverMediaUrl = images[0].url;
+        coverMediaType = images[0].type === 'video' ? 'video' : 'image';
     }
+
 
     let suggestedHfId = '';
     // Only suggest a base model if the added type is a LoRA
@@ -73,6 +81,9 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
         } catch (suggestionError) {
             console.warn(`Could not automatically suggest a base model for ${modelInfo.name}:`, suggestionError);
         }
+    } else {
+        // If it's a base model, the execution ID is usually the model's own name on HF
+        suggestedHfId = modelInfo.name;
     }
 
     const newModel: Omit<AiModel, 'id' | 'createdAt'> = {
@@ -81,7 +92,8 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
         versionId: latestVersion?.id?.toString() || '',
         type: type, // Use the explicit type passed to the function
         hf_id: suggestedHfId,
-        coverImageUrl: coverImageUrl,
+        coverMediaUrl: coverMediaUrl,
+        coverMediaType: coverMediaType,
         triggerWords: latestVersion?.trainedWords || [],
     };
     

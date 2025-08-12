@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import Image from 'next/image';
 import { getModels } from '@/app/actions/ai-models';
 import type { AiModel } from '@/types/ai-model';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -10,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
+import { MediaDisplay } from './media-display';
 
 
 interface ModelSelectorModalProps {
@@ -57,7 +57,12 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type }: ModelSel
                                         className="cursor-pointer overflow-hidden group transition-all hover:shadow-primary/20 hover:border-primary border-2 border-transparent"
                                     >
                                         <div className="relative aspect-square bg-muted/20">
-                                            <Image src={item.coverImageUrl || 'https://placehold.co/400x400.png'} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform" sizes="(max-width: 768px) 50vw, 33vw"/>
+                                            <MediaDisplay 
+                                                url={item.coverMediaUrl} 
+                                                type={item.coverMediaType} 
+                                                alt={item.name} 
+                                                className="object-cover group-hover:scale-105 transition-transform"
+                                            />
                                         </div>
                                         <CardContent className="p-3">
                                             <p className="font-semibold truncate">{item.name}</p>

@@ -2,11 +2,10 @@
 import { getModels } from "@/app/actions/ai-models";
 import { AdminPageLayout } from "@/components/admin/admin-page-layout";
 import { ModelForm } from "@/components/admin/model-form";
-import { AiModel } from "@/types/ai-model";
-import Image from "next/image";
+import { MediaDisplay } from "@/components/media-display";
+import type { AiModel } from "@/types/ai-model";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 export default async function AiModelsPage() {
     const allModels = await getModels('model');
@@ -25,13 +24,11 @@ export default async function AiModelsPage() {
                             <Card key={model.id} className="overflow-hidden flex flex-col">
                                 <CardHeader className="p-0">
                                      <div className="relative aspect-video bg-muted/20">
-                                         <Image
-                                             src={model.coverImageUrl || `https://placehold.co/1216x832.png`}
-                                             alt={model.name}
-                                             fill
-                                             className="object-cover"
-                                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                        />
+                                         <MediaDisplay
+                                            url={model.coverMediaUrl}
+                                            type={model.coverMediaType}
+                                            alt={model.name}
+                                         />
                                      </div>
                                 </CardHeader>
                                 <CardContent className="p-4 flex-grow">
@@ -53,13 +50,11 @@ export default async function AiModelsPage() {
                             <Card key={lora.id} className="overflow-hidden flex flex-col">
                                 <CardHeader className="p-0">
                                      <div className="relative aspect-video bg-muted/20">
-                                         <Image
-                                             src={lora.coverImageUrl || `https://placehold.co/1216x832.png`}
-                                             alt={lora.name}
-                                             fill
-                                             className="object-cover"
-                                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                        />
+                                         <MediaDisplay
+                                            url={lora.coverMediaUrl}
+                                            type={lora.coverMediaType}
+                                            alt={lora.name}
+                                         />
                                      </div>
                                 </CardHeader>
                                 <CardContent className="p-4 flex-grow">

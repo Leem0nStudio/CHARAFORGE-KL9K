@@ -14,7 +14,8 @@ export interface AiModel {
   // Civitai metadata
   civitaiModelId: string;
   versionId: string;
-  coverImageUrl?: string;
+  coverMediaUrl?: string | null;
+  coverMediaType?: 'image' | 'video';
   triggerWords?: string[];
 
   createdAt: Date;
