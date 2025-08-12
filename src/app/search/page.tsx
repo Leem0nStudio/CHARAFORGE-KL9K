@@ -46,7 +46,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg bg-card/50">
-                        <p>No characters found with the tag <Badge variant="outline" className={cn('ml-1 mr-1', getSlotColorClass(tag || ''))}>{tag}</Badge>.</p>
+                        <div>No characters found with the tag <Badge variant="outline" className={cn('ml-1 mr-1', getSlotColorClass(tag || ''))}>{tag}</Badge>.</div>
                     </div>
                 )}
             </div>
