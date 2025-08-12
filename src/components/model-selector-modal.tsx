@@ -7,11 +7,9 @@ import { getModels } from '@/app/actions/ai-models';
 import type { AiModel } from '@/types/ai-model';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, CheckCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
 
 interface ModelSelectorModalProps {
@@ -22,44 +20,29 @@ interface ModelSelectorModalProps {
 }
 
 export function ModelSelectorModal({ isOpen, onClose, onSelect, type }: ModelSelectorModalProps) {
-    const [models, setModels] = useState<AiModel[]>([]);
-    const [loras, setLoras] = useState<AiModel[]>([]);
+    const [items, setItems] = useState<AiModel[]>([]);
     const [isLoading, startLoadingTransition] = useTransition();
-    const [activeTab, setActiveTab] = useState<'model' | 'lora'>(type);
     
-    useEffect(() => {
-        setActiveTab(type);
-    }, [type]);
-
     useEffect(() => {
         if (isOpen) {
             startLoadingTransition(async () => {
-                const [modelData, loraData] = await Promise.all([
-                    getModels('model'),
-                    getModels('lora')
-                ]);
-                setModels(modelData);
-                setLoras(loraData);
+                const data = await getModels(type);
+                setItems(data);
             });
         }
-    }, [isOpen]);
+    }, [isOpen, type]);
 
-    const dataToShow = activeTab === 'model' ? models : loras;
+    const title = type === 'model' ? 'Select Base Model' : 'Select LoRA';
+    const description = `Choose a ${type} to use for image generation.`;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-4xl h-[80vh]">
                 <DialogHeader>
-                    <DialogTitle className="font-headline text-2xl">Select {activeTab === 'model' ? 'Base Model' : 'LoRA'}</DialogTitle>
-                    <DialogDescription>Choose a resource to use for image generation.</DialogDescription>
+                    <DialogTitle className="font-headline text-2xl">{title}</DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col h-full">
-                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'model' | 'lora')} className="mb-4">
-                        <TabsList>
-                            <TabsTrigger value="model">Base Models</TabsTrigger>
-                            <TabsTrigger value="lora">LoRAs</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
                     {isLoading ? (
                         <div className="flex-grow flex items-center justify-center">
                             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -67,7 +50,7 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type }: ModelSel
                     ) : (
                         <ScrollArea className="flex-grow pr-4 -mr-4">
                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {dataToShow.map(item => (
+                                {items.map(item => (
                                     <Card
                                         key={item.id}
                                         onClick={() => onSelect(item)}
