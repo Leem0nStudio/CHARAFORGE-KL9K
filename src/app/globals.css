@@ -4,81 +4,82 @@
 
 @layer base {
   :root {
-    /* Nueva Paleta - Base Oscura */
-    --background: 210 60% 11%; /* #0C1C2C */
-    --foreground: 210 14% 96%; /* #F4F6F7 */
+    /* Nueva Paleta - Alto Contraste Neutro */
+    --background: 222 47% 11%; /* Gris Oscuro - #111827 */
+    --foreground: 210 40% 98%; /* Casi Blanco - #F9FAFB */
 
-    /* Card y Popover con un tono ligeramente más claro */
-    --card: 210 55% 15%; /* #12263A */
-    --card-foreground: 210 14% 96%; /* #F4F6F7 */
-    --card-highlight: 210 55% 18%; /* Darker version for hover */
+    /* Tarjetas y Elementos de UI */
+    --card: 224 22% 16%; /* Gris Medio - #1F2937 */
+    --card-foreground: 210 40% 98%; /* #F9FAFB */
+    --card-highlight: 223 21% 20%; /* #283343 - para hover */
 
-    --popover: 210 60% 11%; /* #0C1C2C */
-    --popover-foreground: 210 14% 96%; /* #F4F6F7 */
+    --popover: 222 47% 11%; /* #111827 */
+    --popover-foreground: 210 40% 98%; /* #F9FAFB */
 
-    /* Primario (Acciones principales) - Azul Acento */
-    --primary: 206 65% 47%; /* #2E86C1 */
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 206 65% 52%; /* Slightly lighter blue */
+    /* Primario (Acciones) - Azul Vibrante */
+    --primary: 217 91% 60%; /* #3B82F6 */
+    --primary-foreground: 210 40% 98%; /* #F9FAFB */
+    --primary-hover: 217 91% 65%;
 
-    /* Secundario (Elementos de UI) - Azul Medio */
-    --secondary: 206 62% 27%; /* #1B4F72 */
-    --secondary-foreground: 0 0% 100%;
-    --secondary-hover: 206 62% 32%;
+    /* Secundario (Botones, etc.) */
+    --secondary: 224 22% 21%; /* Gris Claro - #293548 */
+    --secondary-foreground: 210 40% 98%; /* #F9FAFB */
+    --secondary-hover: 223 21% 25%;
 
-    /* Muted (Texto secundario) - Gris */
-    --muted: 206 6% 57%; /* #8A9494 - derived for theme */
-    --muted-foreground: 206 6% 57%; /* #7B8A8B */
+    /* Muted (Texto secundario) */
+    --muted: 223 21% 25%;
+    --muted-foreground: 223 15% 65%; /* #9CA3AF */
     
-    /* Acento (Hover states, etc) - Rojo (ahora usado para énfasis) */
-    --accent: 4 67% 42%; /* #C0392B */
-    --accent-foreground: 0 0% 100%;
+    /* Acento (Énfasis) */
+    --accent: 217 91% 60%; 
+    --accent-foreground: 210 40% 98%;
 
-    /* Destructive (Peligro) - Rojo */
-    --destructive: 4 67% 42%; /* #C0392B */
-    --destructive-foreground: 0 0% 100%;
-    --destructive-hover: 4 67% 48%;
+    /* Destructive (Peligro) */
+    --destructive: 0 72% 51%; /* #EF4444 */
+    --destructive-foreground: 210 40% 98%;
+    --destructive-hover: 0 72% 56%;
 
-    --border: 206 62% 27%; /* Azul Medio */
-    --input: 210 55% 15%; /* Tono de tarjeta */
-    --ring: 206 65% 47%; /* Azul Claro para focus */
+    /* Bordes y Anillos */
+    --border: 217 19% 27%; /* #374151 */
+    --input: 217 19% 27%;
+    --ring: 217 91% 60%;
     
-    --radius: 0.25rem; /* Bordes más rectos, 4px */
+    --radius: 0.5rem; /* Bordes ligeramente más redondeados */
   }
 
   .dark {
-     /* La paleta ya está diseñada para ser oscura, así que la mantenemos */
-    --background: 210 60% 11%; /* #0C1C2C */
-    --foreground: 210 14% 96%; /* #F4F6F7 */
+    /* La paleta ya está diseñada para ser oscura, así que la mantenemos */
+    --background: 222 47% 11%; /* Gris Oscuro - #111827 */
+    --foreground: 210 40% 98%; /* Casi Blanco - #F9FAFB */
 
-    --card: 210 55% 15%; /* #12263A */
-    --card-foreground: 210 14% 96%; /* #F4F6F7 */
-    --card-highlight: 210 55% 18%;
+    --card: 224 22% 16%; /* Gris Medio - #1F2937 */
+    --card-foreground: 210 40% 98%; /* #F9FAFB */
+    --card-highlight: 223 21% 20%; /* #283343 - para hover */
 
-    --popover: 210 60% 11%; /* #0C1C2C */
-    --popover-foreground: 210 14% 96%; /* #F4F6F7 */
+    --popover: 222 47% 11%; /* #111827 */
+    --popover-foreground: 210 40% 98%; /* #F9FAFB */
 
-    --primary: 206 65% 47%; /* #2E86C1 */
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 206 65% 52%;
+    --primary: 217 91% 60%; /* #3B82F6 */
+    --primary-foreground: 210 40% 98%; /* #F9FAFB */
+    --primary-hover: 217 91% 65%;
 
-    --secondary: 206 62% 27%; /* #1B4F72 */
-    --secondary-foreground: 0 0% 100%;
-    --secondary-hover: 206 62% 32%;
+    --secondary: 224 22% 21%; /* Gris Claro - #293548 */
+    --secondary-foreground: 210 40% 98%; /* #F9FAFB */
+    --secondary-hover: 223 21% 25%;
 
-    --muted: 206 6% 57%;
-    --muted-foreground: 206 6% 57%;
+    --muted: 223 21% 25%;
+    --muted-foreground: 223 15% 65%; /* #9CA3AF */
     
-    --accent: 4 67% 42%; /* #C0392B */
-    --accent-foreground: 0 0% 100%;
+    --accent: 217 91% 60%; 
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 4 67% 42%;
-    --destructive-foreground: 0 0% 100%;
-    --destructive-hover: 4 67% 48%;
+    --destructive: 0 72% 51%; /* #EF4444 */
+    --destructive-foreground: 210 40% 98%;
+    --destructive-hover: 0 72% 56%;
 
-    --border: 206 62% 27%;
-    --input: 210 55% 15%;
-    --ring: 206 65% 47%;
+    --border: 217 19% 27%; /* #374151 */
+    --input: 217 19% 27%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -95,5 +96,3 @@
     font-family: 'Bebas Neue', sans-serif;
   }
 }
-
-    

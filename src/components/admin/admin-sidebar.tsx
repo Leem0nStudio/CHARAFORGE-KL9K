@@ -12,7 +12,7 @@ export function AdminSidebar() {
     const pathname = usePathname();
 
     return (
-         <div className="hidden border-r bg-muted/40 md:block">
+         <div className="hidden border-r bg-background md:block">
             <div className="flex h-full max-h-screen flex-col gap-2">
                 <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
                     <Link href="/" className="flex items-center gap-2 font-semibold">
@@ -27,7 +27,7 @@ export function AdminSidebar() {
                                 key={item.label}
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                                    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-primary",
                                     pathname.startsWith(item.href) && item.href !== '/admin' && "bg-muted text-primary",
                                     pathname === '/admin' && item.href === '/admin' && "bg-muted text-primary"
                                 )}
