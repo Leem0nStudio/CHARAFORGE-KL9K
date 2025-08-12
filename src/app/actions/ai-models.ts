@@ -15,20 +15,19 @@ type ActionResponse = {
 
 
 /**
- * Fetches model information from the Hugging Face Hub API.
- * @param modelId The Hugging Face identifier (e.g., "stabilityai/stable-diffusion-xl-base-1.0").
+ * Fetches model information from the Civitai API.
+ * @param modelId The Civitai model ID.
  * @returns A promise that resolves to the model's metadata.
  */
-async function getHuggingFaceModelInfo(modelId: string): Promise<any> {
-    const response = await fetch(`https://huggingface.co/api/models/${modelId}`);
+async function getCivitaiModelInfo(modelId: string): Promise<any> {
+    const response = await fetch(`https://civitai.com/api/v1/models/${modelId}`);
     if (!response.ok) {
-        // Attempt to parse the error message from HF, if available
         let errorBody = `Status: ${response.status}`;
         try {
             const errorJson = await response.json();
             errorBody = errorJson.error || errorBody;
         } catch(e) { /* ignore */ }
-        throw new Error(`Failed to fetch model info from Hugging Face Hub for ${modelId}. ${errorBody}`);
+        throw new Error(`Failed to fetch model info from Civitai for ${modelId}. ${errorBody}`);
     }
     return response.json();
 }
@@ -65,17 +64,16 @@ export async function getModels(type: 'model' | 'lora'): Promise<AiModel[]> {
     }
 }
 
-
 /**
- * Adds a new model or LoRA to the database, fetching its metadata from Hugging Face.
- * @param hf_id The Hugging Face identifier.
+ * Adds a new model or LoRA to the database by fetching its metadata from Civitai.
+ * @param civitaiModelId The Civitai model ID.
  * @param type The type of the model ('model' or 'lora').
- * @param triggerWords Optional trigger words for LoRAs.
+ * @param hf_id The optional Hugging Face/Gradio identifier for execution.
  */
 export async function addModel(
-    hf_id: string,
+    civitaiModelId: string,
     type: 'model' | 'lora',
-    triggerWords?: string[]
+    hf_id?: string
 ): Promise<ActionResponse> {
     try {
         await verifyAndGetUid();
@@ -88,15 +86,17 @@ export async function addModel(
     }
 
     try {
-        const modelInfo = await getHuggingFaceModelInfo(hf_id);
+        const modelInfo = await getCivitaiModelInfo(civitaiModelId);
+        const latestVersion = modelInfo.modelVersions[0];
 
         const newModel: Omit<AiModel, 'id' | 'createdAt'> = {
-            name: modelInfo.id.split('/')[1] || hf_id,
-            hf_id: modelInfo.id,
+            name: modelInfo.name,
+            civitaiModelId: modelInfo.id.toString(),
+            versionId: latestVersion.id.toString(),
             type: type,
-            // Try to find a thumbnail/image from the model card's metadata (if any)
-            coverImageUrl: `https://huggingface.co/${modelInfo.id}/resolve/main/model_card.png`, // Placeholder, might not exist
-            triggerWords: triggerWords || modelInfo.cardData?.base_model_extended?.trigger_words || [],
+            hf_id: hf_id || '', // Can be updated later
+            coverImageUrl: latestVersion.images[0]?.url || null,
+            triggerWords: latestVersion.trainedWords || [],
         };
         
         const docRef = adminDb.collection('ai_models').doc();
@@ -107,7 +107,7 @@ export async function addModel(
         });
         
         revalidatePath('/admin/models');
-        revalidatePath('/character-generator'); // Revalidate generator to make new model available
+        revalidatePath('/character-generator');
         
         return { success: true, message: `${type} "${newModel.name}" added successfully.` };
 
@@ -116,6 +116,32 @@ export async function addModel(
         return { success: false, message, error: message };
     }
 }
+
+/**
+ * Updates an existing model, specifically its Hugging Face execution ID.
+ * @param id The Firestore document ID of the model to update.
+ * @param hf_id The new Hugging Face/Gradio identifier.
+ */
+export async function updateModelHfId(id: string, hf_id: string): Promise<ActionResponse> {
+    try {
+        await verifyAndGetUid();
+    } catch(authError) {
+         return { success: false, message: 'Authentication failed.', error: authError instanceof Error ? authError.message : 'Unknown auth error.' };
+    }
+     if (!adminDb) {
+        return { success: false, message: 'Database service is unavailable.' };
+    }
+    try {
+        await adminDb.collection('ai_models').doc(id).update({ hf_id });
+        revalidatePath('/admin/models');
+        revalidatePath('/character-generator');
+        return { success: true, message: 'Model execution ID updated.' };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return { success: false, message, error: message };
+    }
+}
+
 
 /**
  * Deletes a model or LoRA from the database.

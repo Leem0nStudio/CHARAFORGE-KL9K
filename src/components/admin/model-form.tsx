@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { addModel, deleteModel } from '@/app/actions/ai-models';
+import { addModel, deleteModel, updateModelHfId } from '@/app/actions/ai-models';
 import type { AiModel } from '@/types/ai-model';
 
 import { Button } from '@/components/ui/button';
@@ -18,9 +18,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 
 const FormSchema = z.object({
-    hf_id: z.string().min(1, 'Hugging Face ID is required.'),
+    civitaiModelId: z.string().min(1, 'Civitai Model ID is required.'),
     type: z.enum(['model', 'lora']),
-    triggerWords: z.string().optional(),
+    hf_id: z.string().optional(),
 });
 type FormValues = z.infer<typeof FormSchema>;
 
@@ -37,15 +37,23 @@ export function ModelForm({ model, triggerType }: ModelFormProps) {
     const form = useForm<FormValues>({
         resolver: zodResolver(FormSchema),
         defaultValues: {
-            hf_id: model?.hf_id || '',
+            civitaiModelId: model?.civitaiModelId || '',
             type: model?.type || 'model',
-            triggerWords: model?.triggerWords?.join(', ') || '',
+            hf_id: model?.hf_id || '',
         },
     });
 
     const onSubmit = (values: FormValues) => {
         startTransition(async () => {
-            const result = await addModel(values.hf_id, values.type, values.triggerWords?.split(',').map(s => s.trim()).filter(Boolean));
+            let result;
+            if (model) {
+                // Update existing model
+                result = await updateModelHfId(model.id, values.hf_id || '');
+            } else {
+                // Add new model
+                result = await addModel(values.civitaiModelId, values.type, values.hf_id);
+            }
+            
             if (result.success) {
                 toast({ title: 'Success', description: result.message });
                 setIsOpen(false);
@@ -82,20 +90,24 @@ export function ModelForm({ model, triggerType }: ModelFormProps) {
             <DialogContent>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
                     <DialogHeader>
-                        <DialogTitle>{model ? 'Edit Model' : 'Add New AI Model'}</DialogTitle>
+                        <DialogTitle>{model ? `Edit: ${model.name}` : 'Add New AI Model'}</DialogTitle>
                         <DialogDescription>
-                            Enter the Hugging Face identifier. Metadata like name and description will be fetched automatically.
+                            Enter the Civitai model ID. Metadata like name and preview images will be fetched automatically.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="hf_id">Hugging Face ID</Label>
-                            <Input id="hf_id" {...form.register('hf_id')} placeholder="e.g., stabilityai/stable-diffusion-xl-base-1.0" />
-                            {form.formState.errors.hf_id && <p className="text-sm text-destructive">{form.formState.errors.hf_id.message}</p>}
+                            <Label htmlFor="civitaiModelId">Civitai Model ID</Label>
+                            <Input id="civitaiModelId" {...form.register('civitaiModelId')} placeholder="e.g., 4384" disabled={!!model}/>
+                            {form.formState.errors.civitaiModelId && <p className="text-sm text-destructive">{form.formState.errors.civitaiModelId.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="hf_id">Hugging Face/Gradio ID (for Execution)</Label>
+                            <Input id="hf_id" {...form.register('hf_id')} placeholder="e.g., dcaiai/classic-animation-style" />
                         </div>
                          <div className="space-y-2">
                             <Label>Type</Label>
-                            <Select onValueChange={(value) => form.setValue('type', value as 'model' | 'lora')} defaultValue={form.getValues('type')}>
+                            <Select onValueChange={(value) => form.setValue('type', value as 'model' | 'lora')} defaultValue={form.getValues('type')} disabled={!!model}>
                                 <SelectTrigger><SelectValue/></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="model">Base Model</SelectItem>
@@ -103,12 +115,6 @@ export function ModelForm({ model, triggerType }: ModelFormProps) {
                                 </SelectContent>
                             </Select>
                         </div>
-                        {form.watch('type') === 'lora' && (
-                            <div className="space-y-2">
-                                <Label htmlFor="triggerWords">Trigger Words (comma-separated)</Label>
-                                <Input id="triggerWords" {...form.register('triggerWords')} placeholder="e.g., artwork, best quality"/>
-                            </div>
-                        )}
                     </div>
                     <DialogFooter className="sm:justify-between">
                          {model ? (
