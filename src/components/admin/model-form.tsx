@@ -43,13 +43,20 @@ function AddModelDialog({ type, isOpen, setIsOpen }: { type: 'model' | 'lora', i
 
     const onSubmit = (values: AddFormValues) => {
         startTransition(async () => {
-            const result = await addAiModelFromCivitai(values.civitaiModelId, type);
-            if (result.success) {
-                toast({ title: 'Success', description: result.message });
-                setIsOpen(false);
-                form.reset();
-            } else {
-                toast({ variant: 'destructive', title: 'Error', description: result.error });
+            try {
+                const result = await addAiModelFromCivitai(type, values.civitaiModelId);
+                if (result.success) {
+                    toast({ title: 'Success', description: result.message });
+                    setIsOpen(false);
+                    form.reset();
+                } else {
+                    // This case is for controlled server-side errors, not exceptions
+                    toast({ variant: 'destructive', title: 'Error', description: result.error || result.message });
+                }
+            } catch (error) {
+                // This catches exceptions thrown from the server action, like fetch failures
+                const message = error instanceof Error ? error.message : "An unknown error occurred.";
+                toast({ variant: 'destructive', title: 'Operation Failed', description: message });
             }
         });
     };
@@ -67,7 +74,7 @@ function AddModelDialog({ type, isOpen, setIsOpen }: { type: 'model' | 'lora', i
                     <div className="py-4 space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="civitaiModelId">Civitai Model ID</Label>
-                            <Input id="civitaiModelId" {...form.register('civitaiModelId')} placeholder="e.g., 827184" />
+                            <Input id="civitaiModelId" {...form.register('civitaiModelId')} placeholder="e.g., 9251" />
                             {form.formState.errors.civitaiModelId && <p className="text-sm text-destructive">{form.formState.errors.civitaiModelId.message}</p>}
                         </div>
                     </div>
@@ -151,9 +158,11 @@ function EditModelDialog({ model, isOpen, setIsOpen }: { model: AiModel, isOpen:
                             <Label htmlFor="hf_id">Hugging Face/Gradio ID (for Execution)</Label>
                             <div className="flex gap-2">
                                 <Input id="hf_id" {...form.register('hf_id')} placeholder="e.g., stabilityai/stable-diffusion-xl-base-1.0" />
-                                <Button type="button" variant="outline" size="icon" onClick={handleSuggestModel} disabled={isBusy} title="Suggest Base Model">
-                                    {isSuggesting ? <Loader2 className="animate-spin" /> : <Wand2 />}
-                                </Button>
+                                {model.type === 'lora' && (
+                                    <Button type="button" variant="outline" size="icon" onClick={handleSuggestModel} disabled={isBusy} title="Suggest Base Model">
+                                        {isSuggesting ? <Loader2 className="animate-spin" /> : <Wand2 />}
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>

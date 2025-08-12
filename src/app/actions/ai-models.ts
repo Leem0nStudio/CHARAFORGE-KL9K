@@ -15,102 +15,89 @@ type ActionResponse = {
     error?: string;
 };
 
-const AddModelSchema = z.object({
-  civitaiModelId: z.string().min(1, 'Civitai Model ID is required.'),
-});
-export type AddModelFormValues = z.infer<typeof AddModelSchema>;
-
-
 /**
  * Fetches model information from the Civitai API.
+ * This now includes robust error handling to pass specific messages back.
  * @param modelId The Civitai model ID.
  * @returns A promise that resolves to the model's metadata.
+ * @throws Throws a detailed error if the fetch fails or the response is not ok.
  */
 async function getCivitaiModelInfo(modelId: string): Promise<any> {
     const response = await fetch(`https://civitai.com/api/v1/models/${modelId}`);
     if (!response.ok) {
         let errorBody = `Status: ${response.status}`;
         try {
+            // Try to parse the error response from Civitai for more details
             const errorJson = await response.json();
             const errorMessage = errorJson.error || JSON.stringify(errorJson);
-            errorBody = errorMessage;
-        } catch(e) { /* ignore if parsing fails */ }
+            errorBody += ` ${errorMessage}`;
+        } catch(e) {
+             errorBody += ` ${response.statusText}`;
+        }
+        // Throw an error that will be caught by the calling action handler
         throw new Error(`Failed to fetch model info from Civitai for ${modelId}. ${errorBody}`);
     }
     return response.json();
 }
 
+
 /**
  * Adds a new model by fetching its metadata from Civitai and automatically suggesting a compatible Hugging Face base model.
  * @param type The designated type of the model ('model' or 'lora').
- * @param values The form values containing the civitaiModelId.
+ * @param civitaiModelId The Civitai model ID.
  */
-export async function addAiModelFromCivitai(type: 'model' | 'lora', values: AddModelFormValues): Promise<ActionResponse> {
-    try {
-        await verifyAndGetUid();
-    } catch(authError) {
-         return { success: false, message: 'Authentication failed.', error: authError instanceof Error ? authError.message : 'Unknown auth error.' };
-    }
-
+export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModelId: string): Promise<ActionResponse> {
+    await verifyAndGetUid();
+    
     if (!adminDb) {
         return { success: false, message: 'Database service is unavailable.' };
     }
+
+    const modelInfo = await getCivitaiModelInfo(civitaiModelId);
     
-    const validation = AddModelSchema.safeParse(values);
-     if (!validation.success) {
-        const firstError = validation.error.errors[0];
-        return { success: false, message: `Invalid input: ${firstError.message}` };
+    const latestVersion = modelInfo.modelVersions?.[0];
+
+    let coverImageUrl = null;
+    if (latestVersion?.images?.[0]?.url) {
+        coverImageUrl = latestVersion.images[0].url;
+    } else if (modelInfo.image?.url) { // some models have a single root image
+        coverImageUrl = modelInfo.image.url;
     }
-    const { civitaiModelId } = validation.data;
 
-    try {
-        const modelInfo = await getCivitaiModelInfo(civitaiModelId);
-        const latestVersion = modelInfo.modelVersions?.[0];
-
-        let coverImageUrl = null;
-        if (latestVersion?.images?.[0]?.url) {
-            coverImageUrl = latestVersion.images[0].url;
-        } else if (modelInfo.images?.[0]?.url) {
-            coverImageUrl = modelInfo.images[0].url;
+    let suggestedHfId = '';
+    // Only suggest a base model if the added type is a LoRA
+    if (type === 'lora') {
+        try {
+            const suggestionResult = await suggestHfModel({ modelName: modelInfo.name });
+            suggestedHfId = suggestionResult.suggestedHfId;
+        } catch (suggestionError) {
+            console.warn(`Could not automatically suggest a base model for ${modelInfo.name}:`, suggestionError);
         }
-
-        let suggestedHfId = '';
-        if (type === 'lora') {
-            try {
-                const suggestionResult = await suggestHfModel({ modelName: modelInfo.name });
-                suggestedHfId = suggestionResult.suggestedHfId;
-            } catch (suggestionError) {
-                console.warn(`Could not automatically suggest a base model for ${modelInfo.name}:`, suggestionError);
-            }
-        }
-
-        const newModel: Omit<AiModel, 'id' | 'createdAt'> = {
-            name: modelInfo.name,
-            civitaiModelId: modelInfo.id.toString(),
-            versionId: latestVersion?.id?.toString() || '',
-            type: type,
-            hf_id: suggestedHfId,
-            coverImageUrl: coverImageUrl,
-            triggerWords: latestVersion?.trainedWords || [],
-        };
-        
-        const docRef = adminDb.collection('ai_models').doc();
-        await docRef.set({
-            ...newModel,
-            id: docRef.id,
-            createdAt: FieldValue.serverTimestamp(),
-        });
-        
-        revalidatePath('/admin/models');
-        revalidatePath('/character-generator');
-        
-        return { success: true, message: `Model "${newModel.name}" added successfully.` };
-
-    } catch (error) {
-        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        return { success: false, message: 'Failed to add model.', error: message };
     }
+
+    const newModel: Omit<AiModel, 'id' | 'createdAt'> = {
+        name: modelInfo.name,
+        civitaiModelId: modelInfo.id.toString(),
+        versionId: latestVersion?.id?.toString() || '',
+        type: type, // Use the explicit type passed to the function
+        hf_id: suggestedHfId,
+        coverImageUrl: coverImageUrl,
+        triggerWords: latestVersion?.trainedWords || [],
+    };
+    
+    const docRef = adminDb.collection('ai_models').doc();
+    await docRef.set({
+        ...newModel,
+        id: docRef.id,
+        createdAt: FieldValue.serverTimestamp(),
+    });
+    
+    revalidatePath('/admin/models');
+    revalidatePath('/character-generator');
+    
+    return { success: true, message: `Model "${newModel.name}" added successfully.` };
 }
+
 
 /**
  * Fetches a list of models or LoRAs from the Firestore database.
