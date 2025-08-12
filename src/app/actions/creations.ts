@@ -46,10 +46,12 @@ export async function getPublicCharacters(): Promise<Character[]> {
       const originalAuthorName = userProfiles.get(data.originalAuthorId)?.displayName || data.originalAuthorName || null;
       const dataPackName = data.dataPackId ? dataPacks.get(data.dataPackId)?.name || null : null;
       
+      const createdAt = data.createdAt;
+      
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt.toDate(),
+        createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
         userName,
         originalAuthorName,
         dataPackName,
@@ -105,10 +107,12 @@ export async function searchCharactersByTag(tag: string): Promise<Character[]> {
             const data = doc.data();
             const userName = userProfiles.get(data.userId)?.displayName || 'Anonymous';
             const originalAuthorName = userProfiles.get(data.originalAuthorId)?.displayName || data.originalAuthorName || null;
+            const createdAt = data.createdAt;
+
             return {
                 id: doc.id,
                 ...data,
-                createdAt: data.createdAt.toDate(),
+                createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
                 userName,
                 originalAuthorName,
             } as Character;
@@ -148,12 +152,11 @@ export async function getTopCreators(): Promise<UserProfile[]> {
     // Map to a clean, serializable object with only the necessary fields
     const creators = snapshot.docs.map(doc => {
         const data = doc.data();
-        // **CRITICAL FIX**: Ensure stats.memberSince is serialized
+        const memberSince = data.stats?.memberSince;
+        
         const stats = data.stats ? {
             ...data.stats,
-            memberSince: data.stats.memberSince instanceof Timestamp 
-                ? data.stats.memberSince.toMillis() 
-                : data.stats.memberSince,
+            memberSince: memberSince instanceof Timestamp ? memberSince.toMillis() : memberSince,
         } : {};
 
         return {
@@ -197,10 +200,11 @@ export async function getPublicCharactersForUser(userId: string): Promise<Charac
 
     return snapshot.docs.map(doc => {
       const data = doc.data();
+      const createdAt = data.createdAt;
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt.toDate(),
+        createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
       } as Character;
     });
 

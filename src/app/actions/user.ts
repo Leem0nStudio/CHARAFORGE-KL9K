@@ -163,12 +163,10 @@ export async function getPublicUserProfile(uid: string): Promise<Partial<UserPro
             return null; // Respect privacy settings
         }
         
-        // **CRITICAL FIX**: Manually serialize the memberSince timestamp to a number
+        const memberSince = userData.stats?.memberSince;
         const stats = userData.stats ? {
             ...userData.stats,
-            memberSince: userData.stats.memberSince instanceof Timestamp 
-                ? userData.stats.memberSince.toMillis() 
-                : userData.stats.memberSince,
+            memberSince: memberSince instanceof Timestamp ? memberSince.toMillis() : memberSince,
         } : {};
 
         return {
@@ -197,9 +195,17 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     }
     const data = doc.data() as UserProfile;
     
-    // **CRITICAL FIX**: Serialize timestamp before returning from server action
-    if (data.stats && data.stats.memberSince && (data.stats.memberSince as any) instanceof Timestamp) {
+    // Serialize all potential Timestamp fields before returning from the server action.
+    if (data.stats?.memberSince && (data.stats.memberSince as any) instanceof Timestamp) {
         data.stats.memberSince = (data.stats.memberSince as any).toMillis();
+    }
+    
+    if ((data as any).createdAt && (data as any).createdAt instanceof Timestamp) {
+        (data as any).createdAt = (data as any).createdAt.toMillis();
+    }
+    
+    if ((data as any).lastLogin && (data as any).lastLogin instanceof Timestamp) {
+        (data as any).lastLogin = (data as any).lastLogin.toMillis();
     }
 
     return data;

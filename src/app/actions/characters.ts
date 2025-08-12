@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { adminDb } from '@/lib/firebase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character, TimelineEvent } from '@/types/character';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { UserProfile } from '@/types/user';
 import { v4 as uuidv4 } from 'uuid';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
@@ -389,10 +389,11 @@ export async function getCharacters(): Promise<Character[]> {
     const charactersData = snapshot.docs.map(doc => {
       const data = doc.data();
       const versions = data.versions || [{ id: doc.id, name: data.versionName || 'v.1', version: data.version || 1 }];
+      const createdAt = data.createdAt;
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt.toDate(),
+        createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
         version: data.version || 1,
         versionName: data.versionName || `v.${data.version || 1}`,
         baseCharacterId: data.baseCharacterId || null,
@@ -641,11 +642,13 @@ export async function getCharacter(characterId: string): Promise<Character | nul
         const originalAuthorName = data.originalAuthorId 
             ? (await adminDb.collection('users').doc(data.originalAuthorId).get())?.data()?.displayName || 'Anonymous' 
             : null;
+        
+        const createdAt = data.createdAt as any;
 
         return {
             id: characterDoc.id,
             ...data,
-            createdAt: (data.createdAt as any).toDate(),
+            createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
             userName,
             dataPackName,
             originalAuthorName,

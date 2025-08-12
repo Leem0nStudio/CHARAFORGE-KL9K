@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { DataPack, UpsertDataPack } from '@/types/datapack';
 import { UpsertDataPackSchema } from '@/types/datapack';
 import type { Character } from '@/types/character';
@@ -125,11 +125,13 @@ export async function getDataPacksForAdmin(): Promise<DataPack[]> {
     const snapshot = await adminDb.collection('datapacks').orderBy('createdAt', 'desc').get();
     return snapshot.docs.map(doc => {
         const data = doc.data();
+        const createdAt = data.createdAt;
+        const updatedAt = data.updatedAt;
         return {
             ...data,
             id: doc.id,
-            createdAt: data.createdAt.toDate(),
-            updatedAt: data.updatedAt?.toDate() || null,
+            createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
+            updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
         } as DataPack;
     });
 }
@@ -142,12 +144,14 @@ export async function getDataPackForAdmin(packId: string): Promise<DataPack | nu
     if (!doc.exists) return null;
 
     const data = doc.data() as any;
+    const createdAt = data.createdAt;
+    const updatedAt = data.updatedAt;
 
     return {
         ...data,
         id: doc.id,
-        createdAt: data.createdAt?.toDate(),
-        updatedAt: data.updatedAt?.toDate() || null,
+        createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
+        updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
     } as DataPack;
 }
 
@@ -167,11 +171,13 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
 
     const dataPacksData = snapshot.docs.map(doc => {
         const data = doc.data();
+        const createdAt = data.createdAt;
+        const updatedAt = data.updatedAt;
         return {
             id: doc.id,
             ...data,
-            createdAt: data.createdAt.toDate(),
-            updatedAt: data.updatedAt?.toDate() || null,
+            createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
+            updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
         } as DataPack;
     });
 
@@ -262,10 +268,11 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
             }
         }
         
+        const createdAt = data.createdAt;
         return {
             id: doc.id,
             ...data,
-            createdAt: data.createdAt.toDate(),
+            createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
             userName: userName,
         } as Character;
     }));
@@ -308,11 +315,13 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
                 const packsSnapshot = await packsQuery.get();
                 const batchPacks = packsSnapshot.docs.map(doc => {
                     const data = doc.data();
+                    const createdAt = data.createdAt;
+                    const updatedAt = data.updatedAt;
                     return {
                         ...data,
                         id: doc.id,
-                        createdAt: data.createdAt.toDate(),
-                        updatedAt: data.updatedAt?.toDate() || null,
+                        createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
+                        updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
                     } as DataPack;
                 });
                 allPacks.push(...batchPacks);

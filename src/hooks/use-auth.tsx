@@ -63,6 +63,7 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
         displayName: user.displayName,
         photoURL: user.photoURL,
         createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
         role: 'user',
         stats: {
           charactersCreated: 0,
@@ -74,9 +75,10 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
         }
       });
     } else {
-        const updateData: { displayName: string | null; photoURL: string | null; email?: string | null } = {
+        const updateData: { displayName: string | null; photoURL: string | null; email?: string | null, lastLogin: any } = {
           displayName: user.displayName,
           photoURL: user.photoURL,
+          lastLogin: serverTimestamp(),
         };
         if (user.email !== userDoc.data()?.email) {
             updateData.email = user.email;
@@ -87,12 +89,16 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
     const updatedUserDoc = await getDoc(userDocRef);
     const data = updatedUserDoc.data();
 
+    // Ensure all Timestamps from Firestore are converted to numbers (milliseconds)
+    // before being sent to the client state.
     if (data) {
         if (data.createdAt && data.createdAt instanceof Timestamp) {
             data.createdAt = data.createdAt.toMillis();
         }
-        // This is the critical fix: ensure stats.memberSince is a number before returning
-        if (data.stats && data.stats.memberSince instanceof Timestamp) {
+        if (data.lastLogin && data.lastLogin instanceof Timestamp) {
+            data.lastLogin = data.lastLogin.toMillis();
+        }
+        if (data.stats?.memberSince && data.stats.memberSince instanceof Timestamp) {
            data.stats.memberSince = data.stats.memberSince.toMillis();
         }
     }
