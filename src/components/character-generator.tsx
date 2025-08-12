@@ -93,10 +93,6 @@ function ActionButtons({ onForge, onUsePack, canInteract, isGenerating }: {
 }) {
   return (
     <div className="space-y-2">
-      <Button onClick={onUsePack} size="lg" className="w-full" variant="secondary" disabled={!canInteract}>
-        <Package className="mr-2" />
-        Use DataPack
-      </Button>
        <Button type="button" size="lg" className="w-full font-headline text-lg" onClick={onForge} disabled={!canInteract}>
         {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Character</>)}
       </Button>
