@@ -58,11 +58,10 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
         
         const latestVersion = modelInfo.modelVersions?.[0];
         
-        // Find the first media item, whether image or video
         let coverMediaUrl: string | null = null;
         let coverMediaType: 'image' | 'video' = 'image';
         
-        // Prioritize finding the media in the first version, then fallback to the root
+        // Robust media lookup: check version gallery first, then root gallery.
         const firstVersionImages = latestVersion?.images;
         const rootImages = modelInfo.images;
 
@@ -79,7 +78,6 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
             }
         }
         
-        // Extract all versions
         const allVersions = modelInfo.modelVersions.map((v: any) => ({
             id: v.id.toString(),
             name: v.name,
@@ -104,12 +102,10 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
             civitaiModelId: modelInfo.id.toString(),
             type: type, 
             hf_id: suggestedHfId,
-            // Default to latest version
             versionId: latestVersion?.id?.toString() || '',
             coverMediaUrl: coverMediaUrl,
             coverMediaType: coverMediaType,
             triggerWords: latestVersion?.trainedWords || [],
-            // Store all available versions
             versions: allVersions,
         };
         
@@ -156,7 +152,6 @@ export async function getModels(type: 'model' | 'lora'): Promise<AiModel[]> {
         return snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            // Ensure createdAt is a Date object or serializable format if needed client-side
             createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(),
         } as AiModel));
 
@@ -218,3 +213,5 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
         return { success: false, message: 'Failed to delete model.', error: message };
     }
 }
+
+    
