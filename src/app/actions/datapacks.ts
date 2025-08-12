@@ -315,6 +315,7 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
                 const packsSnapshot = await packsQuery.get();
                 const batchPacks = packsSnapshot.docs.map(doc => {
                     const data = doc.data();
+                    // **CRITICAL FIX**: Convert Timestamps to serializable Date objects.
                     const createdAt = data.createdAt;
                     const updatedAt = data.updatedAt;
                     return {
