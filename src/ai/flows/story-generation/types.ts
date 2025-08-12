@@ -18,5 +18,4 @@ export const GenerateStoryOutputSchema = z.object({
   story: z.string().describe('The full, generated story, written in a narrative format.'),
 });
 export type GenerateStoryOutput = z.infer<typeof GenerateStoryOutputSchema>;
-
     
