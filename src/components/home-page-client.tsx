@@ -46,10 +46,10 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
                                 transition={{ duration: 0.5 }}
                             >
                                 <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                                    Forja Personajes Legendarios con IA
+                                    Forge Legendary Characters with AI
                                 </h1>
                                 <p className="max-w-[600px] text-muted-foreground md:text-xl mx-auto lg:mx-0 mt-4">
-                                    Da vida a tus ideas. Describe tu personaje, elige un estilo y deja que nuestra IA cree retratos y biografías únicas para tus historias, juegos o proyectos creativos.
+                                    Bring your ideas to life. Describe your character, choose a style, and let our AI create unique portraits and biographies for your stories, games, or creative projects.
                                 </p>
                             </motion.div>
                             <motion.div
@@ -61,12 +61,12 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
                                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                                     <Button asChild size="lg" className="font-headline text-lg">
                                         <Link href="/character-generator">
-                                        <Wand2 className="mr-2"/> Empezar a Crear
+                                        <Wand2 className="mr-2"/> Start Creating
                                         </Link>
                                     </Button>
                                     <Button asChild size="lg" variant="secondary" className="font-headline text-lg">
                                         <Link href="/datapacks">
-                                        <Package className="mr-2"/> Explorar DataPacks
+                                        <Package className="mr-2"/> Explore DataPacks
                                         </Link>
                                     </Button>
                                 </div>
