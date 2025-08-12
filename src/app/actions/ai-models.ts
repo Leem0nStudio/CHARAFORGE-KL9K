@@ -6,6 +6,7 @@ import { adminDb } from '@/lib/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { AiModel } from '@/types/ai-model';
+import { suggestHfModel } from '@/ai/flows/hf-model-suggestion/flow';
 
 type ActionResponse = {
     success: boolean;
@@ -25,8 +26,9 @@ async function getCivitaiModelInfo(modelId: string): Promise<any> {
         let errorBody = `Status: ${response.status}`;
         try {
             const errorJson = await response.json();
-            errorBody = errorJson.error || errorBody;
-        } catch(e) { /* ignore */ }
+            const errorMessage = errorJson.error || JSON.stringify(errorJson);
+            errorBody = errorMessage;
+        } catch(e) { /* ignore if parsing fails */ }
         throw new Error(`Failed to fetch model info from Civitai for ${modelId}. ${errorBody}`);
     }
     return response.json();
@@ -65,16 +67,10 @@ export async function getModels(type: 'model' | 'lora'): Promise<AiModel[]> {
 }
 
 /**
- * Adds a new model or LoRA to the database by fetching its metadata from Civitai.
+ * Adds a new model by fetching its metadata from Civitai and automatically suggesting a compatible Hugging Face base model.
  * @param civitaiModelId The Civitai model ID.
- * @param type The type of the model ('model' or 'lora').
- * @param hf_id The optional Hugging Face/Gradio identifier for execution.
  */
-export async function addModel(
-    civitaiModelId: string,
-    type: 'model' | 'lora',
-    hf_id?: string
-): Promise<ActionResponse> {
+export async function addModel(civitaiModelId: string): Promise<ActionResponse> {
     try {
         await verifyAndGetUid();
     } catch(authError) {
@@ -84,17 +80,38 @@ export async function addModel(
     if (!adminDb) {
         return { success: false, message: 'Database service is unavailable.' };
     }
+    
+    if (!civitaiModelId) {
+        return { success: false, message: 'Civitai Model ID cannot be empty.' };
+    }
 
     try {
         const modelInfo = await getCivitaiModelInfo(civitaiModelId);
         const latestVersion = modelInfo.modelVersions[0];
+
+        // Determine type, default to 'lora' if not specified
+        const type = modelInfo.type === 'Model' ? 'model' : 'lora';
+
+        let suggestedHfId = '';
+        if (type === 'lora') { // Only suggest base models for LoRAs
+            try {
+                const suggestionResult = await suggestHfModel({ modelName: modelInfo.name });
+                suggestedHfId = suggestionResult.suggestedHfId;
+            } catch (suggestionError) {
+                console.warn(`Could not automatically suggest a base model for ${modelInfo.name}:`, suggestionError);
+            }
+        } else {
+            // If it's a base model, we assume its HF ID is what the user would have to find and enter manually.
+            // For now, we leave it blank to be filled in the edit step.
+            suggestedHfId = '';
+        }
 
         const newModel: Omit<AiModel, 'id' | 'createdAt'> = {
             name: modelInfo.name,
             civitaiModelId: modelInfo.id.toString(),
             versionId: latestVersion.id.toString(),
             type: type,
-            hf_id: hf_id || '', // Can be updated later
+            hf_id: suggestedHfId,
             coverImageUrl: latestVersion.images[0]?.url || null,
             triggerWords: latestVersion.trainedWords || [],
         };
@@ -109,13 +126,14 @@ export async function addModel(
         revalidatePath('/admin/models');
         revalidatePath('/character-generator');
         
-        return { success: true, message: `${type} "${newModel.name}" added successfully.` };
+        return { success: true, message: `Model "${newModel.name}" added successfully.` };
 
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        return { success: false, message, error: message };
+        return { success: false, message: 'Failed to add model.', error: message };
     }
 }
+
 
 /**
  * Updates an existing model, specifically its Hugging Face execution ID.
@@ -138,7 +156,7 @@ export async function updateModelHfId(id: string, hf_id: string): Promise<Action
         return { success: true, message: 'Model execution ID updated.' };
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        return { success: false, message, error: message };
+        return { success: false, message: 'Failed to update model.', error: message };
     }
 }
 
@@ -165,6 +183,6 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
         return { success: true, message: 'Model deleted successfully.' };
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        return { success: false, message, error: message };
+        return { success: false, message: 'Failed to delete model.', error: message };
     }
 }
