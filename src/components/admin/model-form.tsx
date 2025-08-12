@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -7,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { addModel, deleteModel, updateModelHfId } from '@/app/actions/ai-models';
+import { suggestHfModel } from '@/ai/flows/hf-model-suggestion/flow';
 import type { AiModel } from '@/types/ai-model';
 
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Wand2 } from 'lucide-react';
 
 const FormSchema = z.object({
     civitaiModelId: z.string().min(1, 'Civitai Model ID is required.'),
@@ -31,7 +31,8 @@ interface ModelFormProps {
 
 export function ModelForm({ model, triggerType }: ModelFormProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const [isPending, startTransition] = useTransition();
+    const [isProcessing, startTransition] = useTransition();
+    const [isSuggesting, startSuggestionTransition] = useTransition();
     const { toast } = useToast();
 
     const form = useForm<FormValues>({
@@ -42,6 +43,29 @@ export function ModelForm({ model, triggerType }: ModelFormProps) {
             hf_id: model?.hf_id || '',
         },
     });
+    
+    const handleSuggestModel = () => {
+        const modelName = model?.name;
+        if (!modelName) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Model must be saved once to get a name before suggesting an HF model.' });
+            return;
+        }
+        
+        startSuggestionTransition(async () => {
+             try {
+                const result = await suggestHfModel({ modelName });
+                if (result.suggestedHfId) {
+                    form.setValue('hf_id', result.suggestedHfId);
+                    toast({ title: 'Suggestion Received!', description: `AI suggested: ${result.suggestedHfId}` });
+                } else {
+                    toast({ title: 'No Suggestion', description: 'The AI could not find a suitable model.' });
+                }
+             } catch(error) {
+                 const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+                 toast({ variant: 'destructive', title: 'Suggestion Failed', description: message });
+             }
+        });
+    }
 
     const onSubmit = (values: FormValues) => {
         startTransition(async () => {
@@ -83,6 +107,8 @@ export function ModelForm({ model, triggerType }: ModelFormProps) {
     ) : (
         <Button variant="link" size="sm" className="p-0 h-auto">Edit</Button>
     );
+    
+    const isBusy = isProcessing || isSuggesting;
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -103,7 +129,12 @@ export function ModelForm({ model, triggerType }: ModelFormProps) {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="hf_id">Hugging Face/Gradio ID (for Execution)</Label>
-                            <Input id="hf_id" {...form.register('hf_id')} placeholder="e.g., dcaiai/classic-animation-style" />
+                            <div className="flex gap-2">
+                                <Input id="hf_id" {...form.register('hf_id')} placeholder="e.g., stabilityai/stable-diffusion-xl-base-1.0" />
+                                <Button type="button" variant="outline" onClick={handleSuggestModel} disabled={!model || isBusy}>
+                                    {isSuggesting ? <Loader2 className="animate-spin" /> : <Wand2 />}
+                                </Button>
+                            </div>
                         </div>
                          <div className="space-y-2">
                             <Label>Type</Label>
@@ -120,7 +151,7 @@ export function ModelForm({ model, triggerType }: ModelFormProps) {
                          {model ? (
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button type="button" variant="destructive" disabled={isPending}>
+                                    <Button type="button" variant="destructive" disabled={isBusy}>
                                         <Trash2 className="mr-2"/> Delete
                                     </Button>
                                 </AlertDialogTrigger>
@@ -131,15 +162,15 @@ export function ModelForm({ model, triggerType }: ModelFormProps) {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDelete} disabled={isPending}>
-                                            {isPending ? <Loader2 className="animate-spin"/> : 'Continue'}
+                                        <AlertDialogAction onClick={handleDelete} disabled={isBusy}>
+                                            {isBusy ? <Loader2 className="animate-spin"/> : 'Continue'}
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                          ) : <div></div>}
-                        <Button type="submit" disabled={isPending}>
-                            {isPending && <Loader2 className="animate-spin mr-2"/>}
+                        <Button type="submit" disabled={isBusy}>
+                            {isBusy && <Loader2 className="animate-spin mr-2"/>}
                             {model ? 'Save Changes' : 'Add Model'}
                         </Button>
                     </DialogFooter>
