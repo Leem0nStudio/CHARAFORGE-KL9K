@@ -125,6 +125,7 @@ export async function getDataPacksForAdmin(): Promise<DataPack[]> {
     const snapshot = await adminDb.collection('datapacks').orderBy('createdAt', 'desc').get();
     return snapshot.docs.map(doc => {
         const data = doc.data();
+        // **CRITICAL FIX**: Convert Timestamps to serializable Date objects.
         const createdAt = data.createdAt;
         const updatedAt = data.updatedAt;
         return {
@@ -144,6 +145,7 @@ export async function getDataPackForAdmin(packId: string): Promise<DataPack | nu
     if (!doc.exists) return null;
 
     const data = doc.data() as any;
+    // **CRITICAL FIX**: Convert Timestamps to serializable Date objects.
     const createdAt = data.createdAt;
     const updatedAt = data.updatedAt;
 
@@ -171,6 +173,7 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
 
     const dataPacksData = snapshot.docs.map(doc => {
         const data = doc.data();
+        // **CRITICAL FIX**: Convert Timestamps to serializable Date objects.
         const createdAt = data.createdAt;
         const updatedAt = data.updatedAt;
         return {
@@ -287,7 +290,6 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
 
 export async function getInstalledDataPacks(): Promise<DataPack[]> {
     try {
-        // Pattern: Secure Session Management
         const uid = await verifyAndGetUid();
         if (!adminDb) {
             throw new Error('Database service not available.');
@@ -307,9 +309,10 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         const allPacks: DataPack[] = [];
         const packsRef = adminDb.collection('datapacks');
 
-        // Firestore 'in' queries are limited to 30 items. We batch in 10s for safety.
-        for (let i = 0; i < installedPackIds.length; i += 10) {
-            const batchIds = installedPackIds.slice(i, i + 10);
+        // Firestore 'in' queries are limited to 30 items. We batch to handle more.
+        const batchSize = 30;
+        for (let i = 0; i < installedPackIds.length; i += batchSize) {
+            const batchIds = installedPackIds.slice(i, i + batchSize);
             if (batchIds.length > 0) {
                 const packsQuery = packsRef.where(FieldValue.documentId(), 'in', batchIds);
                 const packsSnapshot = await packsQuery.get();
@@ -328,6 +331,9 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
                 allPacks.push(...batchPacks);
             }
         }
+        
+        // Sort packs by name after fetching all of them
+        allPacks.sort((a, b) => a.name.localeCompare(b.name));
         
         return allPacks;
 
