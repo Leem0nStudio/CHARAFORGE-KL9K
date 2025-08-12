@@ -1,32 +1,14 @@
 
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath } from 'next/revalidate';
 import { adminDb } from '@/lib/firebase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character, TimelineEvent } from '@/types/character';
 import { FieldValue } from 'firebase-admin/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadToStorage } from '@/services/storage';
-import { z } from 'zod';
-
-// Zod validation schemas, co-located with the actions that use them.
-export const UpdateStatusSchema = z.enum(['private', 'public']);
-export const UpdateCharacterSchema = z.object({
-  name: z.string().min(1, "Name is required.").max(100, "Name cannot exceed 100 characters."),
-  biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
-  alignment: z.enum(['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil']),
-});
-
-export const SaveCharacterInputSchema = z.object({
-  name: z.string().min(1, 'Name is required.'),
-  description: z.string(),
-  biography: z.string(),
-  imageUrl: z.string().startsWith('data:image/'),
-  dataPackId: z.string().optional().nullable(),
-  tags: z.string().optional(),
-});
-export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
+import { UpdateCharacterSchema, UpdateStatusSchema, SaveCharacterInputSchema, type SaveCharacterInput } from '@/types/character';
 
 
 type ActionResponse = {
@@ -325,3 +307,5 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
     return { success: false, message };
   }
 }
+
+    

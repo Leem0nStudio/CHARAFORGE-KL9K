@@ -1,6 +1,8 @@
 
 'use server';
 
+import { z } from 'zod';
+
 /**
  * Represents a single event in a character's history.
  */
@@ -44,3 +46,26 @@ export type Character = {
   tags?: string[];
   timeline?: TimelineEvent[]; // New field for the character's timeline
 };
+
+// Zod validation schemas for character actions.
+// They live here, in a neutral types file, not in a 'use server' file.
+
+export const UpdateStatusSchema = z.enum(['private', 'public']);
+
+export const UpdateCharacterSchema = z.object({
+  name: z.string().min(1, "Name is required.").max(100, "Name cannot exceed 100 characters."),
+  biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
+  alignment: z.enum(['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil']),
+});
+
+export const SaveCharacterInputSchema = z.object({
+  name: z.string().min(1, 'Name is required.'),
+  description: z.string(),
+  biography: z.string(),
+  imageUrl: z.string().startsWith('data:image/'),
+  dataPackId: z.string().optional().nullable(),
+  tags: z.string().optional(),
+});
+export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
+
+    
