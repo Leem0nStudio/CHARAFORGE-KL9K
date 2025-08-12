@@ -11,6 +11,7 @@ import { FieldValue, FieldPath } from 'firebase-admin/firestore';
 import type { UserProfile } from '@/types/user';
 import { v4 as uuidv4 } from 'uuid';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
+import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 
 
 type ActionResponse = {
@@ -80,14 +81,14 @@ async function uploadDataUriToStorage(dataUri: string, userId: string, character
 }
 
 
-export async function generateNewCharacterImage(characterId: string, description: string): Promise<ActionResponse & { newImageUrl?: string }> {
+export async function generateNewCharacterImage(characterId: string, description: string, engineConfig: ImageEngineConfig): Promise<ActionResponse & { newImageUrl?: string }> {
      const uid = await verifyAndGetUid(); // Security check
      if (!adminDb) {
         return { success: false, message: 'Database service is unavailable.' };
      }
      
      try {
-        const { imageUrl } = await generateCharacterImage({ description });
+        const { imageUrl } = await generateCharacterImage({ description, engineConfig });
 
         if (!imageUrl) {
             return { success: false, message: 'AI failed to generate a new image.' };
@@ -560,20 +561,23 @@ export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
 
 export async function saveCharacter(input: SaveCharacterInput) {
-  if (!adminDb) {
-    throw new Error('Database service is not available. Please try again later.');
-  }
+  // 1. Validate Input on the Server
   const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
     const firstError = validation.error.errors[0];
+    // Throw an error with a specific message that the client can display.
     throw new Error(`Invalid input for ${firstError.path.join('.')}: ${firstError.message}`);
   }
-  
   const { name, description, biography, imageUrl: imageDataUri, dataPackId, tags } = validation.data;
   
+  // 2. Verify Authentication and Services
+  const userId = await verifyAndGetUid();
+  if (!adminDb) {
+    throw new Error('Database service is not available. Please try again later.');
+  }
+  
+  // 3. Proceed with Business Logic
   try {
-    const userId = await verifyAndGetUid();
-    
     const characterRef = adminDb.collection('characters').doc();
 
     // Use the standardized public upload function
@@ -703,3 +707,5 @@ export async function getCharacter(characterId: string): Promise<Character | nul
         return null;
     }
 }
+
+    
