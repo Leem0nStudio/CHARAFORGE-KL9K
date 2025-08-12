@@ -88,12 +88,12 @@ function ActionButtons({ onForge, onUsePack, canInteract, isGenerating }: {
 }) {
   return (
     <div className="space-y-2">
-      <Button onClick={onForge} size="lg" className="w-full font-headline text-lg bg-accent text-accent-foreground hover:bg-accent/90 transition-transform hover:scale-105" disabled={!canInteract}>
-        {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Character</>)}
-      </Button>
-      <Button type="button" size="lg" className="w-full" variant="secondary" onClick={onUsePack} disabled={!canInteract}>
+      <Button onClick={onUsePack} size="lg" className="w-full" disabled={!canInteract}>
         <Package className="mr-2" />
         Use DataPack
+      </Button>
+       <Button type="button" size="lg" className="w-full font-headline text-lg" variant="outline" onClick={onForge} disabled={!canInteract}>
+        {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Character</>)}
       </Button>
     </div>
   );
@@ -172,18 +172,28 @@ export function CharacterGenerator() {
   
   // Effect for scroll detection to show/hide FAB
   useEffect(() => {
-    const handleScroll = () => {
-      if (actionButtonsRef.current) {
-        const { bottom } = actionButtonsRef.current.getBoundingClientRect();
-        // Show FAB if the bottom of the original buttons is above the viewport
-        setShowFab(bottom < window.innerHeight - 80); // 80px buffer for bottom nav
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Show FAB if the target element is NOT intersecting (i.e., not visible)
+        setShowFab(!entry.isIntersecting);
+      },
+      {
+        root: null, // relative to document viewport
+        rootMargin: '0px',
+        threshold: 0, // as soon as even one pixel is not visible
+      }
+    );
+
+    const currentRef = actionButtonsRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial check
-
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
