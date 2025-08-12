@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useTransition, useEffect } from 'react';
@@ -6,7 +7,8 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
-import { uploadFileToStorage, generateNewCharacterImage, updateCharacterImages } from '@/app/actions/characters';
+import { generateNewCharacterImage, updateCharacterImages } from '@/app/actions/characters';
+import { uploadToStorage } from '@/services/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,7 +65,7 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
         try {
             const fileName = `${uuidv4()}-${file.name}`;
             const destinationPath = `usersImg/${character.userId}/${character.id}/${fileName}`;
-            const newImageUrl = await uploadFileToStorage(file, destinationPath);
+            const newImageUrl = await uploadToStorage(file, destinationPath);
             append(newImageUrl);
             onGalleryUpdate([...fields.map(f => f.value), newImageUrl]);
             toast({ title: "Image Uploaded!", description: "The new image has been added to your gallery."});

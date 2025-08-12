@@ -4,14 +4,14 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { adminDb } from '@/lib/firebase/server';
-import { getStorage } from 'firebase-admin/storage';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character, TimelineEvent } from '@/types/character';
-import { FieldValue, FieldPath } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { UserProfile } from '@/types/user';
 import { v4 as uuidv4 } from 'uuid';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
+import { uploadToStorage } from '@/services/storage';
 
 
 type ActionResponse = {
@@ -20,65 +20,6 @@ type ActionResponse = {
     characterId?: string;
     newImageUrl?: string;
 };
-
-// This is now a more generic helper function to upload any file.
-export async function uploadFileToStorage(file: File, destinationPath: string): Promise<string> {
-    if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
-        throw new Error('Firebase Storage bucket is not configured.');
-    }
-    const storage = getStorage();
-    const bucket = storage.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-    
-    const fileRef = bucket.file(destinationPath);
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    await fileRef.save(buffer, {
-        metadata: { 
-            contentType: file.type,
-            cacheControl: 'public, max-age=31536000', // Cache aggressively
-        },
-        public: true,
-    });
-    
-    return fileRef.publicUrl();
-}
-
-
-/**
- * A generalized helper to upload an image from a Data URI to a user-specific folder in Firebase Storage.
- * @param dataUri The image represented as a Data URI string.
- * @param userId The UID of the user uploading the image.
- * @param characterId The ID of the character for folder organization.
- * @returns The public URL of the uploaded image.
- * @throws Throws an error if the upload fails.
- */
-async function uploadDataUriToStorage(dataUri: string, userId: string, characterId?: string): Promise<string> {
-    const storage = getStorage();
-    const bucket = storage.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-
-    const match = dataUri.match(/^data:(image\/\w+);base64,(.+)$/);
-    if (!match) {
-        throw new Error('Invalid Data URI format for image.');
-    }
-    const contentType = match[1];
-    const base64Data = match[2];
-    const imageBuffer = Buffer.from(base64Data, 'base64');
-    
-    const id = characterId || uuidv4();
-    const fileName = `usersImg/${userId}/${id}/${uuidv4()}.png`;
-    const file = bucket.file(fileName);
-
-    await file.save(imageBuffer, {
-        metadata: { 
-            contentType,
-            cacheControl: 'public, max-age=31536000', // Cache for 1 year
-        },
-        public: true,
-    });
-
-    return file.publicUrl();
-}
 
 
 export async function generateNewCharacterImage(characterId: string, description: string, engineConfig: ImageEngineConfig): Promise<ActionResponse & { newImageUrl?: string }> {
@@ -94,8 +35,8 @@ export async function generateNewCharacterImage(characterId: string, description
             return { success: false, message: 'AI failed to generate a new image.' };
         }
         
-        // Use the centralized Data URI upload function
-        const publicUrl = await uploadDataUriToStorage(imageUrl, uid, characterId);
+        const destinationPath = `usersImg/${uid}/${characterId}/${uuidv4()}.png`;
+        const publicUrl = await uploadToStorage(imageUrl, destinationPath);
         
         // Add the new image to the character's gallery
         const characterRef = adminDb.collection('characters').doc(characterId);
@@ -579,9 +520,9 @@ export async function saveCharacter(input: SaveCharacterInput) {
   // 3. Proceed with Business Logic
   try {
     const characterRef = adminDb.collection('characters').doc();
-
-    // Use the standardized public upload function
-    const storageUrl = await uploadDataUriToStorage(imageDataUri, userId, characterRef.id);
+    
+    const destinationPath = `usersImg/${userId}/${characterRef.id}/${uuidv4()}.png`;
+    const storageUrl = await uploadToStorage(imageDataUri, destinationPath);
 
     const userRef = adminDb.collection('users').doc(userId);
 
@@ -707,5 +648,3 @@ export async function getCharacter(characterId: string): Promise<Character | nul
         return null;
     }
 }
-
-    

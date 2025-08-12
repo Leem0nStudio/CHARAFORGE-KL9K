@@ -9,6 +9,7 @@ import type { DataPack, UpsertDataPack } from '@/types/datapack';
 import { UpsertDataPackSchema } from '@/types/datapack'; // Import server-side validation schema
 import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
+import { uploadToStorage } from '@/services/storage';
 
 export type ActionResponse = {
     success: boolean;
@@ -16,29 +17,6 @@ export type ActionResponse = {
     error?: string;
     packId?: string;
 };
-
-
-async function uploadFileToStorage(
-    packId: string, 
-    fileName: string, 
-    content: Buffer,
-    contentType: string,
-): Promise<string> {
-    if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
-        throw new Error("Firebase Storage bucket is not configured.");
-    }
-    const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-    const filePath = `datapacks/${packId}/${fileName}`;
-    const file = bucket.file(filePath);
-
-    await file.save(content, { 
-        metadata: { contentType },
-        public: true 
-    });
-
-    return file.publicUrl();
-}
-
 
 export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer): Promise<ActionResponse> {
     try {
@@ -69,7 +47,8 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
         }
 
         if (coverImage) {
-            coverImageUrl = await uploadFileToStorage(packId, 'cover.png', coverImage, 'image/png');
+            const destinationPath = `datapacks/${packId}/cover.png`;
+            coverImageUrl = await uploadToStorage(coverImage, destinationPath, 'image/png');
         }
         
         const docData = {
@@ -345,5 +324,3 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         return [];
     }
 }
-
-    

@@ -7,7 +7,7 @@ import { adminDb, adminAuth } from '@/lib/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { UserPreferences, UserProfile } from '@/types/user';
-import { uploadFileToStorage } from './characters'; // Re-use the generic uploader
+import { uploadToStorage } from '@/services/storage';
 
 export type ActionResponse = {
   success: boolean;
@@ -49,9 +49,8 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
             if (photoFile.size > 5 * 1024 * 1024) { // 5MB limit
                 return { success: false, message: 'File is too large. Please upload an image smaller than 5MB.' };
             }
-            // Use the centralized uploader from characters.ts
             const destinationPath = `usersImg/${uid}/avatar.png`;
-            const publicUrl = await uploadFileToStorage(photoFile, destinationPath);
+            const publicUrl = await uploadToStorage(photoFile, destinationPath);
             // Add a timestamp to bust the cache immediately after upload
             finalPhotoUrl = `${publicUrl}?t=${new Date().getTime()}`;
         }
@@ -206,5 +205,3 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     return null;
   }
 }
-
-    
