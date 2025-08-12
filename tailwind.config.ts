@@ -56,6 +56,12 @@ const config = {
           foreground: 'hsl(var(--card-foreground))',
           highlight: 'hsl(var(--card-highlight))',
         },
+        // Tag Colors
+        'chart-1': 'hsl(206 65% 47%)', // Blue
+        'chart-2': 'hsl(140 60% 40%)', // Green
+        'chart-3': 'hsl(48 90% 50%)',  // Yellow
+        'chart-4': 'hsl(25 85% 55%)',  // Orange
+        'chart-5': 'hsl(4 67% 42%)',    // Red
       },
       borderRadius: {
         lg: 'calc(var(--radius) + 4px)',

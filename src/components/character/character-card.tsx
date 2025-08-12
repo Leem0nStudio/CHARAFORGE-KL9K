@@ -75,7 +75,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
                  <CardContent className="p-3 bg-card flex-col items-start flex-grow">
                      {character.tags && character.tags.length > 0 ? (
                         <div className="flex flex-wrap items-center gap-1 mb-2">
-                            {character.tags.slice(0, 3).map((tag, index) => (
+                            {character.tags.slice(0, 3).map((tag) => (
                                 <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
                                     <Badge
                                         variant="outline"
@@ -92,7 +92,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
                      )}
                      {character.dataPackName && (
                         <Link href={`/datapacks/${character.dataPackId}`}>
-                            <Badge variant="outline" className="mb-2 text-xs cursor-pointer hover:border-primary/50">
+                            <Badge variant="secondary" className="mb-2 text-xs cursor-pointer hover:border-primary/50">
                                 <Package className="h-3 w-3 mr-1.5" />
                                 {character.dataPackName}
                             </Badge>

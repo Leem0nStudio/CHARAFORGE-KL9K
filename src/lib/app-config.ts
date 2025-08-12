@@ -23,24 +23,16 @@ export const adminNavItems: NavItem[] = [
     { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
-export const chartColors = [
-  'text-chart-1',
-  'text-chart-2',
-  'text-chart-3',
-  'text-chart-4',
-  'text-chart-5',
-];
-
-type SlotCategory = 'appearance' | 'equipment' | 'style' | 'setting' | 'class' | 'misc';
-
-const slotCategoryColors: Record<SlotCategory, string> = {
-    appearance: 'text-chart-1', // Blue
-    equipment: 'text-chart-5',   // Red
-    style: 'text-chart-2',       // Green
-    setting: 'text-chart-3',     // Yellow
-    class: 'text-chart-4',       // Orange
-    misc: 'text-muted-foreground',
+// Corresponds to the text-chart-* classes in tailwind.config.ts
+const slotCategoryColorClasses = {
+    appearance: 'text-chart-1 bg-chart-1/10', // Blue
+    equipment: 'text-chart-5 bg-chart-5/10',   // Red
+    style: 'text-chart-2 bg-chart-2/10',       // Green
+    setting: 'text-chart-3 bg-chart-3/10',     // Yellow
+    class: 'text-chart-4 bg-chart-4/10',       // Orange
+    misc: 'text-muted-foreground bg-muted-foreground/10',
 };
+type SlotCategory = keyof typeof slotCategoryColorClasses;
 
 const slotIdToCategoryMap: Record<string, SlotCategory> = {
     // Appearance
@@ -88,11 +80,17 @@ const slotIdToCategoryMap: Record<string, SlotCategory> = {
 };
 
 /**
- * Gets the Tailwind CSS color class for a given slot ID based on its category.
- * @param slotId The ID of the slot (e.g., 'hair_color', 'weapon').
- * @returns A string containing the Tailwind CSS class for the color.
+ * Gets the Tailwind CSS color class for a given slot ID or tag based on its category.
+ * @param id The ID of the slot or the tag string (e.g., 'hair_color', 'weapon', 'fantasy').
+ * @returns A string containing the Tailwind CSS classes for the color.
  */
-export function getSlotColorClass(slotId: string): string {
-  const category = slotIdToCategoryMap[slotId] || 'misc';
-  return slotCategoryColors[category];
+export function getSlotColorClass(id: string): string {
+  // First, check if the ID matches a known slot ID
+  const category = slotIdToCategoryMap[id] || 'misc';
+  
+  // If we want to add specific keyword matching for general tags (like from datapack tags)
+  // we can add it here. For now, we default to the category mapping or misc.
+  // Example: if (id === 'fantasy') return slotCategoryColorClasses['class'];
+
+  return slotCategoryColorClasses[category];
 }
