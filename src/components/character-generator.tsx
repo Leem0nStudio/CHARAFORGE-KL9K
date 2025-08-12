@@ -50,6 +50,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { ModelSelectorModal } from './model-selector-modal';
 import type { AiModel } from '@/types/ai-model';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { MediaDisplay } from "./media-display";
 
 
 const generationFormSchema = z.object({
@@ -83,39 +84,6 @@ type GenerationResult = {
   tags: string;
   dataPackId?: string | null;
 };
-
-// Sub-component for the main action buttons
-function ActionButtons({ onForge, onUsePack, canInteract, isGenerating }: {
-  onForge: () => void;
-  onUsePack: () => void;
-  canInteract: boolean;
-  isGenerating: boolean;
-}) {
-  return (
-    <div className="space-y-2">
-       <Button type="button" size="lg" className="w-full font-headline text-lg" onClick={onForge} disabled={!canInteract}>
-        {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Character</>)}
-      </Button>
-    </div>
-  );
-}
-
-// Sub-component for the floating action button
-function FloatingActionButton({ onForge, canInteract, isGenerating }: { onForge: () => void; canInteract: boolean; isGenerating: boolean }) {
-  return (
-    <motion.div
-      initial={{ scale: 0, y: 50 }}
-      animate={{ scale: 1, y: 0 }}
-      exit={{ scale: 0, y: 50 }}
-      transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      className="fixed bottom-20 right-4 z-40 sm:hidden"
-    >
-      <Button onClick={onForge} size="icon" className="w-16 h-16 rounded-full shadow-lg bg-accent text-accent-foreground" disabled={!canInteract}>
-         {isGenerating ? <Loader2 className="w-8 h-8 animate-spin" /> : <Wand2 className="w-8 h-8" />}
-      </Button>
-    </motion.div>
-  );
-}
 
 // Sub-component for the visual model selector button
 function VisualModelSelector({ label, model, onOpen, disabled, isLoading }: { label: string, model?: AiModel | null, onOpen: () => void, disabled: boolean, isLoading?: boolean }) {
@@ -172,13 +140,10 @@ export function CharacterGenerator() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [activePackName, setActivePackName] = useState<string | null>(null);
-  const [showFab, setShowFab] = useState(false);
   
   const [selectedModel, setSelectedModel] = useState<AiModel | null>(null);
   const [selectedLora, setSelectedLora] = useState<AiModel | null>(null);
 
-
-  const actionButtonsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { authUser, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -222,6 +187,7 @@ export function CharacterGenerator() {
   
   useEffect(() => {
     async function loadInitialData() {
+        if (!authUser) return;
         setIsLoading(true);
         try {
             const [packs, models, loras] = await Promise.all([
@@ -233,10 +199,8 @@ export function CharacterGenerator() {
             setAvailableModels(models);
             setAvailableLoras(loras);
 
-            if (models.length > 0 && !selectedModel) {
-                const defaultModel = models[0];
-                setSelectedModel(defaultModel);
-                generationForm.setValue('hfModelId', defaultModel.hf_id);
+            if (models.length > 0) {
+                setSelectedModel(models[0]);
             }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' });
@@ -245,35 +209,9 @@ export function CharacterGenerator() {
             setIsLoading(false);
         }
     }
-    if (authUser) {
-      loadInitialData();
-    }
-  }, [authUser, generationForm, toast, selectedModel]);
+    loadInitialData();
+  }, [authUser, toast]);
   
-  // Effect for scroll detection to show/hide FAB
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setShowFab(!entry.isIntersecting);
-      },
-      {
-        root: null,
-        rootMargin: '0px',
-        threshold: 0,
-      }
-    );
-
-    const currentRef = actionButtonsRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const promptFromUrl = searchParams.get('prompt');
@@ -380,7 +318,6 @@ export function CharacterGenerator() {
   const handleModelSelect = (model: AiModel) => {
     if (model.type === 'model') {
         setSelectedModel(model);
-        generationForm.setValue('hfModelId', model.hf_id);
     } else {
         setSelectedLora(model);
         const defaultVersion = model.versions?.[0];
@@ -405,13 +342,15 @@ export function CharacterGenerator() {
       }
   }
 
-  const isUiLoading = isGenerating || isSaving || authLoading;
+  const isUiLoading = isGenerating || isSaving || authLoading || isLoading;
   const canInteract = !isUiLoading && !!authUser;
-  const isImageReadyForSave = !!generationResult?.imageUrl;
-  const watchImageEngine = generationForm.watch('imageEngine');
   const watchDescription = generationForm.watch('description');
 
   const handleForgeClick = () => {
+    if (!selectedModel) {
+        toast({ variant: 'destructive', title: 'Model Required', description: 'Please select a base model before generating.' });
+        return;
+    }
     const formData = generationForm.getValues();
     const finalData = {
       ...formData,
@@ -556,7 +495,7 @@ export function CharacterGenerator() {
                                         </FormItem>
                                       )}
                                     />
-                                    {watchImageEngine === 'huggingface' && (
+                                    {generationForm.watch('imageEngine') === 'huggingface' && (
                                         <div className="space-y-4 mt-4 rounded-md border p-4 bg-muted/20">
                                             <VisualModelSelector
                                                 label="Base Model"
@@ -616,24 +555,16 @@ export function CharacterGenerator() {
                         </Accordion>
                     </TabsContent>
                 </Tabs>
-                 
-                <div className="flex flex-col sm:flex-row gap-2 pt-4">
-                  
+                <div className="pt-4">
+                    <Button type="button" size="lg" className="w-full font-headline text-lg" onClick={handleForgeClick} disabled={!canInteract}>
+                        {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Character</>)}
+                    </Button>
                 </div>
                 {!authUser && !authLoading && <p className="text-xs text-center text-muted-foreground">You must be logged in to forge a character.</p>}
               </form>
             </Form>
           </CardContent>
         </Card>
-        
-         <div ref={actionButtonsRef} className="hidden sm:block pt-4">
-            <ActionButtons
-                onForge={handleForgeClick}
-                onUsePack={() => setIsPackModalOpen(true)}
-                canInteract={!!canInteract}
-                isGenerating={isGenerating}
-            />
-        </div>
       </div>
 
       <div className="lg:col-span-3">
@@ -732,11 +663,8 @@ export function CharacterGenerator() {
         </Card>
       </div>
     </div>
-    <AnimatePresence>
-        {showFab && (
-            <FloatingActionButton onForge={handleForgeClick} canInteract={!!canInteract} isGenerating={isGenerating} />
-        )}
-    </AnimatePresence>
     </>
   );
 }
+
+    

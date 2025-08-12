@@ -20,13 +20,6 @@ interface ModelSelectorModalProps {
 }
 
 export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models }: ModelSelectorModalProps) {
-    const [isLoading, setIsLoading] = useState(true);
-    
-    useEffect(() => {
-        // The loading state is now managed by the parent, but we can have a local one for transitions.
-        setIsLoading(!models);
-    }, [models]);
-
     const title = type === 'model' ? 'Select Base Model' : 'Select LoRA';
     const description = `Choose a ${type} to use for image generation.`;
 
@@ -38,9 +31,9 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models }: 
                     <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col h-full">
-                    {isLoading ? (
-                        <div className="flex-grow flex items-center justify-center">
-                            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    {models.length === 0 ? (
+                         <div className="flex-grow flex items-center justify-center">
+                           <p className="text-muted-foreground">No {type}s available.</p>
                         </div>
                     ) : (
                         <ScrollArea className="flex-grow pr-4 -mr-4">
@@ -79,3 +72,5 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models }: 
         </Dialog>
     )
 }
+
+    
