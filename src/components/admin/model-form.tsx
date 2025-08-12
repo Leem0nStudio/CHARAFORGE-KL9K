@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Loader2, PlusCircle, Trash2, Wand2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Wand2, Pencil } from 'lucide-react';
 
 const AddFormSchema = z.object({
     civitaiModelId: z.string().min(1, 'Civitai Model ID is required.'),
@@ -47,6 +47,7 @@ function AddModelDialog({ type, isOpen, setIsOpen }: { type: 'model' | 'lora', i
             if (result.success) {
                 toast({ title: 'Success', description: result.message });
                 setIsOpen(false);
+                form.reset();
             } else {
                 toast({ variant: 'destructive', title: 'Error', description: result.error });
             }
@@ -150,7 +151,7 @@ function EditModelDialog({ model, isOpen, setIsOpen }: { model: AiModel, isOpen:
                             <Label htmlFor="hf_id">Hugging Face/Gradio ID (for Execution)</Label>
                             <div className="flex gap-2">
                                 <Input id="hf_id" {...form.register('hf_id')} placeholder="e.g., stabilityai/stable-diffusion-xl-base-1.0" />
-                                <Button type="button" variant="outline" onClick={handleSuggestModel} disabled={isBusy} title="Suggest Base Model">
+                                <Button type="button" variant="outline" size="icon" onClick={handleSuggestModel} disabled={isBusy} title="Suggest Base Model">
                                     {isSuggesting ? <Loader2 className="animate-spin" /> : <Wand2 />}
                                 </Button>
                             </div>
@@ -197,7 +198,14 @@ export function ModelForm({ model, isEditing }: ModelFormProps) {
     const closeDialog = () => setDialogState({ type: null, isOpen: false });
 
     if (isEditing && model) {
-        return <EditModelDialog model={model} isOpen={dialogState.isOpen} setIsOpen={(isOpen) => setDialogState({ type: model.type, isOpen })} />;
+        return (
+            <>
+                <Button variant="outline" size="sm" className="w-full" onClick={() => setDialogState({ type: model.type, isOpen: true })}>
+                    <Pencil className="mr-2 h-3 w-3" /> Edit
+                </Button>
+                 <EditModelDialog model={model} isOpen={dialogState.isOpen} setIsOpen={(isOpen) => setDialogState({ type: model.type, isOpen })} />
+            </>
+        )
     }
 
     return (
