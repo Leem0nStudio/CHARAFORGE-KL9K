@@ -28,25 +28,29 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
      notFound();
   }
 
-  // 2. Verify user identity and admin status
+  // 2. Verify user identity and admin status. This is a hard gate.
   let uid: string | null = null;
   let isAdmin = false;
 
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const idToken = cookieStore.get('firebaseIdToken')?.value;
 
-    if (idToken) {
-      const auth = getAuth(adminApp);
-      const decodedToken = await auth.verifyIdToken(idToken);
-      uid = decodedToken.uid;
-      // Check admin status from the same decoded token if the claim is present
-      isAdmin = decodedToken.admin === true;
+    if (!idToken) {
+      // If there's no token, the user is not authenticated. Deny access immediately.
+      notFound();
     }
+    
+    const auth = getAuth(adminApp);
+    const decodedToken = await auth.verifyIdToken(idToken);
+    uid = decodedToken.uid;
+    // Check admin status from the same decoded token if the claim is present
+    isAdmin = decodedToken.admin === true;
+    
   } catch (error) {
-    // If token verification fails, user is treated as unauthenticated and non-admin
-    uid = null;
-    isAdmin = false;
+    // If token verification fails for any reason (expired, invalid), deny access.
+    console.error("Auth verification failed in getCharacterForEdit:", error);
+    notFound();
   }
   
   // 3. Check for authorization
@@ -77,6 +81,7 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
       branchingPermissions: characterData.branchingPermissions,
       alignment: characterData.alignment || 'True Neutral',
       timeline: characterData.timeline || [],
+      tags: characterData.tags || [],
   };
 
   return character;
