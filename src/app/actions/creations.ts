@@ -4,7 +4,7 @@
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
-import { FieldValue, FieldPath } from 'firebase-admin/firestore';
+import { FieldValue, FieldPath, Timestamp } from 'firebase-admin/firestore';
 
 /**
  * Fetches public characters and ensures their image URLs are directly accessible.
@@ -148,14 +148,19 @@ export async function getTopCreators(): Promise<UserProfile[]> {
     // Map to a clean, serializable object with only the necessary fields
     const creators = snapshot.docs.map(doc => {
         const data = doc.data();
+        // **CRITICAL FIX**: Ensure stats.memberSince is serialized
+        const stats = data.stats ? {
+            ...data.stats,
+            memberSince: data.stats.memberSince instanceof Timestamp 
+                ? data.stats.memberSince.toMillis() 
+                : data.stats.memberSince,
+        } : {};
+
         return {
             uid: doc.id,
             displayName: data.displayName || null,
             photoURL: data.photoURL || null,
-            stats: {
-                charactersCreated: data.stats?.charactersCreated || 0,
-                totalLikes: data.stats?.totalLikes || 0,
-            },
+            stats,
         } as Partial<UserProfile>;
     }) as UserProfile[];
 

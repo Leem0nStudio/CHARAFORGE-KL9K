@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { adminDb, adminAuth } from '@/lib/firebase/server';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { UserPreferences, UserProfile } from '@/types/user';
 import { uploadToStorage } from '@/services/storage';
@@ -163,14 +163,19 @@ export async function getPublicUserProfile(uid: string): Promise<Partial<UserPro
             return null; // Respect privacy settings
         }
         
+        // **CRITICAL FIX**: Manually serialize the memberSince timestamp to a number
+        const stats = userData.stats ? {
+            ...userData.stats,
+            memberSince: userData.stats.memberSince instanceof Timestamp 
+                ? userData.stats.memberSince.toMillis() 
+                : userData.stats.memberSince,
+        } : {};
+
         return {
             uid: userData.uid,
             displayName: userData.displayName || 'Anonymous',
             photoURL: userData.photoURL || null,
-            stats: {
-                charactersCreated: userData.stats?.charactersCreated || 0,
-                totalLikes: userData.stats?.totalLikes || 0,
-            },
+            stats,
         };
     } catch(error) {
         console.error(`Error fetching public profile for UID ${uid}:`, error);
@@ -190,7 +195,14 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     if (!doc.exists) {
       return null;
     }
-    return doc.data() as UserProfile;
+    const data = doc.data() as UserProfile;
+    
+    // **CRITICAL FIX**: Serialize timestamp before returning from server action
+    if (data.stats && data.stats.memberSince && (data.stats.memberSince as any) instanceof Timestamp) {
+        data.stats.memberSince = (data.stats.memberSince as any).toMillis();
+    }
+
+    return data;
   } catch (error) {
     console.error(`Error fetching user profile for ${uid}:`, error);
     return null;

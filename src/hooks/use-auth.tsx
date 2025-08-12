@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -86,13 +87,12 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
     const updatedUserDoc = await getDoc(userDocRef);
     const data = updatedUserDoc.data();
 
-    // **CRITICAL FIX**: Convert any Timestamps to serializable numbers (milliseconds) before returning.
-    // This prevents hydration errors on the client when React tries to render the UserProfile object.
     if (data) {
         if (data.createdAt && data.createdAt instanceof Timestamp) {
             data.createdAt = data.createdAt.toMillis();
         }
-        if (data.stats && data.stats.memberSince && data.stats.memberSince instanceof Timestamp) {
+        // This is the critical fix: ensure stats.memberSince is a number before returning
+        if (data.stats && data.stats.memberSince instanceof Timestamp) {
            data.stats.memberSince = data.stats.memberSince.toMillis();
         }
     }

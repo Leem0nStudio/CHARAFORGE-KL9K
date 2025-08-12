@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,9 @@ import { StatCard } from '@/components/ui/stat-card';
 export function StatsTab({ userStats }: { userStats?: UserProfile['stats'] }) {
     const memberSince = userStats?.memberSince;
     let memberSinceDate = 'N/A';
-    // Ensure memberSince is a number before creating a Date object
+    
+    // **CRITICAL FIX**: The data from the server is now a number (milliseconds).
+    // This check handles that correctly.
     if (typeof memberSince === 'number') {
       const date = new Date(memberSince);
       memberSinceDate = format(date, 'PPP');
