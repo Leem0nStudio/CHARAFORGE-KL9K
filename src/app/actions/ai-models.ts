@@ -7,12 +7,18 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { AiModel } from '@/types/ai-model';
 import { suggestHfModel } from '@/ai/flows/hf-model-suggestion/flow';
+import { z } from 'zod';
 
 type ActionResponse = {
     success: boolean;
     message: string;
     error?: string;
 };
+
+const AddModelSchema = z.object({
+  civitaiModelId: z.string().min(1, 'Civitai Model ID is required.'),
+});
+export type AddModelFormValues = z.infer<typeof AddModelSchema>;
 
 
 /**
@@ -32,6 +38,78 @@ async function getCivitaiModelInfo(modelId: string): Promise<any> {
         throw new Error(`Failed to fetch model info from Civitai for ${modelId}. ${errorBody}`);
     }
     return response.json();
+}
+
+/**
+ * Adds a new model by fetching its metadata from Civitai and automatically suggesting a compatible Hugging Face base model.
+ * @param type The designated type of the model ('model' or 'lora').
+ * @param values The form values containing the civitaiModelId.
+ */
+export async function addAiModelFromCivitai(type: 'model' | 'lora', values: AddModelFormValues): Promise<ActionResponse> {
+    try {
+        await verifyAndGetUid();
+    } catch(authError) {
+         return { success: false, message: 'Authentication failed.', error: authError instanceof Error ? authError.message : 'Unknown auth error.' };
+    }
+
+    if (!adminDb) {
+        return { success: false, message: 'Database service is unavailable.' };
+    }
+    
+    const validation = AddModelSchema.safeParse(values);
+     if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        return { success: false, message: `Invalid input: ${firstError.message}` };
+    }
+    const { civitaiModelId } = validation.data;
+
+    try {
+        const modelInfo = await getCivitaiModelInfo(civitaiModelId);
+        const latestVersion = modelInfo.modelVersions?.[0];
+
+        let coverImageUrl = null;
+        if (latestVersion?.images?.[0]?.url) {
+            coverImageUrl = latestVersion.images[0].url;
+        } else if (modelInfo.images?.[0]?.url) {
+            coverImageUrl = modelInfo.images[0].url;
+        }
+
+        let suggestedHfId = '';
+        if (type === 'lora') {
+            try {
+                const suggestionResult = await suggestHfModel({ modelName: modelInfo.name });
+                suggestedHfId = suggestionResult.suggestedHfId;
+            } catch (suggestionError) {
+                console.warn(`Could not automatically suggest a base model for ${modelInfo.name}:`, suggestionError);
+            }
+        }
+
+        const newModel: Omit<AiModel, 'id' | 'createdAt'> = {
+            name: modelInfo.name,
+            civitaiModelId: modelInfo.id.toString(),
+            versionId: latestVersion?.id?.toString() || '',
+            type: type,
+            hf_id: suggestedHfId,
+            coverImageUrl: coverImageUrl,
+            triggerWords: latestVersion?.trainedWords || [],
+        };
+        
+        const docRef = adminDb.collection('ai_models').doc();
+        await docRef.set({
+            ...newModel,
+            id: docRef.id,
+            createdAt: FieldValue.serverTimestamp(),
+        });
+        
+        revalidatePath('/admin/models');
+        revalidatePath('/character-generator');
+        
+        return { success: true, message: `Model "${newModel.name}" added successfully.` };
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return { success: false, message: 'Failed to add model.', error: message };
+    }
 }
 
 /**
@@ -63,78 +141,6 @@ export async function getModels(type: 'model' | 'lora'): Promise<AiModel[]> {
     } catch (error) {
         console.error(`Error fetching ${type}s:`, error);
         return [];
-    }
-}
-
-/**
- * Adds a new model by fetching its metadata from Civitai and automatically suggesting a compatible Hugging Face base model.
- * @param civitaiModelId The Civitai model ID.
- * @param type The designated type of the model ('model' or 'lora').
- */
-export async function addAiModelFromCivitai(civitaiModelId: string, type: 'model' | 'lora'): Promise<ActionResponse> {
-    try {
-        await verifyAndGetUid();
-    } catch(authError) {
-         return { success: false, message: 'Authentication failed.', error: authError instanceof Error ? authError.message : 'Unknown auth error.' };
-    }
-
-    if (!adminDb) {
-        return { success: false, message: 'Database service is unavailable.' };
-    }
-    
-    if (!civitaiModelId) {
-        return { success: false, message: 'Civitai Model ID cannot be empty.' };
-    }
-    
-    if (!type) {
-         return { success: false, message: 'Model type must be specified.' };
-    }
-
-    try {
-        const modelInfo = await getCivitaiModelInfo(civitaiModelId);
-        const latestVersion = modelInfo.modelVersions[0];
-
-        // The type is now explicitly provided, no more guesswork.
-        const modelType = type;
-
-        let suggestedHfId = '';
-        if (modelType === 'lora') {
-            try {
-                const suggestionResult = await suggestHfModel({ modelName: modelInfo.name });
-                suggestedHfId = suggestionResult.suggestedHfId;
-            } catch (suggestionError) {
-                console.warn(`Could not automatically suggest a base model for ${modelInfo.name}:`, suggestionError);
-            }
-        } else {
-             // For base models, we expect the user to enter the HF ID manually later.
-            suggestedHfId = '';
-        }
-
-        const newModel: Omit<AiModel, 'id' | 'createdAt'> = {
-            name: modelInfo.name,
-            civitaiModelId: modelInfo.id.toString(),
-            versionId: latestVersion.id.toString(),
-            type: modelType,
-            hf_id: suggestedHfId,
-            coverImageUrl: latestVersion.images[0]?.url || null,
-            triggerWords: latestVersion.trainedWords || [],
-        };
-        
-        const docRef = adminDb.collection('ai_models').doc();
-        await docRef.set({
-            ...newModel,
-            id: docRef.id,
-            createdAt: FieldValue.serverTimestamp(),
-        });
-        
-        revalidatePath('/admin/models');
-        revalidatePath('/character-generator');
-        
-        return { success: true, message: `Model "${newModel.name}" added successfully.` };
-
-    } catch (error) {
-        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        return { success: false, message: 'Failed to add model.', error: message };
     }
 }
 
