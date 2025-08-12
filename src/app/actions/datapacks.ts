@@ -4,16 +4,17 @@
 import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
-import { FieldValue, FieldPath } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { DataPack, UpsertDataPack } from '@/types/datapack';
+import { UpsertDataPackSchema } from '@/types/datapack'; // Import server-side validation schema
 import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
-import { generateDataPackSchema } from '@/ai/flows/datapack-schema/flow';
 
 export type ActionResponse = {
     success: boolean;
     message: string;
     error?: string;
+    packId?: string;
 };
 
 
@@ -46,12 +47,22 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
         if (!adminDb) {
             throw new Error('Database service is unavailable.');
         }
+        
+        // Server-side validation
+        const validation = UpsertDataPackSchema.safeParse(data);
+        if (!validation.success) {
+            const firstError = validation.error.errors[0];
+            const errorMessage = `Invalid input for ${firstError.path.join('.')}: ${firstError.message}`;
+            console.error("DataPack Validation Error:", errorMessage);
+            return { success: false, message: 'Validation failed.', error: errorMessage };
+        }
+        const validatedData = validation.data;
 
-        const packId = data.id || adminDb.collection('datapacks').doc().id;
+        const packId = validatedData.id || adminDb.collection('datapacks').doc().id;
         
         let coverImageUrl: string | null = null;
-        if (data.id) {
-            const existingDoc = await adminDb.collection('datapacks').doc(data.id).get();
+        if (validatedData.id) {
+            const existingDoc = await adminDb.collection('datapacks').doc(validatedData.id).get();
             if (existingDoc.exists) {
                 coverImageUrl = existingDoc.data()?.coverImageUrl || null;
             }
@@ -62,20 +73,21 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
         }
         
         const docData = {
-            name: data.name,
-            author: data.author,
-            description: data.description,
-            type: data.type,
-            price: Number(data.price),
-            tags: data.tags || [],
-            schema: data.schema, // The schema is now an object
+            name: validatedData.name,
+            author: validatedData.author,
+            description: validatedData.description,
+            type: validatedData.type,
+            price: Number(validatedData.price),
+            tags: validatedData.tags || [],
+            schema: validatedData.schema,
+            isNsfw: validatedData.isNsfw || false,
             updatedAt: FieldValue.serverTimestamp(),
             coverImageUrl: coverImageUrl,
         };
         
         const docRef = adminDb.collection('datapacks').doc(packId);
 
-        if (data.id) {
+        if (validatedData.id) {
             await docRef.update(docData);
         } else {
              await docRef.set({
@@ -87,7 +99,11 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
         
         revalidatePath('/admin/datapacks');
         revalidatePath(`/datapacks/${packId}`);
-        return { success: true, message: `DataPack "${data.name}" ${data.id ? 'updated' : 'created'} successfully!` };
+        return { 
+            success: true, 
+            message: `DataPack "${validatedData.name}" ${validatedData.id ? 'updated' : 'created'} successfully!`,
+            packId: packId
+        };
 
     } catch(error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
@@ -145,7 +161,6 @@ export async function getDataPackForAdmin(packId: string): Promise<DataPack | nu
 
     const data = doc.data() as any;
 
-    // Ensure all timestamp fields are converted to serializable Dates
     return {
         ...data,
         id: doc.id,
@@ -154,11 +169,6 @@ export async function getDataPackForAdmin(packId: string): Promise<DataPack | nu
     } as DataPack;
 }
 
-/**
- * Fetches all public datapacks directly from Firestore.
- * This is now the single source of truth for fetching DataPack lists.
- * @returns {Promise<DataPack[]>} A promise that resolves to an array of datapack objects.
- */
 export async function getPublicDataPacks(): Promise<DataPack[]> {
   if (!adminDb) {
     console.error('Database service is unavailable.');
@@ -244,7 +254,7 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
     const charactersRef = adminDb.collection('characters');
     const q = charactersRef
         .where('dataPackId', '==', packId)
-        .where('isSharedToDataPack', '==', true) // Correctly filters by the specific sharing flag
+        .where('isSharedToDataPack', '==', true) 
         .orderBy('createdAt', 'desc')
         .limit(20);
     const snapshot = await q.get();
@@ -306,11 +316,10 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         const allPacks: DataPack[] = [];
         const packsRef = adminDb.collection('datapacks');
 
-        // Firestore 'in' queries are limited to 30 items. We'll use 10 for safety.
         for (let i = 0; i < installedPackIds.length; i += 10) {
             const batchIds = installedPackIds.slice(i, i + 10);
             if (batchIds.length > 0) {
-                const packsQuery = packsRef.where(FieldPath.documentId(), 'in', batchIds);
+                const packsQuery = packsRef.where(FieldValue.documentId(), 'in', batchIds);
                 const packsSnapshot = await packsQuery.get();
                 const batchPacks = packsSnapshot.docs.map(doc => {
                     const data = doc.data();
@@ -336,3 +345,5 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         return [];
     }
 }
+
+    
