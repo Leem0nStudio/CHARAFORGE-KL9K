@@ -42,7 +42,7 @@ export function MediaDisplay({ url, type, alt, className }: MediaDisplayProps) {
             src={url}
             alt={alt}
             fill
-            className={cn('w-full h-full', className)}
+            className={cn('w-full h-full object-cover', className)}
             sizes="(max-width: 768px) 50vw, 33vw"
         />
     );

@@ -23,7 +23,10 @@ type ActionResponse = {
  * @throws Throws a detailed error if the fetch fails or the response is not ok.
  */
 async function getCivitaiModelInfo(modelId: string): Promise<any> {
-    const response = await fetch(`https://civitai.com/api/v1/models/${modelId}`);
+    const url = `https://civitai.com/api/v1/models/${modelId}`;
+    console.log(`Fetching model info from: ${url}`);
+    const response = await fetch(url, { cache: 'no-store' });
+    
     if (!response.ok) {
         let errorBody = `Status: ${response.status}`;
         try {
@@ -45,69 +48,74 @@ async function getCivitaiModelInfo(modelId: string): Promise<any> {
  * @param civitaiModelId The Civitai model ID.
  */
 export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModelId: string): Promise<ActionResponse> {
-    await verifyAndGetUid();
-    
-    if (!adminDb) {
-        return { success: false, message: 'Database service is unavailable.' };
-    }
-
-    const modelInfo = await getCivitaiModelInfo(civitaiModelId);
-    
-    // Prioritize the latest version, but fall back to the root model info
-    const latestVersion = modelInfo.modelVersions?.[0];
-    const triggerWords = latestVersion?.trainedWords || modelInfo.trainedWords || [];
-    const modelTypeFromApi = modelInfo.type; // e.g., "LORA", "Checkpoint"
-
-    // Find the first available image, preferring static images over videos.
-    let coverMediaUrl: string | null = null;
-    let coverMediaType: 'image' | 'video' = 'image';
-    const images = latestVersion?.images || modelInfo.images || [];
-    const firstImage = images.find((img: any) => img.type === 'image' && img.url);
-
-    if (firstImage) {
-        coverMediaUrl = firstImage.url;
-        coverMediaType = 'image';
-    }
-
-
-    let suggestedHfId = '';
-    // Only suggest a base model if the added type is a LoRA
-    if (type === 'lora') {
-        try {
-            const suggestionResult = await suggestHfModel({ modelName: modelInfo.name });
-            suggestedHfId = suggestionResult.suggestedHfId;
-        } catch (suggestionError) {
-            console.warn(`Could not automatically suggest a base model for ${modelInfo.name}:`, suggestionError);
+    try {
+        await verifyAndGetUid();
+        
+        if (!adminDb) {
+            return { success: false, message: 'Database service is unavailable.' };
         }
-    } else {
-        // If it's a base model, we can often infer its HF ID from its name if it's a known one.
-        // For simplicity, we'll leave it blank and let the admin fill it, but a future
-        // improvement could be to auto-fill for known models.
-        suggestedHfId = '';
-    }
 
-    const newModel: Omit<AiModel, 'id' | 'createdAt'> = {
-        name: modelInfo.name,
-        civitaiModelId: modelInfo.id.toString(),
-        versionId: latestVersion?.id?.toString() || '',
-        type: type, // Use the explicit type passed to the function
-        hf_id: suggestedHfId, // Set the suggested ID, might be empty for base models
-        coverMediaUrl: coverMediaUrl,
-        coverMediaType: coverMediaType,
-        triggerWords: triggerWords,
-    };
+        const modelInfo = await getCivitaiModelInfo(civitaiModelId);
+        
+        const latestVersion = modelInfo.modelVersions?.[0];
+        const triggerWords = latestVersion?.trainedWords || modelInfo.trainedWords || [];
+        
+        // Find the first media item, whether image or video
+        let coverMediaUrl: string | null = null;
+        let coverMediaType: 'image' | 'video' = 'image';
+        const mediaItems = latestVersion?.images || modelInfo.images || [];
+        const firstMedia = mediaItems[0];
+
+        if (firstMedia && firstMedia.url) {
+            coverMediaUrl = firstMedia.url;
+            // Civitai API labels videos as 'video'. If not, we assume 'image'.
+            if (firstMedia.type === 'video') {
+                coverMediaType = 'video';
+            }
+        }
+
+        let suggestedHfId = '';
+        // Only suggest a base model if the added type is a LoRA
+        if (type === 'lora') {
+            try {
+                const suggestionResult = await suggestHfModel({ modelName: modelInfo.name });
+                suggestedHfId = suggestionResult.suggestedHfId;
+            } catch (suggestionError) {
+                console.warn(`Could not automatically suggest a base model for ${modelInfo.name}:`, suggestionError);
+            }
+        } else {
+             // For base models, we can use their own name as a hint for the hf_id
+             suggestedHfId = modelInfo.name;
+        }
+
+        const newModel: Omit<AiModel, 'id' | 'createdAt'> = {
+            name: modelInfo.name,
+            civitaiModelId: modelInfo.id.toString(),
+            versionId: latestVersion?.id?.toString() || '',
+            type: type, // Use the explicit type passed to the function
+            hf_id: suggestedHfId, // Set the suggested ID
+            coverMediaUrl: coverMediaUrl,
+            coverMediaType: coverMediaType,
+            triggerWords: triggerWords,
+        };
+        
+        const docRef = adminDb.collection('ai_models').doc();
+        await docRef.set({
+            ...newModel,
+            id: docRef.id,
+            createdAt: FieldValue.serverTimestamp(),
+        });
+        
+        revalidatePath('/admin/models');
+        revalidatePath('/character-generator');
+        
+        return { success: true, message: `Model "${newModel.name}" added successfully.` };
     
-    const docRef = adminDb.collection('ai_models').doc();
-    await docRef.set({
-        ...newModel,
-        id: docRef.id,
-        createdAt: FieldValue.serverTimestamp(),
-    });
-    
-    revalidatePath('/admin/models');
-    revalidatePath('/character-generator');
-    
-    return { success: true, message: `Model "${newModel.name}" added successfully.` };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "An unknown error occurred during model creation.";
+        console.error("Add AI Model Error:", message);
+        return { success: false, message: "Operation failed.", error: message };
+    }
 }
 
 
@@ -134,7 +142,8 @@ export async function getModels(type: 'model' | 'lora'): Promise<AiModel[]> {
         return snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            createdAt: doc.data().createdAt.toDate(),
+            // Ensure createdAt is a Date object or serializable format if needed client-side
+            createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(),
         } as AiModel));
 
     } catch (error) {
