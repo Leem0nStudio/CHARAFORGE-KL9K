@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { getModels } from '@/app/actions/ai-models';
 import type { AiModel } from '@/types/ai-model';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,20 +16,16 @@ interface ModelSelectorModalProps {
     onClose: () => void;
     onSelect: (model: AiModel) => void;
     type: 'model' | 'lora';
+    models: AiModel[];
 }
 
-export function ModelSelectorModal({ isOpen, onClose, onSelect, type }: ModelSelectorModalProps) {
-    const [items, setItems] = useState<AiModel[]>([]);
-    const [isLoading, startLoadingTransition] = useTransition();
+export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models }: ModelSelectorModalProps) {
+    const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
-        if (isOpen) {
-            startLoadingTransition(async () => {
-                const data = await getModels(type);
-                setItems(data);
-            });
-        }
-    }, [isOpen, type]);
+        // The loading state is now managed by the parent, but we can have a local one for transitions.
+        setIsLoading(!models);
+    }, [models]);
 
     const title = type === 'model' ? 'Select Base Model' : 'Select LoRA';
     const description = `Choose a ${type} to use for image generation.`;
@@ -50,7 +45,7 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type }: ModelSel
                     ) : (
                         <ScrollArea className="flex-grow pr-4 -mr-4">
                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {items.map(item => (
+                                {models.map(item => (
                                     <Card
                                         key={item.id}
                                         onClick={() => onSelect(item)}

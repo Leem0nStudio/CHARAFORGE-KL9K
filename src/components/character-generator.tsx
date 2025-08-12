@@ -140,8 +140,8 @@ function VisualModelSelector({ label, model, onOpen, disabled, isLoading }: { la
             <Label>{label}</Label>
             <Button type="button" variant="outline" className="h-auto w-full justify-start p-2 mt-1" onClick={onOpen} disabled={disabled}>
                  <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted/20 mr-4">
-                    {model ? (
-                        <Image src={model.coverMediaUrl || 'https://placehold.co/200x200.png'} alt={model.name} fill className="object-cover" data-ai-hint="model cover image" sizes="64px" />
+                    {model?.coverMediaUrl ? (
+                        <MediaDisplay url={model.coverMediaUrl} type={model.coverMediaType} alt={model.name} className="object-cover" />
                     ) : (
                         <div className="flex items-center justify-center h-full text-muted-foreground"><Settings /></div>
                     )}
@@ -167,11 +167,13 @@ export function CharacterGenerator() {
   const [modelModalType, setModelModalType] = useState<'model' | 'lora'>('model');
 
   const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
-  const [isLoadingPacks, setIsLoadingPacks] = useState(false);
+  const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
+  const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [activePackName, setActivePackName] = useState<string | null>(null);
   const [showFab, setShowFab] = useState(false);
   
-  const [isLoadingDefaults, setIsLoadingDefaults] = useState(true);
   const [selectedModel, setSelectedModel] = useState<AiModel | null>(null);
   const [selectedLora, setSelectedLora] = useState<AiModel | null>(null);
 
@@ -217,24 +219,36 @@ export function CharacterGenerator() {
     setIsPackModalOpen(false);
   }, [generationForm, router]);
   
+  
   useEffect(() => {
-    async function loadDefaultModel() {
-      setIsLoadingDefaults(true);
-      try {
-        const baseModels = await getModels('model');
-        if (baseModels.length > 0) {
-          const defaultModel = baseModels[0];
-          setSelectedModel(defaultModel);
-          generationForm.setValue('hfModelId', defaultModel.hf_id);
+    async function loadInitialData() {
+        setIsLoading(true);
+        try {
+            const [packs, models, loras] = await Promise.all([
+                getInstalledDataPacks(),
+                getModels('model'),
+                getModels('lora'),
+            ]);
+            setInstalledPacks(packs);
+            setAvailableModels(models);
+            setAvailableLoras(loras);
+
+            if (models.length > 0 && !selectedModel) {
+                const defaultModel = models[0];
+                setSelectedModel(defaultModel);
+                generationForm.setValue('hfModelId', defaultModel.hf_id);
+            }
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' });
+            console.error("Failed to load initial data:", error);
+        } finally {
+            setIsLoading(false);
         }
-      } catch (error) {
-        console.error("Failed to load default models:", error);
-      } finally {
-        setIsLoadingDefaults(false);
-      }
     }
-    loadDefaultModel();
-  }, [generationForm]);
+    if (authUser) {
+      loadInitialData();
+    }
+  }, [authUser, generationForm, toast, selectedModel]);
   
   // Effect for scroll detection to show/hide FAB
   useEffect(() => {
@@ -269,37 +283,14 @@ export function CharacterGenerator() {
   }, [searchParams, generationForm]);
 
   useEffect(() => {
-    async function loadPacksAndSetActive() {
-        if (dataPackIdFromUrl) {
-            try {
-                const packs = await getInstalledDataPacks();
-                setInstalledPacks(packs);
-                const activePack = packs.find(p => p.id === dataPackIdFromUrl);
-                if (activePack) {
-                    setActivePackName(activePack.name);
-                }
-            } catch (error) {
-                 console.error("Failed to fetch pack name:", error);
-            }
+    if (dataPackIdFromUrl && installedPacks.length > 0) {
+        const activePack = installedPacks.find(p => p.id === dataPackIdFromUrl);
+        if (activePack) {
+            setActivePackName(activePack.name);
         }
     }
-    loadPacksAndSetActive();
-  }, [dataPackIdFromUrl]);
+  }, [dataPackIdFromUrl, installedPacks]);
 
-  const handleOpenPackModal = async () => {
-    setIsLoadingPacks(true);
-    setIsPackModalOpen(true);
-    try {
-      if (installedPacks.length === 0) {
-        const packs = await getInstalledDataPacks();
-        setInstalledPacks(packs);
-      }
-    } catch(err) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not load your DataPacks.' });
-    } finally {
-      setIsLoadingPacks(false);
-    }
-  };
 
   const handleAppendTags = (tags: string[]) => {
     const currentDesc = generationForm.getValues('description');
@@ -392,13 +383,11 @@ export function CharacterGenerator() {
         generationForm.setValue('hfModelId', model.hf_id);
     } else {
         setSelectedLora(model);
-        // On LoRA select, set the default version and its trigger words
         const defaultVersion = model.versions?.[0];
         if (defaultVersion) {
             generationForm.setValue('lora', defaultVersion.id);
             generationForm.setValue('triggerWords', defaultVersion.triggerWords?.join(', ') || '');
         } else {
-            // Fallback for older data structure
             generationForm.setValue('lora', model.versionId);
             generationForm.setValue('triggerWords', model.triggerWords?.join(', ') || '');
         }
@@ -416,8 +405,8 @@ export function CharacterGenerator() {
       }
   }
 
-  const isLoading = isGenerating || isSaving || authLoading;
-  const canInteract = !isLoading && !!authUser;
+  const isUiLoading = isGenerating || isSaving || authLoading;
+  const canInteract = !isUiLoading && !!authUser;
   const isImageReadyForSave = !!generationResult?.imageUrl;
   const watchImageEngine = generationForm.watch('imageEngine');
   const watchDescription = generationForm.watch('description');
@@ -438,7 +427,7 @@ export function CharacterGenerator() {
       onClose={() => setIsPackModalOpen(false)}
       onPromptGenerated={handlePromptGenerated}
       installedPacks={installedPacks}
-      isLoading={isLoadingPacks}
+      isLoading={isLoading}
     />
     <TagAssistantModal
         isOpen={isTagModalOpen}
@@ -451,6 +440,7 @@ export function CharacterGenerator() {
         onClose={() => setIsModelModalOpen(false)}
         onSelect={handleModelSelect}
         type={modelModalType}
+        models={modelModalType === 'model' ? availableModels : availableLoras}
     />
     <div className="grid gap-8 lg:grid-cols-5 items-start">
       <div className="lg:col-span-2 flex flex-col gap-4">
@@ -478,7 +468,7 @@ export function CharacterGenerator() {
                             <FormItem>
                               <div className="flex justify-between items-center mb-2">
                                 <FormLabel>Character Description</FormLabel>
-                                <Button type="button" variant="outline" size="sm" onClick={handleOpenPackModal}>
+                                <Button type="button" variant="outline" size="sm" onClick={() => setIsPackModalOpen(true)}>
                                     <Package className="mr-2 h-3 w-3"/> Use DataPack
                                 </Button>
                               </div>
@@ -573,13 +563,14 @@ export function CharacterGenerator() {
                                                 model={selectedModel}
                                                 onOpen={() => handleOpenModelModal('model')}
                                                 disabled={!canInteract}
-                                                isLoading={isLoadingDefaults}
+                                                isLoading={isLoading}
                                             />
                                              <VisualModelSelector
                                                 label="LoRA (Optional)"
                                                 model={selectedLora}
                                                 onOpen={() => handleOpenModelModal('lora')}
                                                 disabled={!canInteract}
+                                                isLoading={isLoading}
                                             />
                                             {selectedLora && (
                                                 <div className="space-y-2">
@@ -638,7 +629,7 @@ export function CharacterGenerator() {
          <div ref={actionButtonsRef} className="hidden sm:block pt-4">
             <ActionButtons
                 onForge={handleForgeClick}
-                onUsePack={handleOpenPackModal}
+                onUsePack={() => setIsPackModalOpen(true)}
                 canInteract={!!canInteract}
                 isGenerating={isGenerating}
             />
@@ -749,5 +740,3 @@ export function CharacterGenerator() {
     </>
   );
 }
-
-    
