@@ -2,12 +2,12 @@
 'use server';
 
 /**
- * @fileOverview An AI agent for generating character images based on a description.
- * This flow is now more flexible, supporting dynamic model and LoRA selection.
+ * @fileOverview An AI agent for generating character images.
+ * This flow is now fully data-driven by the engineConfig object.
  */
 
 import { ai } from '@/ai/genkit';
-import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
+import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput, type ImageEngineConfig } from './types';
 
 // Helper function to get image dimensions in pixels.
 function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
@@ -33,7 +33,6 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, model: strin
         throw new Error("Hugging Face API key is not configured on the server.");
     }
     
-    // The API URL MUST use the base model ID, not the LoRA's ID.
     const API_URL = `https://api-inference.huggingface.co/models/${data.model}`;
     
     const response = await fetch(API_URL, {
@@ -77,20 +76,14 @@ const generateCharacterImageFlow = ai.defineFlow(
     outputSchema: GenerateCharacterImageOutputSchema,
   },
   async (input) => {
-    const { 
-        description, 
-        aspectRatio, 
-        imageEngine, 
-        hfModelId,
-        lora,
-        loraWeight, 
-        triggerWords 
-    } = input;
+    const { description, engineConfig } = input;
+    const { engineId, modelId, aspectRatio, lora } = engineConfig;
+    
+    let imageUrl: string | undefined;
 
-    if (imageEngine === 'gemini') {
+    if (engineId === 'gemini') {
         try {
             const { width, height } = getDimensions(aspectRatio);
-
             const { media } = await ai.generate({
                 model: 'googleai/gemini-2.0-flash-preview-image-generation',
                 prompt: description,
@@ -100,48 +93,42 @@ const generateCharacterImageFlow = ai.defineFlow(
                     height,
                 },
             });
-            const imageUrl = media?.url;
-            if (!imageUrl) {
-                throw new Error('Gemini AI model failed to generate an image.');
-            }
-            return { imageUrl };
+            imageUrl = media?.url;
         } catch (error) {
             console.error("Error generating image with Gemini:", error);
             const message = error instanceof Error ? error.message : "An unknown error occurred with the Gemini engine.";
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
-    } else { 
+    } else if (engineId === 'huggingface') {
         try {
-            if (!hfModelId) {
+            if (!modelId) {
                 throw new Error("Hugging Face model ID is required for this engine.");
             }
-
-            let promptWithLora = description;
-            // Correctly append LoRA information to the prompt, not the model URL.
-            if (lora) {
-                const weight = loraWeight || 0.75;
-                const words = triggerWords ? `${triggerWords}, ` : '';
-                // The syntax for HF inference API might just be adding words and concepts.
-                // The <lora:> syntax is specific to some UIs like A1111.
-                // For HF API, we rely on the trigger words and the description.
-                promptWithLora = `${words}${description}`;
-            }
-
-            const imageUrl = await queryHuggingFaceInferenceAPI({ 
-                inputs: promptWithLora,
-                model: hfModelId, // Always use the base model ID here.
-            });
             
-            if (!imageUrl) {
-                 throw new Error('The Hugging Face API did not return a valid image.');
+            let promptWithLora = description;
+            if (lora && lora.triggerWords) {
+                const words = lora.triggerWords.join(', ');
+                promptWithLora = `${words}, ${description}`;
             }
-            return { imageUrl };
+
+            imageUrl = await queryHuggingFaceInferenceAPI({ 
+                inputs: promptWithLora,
+                model: modelId,
+            });
 
         } catch (error) {
-            console.error("Error in generateCharacterImageFlow (Hugging Face API):", error);
+            console.error("Error in Hugging Face flow:", error);
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
             throw new Error(`Failed to generate character image via the Hugging Face API. ${message}`);
         }
+    } else {
+        throw new Error(`Unsupported image engine: ${engineId}`);
     }
+
+    if (!imageUrl) {
+        throw new Error(`The ${engineId} engine failed to return a valid image.`);
+    }
+
+    return { imageUrl };
   }
 );

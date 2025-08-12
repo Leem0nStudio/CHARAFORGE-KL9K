@@ -8,7 +8,6 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -62,11 +61,8 @@ const generationFormSchema = z.object({
   tags: z.string().optional(),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
-  imageEngine: z.enum(['huggingface', 'gemini']).default('huggingface'),
-  hfModelId: z.string().optional(),
-  lora: z.string().optional(),
+  loraVersionId: z.string().optional(),
   loraWeight: z.number().min(0).max(1).optional(),
-  triggerWords: z.string().optional(),
 });
 
 const saveFormSchema = z.object({
@@ -109,7 +105,7 @@ function VisualModelSelector({ label, model, onOpen, disabled, isLoading }: { la
             <Button type="button" variant="outline" className="h-auto w-full justify-start p-2 mt-1" onClick={onOpen} disabled={disabled}>
                  <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted/20 mr-4">
                     {model?.coverMediaUrl ? (
-                        <MediaDisplay url={model.coverMediaUrl} type={model.coverMediaType} alt={model.name} className="object-cover" />
+                        <MediaDisplay url={model.coverMediaUrl} type={model.coverMediaType} alt={model.name || 'Model'} className="object-cover" />
                     ) : (
                         <div className="flex items-center justify-center h-full text-muted-foreground"><Settings /></div>
                     )}
@@ -157,11 +153,7 @@ export function CharacterGenerator() {
       tags: "",
       targetLanguage: 'English',
       aspectRatio: '1:1',
-      imageEngine: 'huggingface',
-      hfModelId: "",
-      lora: "",
       loraWeight: 0.75,
-      triggerWords: "",
     },
   });
 
@@ -190,17 +182,29 @@ export function CharacterGenerator() {
         if (!authUser) return;
         setIsLoading(true);
         try {
+            const geminiPlaceholder: AiModel = {
+                id: 'gemini-placeholder',
+                civitaiModelId: '0', // Special ID for internal handling
+                name: 'Gemini Image',
+                type: 'model',
+                hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
+                versionId: '1.0',
+                createdAt: new Date(),
+            };
+
             const [packs, models, loras] = await Promise.all([
                 getInstalledDataPacks(),
                 getModels('model'),
                 getModels('lora'),
             ]);
+            
+            const allBaseModels = [geminiPlaceholder, ...models];
             setInstalledPacks(packs);
-            setAvailableModels(models);
+            setAvailableModels(allBaseModels);
             setAvailableLoras(loras);
 
-            if (models.length > 0) {
-                setSelectedModel(models[0]);
+            if (allBaseModels.length > 0) {
+                setSelectedModel(allBaseModels[0]);
             }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' });
@@ -243,13 +247,13 @@ export function CharacterGenerator() {
     generationForm.setValue('tags', Array.from(allTags).join(','));
   };
 
-  const onGenerate = useCallback(async (data: GenerateCharacterInput) => {
+  const onGenerate = useCallback(async (data: z.infer<typeof generationFormSchema>) => {
     if (!authUser) {
-      toast({
-        variant: "destructive",
-        title: "Authentication Required",
-        description: "Please log in to generate a character.",
-      });
+      toast({ variant: "destructive", title: "Authentication Required", description: "Please log in to generate a character." });
+      return;
+    }
+    if (!selectedModel) {
+      toast({ variant: 'destructive', title: 'Model Required', description: 'Please select a base model before generating.' });
       return;
     }
     
@@ -258,7 +262,12 @@ export function CharacterGenerator() {
     saveForm.reset();
 
     startGenerationTransition(async () => {
-      const result = await generateCharacter({ ...data, dataPackId: dataPackIdFromUrl });
+      const result = await generateCharacter({ 
+          ...data, 
+          dataPackId: dataPackIdFromUrl,
+          selectedModel,
+          selectedLora,
+      });
       
       if (result.success && result.data) {
         setGenerationResult(result.data);
@@ -269,7 +278,7 @@ export function CharacterGenerator() {
         toast({ variant: "destructive", title: "Generation Failed", description: errorMessage });
       }
     });
-  }, [authUser, toast, dataPackIdFromUrl, saveForm]);
+  }, [authUser, toast, dataPackIdFromUrl, saveForm, selectedModel, selectedLora]);
 
   async function onSave(data: z.infer<typeof saveFormSchema>) {
     if (!generationResult || !generationResult.imageUrl || !authUser) {
@@ -322,42 +331,15 @@ export function CharacterGenerator() {
         setSelectedLora(model);
         const defaultVersion = model.versions?.[0];
         if (defaultVersion) {
-            generationForm.setValue('lora', defaultVersion.id);
-            generationForm.setValue('triggerWords', defaultVersion.triggerWords?.join(', ') || '');
-        } else {
-            generationForm.setValue('lora', model.versionId);
-            generationForm.setValue('triggerWords', model.triggerWords?.join(', ') || '');
+            generationForm.setValue('loraVersionId', defaultVersion.id);
         }
     }
     setIsModelModalOpen(false);
   }
 
-  const handleVersionChange = (versionId: string) => {
-      if (!selectedLora) return;
-
-      const selectedVersion = selectedLora.versions?.find(v => v.id === versionId);
-      if (selectedVersion) {
-          generationForm.setValue('lora', selectedVersion.id);
-          generationForm.setValue('triggerWords', selectedVersion.triggerWords?.join(', ') || '');
-      }
-  }
-
   const isUiLoading = isGenerating || isSaving || authLoading || isLoading;
   const canInteract = !isUiLoading && !!authUser;
   const watchDescription = generationForm.watch('description');
-
-  const handleForgeClick = () => {
-    if (!selectedModel) {
-        toast({ variant: 'destructive', title: 'Model Required', description: 'Please select a base model before generating.' });
-        return;
-    }
-    const formData = generationForm.getValues();
-    const finalData = {
-      ...formData,
-      hfModelId: selectedModel?.hf_id,
-    }
-    onGenerate(finalData);
-  };
 
   return (
     <>
@@ -392,7 +374,7 @@ export function CharacterGenerator() {
           </CardHeader>
           <CardContent>
             <Form {...generationForm}>
-              <form onSubmit={(e) => { e.preventDefault(); handleForgeClick(); }} className="space-y-6">
+              <form onSubmit={generationForm.handleSubmit(onGenerate)} className="space-y-6">
                 
                 <Tabs defaultValue="prompt">
                     <TabsList className="grid w-full grid-cols-2">
@@ -462,93 +444,61 @@ export function CharacterGenerator() {
                         <Accordion type="single" collapsible defaultValue="engine">
                             <AccordionItem value="engine">
                                 <AccordionTrigger>AI Engine</AccordionTrigger>
-                                <AccordionContent>
-                                     <FormField
-                                      control={generationForm.control}
-                                      name="imageEngine"
-                                      render={({ field }) => (
-                                        <FormItem className="space-y-3">
-                                           <FormControl>
-                                              <RadioGroup
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value}
-                                                className="grid grid-cols-2 gap-4"
-                                                disabled={!canInteract}
-                                              >
-                                                <FormItem>
-                                                  <FormControl><RadioGroupItem value="huggingface" id="huggingface" className="sr-only" /></FormControl>
-                                                  <FormLabel htmlFor="huggingface" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-full", field.value === 'huggingface' && "border-primary")}>
-                                                    <span className="font-bold">Stable Diffusion</span>
-                                                    <span className="text-xs text-muted-foreground">via Hugging Face</span>
-                                                  </FormLabel>
-                                                </FormItem>
-                                                 <FormItem>
-                                                  <FormControl><RadioGroupItem value="gemini" id="gemini" className="sr-only" /></FormControl>
-                                                  <FormLabel htmlFor="gemini" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-full", field.value === 'gemini' && "border-primary")}>
-                                                   <span className="font-bold">Gemini Image</span>
-                                                    <span className="text-xs text-muted-foreground">Google Model</span>
-                                                  </FormLabel>
-                                                </FormItem>
-                                              </RadioGroup>
-                                           </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
+                                <AccordionContent className="space-y-4 pt-2">
+                                    <VisualModelSelector
+                                        label="Base Model"
+                                        model={selectedModel}
+                                        onOpen={() => handleOpenModelModal('model')}
+                                        disabled={!canInteract}
+                                        isLoading={isLoading}
                                     />
-                                    {generationForm.watch('imageEngine') === 'huggingface' && (
-                                        <div className="space-y-4 mt-4 rounded-md border p-4 bg-muted/20">
-                                            <VisualModelSelector
-                                                label="Base Model"
-                                                model={selectedModel}
-                                                onOpen={() => handleOpenModelModal('model')}
-                                                disabled={!canInteract}
-                                                isLoading={isLoading}
-                                            />
-                                             <VisualModelSelector
-                                                label="LoRA (Optional)"
-                                                model={selectedLora}
-                                                onOpen={() => handleOpenModelModal('lora')}
-                                                disabled={!canInteract}
-                                                isLoading={isLoading}
-                                            />
-                                            {selectedLora && (
-                                                <div className="space-y-2">
-                                                    {selectedLora.versions && selectedLora.versions.length > 1 && (
-                                                        <Controller
-                                                            control={generationForm.control}
-                                                            name="lora"
-                                                            render={({ field }) => (
-                                                                <FormItem>
-                                                                    <FormLabel>Version</FormLabel>
-                                                                    <Select onValueChange={(value) => { field.onChange(value); handleVersionChange(value); }} defaultValue={field.value}>
-                                                                        <FormControl>
-                                                                            <SelectTrigger>
-                                                                                <SelectValue placeholder="Select a version" />
-                                                                            </SelectTrigger>
-                                                                        </FormControl>
-                                                                        <SelectContent>
-                                                                            {selectedLora.versions?.map(v => (
-                                                                                <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                                                                            ))}
-                                                                        </SelectContent>
-                                                                    </Select>
-                                                                </FormItem>
-                                                            )}
-                                                        />
-                                                    )}
-                                                     <Controller
+                                    {selectedModel?.civitaiModelId !== '0' && (
+                                     <>
+                                        <VisualModelSelector
+                                            label="LoRA (Optional)"
+                                            model={selectedLora}
+                                            onOpen={() => handleOpenModelModal('lora')}
+                                            disabled={!canInteract}
+                                            isLoading={isLoading}
+                                        />
+                                        {selectedLora && (
+                                            <div className="space-y-4 rounded-md border p-4 bg-muted/20">
+                                                {selectedLora.versions && selectedLora.versions.length > 1 && (
+                                                    <Controller
                                                         control={generationForm.control}
-                                                        name="loraWeight"
+                                                        name="loraVersionId"
                                                         render={({ field }) => (
                                                             <FormItem>
-                                                                <div className="flex justify-between"><FormLabel>LoRA Weight</FormLabel><span className="text-sm font-medium">{field.value?.toFixed(2)}</span></div>
-                                                                <FormControl><Slider defaultValue={[field.value || 0.75]} max={1} step={0.05} onValueChange={(value) => field.onChange(value[0])} disabled={!canInteract}/></FormControl>
+                                                                <FormLabel>LoRA Version</FormLabel>
+                                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                    <FormControl>
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select a version" />
+                                                                        </SelectTrigger>
+                                                                    </FormControl>
+                                                                    <SelectContent>
+                                                                        {selectedLora.versions?.map(v => (
+                                                                            <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
                                                             </FormItem>
                                                         )}
                                                     />
-                                                </div>
-                                            )}
-                                          </div>
+                                                )}
+                                                 <Controller
+                                                    control={generationForm.control}
+                                                    name="loraWeight"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <div className="flex justify-between"><FormLabel>LoRA Weight</FormLabel><span className="text-sm font-medium">{field.value?.toFixed(2)}</span></div>
+                                                            <FormControl><Slider defaultValue={[field.value || 0.75]} max={1} step={0.05} onValueChange={(value) => field.onChange(value[0])} disabled={!canInteract}/></FormControl>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                        )}
+                                      </>
                                     )}
                                 </AccordionContent>
                             </AccordionItem>
@@ -556,7 +506,7 @@ export function CharacterGenerator() {
                     </TabsContent>
                 </Tabs>
                 <div className="pt-4">
-                    <Button type="button" size="lg" className="w-full font-headline text-lg" onClick={handleForgeClick} disabled={!canInteract}>
+                    <Button type="submit" size="lg" className="w-full font-headline text-lg" disabled={!canInteract}>
                         {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Character</>)}
                     </Button>
                 </div>
