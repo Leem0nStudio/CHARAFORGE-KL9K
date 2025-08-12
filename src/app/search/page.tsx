@@ -1,4 +1,6 @@
 
+'use server';
+
 import { searchCharactersByTag } from '@/app/actions/creations';
 import { BackButton } from '@/components/back-button';
 import { CharacterCard } from '@/components/character/character-card';
@@ -17,8 +19,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     const { tag } = searchParams;
     const searchResults = tag ? await searchCharactersByTag(tag) : [];
 
-    const title = tag ? `Resultados para "${tag}"` : "Búsqueda";
-    const description = tag ? `Explora todas las creaciones que coinciden con esta etiqueta.` : "Por favor, especifica una etiqueta para buscar.";
+    const title = tag ? `Results for "${tag}"` : "Search";
+    const description = tag ? `Explore all the creations that match this tag.` : "Please specify a tag to search for.";
 
     return (
         <div className="container py-8">
@@ -44,7 +46,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg bg-card/50">
-                        <p>No se encontraron personajes con la etiqueta <Badge variant="outline" className={cn('ml-1 mr-1', getSlotColorClass(tag || ''))}>{tag}</Badge>.</p>
+                        <p>No characters found with the tag <Badge variant="outline" className={cn('ml-1 mr-1', getSlotColorClass(tag || ''))}>{tag}</Badge>.</p>
                     </div>
                 )}
             </div>

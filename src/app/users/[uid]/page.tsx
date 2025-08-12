@@ -1,4 +1,6 @@
 
+'use server';
+
 import { notFound } from 'next/navigation';
 import { getPublicUserProfile } from '@/app/actions/user';
 import { getPublicCharactersForUser } from '@/app/actions/creations';

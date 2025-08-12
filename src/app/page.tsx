@@ -1,3 +1,6 @@
+
+'use server';
+
 import { getPublicCharacters, getTopCreators } from '@/app/actions/creations';
 import { getPublicDataPacks } from '@/app/actions/datapacks';
 import { HomePageClient } from '@/components/home-page-client';
