@@ -69,8 +69,9 @@ export async function getModels(type: 'model' | 'lora'): Promise<AiModel[]> {
 /**
  * Adds a new model by fetching its metadata from Civitai and automatically suggesting a compatible Hugging Face base model.
  * @param civitaiModelId The Civitai model ID.
+ * @param type The designated type of the model ('model' or 'lora').
  */
-export async function addModel(civitaiModelId: string): Promise<ActionResponse> {
+export async function addAiModelFromCivitai(civitaiModelId: string, type: 'model' | 'lora'): Promise<ActionResponse> {
     try {
         await verifyAndGetUid();
     } catch(authError) {
@@ -84,16 +85,20 @@ export async function addModel(civitaiModelId: string): Promise<ActionResponse> 
     if (!civitaiModelId) {
         return { success: false, message: 'Civitai Model ID cannot be empty.' };
     }
+    
+    if (!type) {
+         return { success: false, message: 'Model type must be specified.' };
+    }
 
     try {
         const modelInfo = await getCivitaiModelInfo(civitaiModelId);
         const latestVersion = modelInfo.modelVersions[0];
 
-        // Determine type, default to 'lora' if not specified
-        const type = modelInfo.type === 'Model' ? 'model' : 'lora';
+        // The type is now explicitly provided, no more guesswork.
+        const modelType = type;
 
         let suggestedHfId = '';
-        if (type === 'lora') { // Only suggest base models for LoRAs
+        if (modelType === 'lora') {
             try {
                 const suggestionResult = await suggestHfModel({ modelName: modelInfo.name });
                 suggestedHfId = suggestionResult.suggestedHfId;
@@ -101,8 +106,7 @@ export async function addModel(civitaiModelId: string): Promise<ActionResponse> 
                 console.warn(`Could not automatically suggest a base model for ${modelInfo.name}:`, suggestionError);
             }
         } else {
-            // If it's a base model, we assume its HF ID is what the user would have to find and enter manually.
-            // For now, we leave it blank to be filled in the edit step.
+             // For base models, we expect the user to enter the HF ID manually later.
             suggestedHfId = '';
         }
 
@@ -110,7 +114,7 @@ export async function addModel(civitaiModelId: string): Promise<ActionResponse> 
             name: modelInfo.name,
             civitaiModelId: modelInfo.id.toString(),
             versionId: latestVersion.id.toString(),
-            type: type,
+            type: modelType,
             hf_id: suggestedHfId,
             coverImageUrl: latestVersion.images[0]?.url || null,
             triggerWords: latestVersion.trainedWords || [],

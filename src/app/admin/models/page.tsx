@@ -13,7 +13,7 @@ export default async function AiModelsPage() {
     return (
         <AdminPageLayout
             title="AI Model Management"
-            actions={<ModelForm triggerType="button" />}
+            actions={<ModelForm />}
         >
             <div className="space-y-8">
                 <section>
@@ -37,7 +37,7 @@ export default async function AiModelsPage() {
                                     <CardDescription className="text-xs truncate">{model.hf_id}</CardDescription>
                                 </CardContent>
                                 <CardFooter className="p-4 pt-0">
-                                    <ModelForm triggerType="link" model={model} />
+                                    <ModelForm isEditing model={model} />
                                 </CardFooter>
                             </Card>
                         ))}
@@ -70,7 +70,7 @@ export default async function AiModelsPage() {
                                     )}
                                 </CardContent>
                                 <CardFooter className="p-4 pt-0">
-                                     <ModelForm triggerType="link" model={lora} />
+                                     <ModelForm isEditing model={lora} />
                                 </CardFooter>
                             </Card>
                         ))}
