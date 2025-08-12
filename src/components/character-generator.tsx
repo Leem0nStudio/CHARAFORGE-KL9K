@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useTransition } from "react";
@@ -418,10 +419,10 @@ export function CharacterGenerator() {
                           name="description"
                           render={({ field }) => (
                             <FormItem>
-                              <div className="flex justify-between items-center">
+                              <div className="flex justify-between items-center mb-2">
                                 <FormLabel>Character Description</FormLabel>
-                                <Button type="button" variant="outline" size="sm" onClick={() => setIsTagModalOpen(true)}>
-                                    <Tags className="mr-2 h-3 w-3"/> Tag Assistant
+                                <Button type="button" variant="outline" size="sm" onClick={handleOpenPackModal}>
+                                    <Package className="mr-2 h-3 w-3"/> Use DataPack
                                 </Button>
                               </div>
                               <FormControl>
@@ -432,12 +433,17 @@ export function CharacterGenerator() {
                                   disabled={!canInteract}
                                 />
                               </FormControl>
-                              {activePackName && (
-                                  <Badge variant="secondary" className="flex items-center gap-1.5 mt-2 w-fit">
+                               <div className="flex items-center justify-between mt-2">
+                                {activePackName && (
+                                  <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
                                     <Package className="h-3 w-3" />
                                     Using: {activePackName}
                                   </Badge>
                                 )}
+                                 <Button type="button" variant="link" size="sm" onClick={() => setIsTagModalOpen(true)} className="ml-auto">
+                                    <Tags className="mr-2 h-3 w-3"/> Tag Assistant
+                                </Button>
+                               </div>
                               <FormMessage />
                             </FormItem>
                           )}
