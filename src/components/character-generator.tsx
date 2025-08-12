@@ -45,6 +45,8 @@ import { Slider } from "./ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 import { ScrollArea } from "./ui/scroll-area";
+import { ModelSelectorModal } from './model-selector-modal';
+import type { AiModel } from '@/types/ai-model';
 
 
 const generationFormSchema = z.object({
@@ -88,11 +90,11 @@ function ActionButtons({ onForge, onUsePack, canInteract, isGenerating }: {
 }) {
   return (
     <div className="space-y-2">
-      <Button onClick={onUsePack} size="lg" className="w-full" disabled={!canInteract}>
+      <Button onClick={onUsePack} size="lg" className="w-full" variant="secondary" disabled={!canInteract}>
         <Package className="mr-2" />
         Use DataPack
       </Button>
-       <Button type="button" size="lg" className="w-full font-headline text-lg" variant="outline" onClick={onForge} disabled={!canInteract}>
+       <Button type="button" size="lg" className="w-full font-headline text-lg" onClick={onForge} disabled={!canInteract}>
         {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Character</>)}
       </Button>
     </div>
@@ -116,6 +118,28 @@ function FloatingActionButton({ onForge, canInteract, isGenerating }: { onForge:
   );
 }
 
+// Sub-component for the visual model selector button
+function VisualModelSelector({ label, model, onOpen, disabled }: { label: string, model?: AiModel | null, onOpen: () => void, disabled: boolean }) {
+    return (
+        <div>
+            <Label>{label}</Label>
+            <Button type="button" variant="outline" className="h-auto w-full justify-start p-2 mt-1" onClick={onOpen} disabled={disabled}>
+                 <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted/20 mr-4">
+                    {model ? (
+                        <Image src={model.coverImageUrl || 'https://placehold.co/200x200.png'} alt={model.name} fill className="object-cover" data-ai-hint="model cover image" sizes="64px" />
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground"><Settings /></div>
+                    )}
+                </div>
+                <div className="text-left">
+                    <p className="font-semibold text-card-foreground">{model?.name || 'Select...'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{model?.hf_id || 'Click to choose a model'}</p>
+                </div>
+            </Button>
+        </div>
+    )
+}
+
 export function CharacterGenerator() {
   const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null);
   const [isGenerating, startGenerationTransition] = useTransition();
@@ -124,10 +148,17 @@ export function CharacterGenerator() {
 
   const [isPackModalOpen, setIsPackModalOpen] = useState(false);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
+  const [modelModalType, setModelModalType] = useState<'model' | 'lora'>('model');
+
   const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
   const [isLoadingPacks, setIsLoadingPacks] = useState(false);
   const [activePackName, setActivePackName] = useState<string | null>(null);
   const [showFab, setShowFab] = useState(false);
+  
+  const [selectedModel, setSelectedModel] = useState<AiModel | null>(null);
+  const [selectedLora, setSelectedLora] = useState<AiModel | null>(null);
+
 
   const actionButtonsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -174,13 +205,12 @@ export function CharacterGenerator() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Show FAB if the target element is NOT intersecting (i.e., not visible)
         setShowFab(!entry.isIntersecting);
       },
       {
-        root: null, // relative to document viewport
+        root: null,
         rootMargin: '0px',
-        threshold: 0, // as soon as even one pixel is not visible
+        threshold: 0,
       }
     );
 
@@ -315,6 +345,23 @@ export function CharacterGenerator() {
       }
     });
   }
+  
+  const handleOpenModelModal = (type: 'model' | 'lora') => {
+      setModelModalType(type);
+      setIsModelModalOpen(true);
+  }
+
+  const handleModelSelect = (model: AiModel) => {
+    if (model.type === 'model') {
+        setSelectedModel(model);
+        generationForm.setValue('hfModelId', model.hf_id);
+    } else {
+        setSelectedLora(model);
+        generationForm.setValue('lora', model.hf_id);
+        generationForm.setValue('triggerWords', model.triggerWords?.join(', ') || '');
+    }
+    setIsModelModalOpen(false);
+  }
 
   const isLoading = isGenerating || isSaving || authLoading;
   const canInteract = !isLoading && !!authUser;
@@ -338,6 +385,12 @@ export function CharacterGenerator() {
         isOpen={isTagModalOpen}
         onClose={() => setIsTagModalOpen(false)}
         onAppendTags={handleAppendTags}
+    />
+    <ModelSelectorModal
+        isOpen={isModelModalOpen}
+        onClose={() => setIsModelModalOpen(false)}
+        onSelect={handleModelSelect}
+        type={modelModalType}
     />
     <div className="grid gap-8 lg:grid-cols-5 items-start">
       <div className="lg:col-span-2 flex flex-col gap-4">
@@ -450,37 +503,30 @@ export function CharacterGenerator() {
                                     />
                                     {watchImageEngine === 'huggingface' && (
                                         <div className="space-y-4 mt-4 rounded-md border p-4 bg-muted/20">
-                                            <FormField
-                                              control={generationForm.control}
-                                              name="hfModelId"
-                                              render={({ field }) => (
-                                                <FormItem><FormLabel>Base Model</FormLabel><FormControl><Input placeholder="stabilityai/stable-diffusion-xl-base-1.0" {...field} disabled={!canInteract}/></FormControl><FormMessage /></FormItem>
-                                              )}
+                                            <VisualModelSelector
+                                                label="Base Model"
+                                                model={selectedModel}
+                                                onOpen={() => handleOpenModelModal('model')}
+                                                disabled={!canInteract}
                                             />
-                                            <FormField
-                                              control={generationForm.control}
-                                              name="lora"
-                                              render={({ field }) => (
-                                                <FormItem><FormLabel>LoRA (Optional)</FormLabel><FormControl><Input placeholder="username/lora-name" {...field} disabled={!canInteract}/></FormControl><FormMessage /></FormItem>
-                                              )}
+                                             <VisualModelSelector
+                                                label="LoRA (Optional)"
+                                                model={selectedLora}
+                                                onOpen={() => handleOpenModelModal('lora')}
+                                                disabled={!canInteract}
                                             />
-                                             <FormField
-                                              control={generationForm.control}
-                                              name="triggerWords"
-                                              render={({ field }) => (
-                                                <FormItem><FormLabel>Trigger Words</FormLabel><FormControl><Input placeholder="e.g., best quality" {...field} disabled={!canInteract}/></FormControl><FormMessage /></FormItem>
-                                              )}
-                                            />
-                                            <Controller
-                                                control={generationForm.control}
-                                                name="loraWeight"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <div className="flex justify-between"><FormLabel>LoRA Weight</FormLabel><span className="text-sm font-medium">{field.value?.toFixed(2)}</span></div>
-                                                        <FormControl><Slider defaultValue={[field.value || 0.75]} max={1} step={0.05} onValueChange={(value) => field.onChange(value[0])} disabled={!canInteract}/></FormControl>
-                                                    </FormItem>
-                                                )}
-                                            />
+                                            {selectedLora && (
+                                                 <Controller
+                                                    control={generationForm.control}
+                                                    name="loraWeight"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <div className="flex justify-between"><FormLabel>LoRA Weight</FormLabel><span className="text-sm font-medium">{field.value?.toFixed(2)}</span></div>
+                                                            <FormControl><Slider defaultValue={[field.value || 0.75]} max={1} step={0.05} onValueChange={(value) => field.onChange(value[0])} disabled={!canInteract}/></FormControl>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            )}
                                           </div>
                                     )}
                                 </AccordionContent>
@@ -498,7 +544,7 @@ export function CharacterGenerator() {
           </CardContent>
         </Card>
         
-         <div ref={actionButtonsRef} className="pt-4 sm:block">
+         <div ref={actionButtonsRef} className="hidden sm:block pt-4">
             <ActionButtons
                 onForge={handleForgeClick}
                 onUsePack={handleOpenPackModal}

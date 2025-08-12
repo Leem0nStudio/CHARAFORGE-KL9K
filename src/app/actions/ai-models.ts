@@ -22,7 +22,13 @@ type ActionResponse = {
 async function getHuggingFaceModelInfo(modelId: string): Promise<any> {
     const response = await fetch(`https://huggingface.co/api/models/${modelId}`);
     if (!response.ok) {
-        throw new Error(`Failed to fetch model info from Hugging Face Hub for ${modelId}. Status: ${response.status}`);
+        // Attempt to parse the error message from HF, if available
+        let errorBody = `Status: ${response.status}`;
+        try {
+            const errorJson = await response.json();
+            errorBody = errorJson.error || errorBody;
+        } catch(e) { /* ignore */ }
+        throw new Error(`Failed to fetch model info from Hugging Face Hub for ${modelId}. ${errorBody}`);
     }
     return response.json();
 }
@@ -71,7 +77,12 @@ export async function addModel(
     type: 'model' | 'lora',
     triggerWords?: string[]
 ): Promise<ActionResponse> {
-    await verifyAndGetUid(); // Ensure user is an admin (in a real scenario, check for admin role)
+    try {
+        await verifyAndGetUid();
+    } catch(authError) {
+         return { success: false, message: 'Authentication failed.', error: authError instanceof Error ? authError.message : 'Unknown auth error.' };
+    }
+
     if (!adminDb) {
         return { success: false, message: 'Database service is unavailable.' };
     }
@@ -83,9 +94,9 @@ export async function addModel(
             name: modelInfo.id.split('/')[1] || hf_id,
             hf_id: modelInfo.id,
             type: type,
-            description: modelInfo.cardData?.description || 'No description provided.',
+            // Try to find a thumbnail/image from the model card's metadata (if any)
             coverImageUrl: `https://huggingface.co/${modelInfo.id}/resolve/main/model_card.png`, // Placeholder, might not exist
-            triggerWords: triggerWords || [],
+            triggerWords: triggerWords || modelInfo.cardData?.base_model_extended?.trigger_words || [],
         };
         
         const docRef = adminDb.collection('ai_models').doc();
@@ -96,6 +107,8 @@ export async function addModel(
         });
         
         revalidatePath('/admin/models');
+        revalidatePath('/character-generator'); // Revalidate generator to make new model available
+        
         return { success: true, message: `${type} "${newModel.name}" added successfully.` };
 
     } catch (error) {
@@ -109,7 +122,12 @@ export async function addModel(
  * @param id The Firestore document ID of the model to delete.
  */
 export async function deleteModel(id: string): Promise<ActionResponse> {
-    await verifyAndGetUid(); // Admin check
+    try {
+        await verifyAndGetUid();
+    } catch(authError) {
+         return { success: false, message: 'Authentication failed.', error: authError instanceof Error ? authError.message : 'Unknown auth error.' };
+    }
+
     if (!adminDb) {
         return { success: false, message: 'Database service is unavailable.' };
     }
@@ -117,6 +135,7 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
     try {
         await adminDb.collection('ai_models').doc(id).delete();
         revalidatePath('/admin/models');
+        revalidatePath('/character-generator');
         return { success: true, message: 'Model deleted successfully.' };
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';

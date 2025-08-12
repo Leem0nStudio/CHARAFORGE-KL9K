@@ -9,7 +9,6 @@ export interface AiModel {
   name: string; // User-friendly name
   hf_id: string; // Hugging Face identifier (e.g., "stabilityai/stable-diffusion-xl-base-1.0")
   type: 'model' | 'lora';
-  description?: string;
   coverImageUrl?: string;
   triggerWords?: string[];
   createdAt: Date;
