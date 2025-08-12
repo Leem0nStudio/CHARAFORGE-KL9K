@@ -1,4 +1,3 @@
-
 'use server';
 
 import { cookies } from 'next/headers';
@@ -17,7 +16,7 @@ export async function verifyAndGetUid(): Promise<string> {
     throw new Error('Authentication service is unavailable on the server.');
   }
 
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
   if (!idToken) {
