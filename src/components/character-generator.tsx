@@ -49,6 +49,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./
 import { ScrollArea } from "./ui/scroll-area";
 import { ModelSelectorModal } from './model-selector-modal';
 import type { AiModel } from '@/types/ai-model';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 
 const generationFormSchema = z.object({
@@ -359,10 +360,28 @@ export function CharacterGenerator() {
         generationForm.setValue('hfModelId', model.hf_id);
     } else {
         setSelectedLora(model);
-        generationForm.setValue('lora', model.hf_id);
-        generationForm.setValue('triggerWords', model.triggerWords?.join(', ') || '');
+        // On LoRA select, set the default version and its trigger words
+        const defaultVersion = model.versions?.[0];
+        if (defaultVersion) {
+            generationForm.setValue('lora', defaultVersion.id);
+            generationForm.setValue('triggerWords', defaultVersion.triggerWords?.join(', ') || '');
+        } else {
+            // Fallback for older data structure
+            generationForm.setValue('lora', model.versionId);
+            generationForm.setValue('triggerWords', model.triggerWords?.join(', ') || '');
+        }
     }
     setIsModelModalOpen(false);
+  }
+
+  const handleVersionChange = (versionId: string) => {
+      if (!selectedLora) return;
+
+      const selectedVersion = selectedLora.versions?.find(v => v.id === versionId);
+      if (selectedVersion) {
+          generationForm.setValue('lora', selectedVersion.id);
+          generationForm.setValue('triggerWords', selectedVersion.triggerWords?.join(', ') || '');
+      }
   }
 
   const isLoading = isGenerating || isSaving || authLoading;
@@ -373,7 +392,11 @@ export function CharacterGenerator() {
 
   const handleForgeClick = () => {
     const formData = generationForm.getValues();
-    onGenerate(formData);
+    const finalData = {
+      ...formData,
+      hfModelId: selectedModel?.hf_id,
+    }
+    onGenerate(finalData);
   };
 
   return (
@@ -526,16 +549,41 @@ export function CharacterGenerator() {
                                                 disabled={!canInteract}
                                             />
                                             {selectedLora && (
-                                                 <Controller
-                                                    control={generationForm.control}
-                                                    name="loraWeight"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <div className="flex justify-between"><FormLabel>LoRA Weight</FormLabel><span className="text-sm font-medium">{field.value?.toFixed(2)}</span></div>
-                                                            <FormControl><Slider defaultValue={[field.value || 0.75]} max={1} step={0.05} onValueChange={(value) => field.onChange(value[0])} disabled={!canInteract}/></FormControl>
-                                                        </FormItem>
+                                                <div className="space-y-2">
+                                                    {selectedLora.versions && selectedLora.versions.length > 1 && (
+                                                        <Controller
+                                                            control={generationForm.control}
+                                                            name="lora"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>Version</FormLabel>
+                                                                    <Select onValueChange={(value) => { field.onChange(value); handleVersionChange(value); }} defaultValue={field.value}>
+                                                                        <FormControl>
+                                                                            <SelectTrigger>
+                                                                                <SelectValue placeholder="Select a version" />
+                                                                            </SelectTrigger>
+                                                                        </FormControl>
+                                                                        <SelectContent>
+                                                                            {selectedLora.versions?.map(v => (
+                                                                                <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                                                                            ))}
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                </FormItem>
+                                                            )}
+                                                        />
                                                     )}
-                                                />
+                                                     <Controller
+                                                        control={generationForm.control}
+                                                        name="loraWeight"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <div className="flex justify-between"><FormLabel>LoRA Weight</FormLabel><span className="text-sm font-medium">{field.value?.toFixed(2)}</span></div>
+                                                                <FormControl><Slider defaultValue={[field.value || 0.75]} max={1} step={0.05} onValueChange={(value) => field.onChange(value[0])} disabled={!canInteract}/></FormControl>
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
                                             )}
                                           </div>
                                     )}

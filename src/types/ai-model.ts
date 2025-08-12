@@ -1,6 +1,12 @@
 
 'use server';
 
+interface AiModelVersion {
+  id: string;
+  name: string;
+  triggerWords?: string[];
+}
+
 /**
  * Represents the structure for an AI model or LoRA stored in Firestore.
  * Metadata is sourced from Civitai, while the hf_id is used for execution.
@@ -13,10 +19,13 @@ export interface AiModel {
   
   // Civitai metadata
   civitaiModelId: string;
-  versionId: string;
+  versionId: string; // Default or latest version ID
   coverMediaUrl?: string | null;
   coverMediaType?: 'image' | 'video';
-  triggerWords?: string[];
+  triggerWords?: string[]; // Default or latest trigger words
+
+  // Array of all available versions
+  versions?: AiModelVersion[];
 
   createdAt: Date;
 }

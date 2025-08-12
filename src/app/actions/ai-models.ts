@@ -7,7 +7,6 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { AiModel } from '@/types/ai-model';
 import { suggestHfModel } from '@/ai/flows/hf-model-suggestion/flow';
-import { z } from 'zod';
 
 type ActionResponse = {
     success: boolean;
@@ -58,24 +57,37 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
         const modelInfo = await getCivitaiModelInfo(civitaiModelId);
         
         const latestVersion = modelInfo.modelVersions?.[0];
-        const triggerWords = latestVersion?.trainedWords || modelInfo.trainedWords || [];
         
         // Find the first media item, whether image or video
         let coverMediaUrl: string | null = null;
         let coverMediaType: 'image' | 'video' = 'image';
-        const mediaItems = latestVersion?.images || modelInfo.images || [];
-        const firstMedia = mediaItems[0];
+        
+        // Prioritize finding the media in the first version, then fallback to the root
+        const firstVersionImages = latestVersion?.images;
+        const rootImages = modelInfo.images;
+
+        const mediaItems = Array.isArray(firstVersionImages) && firstVersionImages.length > 0 
+            ? firstVersionImages 
+            : rootImages;
+        
+        const firstMedia = Array.isArray(mediaItems) && mediaItems.length > 0 ? mediaItems[0] : null;
 
         if (firstMedia && firstMedia.url) {
             coverMediaUrl = firstMedia.url;
-            // Civitai API labels videos as 'video'. If not, we assume 'image'.
             if (firstMedia.type === 'video') {
                 coverMediaType = 'video';
             }
         }
+        
+        // Extract all versions
+        const allVersions = modelInfo.modelVersions.map((v: any) => ({
+            id: v.id.toString(),
+            name: v.name,
+            triggerWords: v.trainedWords || [],
+        }));
+
 
         let suggestedHfId = '';
-        // Only suggest a base model if the added type is a LoRA
         if (type === 'lora') {
             try {
                 const suggestionResult = await suggestHfModel({ modelName: modelInfo.name });
@@ -84,19 +96,21 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
                 console.warn(`Could not automatically suggest a base model for ${modelInfo.name}:`, suggestionError);
             }
         } else {
-             // For base models, we can use their own name as a hint for the hf_id
              suggestedHfId = modelInfo.name;
         }
 
         const newModel: Omit<AiModel, 'id' | 'createdAt'> = {
             name: modelInfo.name,
             civitaiModelId: modelInfo.id.toString(),
+            type: type, 
+            hf_id: suggestedHfId,
+            // Default to latest version
             versionId: latestVersion?.id?.toString() || '',
-            type: type, // Use the explicit type passed to the function
-            hf_id: suggestedHfId, // Set the suggested ID
             coverMediaUrl: coverMediaUrl,
             coverMediaType: coverMediaType,
-            triggerWords: triggerWords,
+            triggerWords: latestVersion?.trainedWords || [],
+            // Store all available versions
+            versions: allVersions,
         };
         
         const docRef = adminDb.collection('ai_models').doc();
