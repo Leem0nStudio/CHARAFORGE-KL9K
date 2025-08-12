@@ -53,22 +53,20 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
 
     const modelInfo = await getCivitaiModelInfo(civitaiModelId);
     
+    // Prioritize the latest version, but fall back to the root model info
     const latestVersion = modelInfo.modelVersions?.[0];
+    const triggerWords = latestVersion?.trainedWords || modelInfo.trainedWords || [];
+    const modelTypeFromApi = modelInfo.type; // e.g., "LORA", "Checkpoint"
 
     // Find the first available image, preferring static images over videos.
     let coverMediaUrl: string | null = null;
     let coverMediaType: 'image' | 'video' = 'image';
-
     const images = latestVersion?.images || modelInfo.images || [];
     const firstImage = images.find((img: any) => img.type === 'image' && img.url);
 
     if (firstImage) {
         coverMediaUrl = firstImage.url;
         coverMediaType = 'image';
-    } else if (images.length > 0) {
-        // Fallback to the first media item if no static image is found
-        coverMediaUrl = images[0].url;
-        coverMediaType = images[0].type === 'video' ? 'video' : 'image';
     }
 
 
@@ -82,8 +80,10 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
             console.warn(`Could not automatically suggest a base model for ${modelInfo.name}:`, suggestionError);
         }
     } else {
-        // If it's a base model, the execution ID is usually the model's own name on HF
-        suggestedHfId = modelInfo.name;
+        // If it's a base model, we can often infer its HF ID from its name if it's a known one.
+        // For simplicity, we'll leave it blank and let the admin fill it, but a future
+        // improvement could be to auto-fill for known models.
+        suggestedHfId = '';
     }
 
     const newModel: Omit<AiModel, 'id' | 'createdAt'> = {
@@ -91,10 +91,10 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
         civitaiModelId: modelInfo.id.toString(),
         versionId: latestVersion?.id?.toString() || '',
         type: type, // Use the explicit type passed to the function
-        hf_id: suggestedHfId,
+        hf_id: suggestedHfId, // Set the suggested ID, might be empty for base models
         coverMediaUrl: coverMediaUrl,
         coverMediaType: coverMediaType,
-        triggerWords: latestVersion?.trainedWords || [],
+        triggerWords: triggerWords,
     };
     
     const docRef = adminDb.collection('ai_models').doc();

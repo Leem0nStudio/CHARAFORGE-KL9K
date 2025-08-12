@@ -127,7 +127,7 @@ function VisualModelSelector({ label, model, onOpen, disabled }: { label: string
             <Button type="button" variant="outline" className="h-auto w-full justify-start p-2 mt-1" onClick={onOpen} disabled={disabled}>
                  <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted/20 mr-4">
                     {model ? (
-                        <Image src={model.coverImageUrl || 'https://placehold.co/200x200.png'} alt={model.name} fill className="object-cover" data-ai-hint="model cover image" sizes="64px" />
+                        <Image src={model.coverMediaUrl || 'https://placehold.co/200x200.png'} alt={model.name} fill className="object-cover" data-ai-hint="model cover image" sizes="64px" />
                     ) : (
                         <div className="flex items-center justify-center h-full text-muted-foreground"><Settings /></div>
                     )}
@@ -176,7 +176,7 @@ export function CharacterGenerator() {
       targetLanguage: 'English',
       aspectRatio: '1:1',
       imageEngine: 'huggingface',
-      hfModelId: "stabilityai/stable-diffusion-xl-base-1.0",
+      hfModelId: "",
       lora: "",
       loraWeight: 0.75,
       triggerWords: "",
@@ -370,7 +370,8 @@ export function CharacterGenerator() {
   const watchImageEngine = generationForm.watch('imageEngine');
 
   const handleForgeClick = () => {
-    generationForm.handleSubmit(onGenerate)();
+    const formData = generationForm.getValues();
+    onGenerate(formData);
   };
 
   return (
