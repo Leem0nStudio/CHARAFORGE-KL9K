@@ -6,7 +6,7 @@ import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { DataPack, UpsertDataPack } from '@/types/datapack';
-import { UpsertDataPackSchema } from '@/types/datapack'; // Import server-side validation schema
+import { UpsertDataPackSchema } from '@/types/datapack';
 import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { uploadToStorage } from '@/services/storage';
@@ -20,13 +20,14 @@ export type ActionResponse = {
 
 export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer): Promise<ActionResponse> {
     try {
+        // Pattern: Secure Session Management
         await verifyAndGetUid(); 
         
         if (!adminDb) {
             throw new Error('Database service is unavailable.');
         }
         
-        // Server-side validation
+        // Pattern: Rigorous Server-Side Validation
         const validation = UpsertDataPackSchema.safeParse(data);
         if (!validation.success) {
             const firstError = validation.error.errors[0];
@@ -48,6 +49,7 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
 
         if (coverImage) {
             const destinationPath = `datapacks/${packId}/cover.png`;
+            // Pattern: Centralized File Upload Service
             coverImageUrl = await uploadToStorage(coverImage, destinationPath, 'image/png');
         }
         
@@ -94,6 +96,7 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
 
 export async function deleteDataPack(packId: string): Promise<ActionResponse> {
      try {
+        // Pattern: Secure Session Management
         await verifyAndGetUid();
          if (!adminDb) {
             throw new Error('Database service is unavailable.');
@@ -182,6 +185,7 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
 
 export async function installDataPack(packId: string): Promise<{success: boolean, message: string}> {
     try {
+        // Pattern: Secure Session Management
         const uid = await verifyAndGetUid();
         if (!adminDb) throw new Error("Database service is not available.");
 
@@ -276,6 +280,7 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
 
 export async function getInstalledDataPacks(): Promise<DataPack[]> {
     try {
+        // Pattern: Secure Session Management
         const uid = await verifyAndGetUid();
         if (!adminDb) {
             throw new Error('Database service not available.');
@@ -295,6 +300,7 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         const allPacks: DataPack[] = [];
         const packsRef = adminDb.collection('datapacks');
 
+        // Firestore 'in' queries are limited to 30 items. We batch in 10s for safety.
         for (let i = 0; i < installedPackIds.length; i += 10) {
             const batchIds = installedPackIds.slice(i, i + 10);
             if (batchIds.length > 0) {

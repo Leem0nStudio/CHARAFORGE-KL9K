@@ -16,7 +16,8 @@ export type ActionResponse = {
   newAvatarUrl?: string | null;
 };
 
-// Zod schema for validating text fields from the profile form
+// Zod schema for validating text fields from the profile form.
+// Follows the "Rigorous Server-Side Validation" pattern.
 const UpdateProfileSchema = z.object({
   displayName: z.string().min(1, 'Display Name is required').max(50, 'Display Name must be less than 50 characters'),
 });
@@ -24,6 +25,7 @@ const UpdateProfileSchema = z.object({
 
 export async function updateUserProfile(prevState: any, formData: FormData): Promise<ActionResponse> {
     try {
+        // Pattern: Secure Session Management
         const uid = await verifyAndGetUid();
         if (!adminDb || !adminAuth) {
             throw new Error('Server services not available.');
@@ -32,6 +34,7 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
         const displayName = formData.get('displayName') as string;
         const photoFile = formData.get('photoFile') as File | null;
 
+        // Pattern: Rigorous Server-Side Validation
         const validation = UpdateProfileSchema.safeParse({ displayName });
 
         if (!validation.success) {
@@ -44,12 +47,12 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
         
         let finalPhotoUrl: string | null = null;
         
-        // Priority 1: Handle file upload
         if (photoFile && photoFile.size > 0) {
             if (photoFile.size > 5 * 1024 * 1024) { // 5MB limit
                 return { success: false, message: 'File is too large. Please upload an image smaller than 5MB.' };
             }
             const destinationPath = `usersImg/${uid}/avatar.png`;
+            // Pattern: Centralized File Upload Service
             const publicUrl = await uploadToStorage(photoFile, destinationPath);
             // Add a timestamp to bust the cache immediately after upload
             finalPhotoUrl = `${publicUrl}?t=${new Date().getTime()}`;
@@ -69,10 +72,9 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
             await userRef.update(updates);
         }
         
-        // Also update the Firebase Auth profile
         await adminAuth.updateUser(uid, {
             displayName: validation.data.displayName,
-            photoURL: finalPhotoUrl ?? undefined, // Use finalPhotoUrl or undefined
+            photoURL: finalPhotoUrl ?? undefined,
         });
 
         revalidatePath('/profile');
@@ -94,12 +96,12 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
 
 export async function deleteUserAccount(): Promise<ActionResponse> {
     try {
+        // Pattern: Secure Session Management
         const uid = await verifyAndGetUid();
         if (!adminDb || !adminAuth) {
             throw new Error('Server services not available.');
         }
 
-        // Firestore transaction to delete user data
         const userRef = adminDb.collection('users').doc(uid);
         const charactersQuery = adminDb.collection('characters').where('userId', '==', uid);
 
@@ -109,7 +111,6 @@ export async function deleteUserAccount(): Promise<ActionResponse> {
             transaction.delete(userRef);
         });
 
-        // Delete user from Firebase Auth
         await adminAuth.deleteUser(uid);
         
         revalidatePath('/');
@@ -124,6 +125,7 @@ export async function deleteUserAccount(): Promise<ActionResponse> {
 
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
     try {
+        // Pattern: Secure Session Management
         const uid = await verifyAndGetUid();
         if (!adminDb) {
             throw new Error("Database service is unavailable.");
@@ -133,7 +135,6 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
         await userRef.set({ preferences }, { merge: true });
 
         revalidatePath('/profile');
-        // Revalidate home page as this affects the top creators list
         revalidatePath('/');
 
         return { success: true, message: "Preferences updated!" };
@@ -144,12 +145,7 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
     }
 }
 
-/**
- * Fetches the public profile information for a given user UID.
- * Returns only the necessary public-safe data.
- * @param {string} uid The UID of the user to fetch.
- * @returns {Promise<Partial<UserProfile> | null>} A promise that resolves to the user profile or null.
- */
+
 export async function getPublicUserProfile(uid: string): Promise<Partial<UserProfile> | null> {
     if (!adminDb) {
         console.error('Database service unavailable.');
@@ -167,7 +163,6 @@ export async function getPublicUserProfile(uid: string): Promise<Partial<UserPro
             return null; // Respect privacy settings
         }
         
-        // Return only a subset of public-safe fields
         return {
             uid: userData.uid,
             displayName: userData.displayName || 'Anonymous',
@@ -183,11 +178,7 @@ export async function getPublicUserProfile(uid: string): Promise<Partial<UserPro
     }
 }
 
-/**
- * Fetches the user profile from Firestore.
- * @param uid The user ID.
- * @returns The user profile object or null.
- */
+
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   if (!adminDb) {
     console.error('Database service is unavailable.');

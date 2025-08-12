@@ -21,9 +21,31 @@ type ActionResponse = {
     newImageUrl?: string;
 };
 
+// Zod validation schemas. Following the "Rigorous Server-Side Validation" pattern.
+const UpdateStatusSchema = z.enum(['private', 'public']);
+const UpdateCharacterSchema = z.object({
+  name: z.string().min(1, "Name is required.").max(100, "Name cannot exceed 100 characters."),
+  biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
+  alignment: z.enum(['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil']),
+});
+const SaveCharacterInputSchema = z.object({
+  name: z.string().min(1, 'Name is required.'),
+  description: z.string(),
+  biography: z.string(),
+  imageUrl: z.string().startsWith('data:image/'),
+  dataPackId: z.string().optional().nullable(),
+  tags: z.string().optional(),
+});
+export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 
+
+/**
+ * Generates a new image for an existing character and adds it to their gallery.
+ * This action follows the "Centralized File Upload Service" pattern by calling `uploadToStorage`.
+ */
 export async function generateNewCharacterImage(characterId: string, description: string, engineConfig: ImageEngineConfig): Promise<ActionResponse & { newImageUrl?: string }> {
-     const uid = await verifyAndGetUid(); // Security check
+     // Pattern: Secure Session Management
+     const uid = await verifyAndGetUid(); 
      if (!adminDb) {
         return { success: false, message: 'Database service is unavailable.' };
      }
@@ -36,6 +58,7 @@ export async function generateNewCharacterImage(characterId: string, description
         }
         
         const destinationPath = `usersImg/${uid}/${characterId}/${uuidv4()}.png`;
+        // Pattern: Centralized File Upload Service
         const publicUrl = await uploadToStorage(imageUrl, destinationPath);
         
         // Add the new image to the character's gallery
@@ -56,10 +79,11 @@ export async function generateNewCharacterImage(characterId: string, description
 
 
 export async function createCharacterVersion(characterId: string): Promise<ActionResponse> {
+  // Pattern: Secure Session Management
+  const uid = await verifyAndGetUid();
   if (!adminDb) {
     return { success: false, message: 'Database service is unavailable.' };
   }
-  const uid = await verifyAndGetUid();
 
   try {
     const originalCharRef = adminDb.collection('characters').doc(characterId);
@@ -127,10 +151,11 @@ export async function createCharacterVersion(characterId: string): Promise<Actio
 
 
 export async function deleteCharacter(characterId: string) {
+  // Pattern: Secure Session Management
+  const uid = await verifyAndGetUid();
   if (!adminDb) {
     throw new Error('Database service is unavailable.');
   }
-  const uid = await verifyAndGetUid();
   if (!characterId) {
     throw new Error('Character ID is required for deletion.');
   }
@@ -153,22 +178,22 @@ export async function deleteCharacter(characterId: string) {
   }
 }
 
-const UpdateStatusSchema = z.enum(['private', 'public']);
 
 export async function updateCharacterStatus(
   characterId: string, 
   status: 'private' | 'public',
   isNsfw?: boolean,
 ): Promise<ActionResponse> {
+  // Pattern: Secure Session Management
+  const uid = await verifyAndGetUid();
   if (!adminDb) {
       return { success: false, message: 'Database service is unavailable.' };
   }
+  // Pattern: Rigorous Server-Side Validation
   const validation = UpdateStatusSchema.safeParse(status);
   if (!validation.success) {
       return { success: false, message: 'Invalid status provided.' };
   }
-
-  const uid = await verifyAndGetUid();
   
   try {
     const characterRef = adminDb.collection('characters').doc(characterId);
@@ -209,10 +234,11 @@ export async function updateCharacterStatus(
 
 
 export async function updateCharacterDataPackSharing(characterId: string, isShared: boolean): Promise<ActionResponse> {
+  // Pattern: Secure Session Management
+  const uid = await verifyAndGetUid();
   if (!adminDb) {
     return { success: false, message: 'Database service is unavailable.' };
   }
-  const uid = await verifyAndGetUid();
 
   try {
     const characterRef = adminDb.collection('characters').doc(characterId);
@@ -255,22 +281,18 @@ export async function updateCharacterDataPackSharing(characterId: string, isShar
 }
 
 
-const UpdateCharacterSchema = z.object({
-  name: z.string().min(1, "Name is required.").max(100, "Name cannot exceed 100 characters."),
-  biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
-  alignment: z.enum(['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil']),
-});
-
 export async function updateCharacter(
     characterId: string, 
     data: { name: string, biography: string, alignment: Character['alignment'] }
 ): Promise<ActionResponse> {
+  // Pattern: Secure Session Management
+  const uid = await verifyAndGetUid();
   if (!adminDb) {
       return { success: false, message: 'Database service is unavailable.' };
   }
+  
   try {
-    const uid = await verifyAndGetUid();
-
+    // Pattern: Rigorous Server-Side Validation
     const validatedFields = UpdateCharacterSchema.safeParse(data);
 
     if (!validatedFields.success) {
@@ -308,12 +330,13 @@ export async function updateCharacterImages(
   gallery: string[],
   primaryImageUrl: string,
 ): Promise<ActionResponse> {
+  // Pattern: Secure Session Management
+  const uid = await verifyAndGetUid();
   if (!adminDb) {
     return { success: false, message: 'Database service is unavailable.' };
   }
+  
   try {
-     const uid = await verifyAndGetUid();
-
      const characterRef = adminDb.collection('characters').doc(characterId);
      const characterDoc = await characterRef.get();
      
@@ -328,7 +351,6 @@ export async function updateCharacterImages(
         return { success: false, message: 'You can add a maximum of 10 images.'}
      }
 
-     // Ensure imageUrls are public, though they should be by this point
      await characterRef.update({ 
         gallery: gallery,
         imageUrl: primaryImageUrl,
@@ -352,6 +374,7 @@ export async function getCharacters(): Promise<Character[]> {
       return [];
   }
   try {
+    // Pattern: Secure Session Management
     const uid = await verifyAndGetUid();
     
     const charactersRef = adminDb.collection('characters');
@@ -383,6 +406,8 @@ export async function getCharacters(): Promise<Character[]> {
     return charactersData;
 
   } catch (error) {
+    // Gracefully handle cases where the user is logged out, returning an empty list
+    // instead of throwing an error on pages that can be partially public.
     if (error instanceof Error && (error.message.includes('User session not found') || error.message.includes('Invalid or expired'))) {
         console.log('User session not found, returning empty character list.');
         return [];
@@ -393,10 +418,11 @@ export async function getCharacters(): Promise<Character[]> {
 }
 
 export async function updateCharacterBranchingPermissions(characterId: string, permissions: 'private' | 'public'): Promise<ActionResponse> {
+  // Pattern: Secure Session Management
+  const uid = await verifyAndGetUid();
   if (!adminDb) {
     return { success: false, message: 'Database service is unavailable.' };
   }
-  const uid = await verifyAndGetUid();
 
   try {
     const characterRef = adminDb.collection('characters').doc(characterId);
@@ -420,10 +446,11 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
 }
 
 export async function branchCharacter(characterId: string): Promise<ActionResponse> {
+  // Pattern: Secure Session Management
+  const newOwnerId = await verifyAndGetUid();
   if (!adminDb) {
     return { success: false, message: 'Database service is unavailable.' };
   }
-  const newOwnerId = await verifyAndGetUid();
   const newOwnerProfile = await adminDb.collection('users').doc(newOwnerId).get().then(doc => doc.data() as UserProfile);
 
 
@@ -444,10 +471,9 @@ export async function branchCharacter(characterId: string): Promise<ActionRespon
       return { success: false, message: 'You cannot branch your own character. Create a new version instead.' };
     }
     
-    const originalAuthorId = originalData.userId; // The creator of this specific version is the original author of the new branch
+    const originalAuthorId = originalData.userId; 
     const originalAuthorProfile = await adminDb.collection('users').doc(originalAuthorId).get().then(doc => doc.data() as UserProfile | undefined);
 
-    // Prepare new character data
     const newCharacterRef = adminDb.collection('characters').doc();
     const version = 1;
     const versionName = 'v.1';
@@ -470,12 +496,11 @@ export async function branchCharacter(characterId: string): Promise<ActionRespon
       // Reset versioning for the new branch
       version: version,
       versionName: versionName,
-      baseCharacterId: newCharacterRef.id, // The new character is its own base
+      baseCharacterId: newCharacterRef.id, 
       versions: [initialVersion],
       createdAt: FieldValue.serverTimestamp(),
     };
     
-    // Remove fields that should not be copied
     delete (newCharacterData as any).id;
 
     await newCharacterRef.set(newCharacterData);
@@ -490,38 +515,27 @@ export async function branchCharacter(characterId: string): Promise<ActionRespon
   }
 }
 
-const SaveCharacterInputSchema = z.object({
-  name: z.string().min(1, 'Name is required.'),
-  description: z.string(),
-  biography: z.string(),
-  imageUrl: z.string().startsWith('data:image/'),
-  dataPackId: z.string().optional().nullable(),
-  tags: z.string().optional(), // Added tags as a comma-separated string
-});
-export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
-
 
 export async function saveCharacter(input: SaveCharacterInput) {
-  // 1. Validate Input on the Server
+  // Pattern: Rigorous Server-Side Validation
   const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
     const firstError = validation.error.errors[0];
-    // Throw an error with a specific message that the client can display.
     throw new Error(`Invalid input for ${firstError.path.join('.')}: ${firstError.message}`);
   }
   const { name, description, biography, imageUrl: imageDataUri, dataPackId, tags } = validation.data;
   
-  // 2. Verify Authentication and Services
+  // Pattern: Secure Session Management
   const userId = await verifyAndGetUid();
   if (!adminDb) {
     throw new Error('Database service is not available. Please try again later.');
   }
   
-  // 3. Proceed with Business Logic
   try {
     const characterRef = adminDb.collection('characters').doc();
     
     const destinationPath = `usersImg/${userId}/${characterRef.id}/${uuidv4()}.png`;
+    // Pattern: Centralized File Upload Service
     const storageUrl = await uploadToStorage(imageDataUri, destinationPath);
 
     const userRef = adminDb.collection('users').doc(userId);
@@ -533,7 +547,6 @@ export async function saveCharacter(input: SaveCharacterInput) {
         const versionName = `v.${version}`;
         const initialVersion = { id: characterRef.id, name: versionName, version: version };
         
-        // Process tags from comma-separated string to an array of strings
         const tagsArray = tags ? tags.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean) : [];
 
         const characterData = {
@@ -541,18 +554,18 @@ export async function saveCharacter(input: SaveCharacterInput) {
             name,
             description,
             biography,
-            imageUrl: storageUrl, // The URL is now public and permanent
+            imageUrl: storageUrl,
             gallery: [storageUrl],
-            status: 'private', // Characters are private by default
+            status: 'private',
             createdAt: FieldValue.serverTimestamp(),
             dataPackId: dataPackId || null,
             version: version,
             versionName: versionName,
-            baseCharacterId: characterRef.id, // A new character is its own base
+            baseCharacterId: characterRef.id,
             versions: [initialVersion],
             branchingPermissions: 'private',
             alignment: 'True Neutral',
-            tags: tagsArray, // Store the processed tags
+            tags: tagsArray,
         };
 
         transaction.set(characterRef, characterData);
@@ -579,10 +592,11 @@ export async function saveCharacter(input: SaveCharacterInput) {
 }
 
 export async function updateCharacterTimeline(characterId: string, timeline: TimelineEvent[]): Promise<ActionResponse> {
+    // Pattern: Secure Session Management
+    const uid = await verifyAndGetUid();
     if (!adminDb) {
         return { success: false, message: 'Database service unavailable.' };
     }
-    const uid = await verifyAndGetUid();
     
     try {
         const characterRef = adminDb.collection('characters').doc(characterId);
@@ -602,11 +616,6 @@ export async function updateCharacterTimeline(characterId: string, timeline: Tim
     }
 }
 
-/**
- * Fetches a single public character and enriches it with author and datapack names.
- * @param characterId The ID of the character to fetch.
- * @returns {Promise<Character | null>}
- */
 export async function getCharacter(characterId: string): Promise<Character | null> {
     if (!adminDb) {
         console.error('Database service is unavailable.');
@@ -622,7 +631,6 @@ export async function getCharacter(characterId: string): Promise<Character | nul
 
         const data = characterDoc.data() as Character;
         
-        // Fetch user and datapack names in parallel
         const [userProfile, dataPack] = await Promise.all([
             data.userId ? adminDb.collection('users').doc(data.userId).get() : Promise.resolve(null),
             data.dataPackId ? adminDb.collection('datapacks').doc(data.dataPackId).get() : Promise.resolve(null)
