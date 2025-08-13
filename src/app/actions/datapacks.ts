@@ -291,24 +291,33 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
 }
 
 export async function getInstalledDataPacks(): Promise<DataPack[]> {
+    if (!adminDb) {
+        throw new Error('Database service not available.');
+    }
+
+    let installedPackIds: string[] = [];
     try {
         const uid = await verifyAndGetUid();
-        if (!adminDb) {
-            throw new Error('Database service not available.');
-        }
-
         const userRef = adminDb.collection('users').doc(uid);
         const userDoc = await userRef.get();
-        const installedPackIds = userDoc.data()?.stats?.installedPacks || [];
-
-        const allPackIds = new Set(installedPackIds);
-        allPackIds.add('basic-fantasy-pack'); // Always ensure the basic fantasy pack is available
-
-        const uniquePackIds = Array.from(allPackIds);
-        if (uniquePackIds.length === 0) {
-            return [];
+        if (userDoc.exists) {
+            installedPackIds = userDoc.data()?.stats?.installedPacks || [];
         }
+    } catch (error) {
+        // User is likely not logged in. It's safe to proceed with just the default pack.
+        console.log('User not logged in or profile not found, serving default packs only.');
+    }
+    
+    // Use a Set to ensure the default pack is only added once and avoid duplicates.
+    const finalPackIds = new Set(installedPackIds);
+    finalPackIds.add('basic-fantasy-pack');
 
+    const uniquePackIds = Array.from(finalPackIds);
+    if (uniquePackIds.length === 0) {
+        return [];
+    }
+
+    try {
         const packsRef = adminDb.collection('datapacks');
         const packsSnapshot = await packsRef.where(FieldValue.documentId(), 'in', uniquePackIds).get();
 
@@ -328,25 +337,11 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         
         return allPacks;
 
-    } catch (error) {
-         if (error instanceof Error && (error.message.includes('User session not found') || error.message.includes('Invalid or expired'))) {
-            console.log('User session not found for installed packs, returning only default pack.');
-            if (!adminDb) return [];
-            const defaultPackDoc = await adminDb.collection('datapacks').doc('basic-fantasy-pack').get();
-            if (defaultPackDoc.exists) {
-                const data = defaultPackDoc.data()!;
-                const createdAt = data.createdAt;
-                const updatedAt = data.updatedAt;
-                return [{
-                    ...data,
-                    id: defaultPackDoc.id,
-                    createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
-                    updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
-                } as DataPack];
-            }
-            return [];
-        }
-        console.error("Error fetching installed DataPacks:", error);
+    } catch (dbError) {
+        console.error("Error fetching DataPacks from Firestore:", dbError);
+        // Return an empty array in case of a database error to prevent the app from crashing.
         return [];
     }
 }
+
+    
