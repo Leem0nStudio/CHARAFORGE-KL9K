@@ -8,6 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput, type ImageEngineConfig } from './types';
+import { client } from "@gradio/client";
 
 // Helper function to get image dimensions in pixels.
 function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
@@ -23,9 +24,9 @@ function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
 }
 
 /**
- * Queries the Hugging Face Inference API for a specific model.
+ * Queries a Hugging Face Space using the Gradio client.
  * It prioritizes a user-provided API key and falls back to the system key.
- * @param {object} data The payload to send, including inputs, model, and optional user API key.
+ * @param {object} data The payload including inputs, model HF ID, and optional user API key.
  * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
  */
 async function queryHuggingFaceInferenceAPI(data: { inputs: string, model: string, userApiKey?: string }): Promise<string> {
@@ -36,36 +37,30 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, model: strin
         throw new Error("Hugging Face API key is not configured on the server or provided by the user.");
     }
     
-    const API_URL = `https://api-inference.huggingface.co/models/${data.model}`;
-    
-    const response = await fetch(API_URL, {
-        headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json"
-        },
-        method: "POST",
-        body: JSON.stringify({
-            inputs: data.inputs,
-            parameters: {
-                negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
+    try {
+        const app = await client(`https://huggingface.co/spaces/${data.model}`, { hf_token: apiKey as `hf_${string}` });
+        const result = await app.predict("/run", {
+            prompt: data.inputs,
+            negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
+            width: 1024,
+            height: 1024,
+        });
+
+        // The result from Gradio might be structured. We need to find the image data.
+        if (result && typeof result === 'object' && 'data' in result && Array.isArray(result.data) && result.data.length > 0) {
+            const imageResult = result.data[0];
+            if (typeof imageResult === 'string' && imageResult.startsWith('data:image')) {
+                return imageResult;
             }
-        }),
-    });
+        }
+        
+        throw new Error("Received an unexpected response format from the Gradio API.");
 
-    if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("Hugging Face API Error:", errorBody);
-        const errorMessage = errorBody.includes('Rate limit reached')
-          ? "The API rate limit was reached. Please try again later or add your own API key in your profile settings."
-          : `Failed to generate image via Hugging Face. Status: ${response.status}. Message: ${errorBody}`;
-        throw new Error(errorMessage);
+    } catch (error) {
+        console.error("Gradio/Hugging Face API Error:", error);
+        const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        throw new Error(`Failed to generate image via Hugging Face. ${message}`);
     }
-
-    const imageBlob = await response.blob();
-    const arrayBuffer = await imageBlob.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
-    
-    return `data:${imageBlob.type};base64,${base64}`;
 }
 
 
@@ -93,7 +88,6 @@ const generateCharacterImageFlow = ai.defineFlow(
             const { media } = await ai.generate({
                 model: 'googleai/gemini-2.0-flash-preview-image-generation',
                 prompt: description,
-                // CRITICAL FIX: width and height are top-level parameters, not part of 'config'
                 width: width,
                 height: height,
                 config: {
