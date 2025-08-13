@@ -29,7 +29,7 @@ function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
  * @param {object} data The payload including inputs, model HF ID, and optional user API key.
  * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
  */
-async function queryHuggingFaceInferenceAPI(data: { inputs: string, model: string, userApiKey?: string }): Promise<string> {
+async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: string, userApiKey?: string }): Promise<string> {
     const systemApiKey = process.env.HUGGING_FACE_API_KEY;
     const apiKey = data.userApiKey || systemApiKey;
 
@@ -38,7 +38,8 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, model: strin
     }
     
     try {
-        const app = await client(`https://huggingface.co/spaces/${data.model}`, { hf_token: apiKey as `hf_${string}` });
+        // The modelId should be the Gradio Space ID, e.g., "klaabu/illustrious-nxt"
+        const app = await client(data.modelId, { hf_token: apiKey as `hf_${string}` });
         const result = await app.predict("/run", {
             prompt: data.inputs,
             negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
@@ -59,7 +60,7 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, model: strin
     } catch (error) {
         console.error("Gradio/Hugging Face API Error:", error);
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
-        throw new Error(`Failed to generate image via Hugging Face. ${message}`);
+        throw new Error(`Failed to generate image via Hugging Face. Error: ${message}`);
     }
 }
 
@@ -78,7 +79,7 @@ const generateCharacterImageFlow = ai.defineFlow(
   },
   async (input) => {
     const { description, engineConfig } = input;
-    const { engineId, modelId, aspectRatio, lora, userApiKey } = engineConfig;
+    const { engineId, modelId, aspectRatio, userApiKey } = engineConfig;
     
     let imageUrl: string | undefined;
 
@@ -105,16 +106,10 @@ const generateCharacterImageFlow = ai.defineFlow(
             if (!modelId) {
                 throw new Error("Hugging Face model ID is required for this engine.");
             }
-            
-            let promptWithLora = description;
-            if (lora && lora.triggerWords) {
-                const words = lora.triggerWords.join(', ');
-                promptWithLora = `${words}, ${description}`;
-            }
 
             imageUrl = await queryHuggingFaceInferenceAPI({ 
-                inputs: promptWithLora,
-                model: modelId,
+                inputs: description,
+                modelId: modelId,
                 userApiKey: userApiKey,
             });
 

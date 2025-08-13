@@ -117,6 +117,8 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
             userApiKey: userApiKey || undefined,
         };
         
+        let finalDescription = description;
+
         if (selectedLora && selectedModel.engine === 'huggingface') {
             const loraVersion = selectedLora.versions?.find(v => v.id === loraVersionId) 
                 || { id: selectedLora.versionId, triggerWords: selectedLora.triggerWords };
@@ -127,9 +129,14 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
                 weight: loraWeight || 0.75,
                 triggerWords: loraVersion.triggerWords,
             };
+
+            if (loraVersion.triggerWords && loraVersion.triggerWords.length > 0) {
+                const words = loraVersion.triggerWords.join(', ');
+                finalDescription = `${words}, ${description}`;
+            }
         }
         
-        const imageResult = await generateCharacterImage({ description, engineConfig: imageEngineConfig });
+        const imageResult = await generateCharacterImage({ description: finalDescription, engineConfig: imageEngineConfig });
         
         if (!imageResult.imageUrl) {
             throw new Error('AI generation failed to return an image.');
