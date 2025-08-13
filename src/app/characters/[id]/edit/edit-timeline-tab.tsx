@@ -2,6 +2,7 @@
 'use client';
 
 import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,8 +30,9 @@ const TimelineFormSchema = z.object({
 
 type TimelineFormValues = z.infer<typeof TimelineFormSchema>;
 
-export function EditTimelineTab({ character, onUpdate }: { character: Character, onUpdate: (data: Partial<Character>) => void }) {
+export function EditTimelineTab({ character }: { character: Character }) {
     const { toast } = useToast();
+    const router = useRouter();
     const [isUpdating, startUpdateTransition] = useTransition();
 
     const form = useForm<TimelineFormValues>({
@@ -54,8 +56,8 @@ export function EditTimelineTab({ character, onUpdate }: { character: Character,
                 variant: result.success ? 'default' : 'destructive',
             });
             if (result.success) {
-                onUpdate({ timeline: data.timeline });
                 form.reset(data); // Reset dirty state
+                router.refresh();
             }
         });
     };

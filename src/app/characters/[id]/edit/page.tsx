@@ -6,8 +6,13 @@ import { cookies } from 'next/headers';
 import { getAuth } from 'firebase-admin/auth';
 import { adminDb, adminApp } from '@/lib/firebase/server';
 import { BackButton } from '@/components/back-button';
-import { EditCharacterForm } from './edit-character-form';
 import type { Character } from '@/types/character';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EditDetailsTab } from './edit-details-tab';
+import { EditGalleryTab } from './edit-gallery-tab';
+import { EditVersionsTab } from './edit-versions-tab';
+import { EditSharingTab } from './edit-sharing-tab';
+import { EditTimelineTab } from './edit-timeline-tab';
 
 
 async function getCharacterForEdit(characterId: string): Promise<Character> {
@@ -15,7 +20,6 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
      throw new Error('Firebase Admin services are not available.');
   }
 
-  // 1. Get Character data first. Exit early if it doesn't exist.
   const characterRef = adminDb.collection('characters').doc(characterId);
   const characterDoc = await characterRef.get();
 
@@ -28,7 +32,6 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
      notFound();
   }
 
-  // 2. Verify user identity and admin status. This is a hard gate.
   let uid: string | null = null;
   let isAdmin = false;
 
@@ -37,38 +40,32 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
     const idToken = cookieStore.get('firebaseIdToken')?.value;
 
     if (!idToken) {
-      // If there's no token, the user is not authenticated. Deny access immediately.
       notFound();
     }
     
     const auth = getAuth(adminApp);
     const decodedToken = await auth.verifyIdToken(idToken);
     uid = decodedToken.uid;
-    // Check admin status from the same decoded token if the claim is present
     isAdmin = decodedToken.admin === true;
     
   } catch (error) {
-    // If token verification fails for any reason (expired, invalid), deny access.
     console.error("Auth verification failed in getCharacterForEdit:", error);
     notFound();
   }
   
-  // 3. Check for authorization
   const isOwner = characterData.userId === uid;
   
-  // User must be the owner OR an admin to proceed.
   if (!isOwner && !isAdmin) {
     notFound();
   }
   
-  // 4. If authorized, build and return the character object
   const character: Character = {
       id: characterDoc.id,
       name: characterData.name,
       description: characterData.description,
       biography: characterData.biography,
       imageUrl: characterData.imageUrl,
-      gallery: characterData.gallery || [characterData.imageUrl], // Fallback for old data model
+      gallery: characterData.gallery || [characterData.imageUrl],
       userId: characterData.userId,
       status: characterData.status,
       createdAt: characterData.createdAt.toDate(),
@@ -97,16 +94,37 @@ export default async function EditCharacterPage({ params }: { params: { id: stri
               title="Character Workshop"
               description="Refine, regenerate, and manage every aspect of your creation."
           />
-          <div className="max-w-7xl mx-auto">
-            <EditCharacterForm character={character} />
+          <div className="max-w-4xl mx-auto mt-8">
+              <Tabs defaultValue="gallery" className="w-full">
+                <TabsList className="grid w-full grid-cols-5">
+                    <TabsTrigger value="gallery">Gallery</TabsTrigger>
+                    <TabsTrigger value="details">Details</TabsTrigger>
+                    <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                    <TabsTrigger value="versions">Versions</TabsTrigger>
+                    <TabsTrigger value="sharing">Sharing</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="gallery">
+                    <EditGalleryTab character={character} />
+                </TabsContent>
+                <TabsContent value="details">
+                    <EditDetailsTab character={character} />
+                </TabsContent>
+                <TabsContent value="timeline">
+                    <EditTimelineTab character={character} />
+                </TabsContent>
+                <TabsContent value="versions">
+                    <EditVersionsTab character={character} />
+                </TabsContent>
+                <TabsContent value="sharing">
+                    <EditSharingTab character={character} />
+                </TabsContent>
+              </Tabs>
           </div>
       </div>
     );
   } catch (error) {
-     // This will catch errors from getCharacterForEdit if it throws an exception
-     // (like Firebase services being down), but not 'notFound()' calls.
      console.error("Failed to render edit page:", error);
-     // Re-throwing is important to let Next.js handle the server error boundary.
      throw error;
   }
 }

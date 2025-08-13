@@ -2,6 +2,7 @@
 'use client';
 
 import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Character } from '@/types/character';
 import { updateCharacterStatus, updateCharacterDataPackSharing } from '@/app/actions/character-write';
 import { useToast } from '@/hooks/use-toast';
@@ -10,33 +11,32 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ShieldCheck, GalleryHorizontal } from 'lucide-react';
 
-export function EditSharingTab({ character, onUpdate }: { character: Character, onUpdate: (data: Partial<Character>) => void }) {
+export function EditSharingTab({ character }: { character: Character }) {
     const { toast } = useToast();
+    const router = useRouter();
     const [isUpdating, startUpdateTransition] = useTransition();
 
-    const handleUpdate = (updateAction: () => Promise<any>, optimisticData: Partial<Character>) => {
+    const handleUpdate = (updateAction: () => Promise<any>) => {
         startUpdateTransition(async () => {
-            onUpdate(optimisticData); // Optimistic update
             const result = await updateAction();
             toast({
                 title: result.success ? 'Success!' : 'Update Failed',
                 description: result.message,
                 variant: result.success ? 'default' : 'destructive',
             });
-            if (!result.success) {
-                // Revert on failure
-                onUpdate({ status: character.status, isSharedToDataPack: character.isSharedToDataPack });
+            if (result.success) {
+                router.refresh();
             }
         });
     };
 
     const handleTogglePublicStatus = (checked: boolean) => {
         const newStatus = checked ? 'public' : 'private';
-        handleUpdate(() => updateCharacterStatus(character.id, newStatus), { status: newStatus });
+        handleUpdate(() => updateCharacterStatus(character.id, newStatus));
     };
 
     const handleToggleDataPackSharing = (checked: boolean) => {
-        handleUpdate(() => updateCharacterDataPackSharing(character.id, checked), { isSharedToDataPack: checked });
+        handleUpdate(() => updateCharacterDataPackSharing(character.id, checked));
     };
 
     return (

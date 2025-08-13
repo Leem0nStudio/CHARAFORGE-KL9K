@@ -2,6 +2,7 @@
 'use client';
 
 import { useTransition, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,15 +23,13 @@ const UpdateImagesSchema = z.object({
 });
 type UpdateImagesFormValues = z.infer<typeof UpdateImagesSchema>;
 
-export function EditGalleryTab({ character, onGalleryUpdate }: { character: Character, onGalleryUpdate: (gallery: string[], primaryImage?: string) => void }) {
+export function EditGalleryTab({ character }: { character: Character }) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isUpdating, startUpdateTransition] = useTransition();
   const [isUploading, startUploadTransition] = useTransition();
   const [isGenerating, startGenerateTransition] = useTransition();
   
-  // Local state for the gallery to provide immediate feedback
-  const [gallery, setGallery] = useState(character.gallery || [character.imageUrl]);
-
   const form = useForm<UpdateImagesFormValues>({
     resolver: zodResolver(UpdateImagesSchema),
     defaultValues: {
@@ -38,11 +37,12 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
     },
   });
 
+  // This effect ensures the form is re-synchronized if the character prop changes
+  // (e.g., after a server-side refresh).
   useEffect(() => {
     form.reset({
         primaryImageUrl: character.imageUrl,
     });
-    setGallery(character.gallery || [character.imageUrl]);
   }, [character, form]);
 
 
@@ -50,7 +50,7 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (gallery.length >= 10) {
+    if ((character.gallery?.length ?? 0) >= 10) {
         toast({ variant: 'destructive', title: 'Gallery Full', description: 'You cannot add more than 10 images.' });
         return;
     }
@@ -60,10 +60,13 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
             const fileName = `${uuidv4()}-${file.name}`;
             const destinationPath = `usersImg/${character.userId}/${character.id}/${fileName}`;
             const newImageUrl = await uploadToStorage(file, destinationPath);
-            const newGallery = [...gallery, newImageUrl];
-            setGallery(newGallery);
-            onGalleryUpdate(newGallery); // Notify parent
+            
+            // Immediately update the character in the database
+            const newGallery = [...(character.gallery || []), newImageUrl];
+            await updateCharacterImages(character.id, newGallery, character.imageUrl);
+
             toast({ title: "Image Uploaded!", description: "The new image has been added to your gallery."});
+            router.refresh(); // Refresh the page to get the latest state
         } catch (error) {
              const message = error instanceof Error ? error.message : "Could not upload the image.";
              toast({ variant: 'destructive', title: 'Upload Failed', description: message });
@@ -72,20 +75,17 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
   };
 
   const handleImageGeneration = () => {
-    if (gallery.length >= 10) {
+    if ((character.gallery?.length ?? 0) >= 10) {
         toast({ variant: 'destructive', title: 'Gallery Full', description: 'You cannot add more than 10 images.' });
         return;
     }
 
     startGenerateTransition(async () => {
         // TODO: Pass a real engine config. For now, we'll use an empty one which might default or fail.
-        // This part needs to be connected to the new model selection UI if it's available here.
         const result = await generateNewCharacterImage(character.id, character.description, {} as any);
         if (result.success && result.newImageUrl) {
-            const newGallery = [...gallery, result.newImageUrl];
-            setGallery(newGallery);
-            onGalleryUpdate(newGallery); // Notify parent
             toast({ title: "Image Generated!", description: result.message});
+            router.refresh(); // The server action already updated the DB, just refresh.
         } else {
              toast({ variant: 'destructive', title: 'Generation Failed', description: result.message });
         }
@@ -97,8 +97,7 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
   };
   
   const handleRemoveImage = (urlToRemove: string) => {
-    const newGallery = gallery.filter(url => url !== urlToRemove);
-    // This is an immediate destructive action, so we call the server action right away.
+    const newGallery = character.gallery?.filter(url => url !== urlToRemove) || [];
     startUpdateTransition(async () => {
         const newPrimary = (form.watch('primaryImageUrl') === urlToRemove) ? (newGallery[0] || '') : form.watch('primaryImageUrl');
         const result = await updateCharacterImages(character.id, newGallery, newPrimary);
@@ -110,30 +109,28 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
         });
 
         if (result.success) {
-            setGallery(newGallery);
-            onGalleryUpdate(newGallery, newPrimary);
+            router.refresh();
         }
     });
   }
 
   const onSubmit = (data: UpdateImagesFormValues) => {
     startUpdateTransition(async () => {
-      // The only thing to "save" is the primary image selection
-      const result = await updateCharacterImages(character.id, gallery, data.primaryImageUrl);
+      const result = await updateCharacterImages(character.id, character.gallery || [], data.primaryImageUrl);
       toast({
             title: result.success ? 'Success!' : 'Update Failed',
             description: result.message,
             variant: result.success ? 'default' : 'destructive',
       });
       if (result.success) {
-        onGalleryUpdate(gallery, data.primaryImageUrl);
-        form.reset(data); // Reset dirty state
+        router.refresh();
       }
     });
   };
 
   const primaryImageUrl = form.watch('primaryImageUrl');
   const isLoading = isUpdating || isUploading || isGenerating;
+  const gallery = character.gallery || [character.imageUrl];
 
   return (
      <Card>
@@ -183,9 +180,9 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
             </div>
              <form onSubmit={form.handleSubmit(onSubmit)}>
                  <div className="flex justify-end gap-2 pt-4 border-t mt-6">
-                    <Button type="submit" disabled={isUpdating || !form.formState.isDirty}>
+                    <Button type="submit" disabled={isLoading || !form.formState.isDirty}>
                         {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Gallery Changes
+                        Save Primary Image
                     </Button>
                 </div>
              </form>

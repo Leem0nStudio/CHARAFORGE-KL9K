@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Wand2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useRouter } from 'next/navigation';
 
 const alignmentOptions = [
     'Lawful Good', 'Neutral Good', 'Chaotic Good', 
@@ -30,8 +31,9 @@ const FormSchema = z.object({
 });
 type FormValues = z.infer<typeof FormSchema>;
 
-export function EditDetailsTab({ character, onUpdate }: { character: Character, onUpdate: (data: Partial<Character>) => void }) {
+export function EditDetailsTab({ character }: { character: Character }) {
     const { toast } = useToast();
+    const router = useRouter();
     const [isUpdating, startUpdateTransition] = useTransition();
     const [isRegenerating, startRegenerateTransition] = useTransition();
 
@@ -53,7 +55,7 @@ export function EditDetailsTab({ character, onUpdate }: { character: Character, 
                 variant: result.success ? 'default' : 'destructive',
             });
             if (result.success) {
-                onUpdate(data);
+                router.refresh();
             }
         });
     };
@@ -62,7 +64,7 @@ export function EditDetailsTab({ character, onUpdate }: { character: Character, 
         startRegenerateTransition(async () => {
             try {
                 const result = await generateCharacterBio({ description: character.description });
-                form.setValue('biography', result.biography);
+                form.setValue('biography', result.biography, { shouldDirty: true });
                 toast({
                     title: 'Biography Regenerated!',
                     description: 'A new biography has been generated. Don\'t forget to save your changes.',

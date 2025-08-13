@@ -15,16 +15,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-export function EditVersionsTab({ character, onUpdate }: { character: Character, onUpdate: (data: Partial<Character>) => void }) {
+export function EditVersionsTab({ character }: { character: Character }) {
     const { toast } = useToast();
     const router = useRouter();
     const [isUpdating, startUpdateTransition] = useTransition();
 
-    const handleUpdate = (updateAction: () => Promise<any>, optimisticData?: Partial<Character>) => {
+    const handleUpdate = (updateAction: () => Promise<any>) => {
         startUpdateTransition(async () => {
-            if (optimisticData) {
-                onUpdate(optimisticData); // Optimistic update
-            }
             const result = await updateAction();
             toast({
                 title: result.success ? 'Success!' : 'Update Failed',
@@ -37,16 +34,13 @@ export function EditVersionsTab({ character, onUpdate }: { character: Character,
                 } else {
                     router.refresh();
                 }
-            } else if (optimisticData) {
-                // Revert on failure
-                onUpdate({ branchingPermissions: character.branchingPermissions });
             }
         });
     };
 
     const handleToggleBranching = (checked: boolean) => {
         const newPermissions = checked ? 'public' : 'private';
-        handleUpdate(() => updateCharacterBranchingPermissions(character.id, newPermissions), { branchingPermissions: newPermissions });
+        handleUpdate(() => updateCharacterBranchingPermissions(character.id, newPermissions));
     };
 
     const handleCreateVersion = () => {
