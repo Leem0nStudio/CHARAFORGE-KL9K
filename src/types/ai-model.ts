@@ -13,8 +13,8 @@ export interface AiModel {
   type: 'model' | 'lora';
   engine: 'huggingface' | 'gemini' | 'openrouter';
   hf_id: string;
-  civitaiModelId: string;
-  versionId: string;
+  civitaiModelId?: string;
+  versionId?: string;
   coverMediaUrl?: string | null;
   coverMediaType?: 'image' | 'video';
   triggerWords?: string[];
@@ -29,11 +29,15 @@ export const UpsertModelSchema = z.object({
   type: z.enum(['model', 'lora']),
   engine: z.enum(['huggingface', 'gemini', 'openrouter']),
   hf_id: z.string().min(1, 'Execution ID is required'),
-  civitaiModelId: z.string(),
-  versionId: z.string(),
+  civitaiModelId: z.string().optional(),
+  versionId: z.string().optional(),
   coverMediaUrl: z.string().url().nullable().optional(),
   coverMediaType: z.enum(['image', 'video']).optional(),
-  triggerWords: z.array(z.string()).optional(),
+  triggerWords: z.union([z.string(), z.array(z.string())]).optional().transform(val => {
+      if (Array.isArray(val)) return val;
+      if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
+      return [];
+  }),
   versions: z.array(z.object({
     id: z.string(),
     name: z.string(),
