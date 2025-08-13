@@ -50,7 +50,7 @@ function CastsList({
         startCreateTransition(async () => {
             const result = await createStoryCast({ name: newCastName, description: newCastDesc });
             if (result.success && result.data) {
-                toast({ title: 'Cast Created!', description: `Successfully created "${result.data.name}".`});
+                toast({ title: 'Cast Created!', description: `Successfully created "${'result.data.name'}".`});
                 onAddCast(result.data);
                 setIsDialogOpen(false);
                 setNewCastName('');
@@ -390,7 +390,7 @@ export default function StoryForgePage() {
     return (
         <div className="container py-8">
             <BackButton title="Story Forge" description="Create epic tales starring your own characters." />
-            <div className="grid lg:grid-cols-3 gap-8 items-start max-w-7xl mx-auto">
+            <div className="grid lg:grid-cols-3 gap-8 items-start max-w-7xl mx-auto mt-8">
                 <div className="lg:col-span-1">
                     <CastsList
                         casts={casts}

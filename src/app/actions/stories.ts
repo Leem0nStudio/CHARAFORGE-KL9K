@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { StoryCast } from '@/types/story';
 import { generateStory as generateStoryFlow } from '@/ai/flows/story-generation/flow';
 import type { Character } from '@/types/character';
@@ -34,11 +34,13 @@ export async function getUserCasts(): Promise<StoryCast[]> {
     
     return snapshot.docs.map(doc => {
         const data = doc.data();
+        const createdAt = data.createdAt as Timestamp;
+        const updatedAt = data.updatedAt as Timestamp;
         return {
             ...data,
             id: doc.id,
-            createdAt: data.createdAt.toMillis(),
-            updatedAt: data.updatedAt.toMillis(),
+            createdAt: createdAt.toMillis(),
+            updatedAt: updatedAt.toMillis(),
         } as StoryCast;
     });
 }
@@ -180,3 +182,5 @@ export async function generateStory(castId: string, storyPrompt: string): Promis
         return { success: false, message, error: message };
     }
 }
+
+    
