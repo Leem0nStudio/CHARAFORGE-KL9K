@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { generateCharacterBio } from '@/ai/flows/character-bio/flow';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
+import type { TextEngineConfig } from '@/ai/utils/llm-utils';
 import type { AiModel } from '@/types/ai-model';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { getUserProfile } from './user';
@@ -61,7 +62,14 @@ export async function generateCharacterDetails(input: GenerateDetailsInput): Pro
     const { description, targetLanguage, dataPackId, tags } = validation.data;
 
     try {
-        const bioResult = await generateCharacterBio({ description, targetLanguage });
+        // For now, text generation always uses the default Gemini model.
+        // This is where we could, in the future, let the user choose a text model.
+        const textEngineConfig: TextEngineConfig = {
+            engineId: 'gemini',
+            modelId: 'googleai/gemini-1.5-flash-latest',
+        };
+
+        const bioResult = await generateCharacterBio({ description, targetLanguage, engineConfig: textEngineConfig });
 
         if (!bioResult.biography) {
             throw new Error('AI generation failed to return a biography.');

@@ -5,10 +5,12 @@
  */
 
 import {z} from 'genkit';
+import { TextEngineConfigSchema } from '@/ai/utils/llm-utils';
 
 export const GenerateCharacterBioInputSchema = z.object({
   description: z.string().describe('A description of the character.'),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).optional().describe('The target language for the biography.'),
+  engineConfig: TextEngineConfigSchema.describe('The configuration for the text generation engine.'),
 });
 export type GenerateCharacterBioInput = z.infer<typeof GenerateCharacterBioInputSchema>;
 
