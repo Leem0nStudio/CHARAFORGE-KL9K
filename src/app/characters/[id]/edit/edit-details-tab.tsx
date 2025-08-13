@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
 import { updateCharacter } from '@/app/actions/character-write';
-import { generateCharacterBio } from '@/ai/flows/character-bio/flow';
+import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,7 +69,7 @@ export function EditDetailsTab({ character }: { character: Character }) {
                     engineId: 'gemini',
                     modelId: 'googleai/gemini-1.5-flash-latest',
                 };
-                const result = await generateCharacterBio({ 
+                const result = await generateCharacterSheet({ 
                     description: character.description, 
                     engineConfig: textEngineConfig 
                 });
