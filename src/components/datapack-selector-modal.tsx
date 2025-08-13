@@ -143,16 +143,20 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
             }
         });
         
-        const tags: string[] = [];
+        const promptTags: string[] = [];
         for (const key in fullData) {
             if (fullData[key]) {
                prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), fullData[key]);
-               tags.push(fullData[key]);
+               promptTags.push(fullData[key]);
             }
         }
         
         prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/, ,/g, ',').replace(/, /g, ' ').replace(/,$/g, '').trim();
-        onPromptGenerated(prompt, pack.name, pack.tags || [], pack.id);
+        
+        // Combine prompt keywords with the pack's high-level tags
+        const allTags = [...(pack.tags || []), ...promptTags];
+
+        onPromptGenerated(prompt, pack.name, allTags, pack.id);
     };
 
     return (

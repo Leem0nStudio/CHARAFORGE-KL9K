@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback, useTransition } from "react";
@@ -87,13 +88,12 @@ export function CharacterGenerator() {
   const [isLoadingModels, setIsLoadingModels] = useState(true);
 
   const [activePackName, setActivePackName] = useState<string | null>(null);
+  const [activePackId, setActivePackId] = useState<string | null>(null);
   
   const { toast } = useToast();
   const { authUser, loading: authLoading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const dataPackIdFromUrl = searchParams.get('packId');
-
+  
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
     resolver: zodResolver(generationFormSchema),
     defaultValues: {
@@ -111,12 +111,10 @@ export function CharacterGenerator() {
     generationForm.setValue('description', prompt, { shouldValidate: true });
     generationForm.setValue('tags', tags.join(','));
     setActivePackName(packName);
+    setActivePackId(packId);
     
-    const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('packId', packId);
-    router.replace(currentUrl.toString(), { scroll: false });
     setIsPackModalOpen(false);
-  }, [generationForm, router]);
+  }, [generationForm]);
   
   
   useEffect(() => {
@@ -177,7 +175,7 @@ export function CharacterGenerator() {
       if (result.success && result.data) {
         setGenerationResult({
           ...result.data,
-          dataPackId: dataPackIdFromUrl,
+          dataPackId: activePackId,
         });
         toast({ title: "Character Sheet Generated!", description: "Review the details and then generate the portrait." });
       } else {
@@ -186,7 +184,7 @@ export function CharacterGenerator() {
         toast({ variant: "destructive", title: "Generation Failed", description: errorMessage });
       }
     });
-  }, [authUser, toast, dataPackIdFromUrl]);
+  }, [authUser, toast, activePackId]);
   
   const onGeneratePortrait = useCallback(async () => {
     if (!authUser || !generationResult) return;
