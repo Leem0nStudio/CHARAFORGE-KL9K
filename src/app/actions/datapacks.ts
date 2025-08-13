@@ -216,7 +216,9 @@ export async function installDataPack(packId: string): Promise<{success: boolean
         if (userData?.stats?.installedPacks?.includes(packId)) {
             return { success: false, message: "You have already installed this DataPack." };
         }
-
+        
+        // CRITICAL FIX: Use `{ merge: true }` to prevent overwriting the user document.
+        // Use `FieldValue.arrayUnion` to safely add the new pack ID.
         await userRef.set({
             stats: { 
                 installedPacks: FieldValue.arrayUnion(packId)
@@ -295,24 +297,30 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
             throw new Error('Database service not available.');
         }
         
-        const userDoc = await adminDb.collection('users').doc(uid).get();
-        if (!userDoc.exists) {
+        const userDoc = await userDoc.get();
+        if (!userDoc.exists()) {
              console.log(`User document not found for UID: ${uid}`);
              return [];
         }
         
-        const installedPackIds = userDoc.data()?.stats?.installedPacks || [];
-        if (installedPackIds.length === 0) {
+        const userData = userDoc.data();
+        const installedPackIds = new Set<string>(userData?.stats?.installedPacks || []);
+        
+        // **CRITICAL FIX**: Always ensure the default pack is included.
+        installedPackIds.add('basic-fantasy-pack');
+
+        if (installedPackIds.size === 0) {
             return [];
         }
-
+        
+        const uniquePackIds = Array.from(installedPackIds);
         const allPacks: DataPack[] = [];
         const packsRef = adminDb.collection('datapacks');
 
         // Firestore 'in' queries are limited to 30 items. We batch to handle more.
         const batchSize = 30;
-        for (let i = 0; i < installedPackIds.length; i += batchSize) {
-            const batchIds = installedPackIds.slice(i, i + batchSize);
+        for (let i = 0; i < uniquePackIds.length; i += batchSize) {
+            const batchIds = uniquePackIds.slice(i, i + batchSize);
             if (batchIds.length > 0) {
                 const packsQuery = packsRef.where(FieldValue.documentId(), 'in', batchIds);
                 const packsSnapshot = await packsQuery.get();
@@ -344,3 +352,5 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         return [];
     }
 }
+
+    
