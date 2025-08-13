@@ -293,7 +293,11 @@ export function CharacterGenerator() {
           description: `${data.name} has been saved to your gallery.`,
         });
         
-        router.push(`/characters/${result.characterId}`);
+        if (result.characterId) {
+            router.push(`/characters/${result.characterId}/edit`);
+        } else {
+            router.push('/characters');
+        }
 
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : "Could not save your character. Please try again.";
@@ -314,6 +318,8 @@ export function CharacterGenerator() {
   const handleModelSelect = (model: AiModel) => {
     if (model.type === 'model') {
         setSelectedModel(model);
+        // Reset LoRA when base model changes
+        setSelectedLora(null); 
     } else {
         setSelectedLora(model);
         const defaultVersion = model.versions?.[0];

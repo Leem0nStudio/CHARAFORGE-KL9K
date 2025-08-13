@@ -3,7 +3,8 @@
 
 import { z } from 'zod';
 import { generateCharacterBio } from '@/ai/flows/character-bio/flow';
-import { generateCharacterImage, type ImageEngineConfig } from '@/ai/flows/character-image/flow';
+import { generateCharacterImage } from '@/ai/flows/character-image/flow';
+import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 import type { AiModel } from '@/types/ai-model';
 
 const GenerateCharacterInputSchema = z.object({
@@ -62,7 +63,7 @@ export async function generateCharacter(input: GenerateCharacterInput): Promise<
             aspectRatio,
         };
         
-        if (selectedLora) {
+        if (selectedLora && selectedModel.engine === 'huggingface') {
             const loraVersion = selectedLora.versions?.find(v => v.id === loraVersionId) 
                 || { id: selectedLora.versionId, triggerWords: selectedLora.triggerWords };
 
