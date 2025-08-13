@@ -62,7 +62,8 @@ export default async function AiModelsPage() {
                                     <CardDescription className="text-xs truncate">{lora.hf_id || 'No HF ID set'}</CardDescription>
                                     {lora.triggerWords && lora.triggerWords.length > 0 && (
                                         <div className="flex flex-wrap gap-1 mt-2">
-                                            {lora.triggerWords.map(word => <Badge key={word} variant="outline">{word}</Badge>)}
+                                            {lora.triggerWords.slice(0, 4).map(word => <Badge key={word} variant="outline">{word}</Badge>)}
+                                            {lora.triggerWords.length > 4 && <Badge variant="outline">...</Badge>}
                                         </div>
                                     )}
                                 </CardContent>
