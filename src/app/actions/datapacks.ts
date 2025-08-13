@@ -302,6 +302,7 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         
         const installedPackIds = new Set<string>(userDoc.data()?.stats?.installedPacks || []);
         
+        // Always ensure the basic fantasy pack is available
         installedPackIds.add('basic-fantasy-pack');
 
         if (installedPackIds.size === 0) {
@@ -339,7 +340,20 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
 
     } catch (error) {
          if (error instanceof Error && (error.message.includes('User session not found') || error.message.includes('Invalid or expired'))) {
-            console.log('User session not found for installed packs, returning empty list.');
+            console.log('User session not found for installed packs, returning empty list with default.');
+             // Gracefully handle not-logged-in state by returning just the default pack
+            const defaultPackDoc = await adminDb!.collection('datapacks').doc('basic-fantasy-pack').get();
+            if (defaultPackDoc.exists) {
+                const data = defaultPackDoc.data()!;
+                 const createdAt = data.createdAt;
+                 const updatedAt = data.updatedAt;
+                return [{
+                     ...data,
+                    id: defaultPackDoc.id,
+                    createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
+                    updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
+                } as DataPack];
+            }
             return [];
         }
         console.error("Error fetching installed DataPacks:", error);
