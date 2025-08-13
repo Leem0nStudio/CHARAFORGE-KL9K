@@ -318,7 +318,6 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
                 const packsSnapshot = await packsQuery.get();
                 const batchPacks = packsSnapshot.docs.map(doc => {
                     const data = doc.data();
-                    // **CRITICAL FIX**: Convert Timestamps to serializable Date objects.
                     const createdAt = data.createdAt;
                     const updatedAt = data.updatedAt;
                     return {
@@ -332,7 +331,6 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
             }
         }
         
-        // Sort packs by name after fetching all of them
         allPacks.sort((a, b) => a.name.localeCompare(b.name));
         
         return allPacks;
@@ -346,5 +344,3 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         return [];
     }
 }
-
-    
