@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useTransition } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,28 +12,27 @@ import { updateUserPreferences } from '@/app/actions/user';
 import { Loader2 } from 'lucide-react';
 import type { UserPreferences } from '@/types/user';
 
-export function PreferencesForm({ initialPreferences }: { initialPreferences: UserPreferences }) {
+interface PreferencesFormProps {
+    preferences: UserPreferences;
+    onPreferencesChange: (newPreferences: UserPreferences) => void;
+}
+
+export function PreferencesForm({ preferences, onPreferencesChange }: PreferencesFormProps) {
   const { toast } = useToast();
-  const [preferences, setPreferences] = useState<UserPreferences>(initialPreferences);
   const [isSavingPrefs, startPrefsTransition] = useTransition();
 
-  useEffect(() => {
-    setPreferences(initialPreferences);
-  }, [initialPreferences]);
-
-
-  const handlePreferencesChange = (field: keyof UserPreferences, value: any) => {
-    setPreferences(prev => ({ ...prev, [field]: value }));
+  const handleFieldChange = (field: keyof UserPreferences, value: any) => {
+    onPreferencesChange({ ...preferences, [field]: value });
   };
 
-  const handleNestedPreferencesChange = (parent: 'notifications' | 'privacy', field: string, value: any) => {
-    setPreferences(prev => ({
-      ...prev,
+  const handleNestedFieldChange = (parent: 'notifications' | 'privacy', field: string, value: any) => {
+    onPreferencesChange({
+      ...preferences,
       [parent]: {
-        ...(prev[parent] as any),
+        ...(preferences[parent] as any),
         [field]: value,
       },
-    }));
+    });
   };
 
   const handleSavePreferences = () => {
@@ -58,7 +57,7 @@ export function PreferencesForm({ initialPreferences }: { initialPreferences: Us
             <Label className="text-base font-semibold">Theme</Label>
              <RadioGroup 
                 value={preferences.theme} 
-                onValueChange={(value: 'light' | 'dark' | 'system') => handlePreferencesChange('theme', value)}
+                onValueChange={(value: 'light' | 'dark' | 'system') => handleFieldChange('theme', value)}
                 className="flex space-x-4"
              >
                 <div className="flex items-center space-x-2">
@@ -84,7 +83,7 @@ export function PreferencesForm({ initialPreferences }: { initialPreferences: Us
                 </div>
                 <Switch 
                     checked={preferences.notifications.email}
-                    onCheckedChange={(checked) => handleNestedPreferencesChange('notifications', 'email', checked)}
+                    onCheckedChange={(checked) => handleNestedFieldChange('notifications', 'email', checked)}
                 />
             </div>
         </div>
@@ -97,7 +96,7 @@ export function PreferencesForm({ initialPreferences }: { initialPreferences: Us
                 </div>
                 <Switch
                    checked={preferences.privacy.profileVisibility === 'public'}
-                   onCheckedChange={(checked) => handleNestedPreferencesChange('privacy', 'profileVisibility', checked ? 'public' : 'private')}
+                   onCheckedChange={(checked) => handleNestedFieldChange('privacy', 'profileVisibility', checked ? 'public' : 'private')}
                 />
             </div>
         </div>

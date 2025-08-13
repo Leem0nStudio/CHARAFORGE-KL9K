@@ -1,30 +1,31 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { Loader2, Wand2 } from 'lucide-react';
 import type { DataPack } from '@/types/datapack';
 
-export function DataPacksTab() {
-    const [packs, setPacks] = useState<DataPack[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+interface DataPacksTabProps {
+    packs: DataPack[];
+    isLoading: boolean;
+}
 
-    useEffect(() => {
-        async function loadPacks() {
-            setIsLoading(true);
-            const installedPacks = await getInstalledDataPacks();
-            setPacks(installedPacks);
-            setIsLoading(false);
-        }
-        loadPacks();
-    }, []);
+export function DataPacksTab({ packs, isLoading }: DataPacksTabProps) {
 
     if (isLoading) {
-        return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Installed DataPacks</CardTitle>
+                    <CardDescription>The creative building blocks you've collected. Use them in the Character Generator.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                </CardContent>
+            </Card>
+        )
     }
 
     return (
@@ -43,7 +44,7 @@ export function DataPacksTab() {
                                     <p className="text-sm text-muted-foreground">by {pack.author}</p>
                                 </div>
                                 <Button asChild variant="secondary" size="sm">
-                                    <Link href="/character-generator">
+                                    <Link href={`/character-generator?packId=${pack.id}`}>
                                         <Wand2 className="mr-2 h-4 w-4" /> Use
                                     </Link>
                                 </Button>

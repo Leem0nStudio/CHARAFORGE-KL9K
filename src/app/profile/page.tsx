@@ -1,11 +1,13 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
-import type { UserPreferences } from '@/types/user';
+import type { UserPreferences, UserProfile } from '@/types/user';
+import type { DataPack } from '@/types/datapack';
+import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { BackButton } from '@/components/back-button';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,31 +21,55 @@ import { SecurityTab } from '@/components/profile/security-tab';
 
 
 export default function ProfilePage() {
-  const { userProfile, loading } = useAuth();
+  const { userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
+
+  // Default preferences to avoid null issues before userProfile is loaded
+  const defaultPreferences: UserPreferences = {
+    theme: 'system',
+    notifications: { email: false },
+    privacy: { profileVisibility: 'private' },
+  };
+  
+  const [preferences, setPreferences] = useState<UserPreferences>(
+    userProfile?.preferences || defaultPreferences
+  );
 
   useEffect(() => {
-    if (!loading && !userProfile) {
-      router.push('/login');
+    if (userProfile?.preferences) {
+      setPreferences(userProfile.preferences);
     }
-  }, [userProfile, loading, router]);
+  }, [userProfile?.preferences]);
+
+  const loadInstalledPacks = useCallback(async () => {
+    try {
+      const packs = await getInstalledDataPacks();
+      setInstalledPacks(packs);
+    } catch (error) {
+      console.error("Failed to load installed packs", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading && !userProfile) {
+      router.push('/login');
+      return;
+    }
+    if (userProfile) {
+      loadInstalledPacks();
+      setIsLoading(false);
+    }
+  }, [userProfile, authLoading, router, loadInstalledPacks]);
   
-  if (loading || !userProfile) {
+  if (authLoading || isLoading || !userProfile) {
     return (
       <div className="flex items-center justify-center h-screen w-full">
          <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-  
-  const defaultPreferences: UserPreferences = {
-    theme: 'system',
-    notifications: { email: false },
-    privacy: { profileVisibility: 'private' },
-  };
-
-  const userPreferences = userProfile.preferences || defaultPreferences;
-  const userStats = userProfile.stats;
 
   return (
     <motion.div
@@ -69,13 +95,19 @@ export default function ProfilePage() {
                 <ProfileForm user={userProfile} />
             </TabsContent>
             <TabsContent value="datapacks" className="space-y-4">
-                <DataPacksTab />
+                <DataPacksTab 
+                    packs={installedPacks} 
+                    isLoading={isLoading}
+                />
             </TabsContent>
             <TabsContent value="prefs" className="space-y-4">
-                <PreferencesForm initialPreferences={userPreferences} />
+                <PreferencesForm 
+                    preferences={preferences}
+                    onPreferencesChange={setPreferences}
+                />
             </TabsContent>
             <TabsContent value="stats" className="space-y-4">
-                <StatsTab userStats={userStats} />
+                <StatsTab userStats={userProfile.stats} />
             </TabsContent>
             <TabsContent value="security" className="space-y-4">
                 <SecurityTab />
@@ -85,5 +117,3 @@ export default function ProfilePage() {
     </motion.div>
   );
 }
-
-    
