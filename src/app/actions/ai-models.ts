@@ -89,12 +89,12 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
                     const videoUrl = image.meta?.video?.url || image.url;
                     // Ensure we get a URL that's actually a video file
                     if (videoUrl && (videoUrl.includes('.mp4') || videoUrl.includes('octet-stream'))) {
-                       return { url: videoUrl, type: 'video' };
+                       return { url: videoUrl, type: 'video' as 'video' };
                     }
                 }
                 // If it's not a video or the video URL is bad, treat it as an image.
                 // Prioritize smaller images for performance.
-                return { url: image.url, type: 'image' };
+                return { url: image.url, type: 'image' as 'image' };
             }
             return null;
         };
@@ -111,6 +111,9 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
         if (type === 'lora') {
             const suggestion = await suggestHfModel({ modelName: modelInfo.name });
             suggestedHfId = suggestion.suggestedHfId;
+        } else if (type === 'model') {
+            // For base models, we often use the name as a hint for the HF ID
+            suggestedHfId = modelInfo.name.toLowerCase().includes('sdxl') ? 'stabilityai/stable-diffusion-xl-base-1.0' : '';
         }
 
         const newModel: Omit<AiModel, 'id' | 'createdAt' | 'updatedAt'> = {
