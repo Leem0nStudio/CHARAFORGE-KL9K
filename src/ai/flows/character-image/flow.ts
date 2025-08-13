@@ -94,8 +94,8 @@ const generateCharacterImageFlow = ai.defineFlow(
                 model: 'googleai/gemini-2.0-flash-preview-image-generation',
                 prompt: description,
                 // CRITICAL FIX: width and height are top-level parameters, not part of 'config'
-                width,
-                height,
+                width: width,
+                height: height,
                 config: {
                     responseModalities: ['TEXT', 'IMAGE'],
                 },
