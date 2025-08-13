@@ -38,7 +38,7 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
     
     try {
         const app = await client(data.modelId, { hf_token: apiKey as `hf_${string}` });
-        const result: any = await app.predict("/run", {
+        const result: any = await app.predict("/predict", { // Standardized to /predict
             prompt: data.inputs,
             negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
             width: 1024,
@@ -76,7 +76,7 @@ async function queryOpenRouterAPI(data: { inputs: string, modelId: string, userA
     }
     
     try {
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        const response = await fetch("https://openrouter.ai/api/v1/images/generations", { // Updated endpoint for images
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
@@ -84,7 +84,10 @@ async function queryOpenRouterAPI(data: { inputs: string, modelId: string, userA
             },
             body: JSON.stringify({
                 model: data.modelId,
-                messages: [{ role: 'user', content: data.inputs }],
+                prompt: data.inputs,
+                n: 1,
+                size: "1024x1024", // Adjust as needed, or make dynamic
+                response_format: "b64_json" // Request Base64 to avoid a second network call
             })
         });
 
@@ -95,19 +98,7 @@ async function queryOpenRouterAPI(data: { inputs: string, modelId: string, userA
 
         const result = await response.json();
         
-        // OpenRouter, compatible with OpenAI, returns the image in a specific way.
-        // It's often Base64 encoded or could be a URL. For DALL-E 3, it's typically a URL.
-        // Let's assume for now it returns a URL. We will need to fetch it and convert to DataURI.
-        // This part might need adjustment based on actual OpenRouter response for image models.
-        const imageUrl = result.choices[0]?.message?.content;
-        if (typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
-             // Let's assume for now we need to fetch this URL and convert to Base64
-             const imageResponse = await fetch(imageUrl);
-             if (!imageResponse.ok) throw new Error('Failed to fetch the generated image from the URL provided by OpenRouter.');
-             const buffer = await imageResponse.arrayBuffer();
-             const contentType = imageResponse.headers.get('content-type') || 'image/png';
-             return `data:${contentType};base64,${Buffer.from(buffer).toString('base64')}`;
-        } else if (result.data && Array.isArray(result.data) && result.data[0]?.b64_json) {
+        if (result.data && Array.isArray(result.data) && result.data[0]?.b64_json) {
             return `data:image/png;base64,${result.data[0].b64_json}`;
         }
         
