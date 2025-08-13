@@ -58,7 +58,9 @@ const generationFormSchema = z.object({
   tags: z.string().optional(),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
-  selectedModel: z.custom<AiModel>(),
+  selectedModel: z.custom<AiModel>().refine(data => !!data, {
+    message: "A base model must be selected.",
+  }),
   selectedLora: z.custom<AiModel>().optional().nullable(),
   loraVersionId: z.string().optional(),
   loraWeight: z.number().min(0).max(1).optional(),
@@ -296,7 +298,7 @@ export function CharacterGenerator() {
 
   const handleModelSelect = (model: AiModel) => {
     if (model.type === 'model') {
-        generationForm.setValue('selectedModel', model);
+        generationForm.setValue('selectedModel', model, { shouldValidate: true });
         if (model.engine !== 'huggingface') {
             generationForm.setValue('selectedLora', null); 
         }

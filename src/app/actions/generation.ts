@@ -12,7 +12,6 @@ const GenerateCharacterInputSchema = z.object({
   tags: z.string().optional(),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
-  dataPackId: z.string().optional().nullable(),
   selectedModel: z.custom<AiModel>(),
   selectedLora: z.custom<AiModel>().optional().nullable(),
   loraVersionId: z.string().optional(),
