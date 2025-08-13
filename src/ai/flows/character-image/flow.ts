@@ -134,7 +134,7 @@ const generateCharacterImageFlow = ai.defineFlow(
         try {
             const { width, height } = getDimensions(aspectRatio);
             const { media } = await ai.generate({
-                model: 'googleai/gemini-2.0-flash-preview-image-generation',
+                model: ai.model('gemini-2.0-flash-preview-image-generation'),
                 prompt: description,
                 width,
                 height,

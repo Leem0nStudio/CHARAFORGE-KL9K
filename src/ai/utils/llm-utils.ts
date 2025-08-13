@@ -6,7 +6,7 @@
 
 import { z } from 'zod';
 import { generate } from 'genkit';
-import { model } from 'genkit/model';
+import { ai } from '@/ai/genkit';
 import type { GenerationCommonOptions } from 'genkit/ai';
 
 
@@ -44,7 +44,7 @@ export async function queryLlm<T extends z.ZodTypeAny>(
       throw new Error(`OpenRouter API key is not configured on the server or provided by the user.`);
     }
 
-    reference = model(modelId, {
+    reference = ai.model(modelId, {
       config: {
         apiKey,
         // OpenRouter uses the OpenAI API format, so we can specify the provider.
@@ -54,7 +54,7 @@ export async function queryLlm<T extends z.ZodTypeAny>(
     });
 
   } else { // Default to 'gemini'
-    reference = model(modelId);
+    reference = ai.model(modelId);
   }
 
   const { output } = await generate({
