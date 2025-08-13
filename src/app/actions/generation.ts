@@ -10,25 +10,20 @@ import { verifyAndGetUid } from '@/lib/auth/server';
 import { getUserProfile } from './user';
 
 
-const GenerateCharacterInputSchema = z.object({
+// Schema for the first step: generating text details
+const GenerateDetailsInputSchema = z.object({
   description: z.string().min(20).max(1000),
   tags: z.string().optional(),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
-  aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
-  selectedModel: z.custom<AiModel>().refine(data => !!data, { message: 'A base model must be selected.' }),
-  selectedLora: z.custom<AiModel>().optional().nullable(),
-  loraVersionId: z.string().optional(),
-  loraWeight: z.number().min(0).max(1).optional(),
+  dataPackId: z.string().optional().nullable(),
 });
+export type GenerateDetailsInput = z.infer<typeof GenerateDetailsInputSchema>;
 
-export type GenerateCharacterInput = z.infer<typeof GenerateCharacterInputSchema>;
-
-export type GenerateCharacterOutput = {
+export type GenerateDetailsOutput = {
     success: boolean;
     message: string;
     data?: {
         biography: string;
-        imageUrl: string;
         description: string;
         tags: string;
         dataPackId?: string | null;
@@ -36,34 +31,85 @@ export type GenerateCharacterOutput = {
     error?: string;
 };
 
-export async function generateCharacter(input: GenerateCharacterInput): Promise<GenerateCharacterOutput> {
-    const validation = GenerateCharacterInputSchema.safeParse(input);
+
+// Schema for the second step: generating the image
+const GeneratePortraitInputSchema = z.object({
+    description: z.string().min(20).max(1000),
+    aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
+    selectedModel: z.custom<AiModel>().refine(data => !!data, { message: 'A base model must be selected.' }),
+    selectedLora: z.custom<AiModel>().optional().nullable(),
+    loraVersionId: z.string().optional(),
+    loraWeight: z.number().min(0).max(1).optional(),
+});
+export type GeneratePortraitInput = z.infer<typeof GeneratePortraitInputSchema>;
+
+export type GeneratePortraitOutput = {
+    success: boolean;
+    message: string;
+    imageUrl?: string;
+    error?: string;
+}
+
+
+export async function generateCharacterDetails(input: GenerateDetailsInput): Promise<GenerateDetailsOutput> {
+    const validation = GenerateDetailsInputSchema.safeParse(input);
     if (!validation.success) {
         return { success: false, message: 'Invalid input.', error: validation.error.message };
     }
-    
+    await verifyAndGetUid();
+
+    const { description, targetLanguage, dataPackId, tags } = validation.data;
+
+    try {
+        const bioResult = await generateCharacterBio({ description, targetLanguage });
+
+        if (!bioResult.biography) {
+            throw new Error('AI generation failed to return a biography.');
+        }
+
+         return {
+            success: true,
+            message: 'Character details generated successfully!',
+            data: {
+                biography: bioResult.biography,
+                description,
+                tags: tags || '',
+                dataPackId,
+            }
+        };
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown error occurred during generation.';
+        console.error("Error in generateCharacterDetails action:", message);
+        return { success: false, message: 'Failed to generate character details.', error: message };
+    }
+}
+
+
+export async function generateCharacterPortrait(input: GeneratePortraitInput): Promise<GeneratePortraitOutput> {
+    const validation = GeneratePortraitInputSchema.safeParse(input);
+    if (!validation.success) {
+        return { success: false, message: 'Invalid input.', error: validation.error.message };
+    }
+
     const uid = await verifyAndGetUid();
     const userProfile = await getUserProfile(uid);
     const userApiKey = userProfile?.preferences?.huggingFaceApiKey;
 
-    const { 
-        description, 
-        targetLanguage, 
-        aspectRatio, 
-        dataPackId,
-        tags,
+    const {
+        description,
+        aspectRatio,
         selectedModel,
         selectedLora,
         loraVersionId,
         loraWeight
     } = validation.data;
 
-    // Pattern: Rigorous Server-Side Validation. Add an extra layer of defense.
     if (!selectedModel) {
         return { success: false, message: 'A base model must be selected for generation.' };
     }
 
-    try {
+     try {
         const imageEngineConfig: ImageEngineConfig = {
             engineId: selectedModel.engine,
             modelId: selectedModel.engine === 'huggingface' ? selectedModel.hf_id : undefined,
@@ -83,30 +129,21 @@ export async function generateCharacter(input: GenerateCharacterInput): Promise<
             };
         }
         
-        const [bioResult, imageResult] = await Promise.all([
-            generateCharacterBio({ description, targetLanguage }),
-            generateCharacterImage({ description, engineConfig: imageEngineConfig })
-        ]);
+        const imageResult = await generateCharacterImage({ description, engineConfig: imageEngineConfig });
         
-        if (!bioResult.biography || !imageResult.imageUrl) {
-            throw new Error('One or more AI generation steps failed to return data.');
+        if (!imageResult.imageUrl) {
+            throw new Error('AI generation failed to return an image.');
         }
 
         return {
             success: true,
-            message: 'Character generated successfully!',
-            data: {
-                biography: bioResult.biography,
-                imageUrl: imageResult.imageUrl,
-                description,
-                tags: tags || '',
-                dataPackId,
-            }
+            message: 'Portrait generated successfully!',
+            imageUrl: imageResult.imageUrl,
         };
 
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred during generation.';
-        console.error("Error in generateCharacter action:", message);
-        return { success: false, message: 'Failed to generate character.', error: message };
+        console.error("Error in generateCharacterPortrait action:", message);
+        return { success: false, message: 'Failed to generate portrait.', error: message };
     }
 }

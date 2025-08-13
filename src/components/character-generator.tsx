@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
-import { generateCharacter, type GenerateCharacterInput } from "@/app/actions/generation";
+import { generateCharacterDetails, generateCharacterPortrait, type GenerateDetailsInput, type GeneratePortraitInput } from "@/app/actions/generation";
 import { getModels } from "@/app/actions/ai-models";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
@@ -36,7 +36,6 @@ import type { AiModel } from '@/types/ai-model';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { MediaDisplay } from "./media-display";
 
-// Placeholder for the default model to avoid race conditions.
 const geminiPlaceholder: AiModel = {
     id: 'gemini-placeholder',
     name: 'Gemini Image Generation',
@@ -76,7 +75,7 @@ const saveFormSchema = z.object({
 
 type GenerationResult = {
   biography: string;
-  imageUrl: string;
+  imageUrl?: string | null;
   description: string;
   tags: string;
   dataPackId?: string | null;
@@ -189,7 +188,6 @@ export function CharacterGenerator() {
             setAvailableModels(allBaseModels);
             setAvailableLoras(loras);
 
-            // Set the default model in the form once data is loaded
             generationForm.setValue('selectedModel', allBaseModels[0]);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' });
@@ -221,7 +219,7 @@ export function CharacterGenerator() {
     generationForm.setValue('tags', Array.from(allTags).join(','));
   };
 
-  const onGenerate = useCallback(async (data: z.infer<typeof generationFormSchema>) => {
+  const onGenerateDetails = useCallback(async (data: z.infer<typeof generationFormSchema>) => {
     if (!authUser) {
       toast({ variant: "destructive", title: "Authentication Required", description: "Please log in to generate a character." });
       return;
@@ -232,14 +230,16 @@ export function CharacterGenerator() {
     saveForm.reset();
 
     startGenerationTransition(async () => {
-      const result = await generateCharacter({ 
-          ...data, 
+      const result = await generateCharacterDetails({ 
+          description: data.description,
+          tags: data.tags,
+          targetLanguage: data.targetLanguage,
           dataPackId: dataPackIdFromUrl,
       });
       
       if (result.success && result.data) {
         setGenerationResult(result.data);
-        toast({ title: "Generation Complete!", description: "Your character is ready." });
+        toast({ title: "Details Generated!", description: "Character biography is ready. Now, generate the portrait." });
       } else {
         const errorMessage = result.error || "An unknown error occurred during generation.";
         setGenerationError(errorMessage);
@@ -247,6 +247,32 @@ export function CharacterGenerator() {
       }
     });
   }, [authUser, toast, dataPackIdFromUrl, saveForm]);
+  
+  const onGeneratePortrait = useCallback(async () => {
+    if (!authUser || !generationResult) return;
+    
+    startGenerationTransition(async () => {
+        const data = generationForm.getValues();
+        const result = await generateCharacterPortrait({
+             description: data.description,
+             aspectRatio: data.aspectRatio,
+             selectedModel: data.selectedModel,
+             selectedLora: data.selectedLora,
+             loraVersionId: data.loraVersionId,
+             loraWeight: data.loraWeight,
+        });
+        
+        if (result.success && result.imageUrl) {
+            setGenerationResult(prev => prev ? { ...prev, imageUrl: result.imageUrl } : null);
+            toast({ title: "Portrait Generated!", description: "The character image is now ready."});
+        } else {
+             const errorMessage = result.error || "An unknown error occurred during portrait generation.";
+             setGenerationError(errorMessage);
+             toast({ variant: "destructive", title: "Portrait Failed", description: errorMessage });
+        }
+    });
+  }, [authUser, toast, generationResult, generationForm]);
+
 
   async function onSave(data: z.infer<typeof saveFormSchema>) {
     if (!generationResult || !generationResult.imageUrl || !authUser) {
@@ -351,7 +377,7 @@ export function CharacterGenerator() {
           </CardHeader>
           <CardContent>
             <Form {...generationForm}>
-              <form onSubmit={generationForm.handleSubmit(onGenerate)} className="space-y-6">
+              <form onSubmit={generationForm.handleSubmit(onGenerateDetails)} className="space-y-6">
                 
                 <Tabs defaultValue="prompt">
                     <TabsList className="grid w-full grid-cols-2">
@@ -484,7 +510,7 @@ export function CharacterGenerator() {
                 </Tabs>
                 <div className="pt-4">
                     <Button type="submit" size="lg" className="w-full font-headline text-lg" disabled={!canInteract}>
-                        {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Character</>)}
+                        {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging Details...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Character</>)}
                     </Button>
                 </div>
                 {!authUser && !authLoading && <p className="text-xs text-center text-muted-foreground">You must be logged in to forge a character.</p>}
@@ -503,7 +529,7 @@ export function CharacterGenerator() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isGenerating && (
+            {isGenerating && !generationResult && (
                <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
                     <Loader2 className="h-12 w-12 mb-4 animate-spin text-primary" />
                     <p className="text-lg font-medium font-headline tracking-wider">Forging your character...</p>
@@ -534,18 +560,37 @@ export function CharacterGenerator() {
                <div className="grid gap-8 md:grid-cols-5">
                   <div className="md:col-span-2 space-y-4">
                      <h3 className="font-headline text-2xl flex items-center"><ImageIcon className="w-5 h-5 mr-2 text-primary" /> Portrait</h3>
-                      <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-green-500 shadow-lg bg-muted/20 p-1">
-                          <Image
-                              src={generationResult.imageUrl}
-                              alt="Generated character portrait"
-                              fill
-                              className="object-contain"
-                              sizes="100vw"
-                          />
-                           <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-green-600 text-white text-xs font-bold py-1 px-2 rounded-full shadow">
-                              <Check className="w-3 h-3"/>
-                              Ready
-                          </div>
+                      <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-primary/50 shadow-lg bg-muted/20 p-1">
+                          {isGenerating && !generationResult.imageUrl && (
+                              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
+                                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                  <p className="mt-2 text-sm">Generating portrait...</p>
+                              </div>
+                          )}
+                          {generationResult.imageUrl ? (
+                             <>
+                                <Image
+                                  src={generationResult.imageUrl}
+                                  alt="Generated character portrait"
+                                  fill
+                                  className="object-contain"
+                                  sizes="100vw"
+                                />
+                                <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-green-600 text-white text-xs font-bold py-1 px-2 rounded-full shadow">
+                                  <Check className="w-3 h-3"/>
+                                  Ready
+                               </div>
+                             </>
+                          ) : (
+                              !isGenerating && (
+                                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
+                                    <p className="mb-4">Biography complete. Now, create the visual representation.</p>
+                                    <Button onClick={onGeneratePortrait} disabled={isGenerating}>
+                                         <Wand2 className="mr-2" /> Generate Portrait
+                                    </Button>
+                                </div>
+                              )
+                          )}
                       </div>
                   </div>
 
@@ -574,7 +619,7 @@ export function CharacterGenerator() {
                                 </FormItem>
                               )}
                             />
-                            <Button type="submit" className="w-full" disabled={!canInteract || isSaving}>
+                            <Button type="submit" className="w-full" disabled={!canInteract || isSaving || !generationResult.imageUrl}>
                               {isSaving ? (
                                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
                               ) : (
