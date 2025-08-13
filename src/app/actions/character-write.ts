@@ -1,7 +1,7 @@
 
 'use server';
 
-import { revalidatePath } from 'next/revalidate';
+import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character, TimelineEvent } from '@/types/character';
