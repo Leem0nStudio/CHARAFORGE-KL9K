@@ -162,5 +162,3 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
     </form>
   );
 }
-
-    
