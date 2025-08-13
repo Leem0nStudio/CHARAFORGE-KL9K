@@ -65,5 +65,3 @@ export const SaveCharacterInputSchema = z.object({
   tags: z.string().optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
-
-    
