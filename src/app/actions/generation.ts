@@ -1,4 +1,3 @@
-
 'use server';
 
 import { z } from 'zod';
@@ -69,7 +68,7 @@ export async function generateCharacter(input: GenerateCharacterInput): Promise<
     try {
         // This is the new, centralized logic for building the engine config.
         const imageEngineConfig: ImageEngineConfig = {
-            engineId: selectedModel.type === 'model' && selectedModel.civitaiModelId === '0' ? 'gemini' : 'huggingface',
+            engineId: selectedModel.civitaiModelId === '0' ? 'gemini' : 'huggingface',
             modelId: selectedModel.hf_id,
             aspectRatio,
         };

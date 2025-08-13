@@ -185,7 +185,7 @@ export function CharacterGenerator() {
             const geminiPlaceholder: AiModel = {
                 id: 'gemini-placeholder',
                 civitaiModelId: '0', 
-                name: 'Gemini Image',
+                name: 'Gemini Image Generation',
                 type: 'model',
                 hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
                 versionId: '1.0',
