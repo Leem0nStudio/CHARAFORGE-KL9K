@@ -418,7 +418,7 @@ export function CharacterGenerator() {
 
                         <Accordion type="single" collapsible defaultValue="engine">
                             <AccordionItem value="engine">
-                                <AccordionTrigger>AI Engine</AccordionTrigger>
+                                <AccordionTrigger>AI Settings</AccordionTrigger>
                                 <AccordionContent className="space-y-4 pt-2">
                                     <VisualModelSelector
                                         label="Base Model"
@@ -433,7 +433,7 @@ export function CharacterGenerator() {
                                             label="LoRA (Optional)"
                                             model={selectedLora}
                                             onOpen={() => handleOpenModelModal('lora')}
-                                            disabled={!canInteract}
+                                            disabled={!canInteract || availableLoras.length === 0}
                                             isLoading={isLoading}
                                         />
                                         {selectedLora && (

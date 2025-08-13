@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { MediaDisplay } from './media-display';
+import { Separator } from './ui/separator';
 
 
 interface ModelSelectorModalProps {
@@ -59,7 +60,7 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models, is
                                             <Card
                                                 key={item.id}
                                                 onClick={() => onSelect(item)}
-                                                className="cursor-pointer overflow-hidden group transition-all hover:shadow-primary/20 hover:border-primary border-2 border-transparent"
+                                                className="cursor-pointer overflow-hidden group transition-all hover:shadow-primary/20 hover:border-primary border-2 border-transparent flex flex-col"
                                             >
                                                 <div className="relative aspect-[4/3] bg-muted/20">
                                                     <MediaDisplay 
@@ -69,13 +70,25 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models, is
                                                         className="object-cover group-hover:scale-105 transition-transform"
                                                     />
                                                 </div>
-                                                <CardContent className="p-3">
+                                                <CardContent className="p-3 flex-grow flex flex-col">
                                                     <p className="font-semibold truncate">{item.name}</p>
                                                     <p className="text-xs text-muted-foreground truncate">{item.hf_id}</p>
                                                     {item.triggerWords && item.triggerWords.length > 0 && (
                                                         <div className="flex flex-wrap gap-1 mt-2">
                                                             {item.triggerWords.slice(0, 2).map(word => <Badge key={word} variant="outline">{word}</Badge>)}
                                                             {item.triggerWords.length > 2 && <Badge variant="outline">...</Badge>}
+                                                        </div>
+                                                    )}
+                                                    {item.versions && item.versions.length > 1 && (
+                                                        <div className="mt-auto pt-2">
+                                                            <Separator className="my-2"/>
+                                                            <h4 className="text-xs font-semibold text-muted-foreground mb-1">Versions:</h4>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {item.versions.slice(0, 3).map(v => (
+                                                                    <Badge key={v.id} variant="secondary">{v.name}</Badge>
+                                                                ))}
+                                                                {item.versions.length > 3 && <Badge variant="secondary">...</Badge>}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </CardContent>
