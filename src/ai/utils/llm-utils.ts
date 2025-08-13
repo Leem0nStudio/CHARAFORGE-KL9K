@@ -4,8 +4,6 @@
  * (e.g., Google AI, OpenRouter) based on the provided configuration.
  */
 
-'use server';
-
 import { z } from 'zod';
 import { generate, model } from 'genkit';
 import type { GenerationCommonOptions } from 'genkit/ai';
