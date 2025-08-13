@@ -79,5 +79,3 @@ export async function getAuthDebugInfo(): Promise<DebugInfo> {
     };
   }
 }
-
-    
