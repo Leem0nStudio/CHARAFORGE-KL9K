@@ -19,10 +19,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { deleteUserAccount, updateUserPreferences } from '@/app/actions/user';
-import { Loader2, KeyRound } from 'lucide-react';
+import { Loader2, KeyRound, Info } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import type { UserPreferences } from '@/types/user';
+import Link from 'next/link';
 
 export function SecurityTab() {
   const { toast } = useToast();
@@ -84,6 +86,16 @@ export function SecurityTab() {
                     value={huggingFaceApiKey}
                     onChange={(e) => setHuggingFaceApiKey(e.target.value)}
                 />
+                 <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Where to find your API Key?</AlertTitle>
+                    <AlertDescription>
+                        Using your own key can prevent generation failures if the system key is busy. You can create a free key in your Hugging Face account settings.
+                        <Button variant="link" asChild className="p-0 h-auto ml-1 font-semibold">
+                            <Link href="https://huggingface.co/settings/tokens" target="_blank">Get your key here.</Link>
+                        </Button>
+                    </AlertDescription>
+                </Alert>
             </div>
             <Button onClick={handleSavePreferences} disabled={isSavingPrefs}>
                 {isSavingPrefs && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

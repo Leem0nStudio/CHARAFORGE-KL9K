@@ -34,13 +34,13 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
     const apiKey = data.userApiKey || systemApiKey;
 
     if (!apiKey) {
-        throw new Error("Hugging Face API key is not configured on the server or provided by the user.");
+        throw new Error("Hugging Face API key is not configured on the server or provided by the user in their profile settings.");
     }
     
     try {
         // The modelId should be the Gradio Space ID, e.g., "klaabu/illustrious-nxt"
         const app = await client(data.modelId, { hf_token: apiKey as `hf_${string}` });
-        const result = await app.predict("/run", {
+        const result: any = await app.predict("/run", {
             prompt: data.inputs,
             negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
             width: 1024,
@@ -89,8 +89,8 @@ const generateCharacterImageFlow = ai.defineFlow(
             const { media } = await ai.generate({
                 model: 'googleai/gemini-2.0-flash-preview-image-generation',
                 prompt: description,
-                width: width,
-                height: height,
+                width,
+                height,
                 config: {
                     responseModalities: ['TEXT', 'IMAGE'],
                 },
