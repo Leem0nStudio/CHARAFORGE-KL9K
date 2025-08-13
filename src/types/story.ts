@@ -1,6 +1,4 @@
 
-'use server';
-
 import type { Character } from './character';
 
 /**
@@ -28,5 +26,3 @@ export interface Story {
     prompt: string;
     createdAt: Date;
 }
-
-    

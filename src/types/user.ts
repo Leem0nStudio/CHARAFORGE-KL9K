@@ -1,6 +1,4 @@
 
-'use server';
-
 import type { UserInfo, UserMetadata } from 'firebase/auth';
 
 /**

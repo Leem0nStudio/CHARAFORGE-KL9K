@@ -1,6 +1,4 @@
 
-'use server';
-
 interface AiModelVersion {
   id: string;
   name: string;
