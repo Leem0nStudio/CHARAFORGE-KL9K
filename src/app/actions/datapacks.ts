@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp, FieldPath } from 'firebase-admin/firestore';
 import type { DataPack, UpsertDataPack } from '@/types/datapack';
 import { UpsertDataPackSchema } from '@/types/datapack';
 import type { Character } from '@/types/character';
@@ -302,7 +302,7 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
     const installedPackIds = userDoc.data()?.stats?.installedPacks || [];
 
     const packIdsToFetch = new Set(installedPackIds);
-    packIdsToFetch.add('basic-fantasy-pack'); // Always ensure the default pack is available
+    packIdsToFetch.add('basic-fantasy-pack'); 
 
     const uniquePackIds = Array.from(packIdsToFetch);
 
@@ -312,7 +312,8 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
 
     try {
         const packsRef = adminDb.collection('datapacks');
-        const packsSnapshot = await packsRef.where(FieldValue.documentId(), 'in', uniquePackIds).get();
+        // **CRITICAL FIX**: Use FieldPath.documentId() for querying document IDs on the server.
+        const packsSnapshot = await packsRef.where(FieldPath.documentId(), 'in', uniquePackIds).get();
 
         if (packsSnapshot.empty) {
             return [];

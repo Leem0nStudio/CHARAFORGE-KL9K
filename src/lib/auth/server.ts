@@ -24,7 +24,8 @@ export async function verifyAndGetUid(): Promise<string> {
     throw new Error('Authentication service is unavailable on the server.');
   }
 
-  const cookieStore = cookies();
+  // **CRITICAL FIX**: Await the cookie store to ensure safe asynchronous access.
+  const cookieStore = await cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
   if (!idToken) {
