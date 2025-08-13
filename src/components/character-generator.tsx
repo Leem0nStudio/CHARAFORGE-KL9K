@@ -36,6 +36,18 @@ import type { AiModel } from '@/types/ai-model';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { MediaDisplay } from "./media-display";
 
+// Placeholder for the default model to avoid race conditions.
+const geminiPlaceholder: AiModel = {
+    id: 'gemini-placeholder',
+    name: 'Gemini Image Generation',
+    type: 'model',
+    engine: 'gemini',
+    civitaiModelId: '0', 
+    hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
+    versionId: '1.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+};
 
 const generationFormSchema = z.object({
   description: z.string().min(20, {
@@ -136,7 +148,7 @@ export function CharacterGenerator() {
       targetLanguage: 'English',
       aspectRatio: '1:1',
       loraWeight: 0.75,
-      selectedModel: undefined,
+      selectedModel: geminiPlaceholder, // **CRITICAL FIX**: Initialize with a valid default
       selectedLora: null,
     },
   });
@@ -166,18 +178,6 @@ export function CharacterGenerator() {
         if (!authUser) return;
         setIsLoading(true);
         try {
-            const geminiPlaceholder: AiModel = {
-                id: 'gemini-placeholder',
-                name: 'Gemini Image Generation',
-                type: 'model',
-                engine: 'gemini',
-                civitaiModelId: '0', 
-                hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
-                versionId: '1.0',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
-
             const [models, loras] = await Promise.all([
                 getModels('model'),
                 getModels('lora'),
@@ -187,9 +187,6 @@ export function CharacterGenerator() {
             setAvailableModels(allBaseModels);
             setAvailableLoras(loras);
 
-            if (allBaseModels.length > 0) {
-                generationForm.setValue('selectedModel', allBaseModels[0]);
-            }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' });
         } finally {
@@ -223,10 +220,6 @@ export function CharacterGenerator() {
   const onGenerate = useCallback(async (data: z.infer<typeof generationFormSchema>) => {
     if (!authUser) {
       toast({ variant: "destructive", title: "Authentication Required", description: "Please log in to generate a character." });
-      return;
-    }
-    if (!data.selectedModel) {
-      toast({ variant: 'destructive', title: 'Model Required', description: 'Please select a base model before generating.' });
       return;
     }
     

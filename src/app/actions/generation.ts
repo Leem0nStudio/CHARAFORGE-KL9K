@@ -52,6 +52,7 @@ export async function generateCharacter(input: GenerateCharacterInput): Promise<
         loraWeight
     } = validation.data;
 
+    // Pattern: Rigorous Server-Side Validation. Add an extra layer of defense.
     if (!selectedModel) {
         return { success: false, message: 'A base model must be selected for generation.' };
     }
