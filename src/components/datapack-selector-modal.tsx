@@ -190,29 +190,42 @@ function PackGallery({
 
     if (isLoading) {
         return (
-            <div className="flex-grow flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
+             <>
+                <DialogHeader>
+                    <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
+                    <DialogDescription>
+                        Choose one of your installed packs to start building a prompt.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="flex-grow flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+            </>
         )
     }
 
     if (packs.length === 0) {
         return (
-            <div className="flex flex-col h-full items-center justify-center">
-                <Alert className="mt-4">
-                    <Package className="h-4 w-4" />
-                    <AlertTitle>Your collection is empty!</AlertTitle>
-                    <AlertDescription>
-                        Visit the catalog to add some creative packs.
-                        <Button asChild variant="link" className="p-0 h-auto ml-1"><Link href="/datapacks">Go to Catalog</Link></Button>
-                    </AlertDescription>
-                </Alert>
-            </div>
+            <>
+                <DialogHeader>
+                    <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col h-full items-center justify-center">
+                    <Alert className="mt-4">
+                        <Package className="h-4 w-4" />
+                        <AlertTitle>Your collection is empty!</AlertTitle>
+                        <AlertDescription>
+                            Visit the catalog to add some creative packs.
+                            <Button asChild variant="link" className="p-0 h-auto ml-1"><Link href="/datapacks">Go to Catalog</Link></Button>
+                        </AlertDescription>
+                    </Alert>
+                </div>
+            </>
         )
     }
     
     return (
-        <div className="flex flex-col h-full">
+        <>
             <DialogHeader>
                 <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
                 <DialogDescription>
@@ -234,7 +247,7 @@ function PackGallery({
                     <Link href="/datapacks">Browse Full Catalog</Link>
                 </Button>
             </DialogFooter>
-        </div>
+        </>
     );
 }
 
