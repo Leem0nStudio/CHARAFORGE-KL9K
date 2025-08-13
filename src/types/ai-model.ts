@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 interface AiModelVersion {
@@ -21,6 +20,7 @@ export interface AiModel {
   versions?: AiModelVersion[];
   createdAt: Date;
   updatedAt: Date;
+  userId?: string; // If present, it's a user-specific model
 }
 
 export const UpsertModelSchema = z.object({

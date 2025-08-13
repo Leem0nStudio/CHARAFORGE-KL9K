@@ -9,6 +9,7 @@ import { verifyAndGetUid } from '@/lib/auth/server';
 import type { AiModel } from '@/types/ai-model';
 import { UpsertModelSchema, type UpsertAiModel } from '@/types/ai-model';
 import { suggestHfModel } from '@/ai/flows/hf-model-suggestion/flow';
+import { uploadToStorage } from '@/services/storage';
 
 type ActionResponse = {
     success: boolean;
@@ -108,12 +109,10 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
             suggestedHfId = modelInfo.name.toLowerCase().includes('sdxl') ? 'stabilityai/stable-diffusion-xl-base-1.0' : '';
         }
         
-        // Combine official trigger words with descriptive tags for richer prompts
         const combinedTriggerWords = [
             ...(latestVersion?.trainedWords || []),
             ...(modelInfo.tags || [])
         ];
-        // Remove duplicates
         const triggerWords = [...new Set(combinedTriggerWords)];
 
 
@@ -153,7 +152,6 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
     }
 }
 
-
 export async function getModels(type: 'model' | 'lora'): Promise<AiModel[]> {
     if (!adminDb) return [];
     try {
@@ -179,6 +177,109 @@ export async function getModels(type: 'model' | 'lora'): Promise<AiModel[]> {
     }
 }
 
+export async function getModelsForUser(type: 'model' | 'lora'): Promise<AiModel[]> {
+    if (!adminDb) return [];
+    const uid = await verifyAndGetUid();
+
+    try {
+        // Query for system models (no userId)
+        const systemModelsQuery = adminDb.collection('ai_models')
+            .where('type', '==', type)
+            .where('userId', '==', null) // Ensure we only get system models
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        // Query for user-specific models
+        const userModelsQuery = adminDb.collection('ai_models')
+            .where('type', '==', type)
+            .where('userId', '==', uid)
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        const [systemSnapshot, userSnapshot] = await Promise.all([systemModelsQuery, userModelsQuery]);
+
+        const models: AiModel[] = [];
+        const modelIds = new Set<string>();
+
+        const processSnapshot = (snapshot: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>) => {
+            snapshot.docs.forEach(doc => {
+                if (!modelIds.has(doc.id)) {
+                    const data = doc.data();
+                    models.push({
+                        ...data,
+                        id: doc.id,
+                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+                        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+                    } as AiModel);
+                    modelIds.add(doc.id);
+                }
+            });
+        };
+
+        processSnapshot(userSnapshot); // User models first, so they appear at the top
+        processSnapshot(systemSnapshot);
+
+        return models;
+    } catch (error) {
+        console.error(`Error fetching ${type}s for user:`, error);
+        return [];
+    }
+}
+
+
+export async function upsertUserAiModel(data: UpsertAiModel, coverImage?: Buffer): Promise<ActionResponse> {
+    const uid = await verifyAndGetUid();
+    const validation = UpsertModelSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: 'Invalid data provided.', error: validation.error.message };
+    }
+
+    const { id, ...modelData } = validation.data;
+    const isNew = !id;
+
+    try {
+        const docRef = isNew ? adminDb.collection('ai_models').doc() : adminDb.collection('ai_models').doc(id);
+
+        if (!isNew) {
+            const existingDoc = await docRef.get();
+            if (!existingDoc.exists || existingDoc.data()?.userId !== uid) {
+                return { success: false, message: "Permission denied or model not found." };
+            }
+        }
+        
+        let coverMediaUrl = modelData.coverMediaUrl || null;
+        if (coverImage) {
+            const destinationPath = `usersImg/${uid}/ai_models/${docRef.id}/cover.png`;
+            coverMediaUrl = await uploadToStorage(coverImage, destinationPath, 'image/png');
+        }
+
+        const finalData = {
+            ...modelData,
+            userId: uid,
+            coverMediaUrl,
+            updatedAt: FieldValue.serverTimestamp(),
+        };
+
+        if (isNew) {
+            await docRef.set({ 
+                ...finalData, 
+                id: docRef.id,
+                createdAt: FieldValue.serverTimestamp()
+            });
+        } else {
+            await docRef.update(finalData);
+        }
+        
+        revalidatePath('/profile');
+        
+        return { success: true, message: `Model "${modelData.name}" saved successfully.` };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        return { success: false, message: 'Operation failed.', error: message };
+    }
+}
+
+
 
 export async function deleteModel(id: string): Promise<ActionResponse> {
     await verifyAndGetUid();
@@ -188,6 +289,7 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
         await adminDb.collection('ai_models').doc(id).delete();
         revalidatePath('/admin/models');
         revalidatePath('/character-generator');
+        revalidatePath('/profile');
         return { success: true, message: 'Model deleted successfully.' };
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';

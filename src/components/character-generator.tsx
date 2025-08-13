@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacterDetails, generateCharacterPortrait, type GenerateDetailsInput, type GeneratePortraitInput } from "@/app/actions/generation";
-import { getModels } from "@/app/actions/ai-models";
+import { getModelsForUser } from "@/app/actions/ai-models";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { DataPackSelectorModal } from "./datapack-selector-modal";
@@ -180,8 +180,8 @@ export function CharacterGenerator() {
         setIsLoading(true);
         try {
             const [models, loras] = await Promise.all([
-                getModels('model'),
-                getModels('lora'),
+                getModelsForUser('model'),
+                getModelsForUser('lora'),
             ]);
             
             const allBaseModels = [geminiPlaceholder, ...models];

@@ -16,6 +16,7 @@ import { PreferencesForm } from '@/components/profile/preferences-form';
 import { StatsTab } from '@/components/profile/stats-tab';
 import { DataPacksTab } from '@/components/profile/datapacks-tab';
 import { SecurityTab } from '@/components/profile/security-tab';
+import { MyModelsTab } from '@/components/profile/my-models-tab';
 
 
 export default function ProfilePage() {
@@ -69,6 +70,7 @@ export default function ProfilePage() {
             <TabsList>
                 <TabsTrigger value="profile">Profile</TabsTrigger>
                 <TabsTrigger value="datapacks">DataPacks</TabsTrigger>
+                <TabsTrigger value="models">My Models</TabsTrigger>
                 <TabsTrigger value="prefs">Preferences</TabsTrigger>
                 <TabsTrigger value="stats">Statistics</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
@@ -78,6 +80,9 @@ export default function ProfilePage() {
             </TabsContent>
             <TabsContent value="datapacks" className="space-y-4">
                 <DataPacksTab />
+            </TabsContent>
+             <TabsContent value="models" className="space-y-4">
+                <MyModelsTab />
             </TabsContent>
             <TabsContent value="prefs" className="space-y-4">
                 <PreferencesForm 
