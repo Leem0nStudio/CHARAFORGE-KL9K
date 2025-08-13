@@ -7,15 +7,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
-import { generateCharacterDetails, generateCharacterPortrait } from "@/app/actions/generation";
+import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/actions/generation";
 import { getModelsForUser } from "@/app/actions/ai-models";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
@@ -32,6 +34,7 @@ import { ModelSelectorModal } from './model-selector-modal';
 import type { AiModel } from '@/types/ai-model';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { VisualModelSelector } from "./visual-model-selector";
+import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/types";
 
 const geminiPlaceholder: AiModel = {
     id: 'gemini-placeholder',
@@ -62,19 +65,9 @@ const generationFormSchema = z.object({
   loraWeight: z.number().min(0).max(1).optional(),
 });
 
-const saveFormSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
-  }).max(50, {
-    message: "Name must not be longer than 50 characters."
-  }),
-});
-
-type GenerationResult = {
-  biography: string;
+type GenerationResult = GenerateCharacterSheetOutput & {
   imageUrl?: string | null;
-  description: string;
-  tags: string;
+  originalDescription: string;
   dataPackId?: string | null;
 };
 
@@ -114,13 +107,6 @@ export function CharacterGenerator() {
     },
   });
 
-  const saveForm = useForm<z.infer<typeof saveFormSchema>>({
-    resolver: zodResolver(saveFormSchema),
-    defaultValues: {
-      name: "",
-    },
-  });
-
   const handlePromptGenerated = useCallback((prompt: string, packName: string, tags: string[], packId: string) => {
     generationForm.setValue('description', prompt, { shouldValidate: true });
     generationForm.setValue('tags', tags.join(','));
@@ -128,7 +114,6 @@ export function CharacterGenerator() {
     
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.set('packId', packId);
-    currentUrl.searchParams.set('prompt', encodeURIComponent(prompt));
     router.replace(currentUrl.toString(), { scroll: false });
     setIsPackModalOpen(false);
   }, [generationForm, router]);
@@ -161,13 +146,6 @@ export function CharacterGenerator() {
   }, [authUser, toast, generationForm]);
   
 
-  useEffect(() => {
-    const promptFromUrl = searchParams.get('prompt');
-    if (promptFromUrl) {
-      generationForm.setValue('description', decodeURIComponent(promptFromUrl));
-    }
-  }, [searchParams, generationForm]);
-
   const handleAppendTags = (tags: string[]) => {
     const currentDesc = generationForm.getValues('description');
     const currentTags = generationForm.getValues('tags') || '';
@@ -181,7 +159,7 @@ export function CharacterGenerator() {
     generationForm.setValue('tags', Array.from(allTags).join(','));
   };
 
-  const onGenerateDetails = useCallback(async (data: z.infer<typeof generationFormSchema>) => {
+  const onGenerateSheet = useCallback(async (data: z.infer<typeof generationFormSchema>) => {
     if (!authUser) {
       toast({ variant: "destructive", title: "Authentication Required", description: "Please log in to generate a character." });
       return;
@@ -189,26 +167,26 @@ export function CharacterGenerator() {
     
     setGenerationResult(null);
     setGenerationError(null);
-    saveForm.reset();
 
     startGenerationTransition(async () => {
-      const result = await generateCharacterDetails({ 
+      const result = await generateCharacterSheetData({ 
           description: data.description,
-          tags: data.tags,
           targetLanguage: data.targetLanguage,
-          dataPackId: dataPackIdFromUrl,
       });
       
       if (result.success && result.data) {
-        setGenerationResult(result.data);
-        toast({ title: "Details Generated!", description: "Character biography is ready. Now, generate the portrait." });
+        setGenerationResult({
+          ...result.data,
+          dataPackId: dataPackIdFromUrl,
+        });
+        toast({ title: "Character Sheet Generated!", description: "Review the details and then generate the portrait." });
       } else {
         const errorMessage = result.error || "An unknown error occurred during generation.";
         setGenerationError(errorMessage);
         toast({ variant: "destructive", title: "Generation Failed", description: errorMessage });
       }
     });
-  }, [authUser, toast, dataPackIdFromUrl, saveForm]);
+  }, [authUser, toast, dataPackIdFromUrl]);
   
   const onGeneratePortrait = useCallback(async () => {
     if (!authUser || !generationResult) return;
@@ -216,7 +194,7 @@ export function CharacterGenerator() {
     startGenerationTransition(async () => {
         const data = generationForm.getValues();
         const result = await generateCharacterPortrait({
-             description: data.description,
+             description: generationResult.physicalDescription,
              aspectRatio: data.aspectRatio,
              selectedModel: data.selectedModel,
              selectedLora: data.selectedLora,
@@ -236,7 +214,7 @@ export function CharacterGenerator() {
   }, [authUser, toast, generationResult, generationForm]);
 
 
-  async function onSave(data: z.infer<typeof saveFormSchema>) {
+  async function onSave() {
     if (!generationResult || !generationResult.imageUrl || !authUser) {
          toast({
             variant: "destructive",
@@ -249,17 +227,20 @@ export function CharacterGenerator() {
     startSavingTransition(async () => {
       try {
         const result = await saveCharacter({
-          name: data.name,
-          description: generationResult.description,
+          name: generationResult.name,
+          description: generationResult.originalDescription,
           biography: generationResult.biography,
-          imageUrl: generationResult.imageUrl,
+          imageUrl: generationResult.imageUrl!,
           dataPackId: generationResult.dataPackId,
-          tags: generationResult.tags,
+          tags: generationForm.getValues('tags'),
+          archetype: generationResult.archetype,
+          equipment: generationResult.equipment,
+          physicalDescription: generationResult.physicalDescription,
         });
 
         toast({
           title: "Character Saved!",
-          description: `${data.name} has been saved to your gallery.`,
+          description: `${generationResult.name} has been saved to your gallery.`,
         });
         
         if (result.characterId) {
@@ -339,7 +320,7 @@ export function CharacterGenerator() {
           </CardHeader>
           <CardContent>
             <Form {...generationForm}>
-              <form onSubmit={generationForm.handleSubmit(onGenerateDetails)} className="space-y-6">
+              <form onSubmit={generationForm.handleSubmit(onGenerateSheet)} className="space-y-6">
                 
                 <Tabs defaultValue="prompt">
                     <TabsList className="grid w-full grid-cols-2">
@@ -353,7 +334,7 @@ export function CharacterGenerator() {
                           render={({ field }) => (
                             <FormItem>
                               <div className="flex justify-between items-center mb-2">
-                                <FormLabel>Character Description</FormLabel>
+                                <FormLabel>Character Concept</FormLabel>
                                 <Button type="button" variant="outline" size="sm" onClick={() => setIsPackModalOpen(true)}>
                                     <Package className="mr-2 h-3 w-3"/> Use DataPack
                                 </Button>
@@ -487,7 +468,7 @@ export function CharacterGenerator() {
           <CardHeader>
             <CardTitle className="font-headline text-3xl">2. Generated Character</CardTitle>
             <CardDescription>
-              Review the generated character. Once you're happy, give it a name and save it.
+              Review the generated character. Once you're happy, generate the portrait and save.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -540,13 +521,13 @@ export function CharacterGenerator() {
                                 />
                                 <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-green-600 text-white text-xs font-bold py-1 px-2 rounded-full shadow">
                                   <Check className="w-3 h-3"/>
-                                  Ready
+                                  Ready to Save
                                </div>
                              </>
                           ) : (
                               !isGenerating && (
                                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
-                                    <p className="mb-4">Biography complete. Now, create the visual representation.</p>
+                                    <p className="mb-4 text-sm">Character sheet complete. Now, create the visual representation.</p>
                                     <Button onClick={onGeneratePortrait} disabled={isGenerating}>
                                          <Wand2 className="mr-2" /> Generate Portrait
                                     </Button>
@@ -557,39 +538,47 @@ export function CharacterGenerator() {
                   </div>
 
                   <div className="md:col-span-3">
-                      <h3 className="font-headline text-2xl flex items-center mb-2"><FileText className="w-5 h-5 mr-2 text-primary" /> Biography</h3>
-                      <ScrollArea className="h-80 pr-4 mb-6">
-                        <div className="space-y-4 text-muted-foreground text-sm">
-                            {generationResult.biography.split('\\n').filter(p => p.trim() !== '').map((paragraph, index) => (
-                            <p key={index}>{paragraph}</p>
-                            ))}
-                        </div>
-                      </ScrollArea>
+                        <Tabs defaultValue="sheet">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="sheet">Character Sheet</TabsTrigger>
+                                <TabsTrigger value="bio">Biography</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="sheet" className="mt-4 space-y-4">
+                                <div className="flex items-baseline gap-2">
+                                    <User className="h-6 w-6 text-primary"/>
+                                    <h4 className="text-lg font-semibold">Name:</h4>
+                                    <p className="text-lg text-muted-foreground">{generationResult.name}</p>
+                                </div>
+                                <div className="flex items-baseline gap-2">
+                                    <Shield className="h-6 w-6 text-primary"/>
+                                    <h4 className="text-lg font-semibold">Archetype:</h4>
+                                    <p className="text-lg text-muted-foreground">{generationResult.archetype}</p>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <h4 className="text-lg font-semibold flex items-center gap-2"><Swords className="h-6 w-6 text-primary"/> Equipment</h4>
+                                    <ul className="list-disc list-inside text-muted-foreground pl-2 space-y-1">
+                                        {generationResult.equipment.map((item, i) => <li key={i}>{item}</li>)}
+                                    </ul>
+                                </div>
+                            </TabsContent>
+                            <TabsContent value="bio">
+                                 <ScrollArea className="h-80 pr-4 mt-4">
+                                    <div className="space-y-4 text-muted-foreground text-sm whitespace-pre-wrap">
+                                        {generationResult.biography}
+                                    </div>
+                                </ScrollArea>
+                            </TabsContent>
+                        </Tabs>
 
-                      <Form {...saveForm}>
-                        <form onSubmit={saveForm.handleSubmit(onSave)} className="space-y-4">
-                           <FormField
-                              control={saveForm.control}
-                              name="name"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="font-headline text-2xl flex items-center"><Save className="w-5 h-5 mr-2 text-primary"/> Character Name</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="e.g., Captain Kaelen" {...field} disabled={!canInteract} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <Button type="submit" className="w-full" disabled={!canInteract || isSaving || !generationResult.imageUrl}>
+                        <div className="mt-6">
+                            <Button onClick={onSave} className="w-full" disabled={!canInteract || isSaving || !generationResult.imageUrl}>
                               {isSaving ? (
                                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
                               ) : (
                                 <><Save className="mr-2 h-4 w-4" /> Save to Gallery</>
                               )}
                             </Button>
-                        </form>
-                      </Form>
+                        </div>
                   </div>
                </div>
             )}

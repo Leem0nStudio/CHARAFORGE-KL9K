@@ -43,6 +43,10 @@ export type Character = {
   alignment: 'Lawful Good' | 'Neutral Good' | 'Chaotic Good' | 'Lawful Neutral' | 'True Neutral' | 'Chaotic Neutral' | 'Lawful Evil' | 'Neutral Evil' | 'Chaotic Evil';
   tags?: string[];
   timeline?: TimelineEvent[]; // New field for the character's timeline
+  // New character sheet fields
+  archetype?: string | null;
+  equipment?: string[] | null;
+  physicalDescription?: string | null;
 };
 
 // Zod validation schemas for character actions.
@@ -63,5 +67,8 @@ export const SaveCharacterInputSchema = z.object({
   imageUrl: z.string().startsWith('data:image/'),
   dataPackId: z.string().optional().nullable(),
   tags: z.string().optional(),
+  archetype: z.string().optional(),
+  equipment: z.array(z.string()).optional(),
+  physicalDescription: z.string().optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;

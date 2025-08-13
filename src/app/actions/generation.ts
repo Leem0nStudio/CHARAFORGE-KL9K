@@ -2,38 +2,32 @@
 'use server';
 
 import { z } from 'zod';
-import { generateCharacterBio } from '@/ai/flows/character-bio/flow';
+import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 import type { TextEngineConfig } from '@/ai/utils/llm-utils';
 import type { AiModel } from '@/types/ai-model';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { getUserProfile } from './user';
+import type { GenerateCharacterSheetOutput } from '@/ai/flows/character-sheet/types';
 
 
-// Schema for the first step: generating text details
-const GenerateDetailsInputSchema = z.object({
+// Schema for the first step: generating the character sheet
+const GenerateSheetInputSchema = z.object({
   description: z.string().min(20).max(1000),
-  tags: z.string().optional(),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
-  dataPackId: z.string().optional().nullable(),
 });
-export type GenerateDetailsInput = z.infer<typeof GenerateDetailsInputSchema>;
+export type GenerateSheetInput = z.infer<typeof GenerateSheetInputSchema>;
 
-export type GenerateDetailsOutput = {
+export type GenerateSheetOutput = {
     success: boolean;
     message: string;
-    data?: {
-        biography: string;
-        description: string;
-        tags: string;
-        dataPackId?: string | null;
-    };
+    data?: GenerateCharacterSheetOutput & { originalDescription: string };
     error?: string;
 };
 
 
-// Schema for the second step: generating the image
+// Schema for the second step: generating the portrait
 const GeneratePortraitInputSchema = z.object({
     description: z.string().min(20).max(1000),
     aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
@@ -52,44 +46,40 @@ export type GeneratePortraitOutput = {
 }
 
 
-export async function generateCharacterDetails(input: GenerateDetailsInput): Promise<GenerateDetailsOutput> {
-    const validation = GenerateDetailsInputSchema.safeParse(input);
+export async function generateCharacterSheetData(input: GenerateSheetInput): Promise<GenerateSheetOutput> {
+    const validation = GenerateSheetInputSchema.safeParse(input);
     if (!validation.success) {
         return { success: false, message: 'Invalid input.', error: validation.error.message };
     }
     await verifyAndGetUid();
 
-    const { description, targetLanguage, dataPackId, tags } = validation.data;
+    const { description, targetLanguage } = validation.data;
 
     try {
-        // For now, text generation always uses the default Gemini model.
-        // This is where we could, in the future, let the user choose a text model.
         const textEngineConfig: TextEngineConfig = {
             engineId: 'gemini',
             modelId: 'googleai/gemini-1.5-flash-latest',
         };
 
-        const bioResult = await generateCharacterBio({ description, targetLanguage, engineConfig: textEngineConfig });
+        const result = await generateCharacterSheet({ description, targetLanguage, engineConfig: textEngineConfig });
 
-        if (!bioResult.biography) {
-            throw new Error('AI generation failed to return a biography.');
+        if (!result.biography) {
+            throw new Error('AI generation failed to return a complete character sheet.');
         }
 
          return {
             success: true,
-            message: 'Character details generated successfully!',
+            message: 'Character sheet generated successfully!',
             data: {
-                biography: bioResult.biography,
-                description,
-                tags: tags || '',
-                dataPackId,
+                ...result,
+                originalDescription: description,
             }
         };
 
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred during generation.';
-        console.error("Error in generateCharacterDetails action:", message);
-        return { success: false, message: 'Failed to generate character details.', error: message };
+        console.error("Error in generateCharacterSheetData action:", message);
+        return { success: false, message: 'Failed to generate character sheet.', error: message };
     }
 }
 
