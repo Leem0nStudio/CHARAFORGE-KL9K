@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Loader2, ArrowRight, Wand2, Package, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { DataPack, Option, Slot } from '@/types/datapack';
-import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
@@ -222,6 +221,7 @@ interface DataPackSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
     onPromptGenerated: (prompt: string, packName: string, tags: string[], packId: string) => void;
+    packs: DataPack[];
 }
 
 
@@ -229,9 +229,8 @@ export function DataPackSelectorModal({
     isOpen, 
     onClose, 
     onPromptGenerated,
+    packs,
 }: DataPackSelectorModalProps) {
-    const [packs, setPacks] = useState<DataPack[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [wizardPack, setWizardPack] = useState<DataPack | null>(null);
 
     useEffect(() => {
@@ -239,23 +238,7 @@ export function DataPackSelectorModal({
             setTimeout(() => {
                 setWizardPack(null);
             }, 300);
-            return;
         }
-
-        async function loadPacks() {
-            setIsLoading(true);
-            try {
-                const installedPacks = await getInstalledDataPacks();
-                setPacks(installedPacks);
-            } catch (error) {
-                console.error("Failed to load datapacks:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        }
-        
-        loadPacks();
-
     }, [isOpen]);
     
     const handlePromptGeneratedAndClose = useCallback((prompt: string, packName: string, tags: string[], packId: string) => {
@@ -264,18 +247,6 @@ export function DataPackSelectorModal({
     }, [onPromptGenerated, onClose]);
     
     const renderContent = () => {
-        if (isLoading) {
-            return (
-                <div className="flex flex-col items-center justify-center h-96">
-                    <DialogHeader className="text-center mb-4">
-                        <DialogTitle>Loading Your DataPacks...</DialogTitle>
-                        <DialogDescription>Please wait while we fetch your installed packs.</DialogDescription>
-                    </DialogHeader>
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-            )
-        }
-        
         if (wizardPack) {
             return <WizardGrid pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} onBack={() => setWizardPack(null)} />;
         }

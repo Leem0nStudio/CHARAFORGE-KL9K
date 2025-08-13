@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacter, type GenerateCharacterInput } from "@/app/actions/generation";
 import { getModels } from "@/app/actions/ai-models";
+import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { DataPackSelectorModal } from "./datapack-selector-modal";
@@ -119,6 +120,7 @@ export function CharacterGenerator() {
   
   const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
   const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
+  const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [activePackName, setActivePackName] = useState<string | null>(null);
@@ -179,14 +181,16 @@ export function CharacterGenerator() {
                 updatedAt: new Date(),
             };
 
-            const [models, loras] = await Promise.all([
+            const [models, loras, packs] = await Promise.all([
                 getModels('model'),
                 getModels('lora'),
+                getInstalledDataPacks(),
             ]);
             
             const allBaseModels = [geminiPlaceholder, ...models];
             setAvailableModels(allBaseModels);
             setAvailableLoras(loras);
+            setInstalledPacks(packs);
 
             if (allBaseModels.length > 0) {
                 generationForm.setValue('selectedModel', allBaseModels[0]);
@@ -303,7 +307,6 @@ export function CharacterGenerator() {
   const handleModelSelect = (model: AiModel) => {
     if (model.type === 'model') {
         generationForm.setValue('selectedModel', model);
-        // Reset LoRA when base model changes
         generationForm.setValue('selectedLora', null); 
     } else {
         generationForm.setValue('selectedLora', model);
@@ -311,7 +314,7 @@ export function CharacterGenerator() {
         if (defaultVersion) {
             generationForm.setValue('loraVersionId', defaultVersion.id);
         }
-        generationForm.setValue('loraWeight', 0.75); // Reset weight
+        generationForm.setValue('loraWeight', 0.75);
     }
     setIsModelModalOpen(false);
   }
@@ -328,6 +331,7 @@ export function CharacterGenerator() {
       isOpen={isPackModalOpen}
       onClose={() => setIsPackModalOpen(false)}
       onPromptGenerated={handlePromptGenerated}
+      packs={installedPacks}
     />
     <TagAssistantModal
         isOpen={isTagModalOpen}
