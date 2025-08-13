@@ -296,43 +296,33 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         if (!adminDb) {
             throw new Error('Database service not available.');
         }
-        
+
         const userRef = adminDb.collection('users').doc(uid);
         const userDoc = await userRef.get();
-        
-        const installedPackIds = new Set<string>(userDoc.data()?.stats?.installedPacks || []);
-        
-        // Always ensure the basic fantasy pack is available
-        installedPackIds.add('basic-fantasy-pack');
+        const installedPackIds = userDoc.data()?.stats?.installedPacks || [];
 
-        if (installedPackIds.size === 0) {
+        const allPackIds = new Set(installedPackIds);
+        allPackIds.add('basic-fantasy-pack'); // Always ensure the basic fantasy pack is available
+
+        const uniquePackIds = Array.from(allPackIds);
+        if (uniquePackIds.length === 0) {
             return [];
         }
-        
-        const uniquePackIds = Array.from(installedPackIds);
-        const allPacks: DataPack[] = [];
-        const packsRef = adminDb.collection('datapacks');
 
-        const batchSize = 30;
-        for (let i = 0; i < uniquePackIds.length; i += batchSize) {
-            const batchIds = uniquePackIds.slice(i, i + batchSize);
-            if (batchIds.length > 0) {
-                const packsQuery = packsRef.where(FieldValue.documentId(), 'in', batchIds);
-                const packsSnapshot = await packsQuery.get();
-                const batchPacks = packsSnapshot.docs.map(doc => {
-                    const data = doc.data();
-                    const createdAt = data.createdAt;
-                    const updatedAt = data.updatedAt;
-                    return {
-                        ...data,
-                        id: doc.id,
-                        createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
-                        updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
-                    } as DataPack;
-                });
-                allPacks.push(...batchPacks);
-            }
-        }
+        const packsRef = adminDb.collection('datapacks');
+        const packsSnapshot = await packsRef.where(FieldValue.documentId(), 'in', uniquePackIds).get();
+
+        const allPacks = packsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            const createdAt = data.createdAt;
+            const updatedAt = data.updatedAt;
+            return {
+                ...data,
+                id: doc.id,
+                createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
+                updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
+            } as DataPack;
+        });
         
         allPacks.sort((a, b) => a.name.localeCompare(b.name));
         
@@ -340,15 +330,15 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
 
     } catch (error) {
          if (error instanceof Error && (error.message.includes('User session not found') || error.message.includes('Invalid or expired'))) {
-            console.log('User session not found for installed packs, returning empty list with default.');
-             // Gracefully handle not-logged-in state by returning just the default pack
-            const defaultPackDoc = await adminDb!.collection('datapacks').doc('basic-fantasy-pack').get();
+            console.log('User session not found for installed packs, returning only default pack.');
+            if (!adminDb) return [];
+            const defaultPackDoc = await adminDb.collection('datapacks').doc('basic-fantasy-pack').get();
             if (defaultPackDoc.exists) {
                 const data = defaultPackDoc.data()!;
-                 const createdAt = data.createdAt;
-                 const updatedAt = data.updatedAt;
+                const createdAt = data.createdAt;
+                const updatedAt = data.updatedAt;
                 return [{
-                     ...data,
+                    ...data,
                     id: defaultPackDoc.id,
                     createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
                     updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
