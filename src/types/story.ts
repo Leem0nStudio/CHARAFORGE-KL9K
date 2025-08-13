@@ -10,8 +10,8 @@ export interface StoryCast {
   name: string;
   description: string;
   characterIds: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: number;
+  updatedAt: number;
 }
 
 /**
@@ -24,5 +24,5 @@ export interface Story {
     title: string;
     content: string; // The full story text
     prompt: string;
-    createdAt: Date;
+    createdAt: number;
 }

@@ -38,8 +38,8 @@ export interface DataPack {
     type: 'free' | 'premium' | 'temporal';
     price: number;
     tags: string[];
-    createdAt: Date;
-    updatedAt?: Date | null;
+    createdAt: number;
+    updatedAt?: number | null;
     schema: DataPackSchema;
     isNsfw?: boolean;
 }

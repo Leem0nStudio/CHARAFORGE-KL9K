@@ -37,8 +37,8 @@ export async function getUserCasts(): Promise<StoryCast[]> {
         return {
             ...data,
             id: doc.id,
-            createdAt: data.createdAt.toDate(),
-            updatedAt: data.updatedAt.toDate(),
+            createdAt: data.createdAt.toMillis(),
+            updatedAt: data.updatedAt.toMillis(),
         } as StoryCast;
     });
 }
@@ -80,8 +80,8 @@ export async function createStoryCast(data: { name: string; description: string 
             data: {
                 id: createdDoc.id,
                 ...createdData,
-                 createdAt: createdData.createdAt.toDate(),
-                 updatedAt: createdData.updatedAt.toDate(),
+                 createdAt: createdData.createdAt.toMillis(),
+                 updatedAt: createdData.updatedAt.toMillis(),
             } as StoryCast,
         };
     } catch(error) {
@@ -180,5 +180,3 @@ export async function generateStory(castId: string, storyPrompt: string): Promis
         return { success: false, message, error: message };
     }
 }
-
-    

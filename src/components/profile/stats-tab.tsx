@@ -16,6 +16,12 @@ export function StatsTab({ userStats }: { userStats?: UserProfile['stats'] }) {
     if (typeof memberSince === 'number') {
       const date = new Date(memberSince);
       memberSinceDate = format(date, 'PPP');
+    } else if (memberSince) {
+      // Fallback for older data that might still be a string or other type
+      const date = new Date(memberSince);
+      if (!isNaN(date.getTime())) {
+          memberSinceDate = format(date, 'PPP');
+      }
     }
     
     return (
@@ -27,11 +33,11 @@ export function StatsTab({ userStats }: { userStats?: UserProfile['stats'] }) {
             <CardContent>
                {userStats ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        <StatCard icon={<Swords />} label="Characters Created" value={userStats.charactersCreated} />
-                        <StatCard icon={<Heart />} label="Total Likes Received" value={userStats.totalLikes} />
-                        <StatCard icon={<Gem />} label="Subscription Tier" value={userStats.subscriptionTier} />
-                        <StatCard icon={<User />} label="Collections Created" value={userStats.collectionsCreated} />
-                        <StatCard icon={<Package />} label="DataPacks Installed" value={userStats.installedPacks.length} />
+                        <StatCard icon={<Swords />} label="Characters Created" value={userStats.charactersCreated || 0} />
+                        <StatCard icon={<Heart />} label="Total Likes Received" value={userStats.totalLikes || 0} />
+                        <StatCard icon={<Gem />} label="Subscription Tier" value={userStats.subscriptionTier || 'free'} />
+                        <StatCard icon={<User />} label="Collections Created" value={userStats.collectionsCreated || 0} />
+                        <StatCard icon={<Package />} label="DataPacks Installed" value={userStats.installedPacks?.length || 0} />
                         <StatCard icon={<Calendar />} label="Member Since" value={memberSinceDate} />
                     </div>
                ) : (
