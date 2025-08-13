@@ -78,10 +78,33 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
         
         let coverMediaUrl: string | null = null;
         let coverMediaType: 'image' | 'video' = 'image';
+        
+        // Prioritize images from the latest version, but fall back to the model's main images.
+        // Also check for a "meta.video" property on the image object.
+        const getMediaInfo = (image: any) => {
+             if (image?.url) {
+                // Civitai's API is inconsistent. Sometimes video info is in a `meta` object.
+                if (image.type === 'video' || image.meta?.video) {
+                    // Find the video URL, which might be nested differently
+                    const videoUrl = image.meta?.video?.url || image.url;
+                    // Ensure we get a URL that's actually a video file
+                    if (videoUrl && (videoUrl.includes('.mp4') || videoUrl.includes('octet-stream'))) {
+                       return { url: videoUrl, type: 'video' };
+                    }
+                }
+                // If it's not a video or the video URL is bad, treat it as an image.
+                // Prioritize smaller images for performance.
+                return { url: image.url, type: 'image' };
+            }
+            return null;
+        };
+
         const mediaItems = latestVersion?.images?.length > 0 ? latestVersion.images : modelInfo.images;
-        if (mediaItems?.[0]?.url) {
-            coverMediaUrl = mediaItems[0].url;
-            if (mediaItems[0].type === 'video') coverMediaType = 'video';
+        const mediaInfo = mediaItems?.[0] ? getMediaInfo(mediaItems[0]) : null;
+
+        if (mediaInfo) {
+            coverMediaUrl = mediaInfo.url;
+            coverMediaType = mediaInfo.type;
         }
 
         let suggestedHfId = '';

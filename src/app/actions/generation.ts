@@ -59,7 +59,7 @@ export async function generateCharacter(input: GenerateCharacterInput): Promise<
     try {
         const imageEngineConfig: ImageEngineConfig = {
             engineId: selectedModel.engine,
-            modelId: selectedModel.hf_id,
+            modelId: selectedModel.engine === 'huggingface' ? selectedModel.hf_id : undefined,
             aspectRatio,
         };
         

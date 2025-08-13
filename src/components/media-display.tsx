@@ -24,6 +24,7 @@ export function MediaDisplay({ url, type, alt, className }: MediaDisplayProps) {
     if (type === 'video') {
         return (
             <video
+                key={url} // Add key to force re-render when URL changes
                 src={url}
                 autoPlay
                 loop

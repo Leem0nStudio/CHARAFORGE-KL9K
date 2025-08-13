@@ -307,7 +307,9 @@ export function CharacterGenerator() {
   const handleModelSelect = (model: AiModel) => {
     if (model.type === 'model') {
         generationForm.setValue('selectedModel', model);
-        generationForm.setValue('selectedLora', null); 
+        if (model.engine !== 'huggingface') {
+            generationForm.setValue('selectedLora', null); 
+        }
     } else {
         generationForm.setValue('selectedLora', model);
         const defaultVersion = model.versions?.[0];

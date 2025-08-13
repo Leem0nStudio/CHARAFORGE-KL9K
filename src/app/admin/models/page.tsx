@@ -23,7 +23,7 @@ export default async function AiModelsPage() {
                         {allModels.map((model) => (
                             <Card key={model.id} className="overflow-hidden flex flex-col">
                                 <CardHeader className="p-0">
-                                     <div className="relative aspect-video bg-muted/20">
+                                     <div className="relative aspect-[4/3] bg-muted/20">
                                          <MediaDisplay
                                             url={model.coverMediaUrl}
                                             type={model.coverMediaType}
@@ -49,7 +49,7 @@ export default async function AiModelsPage() {
                         {allLoras.map((lora) => (
                             <Card key={lora.id} className="overflow-hidden flex flex-col">
                                 <CardHeader className="p-0">
-                                     <div className="relative aspect-video bg-muted/20">
+                                     <div className="relative aspect-[4/3] bg-muted/20">
                                          <MediaDisplay
                                             url={lora.coverMediaUrl}
                                             type={lora.coverMediaType}

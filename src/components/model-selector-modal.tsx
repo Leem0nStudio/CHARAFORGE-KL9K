@@ -44,7 +44,7 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models }: 
                                         onClick={() => onSelect(item)}
                                         className="cursor-pointer overflow-hidden group transition-all hover:shadow-primary/20 hover:border-primary border-2 border-transparent"
                                     >
-                                        <div className="relative aspect-square bg-muted/20">
+                                        <div className="relative aspect-[4/3] bg-muted/20">
                                             <MediaDisplay 
                                                 url={item.coverMediaUrl} 
                                                 type={item.coverMediaType} 
@@ -72,5 +72,3 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models }: 
         </Dialog>
     )
 }
-
-    
