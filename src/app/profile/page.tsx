@@ -53,14 +53,21 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !userProfile) {
+    if (authLoading) return; // Wait until auth state is resolved
+
+    if (!userProfile) {
       router.push('/login');
       return;
     }
-    if (userProfile) {
-      loadInstalledPacks();
-      setIsLoading(false);
+    
+    // Auth is loaded and we have a user profile, now load their data
+    const loadData = async () => {
+        setIsLoading(true);
+        await loadInstalledPacks();
+        setIsLoading(false);
     }
+    loadData();
+
   }, [userProfile, authLoading, router, loadInstalledPacks]);
   
   if (authLoading || isLoading || !userProfile) {

@@ -334,9 +334,8 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
             } as DataPack;
         });
         
-        allPacks.sort((a, b) => a.name.localeCompare(b.name));
-        
-        return allPacks;
+        // Fallback to empty array if map returns undefined/null, although it shouldn't with current logic.
+        return allPacks.filter(Boolean) || [];
 
     } catch (dbError) {
         console.error("Error fetching DataPacks from Firestore:", dbError);
