@@ -129,56 +129,54 @@ export function EditGalleryTab({ character, onGalleryUpdate }: { character: Char
             <CardDescription>Manage your character's portraits. Upload new ones or generate them with AI.</CardDescription>
         </CardHeader>
         <CardContent>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[200px]">
-                    {fields.map((field, index) => (
-                        <Card key={field.id} className="group relative overflow-hidden">
-                            <div className="relative w-full aspect-square bg-muted/20">
-                                <Image src={field.value} alt={`Character image ${index + 1}`} fill className="w-full object-contain" />
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[200px]">
+                {fields.map((field, index) => (
+                    <Card key={field.id} className="group relative overflow-hidden">
+                        <div className="relative w-full aspect-square bg-muted/20">
+                            <Image src={field.value} alt={`Character image ${index + 1}`} fill className="w-full object-contain" />
+                        </div>
+                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2 gap-1">
+                            <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary(field.value)} disabled={primaryImageUrl === field.value}>
+                                <Star className="mr-2" /> {primaryImageUrl === field.value ? 'Primary' : 'Set Primary'}
+                            </Button>
+                            <Button type="button" variant="destructive" size="sm" className="w-full" onClick={() => handleRemoveImage(index)} disabled={fields.length <= 1}>
+                                <Trash2 className="mr-2" /> Remove
+                            </Button>
+                        </div>
+                        {primaryImageUrl === field.value && (
+                            <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1.5 text-xs shadow-lg">
+                                <Star className="w-3 h-3 fill-current" />
                             </div>
-                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2 gap-1">
-                                <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary(field.value)} disabled={primaryImageUrl === field.value}>
-                                    <Star className="mr-2" /> {primaryImageUrl === field.value ? 'Primary' : 'Set Primary'}
-                                </Button>
-                                <Button type="button" variant="destructive" size="sm" className="w-full" onClick={() => handleRemoveImage(index)} disabled={fields.length <= 1}>
-                                    <Trash2 className="mr-2" /> Remove
-                                </Button>
+                        )}
+                    </Card>
+                ))}
+                {fields.length < 10 && (
+                    <Card className="flex items-center justify-center border-2 border-dashed bg-muted/50 hover:border-primary transition-colors">
+                        <div className="p-4 text-center">
+                            <div className="flex justify-center mb-2">
+                                 <Label htmlFor="image-upload" className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80">
+                                    <FileUp className="mr-2" /> Upload
+                                </Label>
+                                <Input id="image-upload" type="file" className="hidden" onChange={handleImageUpload} accept="image/png, image/jpeg, image/webp" disabled={isUploading || isGenerating}/>
                             </div>
-                            {primaryImageUrl === field.value && (
-                                <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1.5 text-xs shadow-lg">
-                                    <Star className="w-3 h-3 fill-current" />
-                                </div>
-                            )}
-                        </Card>
-                    ))}
-                    {fields.length < 10 && (
-                        <Card className="flex items-center justify-center border-2 border-dashed bg-muted/50 hover:border-primary transition-colors">
-                            <div className="p-4 text-center">
-                                <div className="flex justify-center mb-2">
-                                     <Label htmlFor="image-upload" className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80">
-                                        <FileUp className="mr-2" /> Upload
-                                    </Label>
-                                    <Input id="image-upload" type="file" className="hidden" onChange={handleImageUpload} accept="image/png, image/jpeg, image/webp" disabled={isUploading || isGenerating}/>
-                                </div>
-                                 <p className="text-xs text-muted-foreground my-2">or</p>
-                                <Button type="button" variant="outline" size="sm" onClick={handleImageGeneration} disabled={isGenerating || isUploading}>
-                                    {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
-                                    Generate
-                                </Button>
-                            </div>
-                        </Card>
-                    )}
-                </div>
-                {form.formState.errors.images && <p className="text-sm font-medium text-destructive">{form.formState.errors.images.message}</p>}
-            
-                <div className="flex justify-end gap-2 pt-4 border-t">
-                    <Button type="submit" disabled={isUpdating || !form.formState.isDirty}>
-                        {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Gallery
-                    </Button>
-                </div>
-            </form>
+                             <p className="text-xs text-muted-foreground my-2">or</p>
+                            <Button type="button" variant="outline" size="sm" onClick={handleImageGeneration} disabled={isGenerating || isUploading}>
+                                {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
+                                Generate
+                            </Button>
+                        </div>
+                    </Card>
+                )}
+            </div>
+             <div className="flex justify-end gap-2 pt-4 border-t mt-6">
+                <Button type="button" onClick={() => form.handleSubmit(onSubmit)()} disabled={isUpdating || !form.formState.isDirty}>
+                    {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Gallery Changes
+                </Button>
+            </div>
         </CardContent>
      </Card>
   );
 }
+
+    

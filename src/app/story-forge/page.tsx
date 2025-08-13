@@ -124,7 +124,7 @@ function CharacterSelector({
 }: { 
     allCharacters: Character[],
     currentCast: StoryCast,
-    onUpdateCast: (castId: string, characterIds: string[]) => void,
+    onUpdateCast: (characterIds: string[]) => Promise<void>,
     isOpen: boolean,
     onClose: () => void,
 }) {
@@ -146,8 +146,8 @@ function CharacterSelector({
     };
 
     const handleSave = () => {
-        startSaveTransition(() => {
-            onUpdateCast(currentCast.id, Array.from(selectedIds));
+        startSaveTransition(async () => {
+            await onUpdateCast(Array.from(selectedIds));
             onClose();
         });
     };
@@ -198,13 +198,11 @@ function CharacterSelector({
 function StoryGenerator({ 
     cast, 
     characters,
-    onRemoveCharacter,
     onUpdateCast,
 }: { 
     cast: StoryCast, 
     characters: Character[],
-    onRemoveCharacter: (characterId: string) => void;
-    onUpdateCast: (castId: string, characterIds: string[]) => void;
+    onUpdateCast: (characterIds: string[]) => Promise<void>;
 }) {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
     const [prompt, setPrompt] = useState('');
@@ -233,6 +231,12 @@ function StoryGenerator({
                 toast({ variant: 'destructive', title: 'Generation Failed', description: result.message });
             }
         })
+    }
+    
+    const handleRemoveCharacterFromCast = async (characterId: string) => {
+        if (!cast) return;
+        const newCharacterIds = cast.characterIds.filter(id => id !== characterId);
+        await onUpdateCast(newCharacterIds);
     }
 
     return (
@@ -270,7 +274,7 @@ function StoryGenerator({
                                             variant="destructive"
                                             size="icon"
                                             className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onClick={() => onRemoveCharacter(char.id)}
+                                            onClick={() => handleRemoveCharacterFromCast(char.id)}
                                         >
                                             <X className="h-4 w-4"/>
                                         </Button>
@@ -324,12 +328,6 @@ export default function StoryForgePage() {
     const [characters, setCharacters] = useState<Character[]>([]);
     const [selectedCast, setSelectedCast] = useState<StoryCast | null>(null);
 
-    useEffect(() => {
-        if (!authLoading && !userProfile) {
-            router.push('/login');
-        }
-    }, [authLoading, userProfile, router]);
-    
     const fetchData = useCallback(async () => {
         if (!userProfile) return;
         setIsLoading(true);
@@ -340,8 +338,9 @@ export default function StoryForgePage() {
             ]);
             setCasts(userCasts);
             setCharacters(userCharacters);
-            if (userCasts.length > 0 && !selectedCast) {
-                setSelectedCast(userCasts[0]);
+            // If there's no selected cast or the selected one is no longer in the list, select the first one
+            if ((!selectedCast && userCasts.length > 0) || (selectedCast && !userCasts.find(c => c.id === selectedCast.id))) {
+                setSelectedCast(userCasts[0] || null);
             }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Failed to load data', description: 'Could not fetch your casts and characters.' });
@@ -351,8 +350,13 @@ export default function StoryForgePage() {
     }, [toast, userProfile, selectedCast]);
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        if (!authLoading && !userProfile) {
+            router.push('/login');
+        } else if (userProfile) {
+            fetchData();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authLoading, userProfile, router]);
     
     const handleAddCast = (newCast: StoryCast) => {
         const newCasts = [newCast, ...casts];
@@ -360,22 +364,17 @@ export default function StoryForgePage() {
         setSelectedCast(newCast);
     };
 
-    const handleUpdateCast = useCallback(async (castId: string, characterIds: string[]) => {
-        const result = await updateStoryCastCharacters(castId, characterIds);
+    const handleUpdateCast = async (characterIds: string[]) => {
+        if (!selectedCast) return;
+        const result = await updateStoryCastCharacters(selectedCast.id, characterIds);
         if (result.success) {
             toast({ title: "Cast Updated" });
-            setCasts(prev => prev.map(c => c.id === castId ? {...c, characterIds, updatedAt: new Date()} : c));
-            setSelectedCast(prev => prev && prev.id === castId ? {...prev, characterIds} : prev);
+            // Refetch all data to ensure UI is in sync with the database truth
+            await fetchData();
         } else {
              toast({ variant: 'destructive', title: "Update Failed", description: result.message });
         }
-    }, [toast]);
-
-    const handleRemoveCharacterFromCast = (characterId: string) => {
-        if (!selectedCast) return;
-        const newCharacterIds = selectedCast.characterIds.filter(id => id !== characterId);
-        handleUpdateCast(selectedCast.id, newCharacterIds);
-    }
+    };
     
     if (authLoading || isLoading) {
          return (
@@ -410,7 +409,6 @@ export default function StoryForgePage() {
                                 <StoryGenerator 
                                     cast={selectedCast} 
                                     characters={characters}
-                                    onRemoveCharacter={handleRemoveCharacterFromCast}
                                     onUpdateCast={handleUpdateCast}
                                 />
                             </motion.div>
@@ -429,3 +427,5 @@ export default function StoryForgePage() {
         </div>
     )
 }
+
+    
