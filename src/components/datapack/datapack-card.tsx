@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -16,10 +15,16 @@ interface DataPackCardProps {
 }
 
 export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
-    const cardContent = (
-        <>
+    
+    // Stop propagation to prevent card's main link from firing when a tag is clicked.
+    const handleTagClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+    }
+
+    return (
+        <Card className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
             <CardHeader className="p-0">
-                <div className="relative aspect-square bg-muted/20 block">
+                <Link href={`/datapacks/${pack.id}`} className="relative aspect-square bg-muted/20 block">
                     <Image
                         src={pack.coverImageUrl || 'https://placehold.co/600x600.png'}
                         alt={pack.name}
@@ -37,10 +42,12 @@ export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
                             pack.type === 'temporal' && "bg-blue-500"
                         )}>{pack.type}</Badge>
                     </div>
-                </div>
+                </Link>
             </CardHeader>
             <CardContent className="p-4 flex-grow">
-                 <CardTitle className="font-bold hover:text-primary transition-colors">{pack.name}</CardTitle>
+                 <Link href={`/datapacks/${pack.id}`}>
+                    <CardTitle className="font-bold hover:text-primary transition-colors">{pack.name}</CardTitle>
+                 </Link>
                 <CardDescription className="mt-2 flex items-center gap-2">
                     <User className="h-4 w-4" /> 
                     <span>by @{pack.author}</span>
@@ -51,7 +58,7 @@ export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
                         {pack.tags && pack.tags.length > 0 && (
                             <div className="flex flex-wrap items-center gap-2 pt-3">
                                 {pack.tags.slice(0, 3).map((tag) => (
-                                    <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
+                                    <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`} onClick={handleTagClick}>
                                         <Badge 
                                             variant="outline"
                                             className={cn("cursor-pointer hover:border-primary/50", getSlotColorClass(tag))}
@@ -72,18 +79,6 @@ export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
                         View Details <ArrowRight className="inline-block h-4 w-4 transition-transform group-hover:translate-x-1 ml-1" />
                     </Link>
                 </CardFooter>
-            )}
-        </>
-    );
-
-    return (
-        <Card className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
-            {isCompact ? (
-                cardContent
-            ) : (
-                <Link href={`/datapacks/${pack.id}`} className="flex flex-col h-full">
-                    {cardContent}
-                </Link>
             )}
         </Card>
     );
