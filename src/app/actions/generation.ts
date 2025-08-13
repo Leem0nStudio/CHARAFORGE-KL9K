@@ -98,6 +98,7 @@ export async function generateCharacter(input: GenerateCharacterInput): Promise<
 
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred during generation.';
+        console.error("Error in generateCharacter action:", message);
         return { success: false, message: 'Failed to generate character.', error: message };
     }
 }

@@ -47,6 +47,8 @@ const generationFormSchema = z.object({
   tags: z.string().optional(),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
+  selectedModel: z.custom<AiModel>(),
+  selectedLora: z.custom<AiModel>().optional().nullable(),
   loraVersionId: z.string().optional(),
   loraWeight: z.number().min(0).max(1).optional(),
 });
@@ -121,9 +123,6 @@ export function CharacterGenerator() {
 
   const [activePackName, setActivePackName] = useState<string | null>(null);
   
-  const [selectedModel, setSelectedModel] = useState<AiModel | null>(null);
-  const [selectedLora, setSelectedLora] = useState<AiModel | null>(null);
-
   const { toast } = useToast();
   const { authUser, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -138,6 +137,8 @@ export function CharacterGenerator() {
       targetLanguage: 'English',
       aspectRatio: '1:1',
       loraWeight: 0.75,
+      selectedModel: undefined,
+      selectedLora: null,
     },
   });
 
@@ -188,7 +189,7 @@ export function CharacterGenerator() {
             setAvailableLoras(loras);
 
             if (allBaseModels.length > 0) {
-                setSelectedModel(allBaseModels[0]);
+                generationForm.setValue('selectedModel', allBaseModels[0]);
             }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' });
@@ -197,7 +198,7 @@ export function CharacterGenerator() {
         }
     }
     loadInitialData();
-  }, [authUser, toast]);
+  }, [authUser, toast, generationForm]);
   
 
   useEffect(() => {
@@ -225,7 +226,7 @@ export function CharacterGenerator() {
       toast({ variant: "destructive", title: "Authentication Required", description: "Please log in to generate a character." });
       return;
     }
-    if (!selectedModel) {
+    if (!data.selectedModel) {
       toast({ variant: 'destructive', title: 'Model Required', description: 'Please select a base model before generating.' });
       return;
     }
@@ -238,8 +239,6 @@ export function CharacterGenerator() {
       const result = await generateCharacter({ 
           ...data, 
           dataPackId: dataPackIdFromUrl,
-          selectedModel,
-          selectedLora,
       });
       
       if (result.success && result.data) {
@@ -251,7 +250,7 @@ export function CharacterGenerator() {
         toast({ variant: "destructive", title: "Generation Failed", description: errorMessage });
       }
     });
-  }, [authUser, toast, dataPackIdFromUrl, saveForm, selectedModel, selectedLora]);
+  }, [authUser, toast, dataPackIdFromUrl, saveForm]);
 
   async function onSave(data: z.infer<typeof saveFormSchema>) {
     if (!generationResult || !generationResult.imageUrl || !authUser) {
@@ -303,15 +302,16 @@ export function CharacterGenerator() {
 
   const handleModelSelect = (model: AiModel) => {
     if (model.type === 'model') {
-        setSelectedModel(model);
+        generationForm.setValue('selectedModel', model);
         // Reset LoRA when base model changes
-        setSelectedLora(null); 
+        generationForm.setValue('selectedLora', null); 
     } else {
-        setSelectedLora(model);
+        generationForm.setValue('selectedLora', model);
         const defaultVersion = model.versions?.[0];
         if (defaultVersion) {
             generationForm.setValue('loraVersionId', defaultVersion.id);
         }
+        generationForm.setValue('loraWeight', 0.75); // Reset weight
     }
     setIsModelModalOpen(false);
   }
@@ -319,6 +319,8 @@ export function CharacterGenerator() {
   const isUiLoading = isGenerating || isSaving || authLoading || isLoading;
   const canInteract = !isUiLoading && !!authUser;
   const watchDescription = generationForm.watch('description');
+  const selectedModel = generationForm.watch('selectedModel');
+  const selectedLora = generationForm.watch('selectedLora');
 
   return (
     <>

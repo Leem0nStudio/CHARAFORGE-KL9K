@@ -289,8 +289,6 @@ export function DataPackSelectorModal({
             setTimeout(() => {
                 setWizardPack(null);
                 setSelectedPack(null);
-                setPacks([]);
-                setIsLoading(true);
             }, 300);
             return;
         }
@@ -305,7 +303,6 @@ export function DataPackSelectorModal({
                 }
             } catch (error) {
                 console.error("Failed to load datapacks:", error);
-                // Optionally show a toast or error message
             } finally {
                 setIsLoading(false);
             }
