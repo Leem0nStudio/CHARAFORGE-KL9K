@@ -297,16 +297,11 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
             throw new Error('Database service not available.');
         }
         
-        const userDoc = await userDoc.get();
-        if (!userDoc.exists()) {
-             console.log(`User document not found for UID: ${uid}`);
-             return [];
-        }
+        const userRef = adminDb.collection('users').doc(uid);
+        const userDoc = await userRef.get();
         
-        const userData = userDoc.data();
-        const installedPackIds = new Set<string>(userData?.stats?.installedPacks || []);
+        const installedPackIds = new Set<string>(userDoc.data()?.stats?.installedPacks || []);
         
-        // **CRITICAL FIX**: Always ensure the default pack is included.
         installedPackIds.add('basic-fantasy-pack');
 
         if (installedPackIds.size === 0) {
@@ -317,7 +312,6 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         const allPacks: DataPack[] = [];
         const packsRef = adminDb.collection('datapacks');
 
-        // Firestore 'in' queries are limited to 30 items. We batch to handle more.
         const batchSize = 30;
         for (let i = 0; i < uniquePackIds.length; i += batchSize) {
             const batchIds = uniquePackIds.slice(i, i + batchSize);
@@ -352,5 +346,3 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         return [];
     }
 }
-
-    
