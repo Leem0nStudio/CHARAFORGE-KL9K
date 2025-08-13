@@ -132,7 +132,9 @@ function CharacterSelector({
     const [isSaving, startSaveTransition] = useTransition();
 
     useEffect(() => {
-        setSelectedIds(new Set(currentCast.characterIds));
+        if (isOpen) {
+            setSelectedIds(new Set(currentCast.characterIds));
+        }
     }, [currentCast, isOpen]);
     
     const handleSelect = (charId: string) => {
@@ -319,7 +321,7 @@ function StoryGenerator({
 
 
 export default function StoryForgePage() {
-    const { userProfile, loading: authLoading } = useAuth();
+    const { userProfile, authUser, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
 
@@ -329,7 +331,6 @@ export default function StoryForgePage() {
     const [selectedCast, setSelectedCast] = useState<StoryCast | null>(null);
 
     const fetchData = useCallback(async () => {
-        if (!userProfile) return;
         setIsLoading(true);
         try {
             const [userCasts, userCharacters] = await Promise.all([
@@ -338,8 +339,11 @@ export default function StoryForgePage() {
             ]);
             setCasts(userCasts);
             setCharacters(userCharacters);
-            // If there's no selected cast or the selected one is no longer in the list, select the first one
-            if ((!selectedCast && userCasts.length > 0) || (selectedCast && !userCasts.find(c => c.id === selectedCast.id))) {
+            // Select first cast by default if none is selected
+            if (!selectedCast && userCasts.length > 0) {
+                setSelectedCast(userCasts[0]);
+            } else if (selectedCast && !userCasts.some(c => c.id === selectedCast.id)) {
+                // If selected cast was deleted, select first one
                 setSelectedCast(userCasts[0] || null);
             }
         } catch (error) {
@@ -347,16 +351,16 @@ export default function StoryForgePage() {
         } finally {
             setIsLoading(false);
         }
-    }, [toast, userProfile, selectedCast]);
+    }, [toast, selectedCast]);
 
     useEffect(() => {
-        if (!authLoading && !userProfile) {
+        if (!authLoading && !authUser) {
             router.push('/login');
-        } else if (userProfile) {
+        } else if (authUser) {
             fetchData();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [authLoading, userProfile, router]);
+    }, [authLoading, authUser, router]);
     
     const handleAddCast = (newCast: StoryCast) => {
         const newCasts = [newCast, ...casts];
@@ -369,14 +373,13 @@ export default function StoryForgePage() {
         const result = await updateStoryCastCharacters(selectedCast.id, characterIds);
         if (result.success) {
             toast({ title: "Cast Updated" });
-            // Refetch all data to ensure UI is in sync with the database truth
-            await fetchData();
+            await fetchData(); // Refetch all data to ensure UI is in sync
         } else {
              toast({ variant: 'destructive', title: "Update Failed", description: result.message });
         }
     };
     
-    if (authLoading || isLoading) {
+    if (authLoading || (isLoading && !casts.length && !characters.length)) {
          return (
             <div className="flex items-center justify-center h-screen w-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />

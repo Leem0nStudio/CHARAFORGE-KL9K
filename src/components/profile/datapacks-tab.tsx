@@ -8,12 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Wand2 } from 'lucide-react';
 import type { DataPack } from '@/types/datapack';
 import { getInstalledDataPacks } from '@/app/actions/datapacks';
+import { useAuth } from '@/hooks/use-auth';
 
 export function DataPacksTab() {
     const [packs, setPacks] = useState<DataPack[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { authUser } = useAuth();
 
     useEffect(() => {
+        if (!authUser) return;
+
         const loadPacks = async () => {
             setIsLoading(true);
             try {
@@ -26,7 +30,7 @@ export function DataPacksTab() {
             }
         };
         loadPacks();
-    }, []);
+    }, [authUser]);
 
     if (isLoading) {
         return (
@@ -77,3 +81,5 @@ export function DataPacksTab() {
         </Card>
     );
 }
+
+    

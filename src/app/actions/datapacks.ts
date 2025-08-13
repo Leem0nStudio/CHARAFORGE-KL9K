@@ -295,25 +295,17 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         throw new Error('Database service not available.');
     }
 
-    let installedPackIds: string[] = [];
-    try {
-        const uid = await verifyAndGetUid();
-        const userRef = adminDb.collection('users').doc(uid);
-        const userDoc = await userRef.get();
-        if (userDoc.exists) {
-            installedPackIds = userDoc.data()?.stats?.installedPacks || [];
-        }
-    } catch (error) {
-        // User is likely not logged in. It's safe to proceed with just the default pack.
-        console.log('User not logged in or profile not found, serving default packs only.');
-    }
+    const uid = await verifyAndGetUid();
+    const userRef = adminDb.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    
+    const installedPackIds = userDoc.data()?.stats?.installedPacks || [];
 
-    const finalPackIds = new Set(installedPackIds);
-    finalPackIds.add('basic-fantasy-pack');
-    const uniquePackIds = Array.from(finalPackIds);
+    const packIdsToFetch = new Set(installedPackIds);
+    packIdsToFetch.add('basic-fantasy-pack'); // Always ensure the default pack is available
 
-    // **CRITICAL FIX**: Firestore 'in' queries fail if the array is empty.
-    // This check prevents the query from running with an empty list.
+    const uniquePackIds = Array.from(packIdsToFetch);
+
     if (uniquePackIds.length === 0) {
         return [];
     }
@@ -321,6 +313,10 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
     try {
         const packsRef = adminDb.collection('datapacks');
         const packsSnapshot = await packsRef.where(FieldValue.documentId(), 'in', uniquePackIds).get();
+
+        if (packsSnapshot.empty) {
+            return [];
+        }
 
         const allPacks = packsSnapshot.docs.map(doc => {
             const data = doc.data();
@@ -334,11 +330,12 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
             } as DataPack;
         });
         
-        // Fallback to empty array if map returns undefined/null, although it shouldn't with current logic.
-        return allPacks.filter(Boolean) || [];
+        return allPacks;
 
     } catch (dbError) {
         console.error("Error fetching DataPacks from Firestore:", dbError);
         return [];
     }
 }
+
+    

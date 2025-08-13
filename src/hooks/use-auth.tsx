@@ -14,7 +14,7 @@ import { User, onIdTokenChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData, Timestamp } from 'firebase/firestore';
 import { getFirebaseClient } from '@/lib/firebase/client';
 import type { UserProfile } from '@/types/user';
-import { AnvilIcon } from '@/components/app-logo'; // Import the centralized icon
+import { AnvilIcon } from '@/components/app-logo';
 
 
 export interface AuthContextType {
@@ -57,6 +57,8 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
   try {
     const userDoc = await getDoc(userDocRef);
     if (!userDoc.exists()) {
+      // Use serverTimestamp() only for the initial creation, it's safer.
+      // For updates from client, we will use a regular Date.
       await setDoc(userDocRef, {
         uid: user.uid,
         email: user.email,
@@ -69,16 +71,18 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
           charactersCreated: 0,
           totalLikes: 0,
           collectionsCreated: 0,
-          installedPacks: ['basic-fantasy-pack'],
+          installedPacks: [],
           subscriptionTier: 'free',
           memberSince: serverTimestamp(),
         }
       });
     } else {
-        const updateData: { displayName: string | null; photoURL: string | null; email?: string | null, lastLogin: any } = {
+        // **CRITICAL FIX**: Do not use serverTimestamp() from the client-side for updates.
+        // Use a standard JavaScript Date object instead.
+        const updateData: { displayName: string | null; photoURL: string | null; email?: string | null, lastLogin: Date } = {
           displayName: user.displayName,
           photoURL: user.photoURL,
-          lastLogin: serverTimestamp(),
+          lastLogin: new Date(),
         };
         if (user.email !== userDoc.data()?.email) {
             updateData.email = user.email;
@@ -89,9 +93,8 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
     const updatedUserDoc = await getDoc(userDocRef);
     const data = updatedUserDoc.data();
 
-    // Ensure all Timestamps from Firestore are converted to numbers (milliseconds)
-    // before being sent to the client state.
     if (data) {
+        // Ensure all Timestamps from Firestore are converted to numbers (milliseconds)
         if (data.createdAt && data.createdAt instanceof Timestamp) {
             data.createdAt = data.createdAt.toMillis();
         }
@@ -121,9 +124,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       if (newAuthUser) {
         const token = await newAuthUser.getIdToken();
-        // **CRITICAL CHANGE**: Wait for the cookie to be set on the server
-        // before proceeding to update the client-side state. This ensures
-        // that any subsequent Server Action calls will have the session.
         await setCookie(token);
 
         setAuthUser(newAuthUser);
@@ -145,8 +145,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setAuthUser(null);
         setUserProfile(null);
       }
-      // **CRITICAL CHANGE**: Only set loading to false after all async
-      // operations (cookie setting, firestore doc check) are complete.
       setLoading(false);
     });
 
@@ -177,3 +175,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+    
