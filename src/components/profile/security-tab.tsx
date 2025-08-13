@@ -75,7 +75,7 @@ export function SecurityTab() {
       <Card>
         <CardHeader>
           <CardTitle>API Keys</CardTitle>
-          <CardDescription>Provide your own API keys to use as a fallback if the system's keys are rate-limited.</CardDescription>
+          <CardDescription>Provide your own API keys to use as a fallback if the system's keys are rate-limited or to access premium models.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
             <div className="space-y-2">
