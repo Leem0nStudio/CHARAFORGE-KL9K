@@ -12,13 +12,10 @@ import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check,
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
-import { generateCharacterDetails, generateCharacterPortrait, type GenerateDetailsInput, type GeneratePortraitInput } from "@/app/actions/generation";
+import { generateCharacterDetails, generateCharacterPortrait } from "@/app/actions/generation";
 import { getModelsForUser } from "@/app/actions/ai-models";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
@@ -34,7 +31,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { ModelSelectorModal } from './model-selector-modal';
 import type { AiModel } from '@/types/ai-model';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { MediaDisplay } from "./media-display";
+import { VisualModelSelector } from "./visual-model-selector";
 
 const geminiPlaceholder: AiModel = {
     id: 'gemini-placeholder',
@@ -80,43 +77,6 @@ type GenerationResult = {
   tags: string;
   dataPackId?: string | null;
 };
-
-function VisualModelSelector({ label, model, onOpen, disabled, isLoading }: { label: string, model?: AiModel | null, onOpen: () => void, disabled: boolean, isLoading?: boolean }) {
-    
-    if (isLoading) {
-        return (
-             <div>
-                <Label>{label}</Label>
-                <div className="h-auto w-full justify-start p-2 mt-1 flex items-center">
-                    <Skeleton className="w-16 h-16 rounded-md shrink-0 mr-4" />
-                    <div className="w-full space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
-                    </div>
-                </div>
-            </div>
-        )
-    }
-    
-    return (
-        <div>
-            <Label>{label}</Label>
-            <Button type="button" variant="outline" className="h-auto w-full justify-start p-2 mt-1" onClick={onOpen} disabled={disabled}>
-                 <div className="relative w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted/20 mr-4">
-                    {model?.coverMediaUrl ? (
-                        <MediaDisplay url={model.coverMediaUrl} type={model.coverMediaType} alt={model.name || 'Model'} className="object-cover" />
-                    ) : (
-                        <div className="flex items-center justify-center h-full text-muted-foreground"><Settings /></div>
-                    )}
-                </div>
-                <div className="text-left">
-                    <p className="font-semibold text-card-foreground">{model?.name || 'Select...'}</p>
-                    <p className="text-xs text-muted-foreground truncate">{model?.hf_id || 'Click to choose a model'}</p>
-                </div>
-            </Button>
-        </div>
-    )
-}
 
 export function CharacterGenerator() {
   const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null);
