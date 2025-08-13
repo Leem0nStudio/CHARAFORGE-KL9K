@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { getInstalledDataPacks } from '@/app/actions/datapacks';
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2, ArrowRight, Wand2, Package, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowRight, Wand2, Package, ArrowLeft, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { DataPack, Option, Slot } from '@/types/datapack';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,50 @@ import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import Link from 'next/link';
 import { DataPackCard } from './datapack/datapack-card';
+import { Badge } from './ui/badge';
+import { getSlotColorClass } from '@/lib/app-config';
+
+function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, isOpen: boolean, onClose: () => void }) {
+    if (!pack) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle className="font-headline text-2xl">{pack.name}</DialogTitle>
+                    <DialogDescription>{pack.description}</DialogDescription>
+                </DialogHeader>
+                 <ScrollArea className="max-h-[60vh] -mx-6 px-6 py-4">
+                     <div className="space-y-6">
+                        <div>
+                            <h4 className="font-semibold mb-2">Prompt Template</h4>
+                            <div className="bg-muted/50 p-4 rounded-lg text-sm text-muted-foreground font-mono break-words">
+                                {pack.schema.promptTemplate}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-2">Available Slots</h4>
+                             <div className="flex flex-wrap gap-2">
+                                 {pack.schema.slots.map((slot) => (
+                                    <Badge 
+                                        key={slot.id} 
+                                        variant="outline"
+                                        className={cn(getSlotColorClass(slot.id))}
+                                    >
+                                        {slot.label}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </ScrollArea>
+                <DialogFooter>
+                    <Button onClick={onClose}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 
 function OptionSelectModal({
@@ -113,15 +157,7 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full max-h-[80vh] sm:max-h-full">
-             <OptionSelectModal
-                isOpen={!!activeSlot}
-                onClose={() => setActiveSlot(null)}
-                slot={activeSlot!}
-                currentValue={activeSlot ? formValues[activeSlot.id] : ''}
-                onSelect={(value) => activeSlot && setValue(activeSlot.id, value)}
-                disabledOptions={new Set()}
-            />
+        <>
             <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
                     <Wand2 className="h-6 w-6 text-primary" /> {pack.name} Wizard
@@ -130,38 +166,48 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                     Click on any card to change its selection.
                 </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="flex-grow my-4 pr-3 -mr-3">
-                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {wizardSlots.map(slot => {
-                        const selectedValue = formValues[slot.id];
-                        const selectedOption = slot.options?.find(o => o.value === selectedValue);
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full max-h-[80vh] sm:max-h-full">
+                 <OptionSelectModal
+                    isOpen={!!activeSlot}
+                    onClose={() => setActiveSlot(null)}
+                    slot={activeSlot!}
+                    currentValue={activeSlot ? formValues[activeSlot.id] : ''}
+                    onSelect={(value) => activeSlot && setValue(activeSlot.id, value)}
+                    disabledOptions={new Set()}
+                />
+                <ScrollArea className="flex-grow my-4 pr-3 -mr-3">
+                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {wizardSlots.map(slot => {
+                            const selectedValue = formValues[slot.id];
+                            const selectedOption = slot.options?.find(o => o.value === selectedValue);
 
-                        return (
-                            <Card
-                                key={slot.id}
-                                onClick={() => setActiveSlot(slot)}
-                                className="cursor-pointer hover:bg-muted/50 transition-colors h-full flex flex-col"
-                            >
-                                <CardHeader className="p-3">
-                                    <CardTitle className="text-base font-logo tracking-wider">{slot.label}</CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-3 pt-0 flex-grow">
-                                     <p className="text-sm text-primary font-semibold truncate">{selectedOption?.label || 'None'}</p>
-                                </CardContent>
-                            </Card>
-                        )
-                    })}
-                 </div>
-            </ScrollArea>
-            <DialogFooter className="flex-none pt-4 border-t">
-                <Button type="button" variant="ghost" onClick={onBack}>
-                    <ArrowLeft className="mr-2" /> Back to Packs
-                </Button>
-                <Button type="submit" size="lg" className="w-full sm:w-auto font-headline text-lg">
-                    Generate Prompt <ArrowRight className="ml-2" />
-                </Button>
-            </DialogFooter>
-        </form>
+                            return (
+                                <Card
+                                    key={slot.id}
+                                    onClick={() => setActiveSlot(slot)}
+                                    className="cursor-pointer hover:bg-muted/50 transition-colors h-full flex flex-col"
+                                >
+                                    <CardHeader className="p-3">
+                                        <CardTitle className="text-base font-logo tracking-wider">{slot.label}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-3 pt-0 flex-grow">
+                                         <p className="text-sm text-primary font-semibold truncate">{selectedOption?.label || 'None'}</p>
+                                    </CardContent>
+                                </Card>
+                            )
+                        })}
+                     </div>
+                </ScrollArea>
+                <DialogFooter className="flex-none pt-4 border-t">
+                    <Button type="button" variant="ghost" onClick={onBack}>
+                        <ArrowLeft className="mr-2" /> Back to Packs
+                    </Button>
+                    <Button type="submit" size="lg" className="w-full sm:w-auto font-headline text-lg">
+                        Generate Prompt <ArrowRight className="ml-2" />
+                    </Button>
+                </DialogFooter>
+            </form>
+        </>
     )
 }
 
@@ -172,6 +218,7 @@ function PackGallery({
 }) {
     const [isLoading, setIsLoading] = useState(true);
     const [packs, setPacks] = useState<DataPack[]>([]);
+    const [infoPack, setInfoPack] = useState<DataPack | null>(null);
 
     useEffect(() => {
         const loadPacks = async () => {
@@ -190,54 +237,64 @@ function PackGallery({
 
     if (isLoading) {
         return (
-             <>
-                <DialogHeader>
-                    <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
-                    <DialogDescription>
-                        Choose one of your installed packs to start building a prompt.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="flex-grow flex items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-            </>
+            <div className="flex-grow flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
         )
     }
 
     if (packs.length === 0) {
         return (
-            <>
-                <DialogHeader>
-                    <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
-                </DialogHeader>
-                <div className="flex flex-col h-full items-center justify-center">
-                    <Alert className="mt-4">
-                        <Package className="h-4 w-4" />
-                        <AlertTitle>Your collection is empty!</AlertTitle>
-                        <AlertDescription>
-                            Visit the catalog to add some creative packs.
-                            <Button asChild variant="link" className="p-0 h-auto ml-1"><Link href="/datapacks">Go to Catalog</Link></Button>
-                        </AlertDescription>
-                    </Alert>
-                </div>
-            </>
+            <div className="flex flex-col h-full items-center justify-center">
+                <Alert className="mt-4">
+                    <Package className="h-4 w-4" />
+                    <AlertTitle>Your collection is empty!</AlertTitle>
+                    <AlertDescription>
+                        Visit the catalog to add some creative packs.
+                        <Button asChild variant="link" className="p-0 h-auto ml-1"><Link href="/datapacks">Go to Catalog</Link></Button>
+                    </AlertDescription>
+                </Alert>
+            </div>
         )
     }
     
     return (
         <>
-            <DialogHeader>
-                <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
-                <DialogDescription>
-                    Choose one of your installed packs to start building a prompt.
-                </DialogDescription>
-            </DialogHeader>
+            <DataPackInfoDialog pack={infoPack} isOpen={!!infoPack} onClose={() => setInfoPack(null)} />
              <ScrollArea className="flex-grow my-4 pr-4 -mr-4">
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                     {packs.map(pack => (
-                       <div key={pack.id} onClick={() => onChoosePack(pack)} className="cursor-pointer">
-                           <DataPackCard pack={pack} isCompact />
-                       </div>
+                       <Card key={pack.id} className="flex flex-col overflow-hidden group transition-all duration-300 h-full">
+                            <CardHeader className="p-0">
+                                <div className="relative aspect-square bg-muted/20 block">
+                                    <Image
+                                        src={pack.coverImageUrl || 'https://placehold.co/600x600.png'}
+                                        alt={pack.name}
+                                        fill
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                        data-ai-hint="datapack cover image"
+                                    />
+                                </div>
+                            </CardHeader>
+                             <CardContent className="p-4 flex-grow">
+                                <CardTitle className="font-bold">{pack.name}</CardTitle>
+                                <CardDescription className="mt-1 flex items-center gap-2 text-xs">
+                                    <User className="h-3 w-3" /> 
+                                    <span>by @{pack.author}</span>
+                                </CardDescription>
+                            </CardContent>
+                             <CardFooter className="p-2 border-t bg-muted/30">
+                                <div className="flex items-center gap-2 w-full">
+                                    <Button type="button" variant="outline" size="sm" className="flex-1" onClick={() => setInfoPack(pack)}>
+                                        <Info className="mr-2 h-4 w-4"/> Info
+                                    </Button>
+                                    <Button type="button" size="sm" className="flex-1" onClick={() => onChoosePack(pack)}>
+                                        <Wand2 className="mr-2 h-4 w-4"/> Use
+                                    </Button>
+                                </div>
+                            </CardFooter>
+                       </Card>
                     ))}
                  </div>
             </ScrollArea>
@@ -285,7 +342,15 @@ export function DataPackSelectorModal({
                 {wizardPack ? (
                     <WizardGrid pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} onBack={() => setWizardPack(null)} />
                 ) : (
+                    <>
+                    <DialogHeader>
+                        <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
+                        <DialogDescription>
+                            Choose one of your installed packs to start building a prompt.
+                        </DialogDescription>
+                    </DialogHeader>
                     <PackGallery onChoosePack={setWizardPack} />
+                    </>
                 )}
             </DialogContent>
         </Dialog>
