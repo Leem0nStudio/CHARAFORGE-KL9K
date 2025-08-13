@@ -91,7 +91,7 @@ export function CharacterGenerator() {
   
   const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
   const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingModels, setIsLoadingModels] = useState(true);
 
   const [activePackName, setActivePackName] = useState<string | null>(null);
   
@@ -137,7 +137,7 @@ export function CharacterGenerator() {
   useEffect(() => {
     async function loadInitialData() {
         if (!authUser) return;
-        setIsLoading(true);
+        setIsLoadingModels(true);
         try {
             const [models, loras] = await Promise.all([
                 getModelsForUser('model'),
@@ -148,11 +148,13 @@ export function CharacterGenerator() {
             setAvailableModels(allBaseModels);
             setAvailableLoras(loras);
 
-            generationForm.setValue('selectedModel', allBaseModels[0]);
+            if (!generationForm.getValues('selectedModel')) {
+                generationForm.setValue('selectedModel', allBaseModels[0]);
+            }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' });
         } finally {
-            setIsLoading(false);
+            setIsLoadingModels(false);
         }
     }
     loadInitialData();
@@ -299,7 +301,7 @@ export function CharacterGenerator() {
     setIsModelModalOpen(false);
   }
 
-  const isUiLoading = isGenerating || isSaving || authLoading || isLoading;
+  const isUiLoading = isGenerating || isSaving || authLoading || isLoadingModels;
   const canInteract = !isUiLoading && !!authUser;
   const watchDescription = generationForm.watch('description');
   const selectedModel = generationForm.watch('selectedModel');
@@ -324,7 +326,7 @@ export function CharacterGenerator() {
         onSelect={handleModelSelect}
         type={modelModalType}
         models={modelModalType === 'model' ? availableModels : availableLoras}
-        isLoading={isLoading}
+        isLoading={isLoadingModels}
     />
     <div className="grid gap-8 lg:grid-cols-5 items-start">
       <div className="lg:col-span-2 flex flex-col gap-4">
@@ -413,7 +415,7 @@ export function CharacterGenerator() {
                                         model={selectedModel}
                                         onOpen={() => handleOpenModelModal('model')}
                                         disabled={!canInteract}
-                                        isLoading={isLoading}
+                                        isLoading={isLoadingModels}
                                     />
                                     {selectedModel?.engine === 'huggingface' && (
                                      <>
@@ -422,7 +424,7 @@ export function CharacterGenerator() {
                                             model={selectedLora}
                                             onOpen={() => handleOpenModelModal('lora')}
                                             disabled={!canInteract || availableLoras.length === 0}
-                                            isLoading={isLoading}
+                                            isLoading={isLoadingModels}
                                         />
                                         {selectedLora && (
                                             <div className="space-y-4 rounded-md border p-4 bg-muted/20">

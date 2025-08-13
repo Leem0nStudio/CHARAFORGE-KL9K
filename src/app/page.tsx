@@ -13,16 +13,11 @@ export default async function Home() {
         getPublicDataPacks(),
     ]);
 
-    const heroCharacter = featuredCharacters.length > 0
-        ? featuredCharacters[Math.floor(Math.random() * Math.min(featuredCharacters.length, 5))]
-        : null;
-
     return (
         <HomePageClient 
             featuredCreations={featuredCharacters} 
             topCreators={topCreators} 
             newDataPacks={newDataPacks}
-            heroCharacter={heroCharacter}
         />
     );
 }
