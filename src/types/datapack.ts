@@ -92,5 +92,3 @@ export const UpsertDataPackSchema = DataPackFormSchema.extend({
 // TypeScript types inferred from Zod schemas
 export type DataPackFormValues = z.infer<typeof DataPackFormSchema>;
 export type UpsertDataPack = z.infer<typeof UpsertDataPackSchema>;
-
-    
