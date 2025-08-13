@@ -73,32 +73,12 @@ function OptionSelectModal({
 }
 
 function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPromptGenerated: (prompt: string, packName: string, tags: string[], packId: string) => void, onBack: () => void }) {
-    const { control, handleSubmit, watch, setValue } = useForm();
+    const { handleSubmit, watch, setValue } = useForm();
     const formValues = watch();
 
     const [activeSlot, setActiveSlot] = useState<Slot | null>(null);
 
     const wizardSlots = useMemo(() => pack.schema.slots.filter(slot => !slot.isLocked), [pack.schema.slots]);
-
-    const disabledOptions = useMemo(() => {
-        const disabled = new Map<string, Set<string>>();
-        pack.schema.slots.forEach(slot => {
-            const selectedValue = formValues[slot.id];
-            if (!selectedValue) return;
-
-            const selectedOption = slot.options?.find(opt => opt.value === selectedValue);
-            if (!selectedOption || !selectedOption.exclusions) return;
-
-            selectedOption.exclusions.forEach(exclusion => {
-                if (!disabled.has(exclusion.slotId)) {
-                    disabled.set(exclusion.slotId, new Set());
-                }
-                const disabledSet = disabled.get(exclusion.slotId)!;
-                exclusion.optionValues.forEach(val => disabledSet.add(val));
-            });
-        });
-        return disabled;
-    }, [formValues, pack.schema.slots]);
 
     useEffect(() => {
         pack.schema.slots.forEach(slot => {
@@ -140,11 +120,18 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                 slot={activeSlot!}
                 currentValue={activeSlot ? formValues[activeSlot.id] : ''}
                 onSelect={(value) => activeSlot && setValue(activeSlot.id, value)}
-                disabledOptions={activeSlot ? (disabledOptions.get(activeSlot.id) || new Set()) : new Set()}
+                disabledOptions={new Set()}
             />
-            {/* The DialogHeader is now part of the parent so it's always present */}
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
+                    <Wand2 className="h-6 w-6 text-primary" /> {pack.name} Wizard
+                </DialogTitle>
+                <DialogDescription>
+                    Click on any card to change its selection.
+                </DialogDescription>
+            </DialogHeader>
             <ScrollArea className="flex-grow my-4 pr-3 -mr-3">
-                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {wizardSlots.map(slot => {
                         const selectedValue = formValues[slot.id];
                         const selectedOption = slot.options?.find(o => o.value === selectedValue);
@@ -226,6 +213,12 @@ function PackGallery({
     
     return (
         <div className="flex flex-col h-full">
+            <DialogHeader>
+                <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
+                <DialogDescription>
+                    Choose one of your installed packs to start building a prompt.
+                </DialogDescription>
+            </DialogHeader>
              <ScrollArea className="flex-grow my-4 pr-4 -mr-4">
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                     {packs.map(pack => (
@@ -275,23 +268,7 @@ export function DataPackSelectorModal({
     
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className={cn("max-h-[90vh] flex flex-col", wizardPack ? "sm:max-w-4xl" : "sm:max-w-5xl")}>
-                <DialogHeader>
-                    {wizardPack ? (
-                         <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
-                            <Wand2 className="h-6 w-6 text-primary" /> {wizardPack.name} Wizard
-                        </DialogTitle>
-                    ) : (
-                        <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
-                    )}
-                     <DialogDescription>
-                        {wizardPack 
-                            ? "Click on any card to change its selection."
-                            : "Choose one of your installed packs to start building a prompt."
-                        }
-                    </DialogDescription>
-                </DialogHeader>
-
+            <DialogContent className={cn("max-h-[90vh] flex flex-col", wizardPack ? "sm:max-w-3xl" : "sm:max-w-4xl")}>
                 {wizardPack ? (
                     <WizardGrid pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} onBack={() => setWizardPack(null)} />
                 ) : (
