@@ -307,12 +307,13 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         // User is likely not logged in. It's safe to proceed with just the default pack.
         console.log('User not logged in or profile not found, serving default packs only.');
     }
-    
-    // Use a Set to ensure the default pack is only added once and avoid duplicates.
+
     const finalPackIds = new Set(installedPackIds);
     finalPackIds.add('basic-fantasy-pack');
-
     const uniquePackIds = Array.from(finalPackIds);
+
+    // **CRITICAL FIX**: Firestore 'in' queries fail if the array is empty.
+    // This check prevents the query from running with an empty list.
     if (uniquePackIds.length === 0) {
         return [];
     }
@@ -339,9 +340,6 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
 
     } catch (dbError) {
         console.error("Error fetching DataPacks from Firestore:", dbError);
-        // Return an empty array in case of a database error to prevent the app from crashing.
         return [];
     }
 }
-
-    
