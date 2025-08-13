@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -15,88 +16,8 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import Link from 'next/link';
+import { DataPackCard } from './datapack/datapack-card';
 
-function PackPreview({ pack, onChoose }: { pack: DataPack | null, onChoose: () => void }) {
-    if (!pack) {
-        return (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg bg-card/50">
-                <Package className="h-16 w-16 mb-4 text-primary" />
-                <h3 className="text-xl font-headline tracking-wider">Select a DataPack</h3>
-                <p>Choose a pack from the list to see its details and use the wizard.</p>
-            </div>
-        )
-    }
-
-    return (
-        <Card className="flex flex-col h-full">
-            <CardHeader className="p-0 relative">
-                 <div className="relative rounded-t-lg overflow-hidden bg-muted/20 max-h-[400px]">
-                    <Image
-                        src={pack.coverImageUrl || 'https://placehold.co/600x400.png'}
-                        alt={pack.name}
-                        width={600}
-                        height={400}
-                        className="w-full h-auto object-contain"
-                        data-ai-hint="datapack cover image"
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                    />
-                </div>
-            </CardHeader>
-            <CardContent className="p-6 flex-grow flex flex-col">
-                <h2 className="text-3xl font-headline tracking-wider">{pack.name}</h2>
-                <p className="text-muted-foreground">by {pack.author}</p>
-                <Separator className="my-4" />
-                <ScrollArea className="flex-grow pr-4 max-h-[200px]">
-                    <p className="text-sm text-muted-foreground">{pack.description}</p>
-                </ScrollArea>
-            </CardContent>
-            <CardFooter>
-                 <Button onClick={onChoose} className="w-full font-headline text-lg" size="lg">
-                    Use this Pack <ArrowRight className="ml-2" />
-                </Button>
-            </CardFooter>
-        </Card>
-    )
-}
-
-function PackSelector({ packs, onSelect, selectedPackId }: {
-    packs: DataPack[],
-    selectedPackId: string | null,
-    onSelect: (pack: DataPack) => void
-}) {
-    return (
-        <div className="flex flex-col h-full">
-            <h3 className="font-headline text-xl mb-4 text-center">Your Installed Packs</h3>
-            <ScrollArea className="flex-grow pr-4 -mr-4">
-                <div className="space-y-2">
-                    {packs.map(pack => (
-                        <div
-                            key={pack.id}
-                            onClick={() => onSelect(pack)}
-                            onKeyDown={(e) => e.key === 'Enter' && onSelect(pack)}
-                            role="button"
-                            tabIndex={0}
-                            className={cn(
-                                "w-full text-left p-2 rounded-lg border-2 transition-all duration-200 flex items-center gap-3 cursor-pointer",
-                                selectedPackId === pack.id
-                                    ? "bg-primary/20 border-primary shadow-md"
-                                    : "bg-muted/50 border-transparent hover:bg-muted"
-                            )}
-                        >
-                             <div className="relative w-16 h-12 rounded-md overflow-hidden shrink-0 bg-muted/20">
-                                <Image src={pack.coverImageUrl || 'https://placehold.co/200x150.png'} alt={pack.name} fill className="object-contain" data-ai-hint="datapack cover image" sizes="64px" />
-                            </div>
-                            <div>
-                                <p className="font-semibold text-card-foreground">{pack.name}</p>
-                                <p className="text-xs text-muted-foreground">by {pack.author}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </ScrollArea>
-        </div>
-    )
-}
 
 function OptionSelectModal({
     isOpen,
@@ -192,7 +113,6 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
     const onSubmit = (data: any) => {
         let prompt = pack.schema.promptTemplate || '';
         
-        // Combine form data with locked slot data for prompt generation
         const fullData = { ...data };
         pack.schema.slots.forEach(slot => {
             if (slot.isLocked && slot.defaultOption) {
@@ -265,6 +185,39 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
     )
 }
 
+function PackGallery({ 
+    packs, 
+    onChoosePack 
+}: { 
+    packs: DataPack[], 
+    onChoosePack: (pack: DataPack) => void 
+}) {
+    return (
+        <div className="flex flex-col h-full">
+            <DialogHeader>
+                <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
+                <DialogDescription>Choose one of your installed packs to start building a prompt.</DialogDescription>
+            </DialogHeader>
+             <ScrollArea className="flex-grow my-4 pr-4 -mr-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                    {packs.map(pack => (
+                       <div key={pack.id} onClick={() => onChoosePack(pack)} className="cursor-pointer">
+                           <DataPackCard pack={pack} isCompact />
+                       </div>
+                    ))}
+                 </div>
+            </ScrollArea>
+             <DialogFooter className="pt-4 border-t">
+                 <p className="text-sm text-muted-foreground mr-auto">Need more options?</p>
+                 <Button asChild variant="outline">
+                    <Link href="/datapacks">Browse Full Catalog</Link>
+                </Button>
+            </DialogFooter>
+        </div>
+    );
+}
+
+
 interface DataPackSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -279,15 +232,12 @@ export function DataPackSelectorModal({
 }: DataPackSelectorModalProps) {
     const [packs, setPacks] = useState<DataPack[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedPack, setSelectedPack] = useState<DataPack | null>(null);
     const [wizardPack, setWizardPack] = useState<DataPack | null>(null);
 
     useEffect(() => {
         if (!isOpen) {
-            // Reset state when closing
             setTimeout(() => {
                 setWizardPack(null);
-                setSelectedPack(null);
             }, 300);
             return;
         }
@@ -297,9 +247,6 @@ export function DataPackSelectorModal({
             try {
                 const installedPacks = await getInstalledDataPacks();
                 setPacks(installedPacks);
-                if (installedPacks.length > 0) {
-                    setSelectedPack(installedPacks[0]);
-                }
             } catch (error) {
                 console.error("Failed to load datapacks:", error);
             } finally {
@@ -352,31 +299,12 @@ export function DataPackSelectorModal({
             )
         }
         
-        return (
-             <>
-                <DialogHeader>
-                    <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
-                    <DialogDescription>Choose one of your installed packs to start building a prompt.</DialogDescription>
-                </DialogHeader>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4 min-h-[60vh]">
-                    <div className="md:col-span-2">
-                        <PackPreview pack={selectedPack} onChoose={() => {if (selectedPack) setWizardPack(selectedPack)}} />
-                    </div>
-                    <div className="md:col-span-1">
-                        <PackSelector
-                            packs={packs}
-                            onSelect={setSelectedPack}
-                            selectedPackId={selectedPack?.id || null}
-                        />
-                    </div>
-                </div>
-             </>
-        );
+        return <PackGallery packs={packs} onChoosePack={setWizardPack} />;
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className={cn("sm:max-w-4xl", wizardPack ? "sm:max-w-2xl" : "sm:max-w-5xl")}>
+            <DialogContent className={cn("max-h-[90vh] flex flex-col", wizardPack ? "sm:max-w-3xl" : "sm:max-w-5xl")}>
                 {renderContent()}
             </DialogContent>
         </Dialog>

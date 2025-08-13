@@ -12,13 +12,14 @@ import { getSlotColorClass } from '@/lib/app-config';
 
 interface DataPackCardProps {
     pack: DataPack;
+    isCompact?: boolean;
 }
 
-export function DataPackCard({ pack }: DataPackCardProps) {
-    return (
-         <Card className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
+export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
+    const cardContent = (
+        <>
             <CardHeader className="p-0">
-                <Link href={`/datapacks/${pack.id}`} className="relative aspect-square bg-muted/20 block">
+                <div className="relative aspect-square bg-muted/20 block">
                     <Image
                         src={pack.coverImageUrl || 'https://placehold.co/600x600.png'}
                         alt={pack.name}
@@ -36,38 +37,54 @@ export function DataPackCard({ pack }: DataPackCardProps) {
                             pack.type === 'temporal' && "bg-blue-500"
                         )}>{pack.type}</Badge>
                     </div>
-                </Link>
+                </div>
             </CardHeader>
             <CardContent className="p-4 flex-grow">
-                <Link href={`/datapacks/${pack.id}`}>
-                    <CardTitle className="font-bold hover:text-primary transition-colors">{pack.name}</CardTitle>
-                </Link>
+                 <CardTitle className="font-bold hover:text-primary transition-colors">{pack.name}</CardTitle>
                 <CardDescription className="mt-2 flex items-center gap-2">
                     <User className="h-4 w-4" /> 
                     <span>by @{pack.author}</span>
                 </CardDescription>
-                <p className="mt-3 text-sm text-muted-foreground line-clamp-2">{pack.description}</p>
-                    {pack.tags && pack.tags.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 pt-3">
-                        {pack.tags.slice(0, 3).map((tag) => (
-                            <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
-                                <Badge 
-                                    variant="outline"
-                                    className={cn("cursor-pointer hover:border-primary/50", getSlotColorClass(tag))}
-                                >
-                                    {tag}
-                                </Badge>
-                            </Link>
-                        ))}
-                        {pack.tags.length > 3 && <Badge variant="outline">...</Badge>}
-                    </div>
+                {!isCompact && (
+                    <>
+                        <p className="mt-3 text-sm text-muted-foreground line-clamp-2">{pack.description}</p>
+                        {pack.tags && pack.tags.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 pt-3">
+                                {pack.tags.slice(0, 3).map((tag) => (
+                                    <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
+                                        <Badge 
+                                            variant="outline"
+                                            className={cn("cursor-pointer hover:border-primary/50", getSlotColorClass(tag))}
+                                        >
+                                            {tag}
+                                        </Badge>
+                                    </Link>
+                                ))}
+                                {pack.tags.length > 3 && <Badge variant="outline">...</Badge>}
+                            </div>
+                        )}
+                    </>
                 )}
             </CardContent>
-            <CardFooter className="mt-auto p-4">
-                <Link href={`/datapacks/${pack.id}`} className="text-sm text-primary font-semibold group-hover:underline flex items-center">
-                    View Details <ArrowRight className="inline-block h-4 w-4 transition-transform group-hover:translate-x-1 ml-1" />
+            {!isCompact && (
+                 <CardFooter className="mt-auto p-4">
+                    <Link href={`/datapacks/${pack.id}`} className="text-sm text-primary font-semibold group-hover:underline flex items-center">
+                        View Details <ArrowRight className="inline-block h-4 w-4 transition-transform group-hover:translate-x-1 ml-1" />
+                    </Link>
+                </CardFooter>
+            )}
+        </>
+    );
+
+    return (
+        <Card className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
+            {isCompact ? (
+                cardContent
+            ) : (
+                <Link href={`/datapacks/${pack.id}`} className="flex flex-col h-full">
+                    {cardContent}
                 </Link>
-            </CardFooter>
+            )}
         </Card>
     );
 }
