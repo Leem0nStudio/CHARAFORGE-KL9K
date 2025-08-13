@@ -148,7 +148,7 @@ export function CharacterGenerator() {
       targetLanguage: 'English',
       aspectRatio: '1:1',
       loraWeight: 0.75,
-      selectedModel: geminiPlaceholder, // **CRITICAL FIX**: Initialize with a valid default
+      selectedModel: geminiPlaceholder,
       selectedLora: null,
     },
   });
@@ -187,6 +187,8 @@ export function CharacterGenerator() {
             setAvailableModels(allBaseModels);
             setAvailableLoras(loras);
 
+            // Set the default model in the form once data is loaded
+            generationForm.setValue('selectedModel', allBaseModels[0]);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' });
         } finally {
@@ -334,6 +336,7 @@ export function CharacterGenerator() {
         onSelect={handleModelSelect}
         type={modelModalType}
         models={modelModalType === 'model' ? availableModels : availableLoras}
+        isLoading={isLoading}
     />
     <div className="grid gap-8 lg:grid-cols-5 items-start">
       <div className="lg:col-span-2 flex flex-col gap-4">

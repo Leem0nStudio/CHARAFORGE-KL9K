@@ -31,7 +31,7 @@ export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
                         alt={pack.name}
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        className="object-contain transition-transform duration-300 group-hover:scale-105 p-2"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
                         data-ai-hint="datapack cover image"
                     />
                     <div className="absolute top-2 right-2 flex items-center gap-2">
