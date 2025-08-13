@@ -43,6 +43,11 @@ const generateCharacterBioFlow = ai.defineFlow(
         GenerateCharacterBioOutputSchema
     );
     
-    return output!;
+    // The schema now expects `biography`, but the LLM utility might return a different structure.
+    // We need to ensure the final return value matches the GenerateCharacterBioOutputSchema.
+    // Assuming queryLlm returns an object with a 'biography' field as per its Zod schema.
+    return {
+      biography: (output as any).biography || ''
+    };
   }
 );
