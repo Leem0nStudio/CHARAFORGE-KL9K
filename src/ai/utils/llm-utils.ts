@@ -5,7 +5,8 @@
  */
 
 import { z } from 'zod';
-import { generate, model } from 'genkit';
+import { generate } from 'genkit';
+import { model } from 'genkit/model';
 import type { GenerationCommonOptions } from 'genkit/ai';
 
 
