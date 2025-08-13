@@ -24,11 +24,13 @@ export async function verifyAndGetUid(): Promise<string> {
     throw new Error('Authentication service is unavailable on the server.');
   }
 
-  // **CRITICAL FIX**: Await the cookie store to ensure safe asynchronous access.
-  const cookieStore = await cookies();
+  // **CRITICAL FIX**: Access cookies directly. The `cookies()` function from `next/headers`
+  // provides access to the read-only cookie store of the incoming request.
+  const cookieStore = cookies();
   const idToken = cookieStore.get('firebaseIdToken')?.value;
 
   if (!idToken) {
+    // This is the most common failure point if the cookie isn't sent correctly.
     throw new Error('User session not found. Please log in again.');
   }
 

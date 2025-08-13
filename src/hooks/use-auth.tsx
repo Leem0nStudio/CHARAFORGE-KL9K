@@ -57,8 +57,7 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
   try {
     const userDoc = await getDoc(userDocRef);
     if (!userDoc.exists()) {
-      // Use serverTimestamp() only for the initial creation, it's safer.
-      // For updates from client, we will use a regular Date.
+      // Use serverTimestamp() only for the initial creation.
       await setDoc(userDocRef, {
         uid: user.uid,
         email: user.email,
@@ -77,13 +76,13 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
         }
       });
     } else {
-        // **CRITICAL FIX**: Do not use serverTimestamp() from the client-side for updates.
-        // Use a standard JavaScript Date object instead.
+        // **CRITICAL FIX**: Use a standard JavaScript Date for client-side updates.
         const updateData: { displayName: string | null; photoURL: string | null; email?: string | null, lastLogin: Date } = {
           displayName: user.displayName,
           photoURL: user.photoURL,
           lastLogin: new Date(),
         };
+        // Only update email if it has changed
         if (user.email !== userDoc.data()?.email) {
             updateData.email = user.email;
         }
@@ -93,8 +92,8 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
     const updatedUserDoc = await getDoc(userDocRef);
     const data = updatedUserDoc.data();
 
+    // Ensure all Timestamps from Firestore are converted to numbers (milliseconds) for serialization.
     if (data) {
-        // Ensure all Timestamps from Firestore are converted to numbers (milliseconds)
         if (data.createdAt && data.createdAt instanceof Timestamp) {
             data.createdAt = data.createdAt.toMillis();
         }
@@ -124,6 +123,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       if (newAuthUser) {
         const token = await newAuthUser.getIdToken();
+        // Await the cookie setting before proceeding
         await setCookie(token);
 
         setAuthUser(newAuthUser);
