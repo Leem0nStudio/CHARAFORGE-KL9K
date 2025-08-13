@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, ArrowRight, Wand2, Package, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { DataPack, Option, Slot } from '@/types/datapack';
+import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
@@ -269,8 +270,6 @@ interface DataPackSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
     onPromptGenerated: (prompt: string, packName: string, tags: string[], packId: string) => void;
-    installedPacks: DataPack[];
-    isLoading: boolean;
 }
 
 
@@ -278,26 +277,43 @@ export function DataPackSelectorModal({
     isOpen, 
     onClose, 
     onPromptGenerated,
-    installedPacks: packs,
-    isLoading, 
 }: DataPackSelectorModalProps) {
+    const [packs, setPacks] = useState<DataPack[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [selectedPack, setSelectedPack] = useState<DataPack | null>(null);
     const [wizardPack, setWizardPack] = useState<DataPack | null>(null);
 
     useEffect(() => {
         if (!isOpen) {
+            // Reset state when closing
             setTimeout(() => {
                 setWizardPack(null);
                 setSelectedPack(null);
+                setPacks([]);
+                setIsLoading(true);
             }, 300);
             return;
         }
-        
-        if (!isLoading && packs.length > 0 && !selectedPack && !wizardPack) {
-            setSelectedPack(packs[0]);
-        }
 
-    }, [isOpen, isLoading, packs, selectedPack, wizardPack]);
+        async function loadPacks() {
+            setIsLoading(true);
+            try {
+                const installedPacks = await getInstalledDataPacks();
+                setPacks(installedPacks);
+                if (installedPacks.length > 0) {
+                    setSelectedPack(installedPacks[0]);
+                }
+            } catch (error) {
+                console.error("Failed to load datapacks:", error);
+                // Optionally show a toast or error message
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        
+        loadPacks();
+
+    }, [isOpen]);
     
     const handlePromptGeneratedAndClose = useCallback((prompt: string, packName: string, tags: string[], packId: string) => {
         onPromptGenerated(prompt, packName, tags, packId);
@@ -370,5 +386,3 @@ export function DataPackSelectorModal({
         </Dialog>
     )
 }
-
-    

@@ -19,7 +19,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacter, type GenerateCharacterInput } from "@/app/actions/generation";
-import { getInstalledDataPacks } from "@/app/actions/datapacks";
 import { getModels } from "@/app/actions/ai-models";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
@@ -115,8 +114,7 @@ export function CharacterGenerator() {
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [modelModalType, setModelModalType] = useState<'model' | 'lora'>('model');
-
-  const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
+  
   const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
   const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -180,14 +178,12 @@ export function CharacterGenerator() {
                 updatedAt: new Date(),
             };
 
-            const [packs, models, loras] = await Promise.all([
-                getInstalledDataPacks(),
+            const [models, loras] = await Promise.all([
                 getModels('model'),
                 getModels('lora'),
             ]);
             
             const allBaseModels = [geminiPlaceholder, ...models];
-            setInstalledPacks(packs);
             setAvailableModels(allBaseModels);
             setAvailableLoras(loras);
 
@@ -210,16 +206,6 @@ export function CharacterGenerator() {
       generationForm.setValue('description', decodeURIComponent(promptFromUrl));
     }
   }, [searchParams, generationForm]);
-
-  useEffect(() => {
-    if (dataPackIdFromUrl && installedPacks.length > 0) {
-        const activePack = installedPacks.find(p => p.id === dataPackIdFromUrl);
-        if (activePack) {
-            setActivePackName(activePack.name);
-        }
-    }
-  }, [dataPackIdFromUrl, installedPacks]);
-
 
   const handleAppendTags = (tags: string[]) => {
     const currentDesc = generationForm.getValues('description');
@@ -340,8 +326,6 @@ export function CharacterGenerator() {
       isOpen={isPackModalOpen}
       onClose={() => setIsPackModalOpen(false)}
       onPromptGenerated={handlePromptGenerated}
-      installedPacks={installedPacks}
-      isLoading={isLoading}
     />
     <TagAssistantModal
         isOpen={isTagModalOpen}
