@@ -11,7 +11,7 @@ export interface AiModel {
   id: string;
   name: string;
   type: 'model' | 'lora';
-  engine: 'huggingface' | 'gemini';
+  engine: 'huggingface' | 'gemini' | 'openrouter';
   hf_id: string;
   civitaiModelId: string;
   versionId: string;
@@ -27,7 +27,7 @@ export const UpsertModelSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, 'Name is required'),
   type: z.enum(['model', 'lora']),
-  engine: z.enum(['huggingface', 'gemini']),
+  engine: z.enum(['huggingface', 'gemini', 'openrouter']),
   hf_id: z.string().min(1, 'Execution ID is required'),
   civitaiModelId: z.string(),
   versionId: z.string(),

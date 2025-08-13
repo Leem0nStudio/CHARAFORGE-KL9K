@@ -94,8 +94,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
 
     const uid = await verifyAndGetUid();
     const userProfile = await getUserProfile(uid);
-    const userApiKey = userProfile?.preferences?.huggingFaceApiKey;
-
+    
     const {
         description,
         aspectRatio,
@@ -108,13 +107,20 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
     if (!selectedModel) {
         return { success: false, message: 'A base model must be selected for generation.' };
     }
+    
+    let userApiKey: string | undefined;
+    if (selectedModel.engine === 'huggingface') {
+        userApiKey = userProfile?.preferences?.huggingFaceApiKey;
+    } else if (selectedModel.engine === 'openrouter') {
+        userApiKey = userProfile?.preferences?.openRouterApiKey;
+    }
 
      try {
         const imageEngineConfig: ImageEngineConfig = {
             engineId: selectedModel.engine,
-            modelId: selectedModel.engine === 'huggingface' ? selectedModel.hf_id : undefined,
+            modelId: selectedModel.engine !== 'gemini' ? selectedModel.hf_id : undefined,
             aspectRatio,
-            userApiKey: userApiKey || undefined,
+            userApiKey: userApiKey,
         };
         
         let finalDescription = description;

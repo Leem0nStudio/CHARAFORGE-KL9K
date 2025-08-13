@@ -17,11 +17,11 @@ const LoraConfigSchema = z.object({
 
 // This is the new, centralized configuration object for any image engine.
 export const ImageEngineConfigSchema = z.object({
-  engineId: z.enum(['huggingface', 'gemini']).describe('The generation engine to use.'),
-  modelId: z.string().optional().describe('The identifier for the base model (e.g., "stabilityai/stable-diffusion-xl-base-1.0" for Hugging Face).'),
+  engineId: z.enum(['huggingface', 'gemini', 'openrouter']).describe('The generation engine to use.'),
+  modelId: z.string().optional().describe('The identifier for the base model (e.g., "stabilityai/stable-diffusion-xl-base-1.0" for Hugging Face or "openai/dall-e-3" for OpenRouter).'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).optional().default('1:1').describe('The desired aspect ratio for the image.'),
   lora: LoraConfigSchema.optional().describe('Configuration for the LoRA to apply, if any.'),
-  userApiKey: z.string().optional().describe("An optional, user-provided API key for the Hugging Face engine."),
+  userApiKey: z.string().optional().describe("An optional, user-provided API key for the selected engine."),
 });
 export type ImageEngineConfig = z.infer<typeof ImageEngineConfigSchema>;
 

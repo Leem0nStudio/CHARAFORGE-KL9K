@@ -18,7 +18,7 @@ const requiredServerVars = [
 ];
 
 // This is now an optional variable for the validator.
-const optionalServerVars = ['GEMINI_API_KEY', 'HUGGING_FACE_API_KEY'];
+const optionalServerVars = ['GEMINI_API_KEY', 'HUGGING_FACE_API_KEY', 'OPENROUTER_API_KEY'];
 
 let allKeysPresent = true;
 let hasPlaceholderValues = false;

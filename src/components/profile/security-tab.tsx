@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useTransition, useActionState, useEffect, useState } from 'react';
+import { useTransition, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ import { Loader2, KeyRound, Info } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import type { UserPreferences } from '@/types/user';
 import Link from 'next/link';
+import { Separator } from '../ui/separator';
 
 export function SecurityTab() {
   const { toast } = useToast();
@@ -34,6 +35,7 @@ export function SecurityTab() {
   const [isSavingPrefs, startPrefsTransition] = useTransition();
 
   const [huggingFaceApiKey, setHuggingFaceApiKey] = useState(userProfile?.preferences?.huggingFaceApiKey || '');
+  const [openRouterApiKey, setOpenRouterApiKey] = useState(userProfile?.preferences?.openRouterApiKey || '');
 
   const handleDeleteAccount = () => {
     startDeleteTransition(async () => {
@@ -54,6 +56,7 @@ export function SecurityTab() {
         const newPreferences: UserPreferences = {
             ...userProfile.preferences,
             huggingFaceApiKey: huggingFaceApiKey,
+            openRouterApiKey: openRouterApiKey,
         }
         const result = await updateUserPreferences(newPreferences);
         if (result.success) {
@@ -74,7 +77,7 @@ export function SecurityTab() {
           <CardTitle>API Keys</CardTitle>
           <CardDescription>Provide your own API keys to use as a fallback if the system's keys are rate-limited.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
             <div className="space-y-2">
                 <Label htmlFor="hf-api-key" className="flex items-center gap-2">
                     <KeyRound /> Hugging Face API Key
@@ -97,9 +100,35 @@ export function SecurityTab() {
                     </AlertDescription>
                 </Alert>
             </div>
+            
+            <Separator />
+
+             <div className="space-y-2">
+                <Label htmlFor="or-api-key" className="flex items-center gap-2">
+                    <KeyRound /> OpenRouter API Key
+                </Label>
+                <Input 
+                    id="or-api-key" 
+                    type="password" 
+                    placeholder="sk-or-..."
+                    value={openRouterApiKey}
+                    onChange={(e) => setOpenRouterApiKey(e.target.value)}
+                />
+                 <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Where to find your API Key?</AlertTitle>
+                    <AlertDescription>
+                       OpenRouter provides access to models like DALL-E 3 and SDXL Turbo.
+                        <Button variant="link" asChild className="p-0 h-auto ml-1 font-semibold">
+                            <Link href="https://openrouter.ai/keys" target="_blank">Get your key here.</Link>
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            </div>
+
             <Button onClick={handleSavePreferences} disabled={isSavingPrefs}>
                 {isSavingPrefs && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save API Key
+                Save API Keys
             </Button>
         </CardContent>
       </Card>

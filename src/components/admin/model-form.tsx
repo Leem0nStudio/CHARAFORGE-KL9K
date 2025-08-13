@@ -121,8 +121,9 @@ function EditModelDialog({ model, isOpen, setIsOpen }: { model: AiModel, isOpen:
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="huggingface">Hugging Face / Gradio</SelectItem>
                                             <SelectItem value="gemini">Gemini</SelectItem>
+                                            <SelectItem value="huggingface">Hugging Face / Gradio</SelectItem>
+                                            <SelectItem value="openrouter">OpenRouter</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 )}
@@ -130,7 +131,7 @@ function EditModelDialog({ model, isOpen, setIsOpen }: { model: AiModel, isOpen:
                         </div>
                         <div className="space-y-2 col-span-2">
                             <Label>Execution ID</Label>
-                            <Input {...form.register('hf_id')} placeholder="e.g., stabilityai/stable-diffusion-xl-base-1.0" />
+                            <Input {...form.register('hf_id')} placeholder="e.g., stabilityai/stable-diffusion-xl-base-1.0 or openai/dall-e-3" />
                         </div>
                     </div>
                     <DialogFooter className="sm:justify-between">
