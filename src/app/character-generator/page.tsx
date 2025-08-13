@@ -4,10 +4,29 @@
 import { CharacterGenerator } from '@/components/character-generator';
 import { BackButton } from '@/components/back-button';
 import { motion } from 'framer-motion';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 
 function CharacterGeneratorWrapper() {
+  const { authUser, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !authUser) {
+      router.push('/login');
+    }
+  }, [authUser, loading, router]);
+
+  if (loading || !authUser) {
+    return (
+      <div className="flex items-center justify-center h-screen w-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <motion.div
       className="container py-8"

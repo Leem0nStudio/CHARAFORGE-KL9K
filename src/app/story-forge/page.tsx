@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useTransition } from 'react';
+import { useState, useEffect, useCallback, useTransition, Suspense } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -50,7 +50,7 @@ function CastsList({
         startCreateTransition(async () => {
             const result = await createStoryCast({ name: newCastName, description: newCastDesc });
             if (result.success && result.data) {
-                toast({ title: 'Cast Created!', description: `Successfully created "${'result.data.name'}".`});
+                toast({ title: 'Cast Created!', description: `Successfully created "${result.data.name}".`});
                 onAddCast(result.data);
                 setIsDialogOpen(false);
                 setNewCastName('');
@@ -319,9 +319,8 @@ function StoryGenerator({
     )
 }
 
-
-export default function StoryForgePage() {
-    const { userProfile, authUser, loading: authLoading } = useAuth();
+function StoryForgeContent() {
+    const { authUser, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
 
@@ -431,4 +430,14 @@ export default function StoryForgePage() {
     )
 }
 
-    
+export default function StoryForgePage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center h-screen w-full">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <StoryForgeContent />
+        </Suspense>
+    );
+}

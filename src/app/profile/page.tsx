@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
@@ -18,8 +18,7 @@ import { DataPacksTab } from '@/components/profile/datapacks-tab';
 import { SecurityTab } from '@/components/profile/security-tab';
 import { MyModelsTab } from '@/components/profile/my-models-tab';
 
-
-export default function ProfilePage() {
+function ProfilePageContent() {
   const { userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -100,4 +99,16 @@ export default function ProfilePage() {
       </div>
     </motion.div>
   );
+}
+
+export default function ProfilePage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center h-screen w-full">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <ProfilePageContent />
+        </Suspense>
+    );
 }
