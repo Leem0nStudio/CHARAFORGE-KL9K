@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -7,16 +8,14 @@ import { useForm } from 'react-hook-form';
 import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2, ArrowRight, Wand2, Package, ArrowLeft, Info, User } from 'lucide-react';
+import { Loader2, ArrowRight, Wand2, Package, ArrowLeft, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { DataPack, Option, Slot } from '@/types/datapack';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
-import { Separator } from './ui/separator';
 import Link from 'next/link';
-import { DataPackCard } from './datapack/datapack-card';
 import { Badge } from './ui/badge';
 import { getSlotColorClass } from '@/lib/app-config';
 
@@ -153,7 +152,7 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
         }
         
         prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/, ,/g, ',').replace(/, /g, ' ').replace(/,$/g, '').trim();
-        onPromptGenerated(prompt, pack.name, tags, pack.id);
+        onPromptGenerated(prompt, pack.name, pack.tags || [], pack.id);
     };
 
     return (
@@ -187,12 +186,12 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                                     onClick={() => setActiveSlot(slot)}
                                     className="cursor-pointer hover:bg-muted/50 transition-colors h-full flex flex-col"
                                 >
-                                    <CardHeader className="p-3">
-                                        <CardTitle className="text-base font-logo tracking-wider">{slot.label}</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-3 pt-0 flex-grow">
+                                    <div className="p-3">
+                                        <div className="text-base font-logo tracking-wider">{slot.label}</div>
+                                    </div>
+                                    <div className="p-3 pt-0 flex-grow">
                                          <p className="text-sm text-primary font-semibold truncate">{selectedOption?.label || 'None'}</p>
-                                    </CardContent>
+                                    </div>
                                 </Card>
                             )
                         })}
@@ -264,36 +263,33 @@ function PackGallery({
              <ScrollArea className="flex-grow my-4 pr-4 -mr-4">
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                     {packs.map(pack => (
-                       <Card key={pack.id} className="flex flex-col overflow-hidden group transition-all duration-300 h-full">
-                            <CardHeader className="p-0">
-                                <div className="relative aspect-square bg-muted/20 block">
-                                    <Image
-                                        src={pack.coverImageUrl || 'https://placehold.co/600x600.png'}
-                                        alt={pack.name}
-                                        fill
-                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                        data-ai-hint="datapack cover image"
-                                    />
-                                </div>
-                            </CardHeader>
-                             <CardContent className="p-4 flex-grow">
-                                <CardTitle className="font-bold">{pack.name}</CardTitle>
-                                <CardDescription className="mt-1 flex items-center gap-2 text-xs">
-                                    <User className="h-3 w-3" />
-                                    <span>by @{pack.author}</span>
-                                </CardDescription>
-                            </CardContent>
-                             <CardFooter className="p-2 border-t bg-muted/30">
-                                <div className="flex items-center gap-2 w-full">
-                                    <Button type="button" variant="outline" size="sm" className="flex-1" onClick={() => setInfoPack(pack)}>
-                                        <Info className="mr-2 h-4 w-4"/> Info
-                                    </Button>
-                                    <Button type="button" size="sm" className="flex-1" onClick={() => onChoosePack(pack)}>
+                       <Card key={pack.id} className="overflow-hidden group relative aspect-square">
+                            <Image
+                                src={pack.coverImageUrl || 'https://placehold.co/600x600.png'}
+                                alt={pack.name}
+                                fill
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                data-ai-hint="datapack cover image"
+                            />
+                             <div className="absolute inset-0 bg-black/50 flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div />
+                                 <div className="flex flex-col items-center justify-center gap-2">
+                                     <Button type="button" size="sm" className="w-full" onClick={() => onChoosePack(pack)}>
                                         <Wand2 className="mr-2 h-4 w-4"/> Use
                                     </Button>
+                                    <Button type="button" variant="secondary" size="sm" className="w-full" onClick={() => setInfoPack(pack)}>
+                                        <Info className="mr-2 h-4 w-4"/> Info
+                                    </Button>
                                 </div>
-                            </CardFooter>
+                                <div>
+                                     <CardTitle className="text-white font-bold drop-shadow-lg">{pack.name}</CardTitle>
+                                </div>
+                            </div>
+                            {/* Visible title when not hovering */}
+                             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent pointer-events-none group-hover:opacity-0 transition-opacity">
+                                <CardTitle className="text-white font-bold drop-shadow-lg">{pack.name}</CardTitle>
+                            </div>
                        </Card>
                     ))}
                  </div>
