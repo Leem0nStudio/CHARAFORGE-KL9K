@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
 import { generateNewCharacterImage, updateCharacterImages } from '@/app/actions/character-image';
+import { getModels } from '@/app/actions/ai-models';
 import { uploadToStorage } from '@/services/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -17,8 +18,22 @@ import { Loader2, Star, Trash2, FileUp, Wand2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { v4 as uuidv4 } from 'uuid';
-import { generateCharacter } from '@/app/actions/generation';
+import { ModelSelectorModal } from '@/components/model-selector-modal';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
+import type { AiModel } from '@/types/ai-model';
+
+const geminiPlaceholder: AiModel = {
+    id: 'gemini-placeholder',
+    name: 'Gemini Image Generation',
+    type: 'model',
+    engine: 'gemini',
+    civitaiModelId: '0', 
+    hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
+    versionId: '1.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+};
+
 
 const UpdateImagesSchema = z.object({
     primaryImageUrl: z.string().url("A primary image must be selected."),
@@ -32,6 +47,11 @@ export function EditGalleryTab({ character }: { character: Character }) {
   const [isUploading, startUploadTransition] = useTransition();
   const [isGenerating, startGenerateTransition] = useTransition();
   
+  // State for AI model selection
+  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
+  const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(true);
+  
   const form = useForm<UpdateImagesFormValues>({
     resolver: zodResolver(UpdateImagesSchema),
     defaultValues: {
@@ -44,6 +64,21 @@ export function EditGalleryTab({ character }: { character: Character }) {
         primaryImageUrl: character.imageUrl,
     });
   }, [character, form]);
+
+  useEffect(() => {
+    async function loadModels() {
+      setIsLoadingModels(true);
+      try {
+        const models = await getModels('model');
+        setAvailableModels([geminiPlaceholder, ...models]);
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load AI models.' });
+      } finally {
+        setIsLoadingModels(false);
+      }
+    }
+    loadModels();
+  }, [toast]);
 
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,19 +108,23 @@ export function EditGalleryTab({ character }: { character: Character }) {
     });
   };
 
-  const handleImageGeneration = () => {
+  const handleImageGeneration = (selectedModel: AiModel) => {
+    setIsModelModalOpen(false);
     if ((character.gallery?.length ?? 0) >= 10) {
         toast({ variant: 'destructive', title: 'Gallery Full', description: 'You cannot add more than 10 images.' });
         return;
     }
 
     startGenerateTransition(async () => {
-        // This is a placeholder engine config. In a real scenario, you'd let the user choose.
         const engineConfig: ImageEngineConfig = {
-            engineId: 'gemini',
+            engineId: selectedModel.engine,
+            modelId: selectedModel.engine !== 'gemini' ? selectedModel.hf_id : undefined,
             aspectRatio: '1:1',
-        }
+            // In the future, we could also allow selecting a LoRA here
+        };
+
         const result = await generateNewCharacterImage(character.id, character.description, engineConfig);
+        
         if (result.success && result.newImageUrl) {
             toast({ title: "Image Generated!", description: result.message});
             router.refresh(); 
@@ -137,11 +176,20 @@ export function EditGalleryTab({ character }: { character: Character }) {
     });
   };
 
-  const primaryImageUrl = form.watch('primaryImageUrl');
   const isLoading = isUpdating || isUploading || isGenerating;
   const gallery = character.gallery || [character.imageUrl];
+  const primaryImageUrl = form.watch('primaryImageUrl');
 
   return (
+    <>
+      <ModelSelectorModal
+          isOpen={isModelModalOpen}
+          onClose={() => setIsModelModalOpen(false)}
+          onSelect={handleImageGeneration}
+          type="model"
+          models={availableModels}
+          isLoading={isLoadingModels}
+      />
      <Card>
         <CardHeader>
             <CardTitle>Image Gallery</CardTitle>
@@ -179,7 +227,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                 <Input id="image-upload" type="file" className="hidden" onChange={handleImageUpload} accept="image/png, image/jpeg, image/webp" disabled={isLoading}/>
                             </div>
                              <p className="text-xs text-muted-foreground my-2">or</p>
-                            <Button type="button" variant="outline" size="sm" onClick={handleImageGeneration} disabled={isLoading}>
+                            <Button type="button" variant="outline" size="sm" onClick={() => setIsModelModalOpen(true)} disabled={isLoading || isLoadingModels}>
                                 {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
                                 Generate
                             </Button>
@@ -197,5 +245,6 @@ export function EditGalleryTab({ character }: { character: Character }) {
              </form>
         </CardContent>
      </Card>
+    </>
   );
 }

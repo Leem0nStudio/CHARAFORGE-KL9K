@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Wand2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
+import type { TextEngineConfig } from '@/ai/utils/llm-utils';
 
 const alignmentOptions = [
     'Lawful Good', 'Neutral Good', 'Chaotic Good', 
@@ -63,7 +64,15 @@ export function EditDetailsTab({ character }: { character: Character }) {
     const handleRegenerateBio = () => {
         startRegenerateTransition(async () => {
             try {
-                const result = await generateCharacterBio({ description: character.description });
+                // This is where we could, in the future, let the user choose a text model.
+                const textEngineConfig: TextEngineConfig = {
+                    engineId: 'gemini',
+                    modelId: 'googleai/gemini-1.5-flash-latest',
+                };
+                const result = await generateCharacterBio({ 
+                    description: character.description, 
+                    engineConfig: textEngineConfig 
+                });
                 form.setValue('biography', result.biography, { shouldDirty: true });
                 toast({
                     title: 'Biography Regenerated!',

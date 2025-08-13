@@ -34,13 +34,13 @@ export async function getUserCasts(): Promise<StoryCast[]> {
     
     return snapshot.docs.map(doc => {
         const data = doc.data();
-        const createdAt = data.createdAt as Timestamp;
-        const updatedAt = data.updatedAt as Timestamp;
+        const createdAt = data.createdAt as any;
+        const updatedAt = data.updatedAt as any;
         return {
             ...data,
             id: doc.id,
-            createdAt: createdAt.toMillis(),
-            updatedAt: updatedAt.toMillis(),
+            createdAt: createdAt?.toMillis ? createdAt.toMillis() : new Date(createdAt).getTime(),
+            updatedAt: updatedAt?.toMillis ? updatedAt.toMillis() : new Date(updatedAt).getTime(),
         } as StoryCast;
     });
 }
