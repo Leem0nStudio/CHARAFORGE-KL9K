@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2, ArrowRight, Wand2, Package, ArrowLeft, Info } from 'lucide-react';
+import { Loader2, ArrowRight, Wand2, Package, ArrowLeft, Info, User } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { DataPack, Option, Slot } from '@/types/datapack';
 import { cn } from '@/lib/utils';
@@ -122,7 +122,7 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
 
     const [activeSlot, setActiveSlot] = useState<Slot | null>(null);
 
-    const wizardSlots = useMemo(() => pack.schema.slots.filter(slot => !slot.isLocked), [pack.schema.slots]);
+    const wizardSlots = pack.schema.slots.filter(slot => !slot.isLocked);
 
     useEffect(() => {
         pack.schema.slots.forEach(slot => {
@@ -280,7 +280,7 @@ function PackGallery({
                              <CardContent className="p-4 flex-grow">
                                 <CardTitle className="font-bold">{pack.name}</CardTitle>
                                 <CardDescription className="mt-1 flex items-center gap-2 text-xs">
-                                    <User className="h-3 w-3" /> 
+                                    <User className="h-3 w-3" />
                                     <span>by @{pack.author}</span>
                                 </CardDescription>
                             </CardContent>
