@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useTransition } from "react";
+import { useState, useEffect, useCallback, useTransition } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
@@ -10,21 +10,8 @@ import { z } from "zod";
 import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -81,7 +68,6 @@ type GenerationResult = {
   dataPackId?: string | null;
 };
 
-// Sub-component for the visual model selector button
 function VisualModelSelector({ label, model, onOpen, disabled, isLoading }: { label: string, model?: AiModel | null, onOpen: () => void, disabled: boolean, isLoading?: boolean }) {
     
     if (isLoading) {
@@ -184,12 +170,14 @@ export function CharacterGenerator() {
         try {
             const geminiPlaceholder: AiModel = {
                 id: 'gemini-placeholder',
-                civitaiModelId: '0', 
                 name: 'Gemini Image Generation',
                 type: 'model',
+                engine: 'gemini',
+                civitaiModelId: '0', 
                 hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
                 versionId: '1.0',
                 createdAt: new Date(),
+                updatedAt: new Date(),
             };
 
             const [packs, models, loras] = await Promise.all([
@@ -208,7 +196,6 @@ export function CharacterGenerator() {
             }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' });
-            console.error("Failed to load initial data:", error);
         } finally {
             setIsLoading(false);
         }
@@ -452,7 +439,7 @@ export function CharacterGenerator() {
                                         disabled={!canInteract}
                                         isLoading={isLoading}
                                     />
-                                    {selectedModel?.civitaiModelId !== '0' && (
+                                    {selectedModel?.engine === 'huggingface' && (
                                      <>
                                         <VisualModelSelector
                                             label="LoRA (Optional)"

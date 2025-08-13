@@ -1,29 +1,44 @@
 
+import { z } from 'zod';
+
 interface AiModelVersion {
   id: string;
   name: string;
   triggerWords?: string[];
 }
 
-/**
- * Represents the structure for an AI model or LoRA stored in Firestore.
- * Metadata is sourced from Civitai, while the hf_id is used for execution.
- */
 export interface AiModel {
-  id: string; // Document ID
-  name: string; // From Civitai
+  id: string;
+  name: string;
   type: 'model' | 'lora';
-  hf_id: string; // Hugging Face or Gradio Space ID for execution
-  
-  // Civitai metadata
+  engine: 'huggingface' | 'gemini';
+  hf_id: string;
   civitaiModelId: string;
-  versionId: string; // Default or latest version ID
+  versionId: string;
   coverMediaUrl?: string | null;
   coverMediaType?: 'image' | 'video';
-  triggerWords?: string[]; // Default or latest trigger words
-
-  // Array of all available versions
+  triggerWords?: string[];
   versions?: AiModelVersion[];
-
   createdAt: Date;
+  updatedAt: Date;
 }
+
+export const UpsertModelSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, 'Name is required'),
+  type: z.enum(['model', 'lora']),
+  engine: z.enum(['huggingface', 'gemini']),
+  hf_id: z.string().min(1, 'Execution ID is required'),
+  civitaiModelId: z.string(),
+  versionId: z.string(),
+  coverMediaUrl: z.string().url().nullable().optional(),
+  coverMediaType: z.enum(['image', 'video']).optional(),
+  triggerWords: z.array(z.string()).optional(),
+  versions: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    triggerWords: z.array(z.string()).optional(),
+  })).optional(),
+});
+
+export type UpsertAiModel = z.infer<typeof UpsertModelSchema>;

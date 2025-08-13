@@ -2,13 +2,11 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { addAiModelFromCivitai, deleteModel, updateModelHfId } from '@/app/actions/ai-models';
-import { suggestHfModel } from '@/ai/flows/hf-model-suggestion/flow';
-import type { AiModel } from '@/types/ai-model';
+import { addAiModelFromCivitai, deleteModel, upsertModel } from '@/app/actions/ai-models';
+import { UpsertModelSchema, type AiModel, type UpsertAiModel } from '@/types/ai-model';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,47 +14,28 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Loader2, PlusCircle, Trash2, Wand2, Pencil } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, PlusCircle, Trash2, Pencil } from 'lucide-react';
 
-const AddFormSchema = z.object({
-    civitaiModelId: z.string().min(1, 'Civitai Model ID is required.'),
-});
-type AddFormValues = z.infer<typeof AddFormSchema>;
-
-const EditFormSchema = z.object({
-    hf_id: z.string().optional(),
-});
-type EditFormValues = z.infer<typeof EditFormSchema>;
-
-interface ModelFormProps {
-    model?: AiModel;
-    isEditing?: boolean;
-}
 
 function AddModelDialog({ type, isOpen, setIsOpen }: { type: 'model' | 'lora', isOpen: boolean, setIsOpen: (isOpen: boolean) => void }) {
     const [isProcessing, startTransition] = useTransition();
     const { toast } = useToast();
-    const form = useForm<AddFormValues>({
-        resolver: zodResolver(AddFormSchema),
-        defaultValues: { civitaiModelId: '' },
-    });
 
-    const onSubmit = (values: AddFormValues) => {
+    const handleSubmit = () => {
+        const civitaiId = (document.getElementById('civitaiModelId') as HTMLInputElement)?.value;
+        if (!civitaiId) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Civitai Model ID is required.'});
+            return;
+        }
+
         startTransition(async () => {
-            try {
-                const result = await addAiModelFromCivitai(type, values.civitaiModelId);
-                if (result.success) {
-                    toast({ title: 'Success', description: result.message });
-                    setIsOpen(false);
-                    form.reset();
-                } else {
-                    // This case is for controlled server-side errors, not exceptions
-                    toast({ variant: 'destructive', title: 'Error', description: result.error || result.message });
-                }
-            } catch (error) {
-                // This catches exceptions thrown from the server action, like fetch failures
-                const message = error instanceof Error ? error.message : "An unknown error occurred.";
-                toast({ variant: 'destructive', title: 'Operation Failed', description: message });
+            const result = await addAiModelFromCivitai(type, civitaiId);
+            if (result.success) {
+                toast({ title: 'Success', description: result.message });
+                setIsOpen(false);
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: result.error || result.message });
             }
         });
     };
@@ -64,28 +43,23 @@ function AddModelDialog({ type, isOpen, setIsOpen }: { type: 'model' | 'lora', i
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent>
-                <form onSubmit={form.handleSubmit(onSubmit)}>
                     <DialogHeader>
                         <DialogTitle>Add New {type === 'model' ? 'Base Model' : 'LoRA'}</DialogTitle>
                         <DialogDescription>
-                            Enter the Civitai model ID. Metadata and a suggested base model (for LoRAs) will be fetched automatically.
+                            Enter the Civitai model ID. Metadata will be fetched automatically.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="civitaiModelId">Civitai Model ID</Label>
-                            <Input id="civitaiModelId" {...form.register('civitaiModelId')} placeholder="e.g., 9251" />
-                            {form.formState.errors.civitaiModelId && <p className="text-sm text-destructive">{form.formState.errors.civitaiModelId.message}</p>}
-                        </div>
+                        <Label htmlFor="civitaiModelId">Civitai Model ID</Label>
+                        <Input id="civitaiModelId" placeholder="e.g., 9251" />
                     </div>
                     <DialogFooter>
                         <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-                        <Button type="submit" disabled={isProcessing}>
+                        <Button onClick={handleSubmit} disabled={isProcessing}>
                             {isProcessing && <Loader2 className="animate-spin mr-2"/>}
                             Add Model
                         </Button>
                     </DialogFooter>
-                </form>
             </DialogContent>
         </Dialog>
     )
@@ -93,33 +67,15 @@ function AddModelDialog({ type, isOpen, setIsOpen }: { type: 'model' | 'lora', i
 
 function EditModelDialog({ model, isOpen, setIsOpen }: { model: AiModel, isOpen: boolean, setIsOpen: (isOpen: boolean) => void }) {
     const [isProcessing, startTransition] = useTransition();
-    const [isSuggesting, startSuggestionTransition] = useTransition();
     const { toast } = useToast();
-    const form = useForm<EditFormValues>({
-        resolver: zodResolver(EditFormSchema),
-        defaultValues: { hf_id: model.hf_id || '' },
+    const form = useForm<UpsertAiModel>({
+        resolver: zodResolver(UpsertModelSchema),
+        defaultValues: { ...model },
     });
 
-    const handleSuggestModel = () => {
-        startSuggestionTransition(async () => {
-             try {
-                const result = await suggestHfModel({ modelName: model.name });
-                if (result.suggestedHfId) {
-                    form.setValue('hf_id', result.suggestedHfId);
-                    toast({ title: 'Suggestion Received!', description: `AI suggested: ${result.suggestedHfId}` });
-                } else {
-                    toast({ title: 'No Suggestion', description: 'The AI could not find a suitable model.' });
-                }
-             } catch(error) {
-                 const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-                 toast({ variant: 'destructive', title: 'Suggestion Failed', description: message });
-             }
-        });
-    }
-
-    const onSubmit = (values: EditFormValues) => {
+    const onSubmit = (values: UpsertAiModel) => {
         startTransition(async () => {
-            const result = await updateModelHfId(model.id, values.hf_id || '');
+            const result = await upsertModel({ ...values, id: model.id });
             if (result.success) {
                 toast({ title: 'Success', description: result.message });
                 setIsOpen(false);
@@ -140,8 +96,6 @@ function EditModelDialog({ model, isOpen, setIsOpen }: { model: AiModel, isOpen:
             }
         });
     };
-    
-    const isBusy = isProcessing || isSuggesting;
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -150,46 +104,56 @@ function EditModelDialog({ model, isOpen, setIsOpen }: { model: AiModel, isOpen:
                     <DialogHeader>
                         <DialogTitle>Edit: {model.name}</DialogTitle>
                         <DialogDescription>
-                            Update the execution model ID. Use the assistant to find a compatible base model on Hugging Face.
+                            Update the model's configuration.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4 space-y-4">
+                    <div className="py-4 grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="hf_id">Hugging Face/Gradio ID (for Execution)</Label>
-                            <div className="flex gap-2">
-                                <Input id="hf_id" {...form.register('hf_id')} placeholder="e.g., stabilityai/stable-diffusion-xl-base-1.0" />
-                                {model.type === 'lora' && (
-                                    <Button type="button" variant="outline" size="icon" onClick={handleSuggestModel} disabled={isBusy} title="Suggest Base Model">
-                                        {isSuggesting ? <Loader2 className="animate-spin" /> : <Wand2 />}
-                                    </Button>
+                            <Label>Name</Label>
+                            <Input {...form.register('name')} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Execution Engine</Label>
+                            <Controller
+                                control={form.control}
+                                name="engine"
+                                render={({ field }) => (
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="huggingface">Hugging Face / Gradio</SelectItem>
+                                            <SelectItem value="gemini">Gemini</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 )}
-                            </div>
+                            />
+                        </div>
+                        <div className="space-y-2 col-span-2">
+                            <Label>Execution ID</Label>
+                            <Input {...form.register('hf_id')} placeholder="e.g., stabilityai/stable-diffusion-xl-base-1.0" />
                         </div>
                     </div>
                     <DialogFooter className="sm:justify-between">
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button type="button" variant="destructive" disabled={isBusy}>
+                                <Button type="button" variant="destructive" disabled={isProcessing}>
                                     <Trash2 className="mr-2"/> Delete
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>This will delete the model from your application. This cannot be undone.</AlertDialogDescription>
-                                </AlertDialogHeader>
+                                <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDelete} disabled={isBusy}>
-                                        {isBusy ? <Loader2 className="animate-spin"/> : 'Continue'}
+                                    <AlertDialogAction onClick={handleDelete} disabled={isProcessing}>
+                                        {isProcessing ? <Loader2 className="animate-spin"/> : 'Continue'}
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                         <div className="flex gap-2">
                             <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isBusy}>
-                                {isBusy && <Loader2 className="animate-spin mr-2"/>}
+                            <Button type="submit" disabled={isProcessing}>
+                                {isProcessing && <Loader2 className="animate-spin mr-2"/>}
                                 Save Changes
                             </Button>
                         </div>
@@ -200,11 +164,8 @@ function EditModelDialog({ model, isOpen, setIsOpen }: { model: AiModel, isOpen:
     )
 }
 
-export function ModelForm({ model, isEditing }: ModelFormProps) {
+export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: boolean }) {
     const [dialogState, setDialogState] = useState<{ type: 'model' | 'lora' | null, isOpen: boolean }>({ type: null, isOpen: false });
-
-    const openDialog = (type: 'model' | 'lora') => setDialogState({ type, isOpen: true });
-    const closeDialog = () => setDialogState({ type: null, isOpen: false });
 
     if (isEditing && model) {
         return (
@@ -226,12 +187,8 @@ export function ModelForm({ model, isEditing }: ModelFormProps) {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => openDialog('model')}>
-                        Add Base Model
-                    </DropdownMenuItem>
-                     <DropdownMenuItem onClick={() => openDialog('lora')}>
-                        Add LoRA
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setDialogState({ type: 'model', isOpen: true })}>Add Base Model</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setDialogState({ type: 'lora', isOpen: true })}>Add LoRA</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
             
@@ -239,7 +196,7 @@ export function ModelForm({ model, isEditing }: ModelFormProps) {
                 <AddModelDialog 
                     type={dialogState.type}
                     isOpen={dialogState.isOpen}
-                    setIsOpen={closeDialog}
+                    setIsOpen={(isOpen) => setDialogState({ type: null, isOpen })}
                 />
             )}
         </>
