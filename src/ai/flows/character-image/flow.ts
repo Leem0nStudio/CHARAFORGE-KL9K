@@ -24,20 +24,23 @@ function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
 
 /**
  * Queries the Hugging Face Inference API for a specific model.
- * @param {object} data The payload to send to the model, including the prompt and model ID.
+ * It prioritizes a user-provided API key and falls back to the system key.
+ * @param {object} data The payload to send, including inputs, model, and optional user API key.
  * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
  */
-async function queryHuggingFaceInferenceAPI(data: { inputs: string, model: string }): Promise<string> {
-    const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
-    if (!HUGGING_FACE_API_KEY) {
-        throw new Error("Hugging Face API key is not configured on the server.");
+async function queryHuggingFaceInferenceAPI(data: { inputs: string, model: string, userApiKey?: string }): Promise<string> {
+    const systemApiKey = process.env.HUGGING_FACE_API_KEY;
+    const apiKey = data.userApiKey || systemApiKey;
+
+    if (!apiKey) {
+        throw new Error("Hugging Face API key is not configured on the server or provided by the user.");
     }
     
     const API_URL = `https://api-inference.huggingface.co/models/${data.model}`;
     
     const response = await fetch(API_URL, {
         headers: {
-            "Authorization": `Bearer ${HUGGING_FACE_API_KEY}`,
+            "Authorization": `Bearer ${apiKey}`,
             "Content-Type": "application/json"
         },
         method: "POST",
@@ -52,7 +55,10 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, model: strin
     if (!response.ok) {
         const errorBody = await response.text();
         console.error("Hugging Face API Error:", errorBody);
-        throw new Error(`Failed to generate image via Hugging Face API. Status: ${response.status}. Message: ${errorBody}`);
+        const errorMessage = errorBody.includes('Rate limit reached')
+          ? "The API rate limit was reached. Please try again later or add your own API key in your profile settings."
+          : `Failed to generate image via Hugging Face. Status: ${response.status}. Message: ${errorBody}`;
+        throw new Error(errorMessage);
     }
 
     const imageBlob = await response.blob();
@@ -77,7 +83,7 @@ const generateCharacterImageFlow = ai.defineFlow(
   },
   async (input) => {
     const { description, engineConfig } = input;
-    const { engineId, modelId, aspectRatio, lora } = engineConfig;
+    const { engineId, modelId, aspectRatio, lora, userApiKey } = engineConfig;
     
     let imageUrl: string | undefined;
 
@@ -115,12 +121,13 @@ const generateCharacterImageFlow = ai.defineFlow(
             imageUrl = await queryHuggingFaceInferenceAPI({ 
                 inputs: promptWithLora,
                 model: modelId,
+                userApiKey: userApiKey,
             });
 
         } catch (error) {
             console.error("Error in Hugging Face flow:", error);
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
-            throw new Error(`Failed to generate character image via the Hugging Face API. ${message}`);
+            throw new Error(message);
         }
     } else {
         throw new Error(`Unsupported image engine: ${engineId}`);

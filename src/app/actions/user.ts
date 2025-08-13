@@ -132,7 +132,22 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
         }
 
         const userRef = adminDb.collection('users').doc(uid);
-        await userRef.set({ preferences }, { merge: true });
+        // Sanitize the preferences object to only update allowed fields
+        const validPreferences: Partial<UserPreferences> = {
+            theme: preferences.theme,
+            notifications: preferences.notifications,
+            privacy: preferences.privacy
+        };
+        // Only include the API key if it's a non-empty string.
+        // This prevents saving empty strings or null values.
+        if (preferences.huggingFaceApiKey && preferences.huggingFaceApiKey.trim() !== '') {
+            validPreferences.huggingFaceApiKey = preferences.huggingFaceApiKey;
+        } else {
+            // If the key is empty, ensure it is removed from Firestore.
+            validPreferences.huggingFaceApiKey = '' as any; // Use empty string to signal removal
+        }
+
+        await userRef.set({ preferences: validPreferences }, { merge: true });
 
         revalidatePath('/profile');
         revalidatePath('/');

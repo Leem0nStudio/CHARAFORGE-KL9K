@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Data schemas and types for the character image generation flow.
  * This file defines the Zod schemas for input and output validation,
@@ -20,6 +21,7 @@ export const ImageEngineConfigSchema = z.object({
   modelId: z.string().optional().describe('The identifier for the base model (e.g., "stabilityai/stable-diffusion-xl-base-1.0" for Hugging Face).'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).optional().default('1:1').describe('The desired aspect ratio for the image.'),
   lora: LoraConfigSchema.optional().describe('Configuration for the LoRA to apply, if any.'),
+  userApiKey: z.string().optional().describe("An optional, user-provided API key for the Hugging Face engine."),
 });
 export type ImageEngineConfig = z.infer<typeof ImageEngineConfigSchema>;
 

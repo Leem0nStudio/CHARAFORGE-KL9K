@@ -21,6 +21,7 @@ export type UserPreferences = {
     privacy: {
         profileVisibility: 'public' | 'private';
     };
+    huggingFaceApiKey?: string; // New field for the user's API key
 }
 
 /**

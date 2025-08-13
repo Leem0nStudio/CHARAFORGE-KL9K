@@ -6,13 +6,16 @@ import { generateCharacterBio } from '@/ai/flows/character-bio/flow';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 import type { AiModel } from '@/types/ai-model';
+import { verifyAndGetUid } from '@/lib/auth/server';
+import { getUserProfile } from './user';
+
 
 const GenerateCharacterInputSchema = z.object({
   description: z.string().min(20).max(1000),
   tags: z.string().optional(),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
-  selectedModel: z.custom<AiModel>(),
+  selectedModel: z.custom<AiModel>().refine(data => !!data, { message: 'A base model must be selected.' }),
   selectedLora: z.custom<AiModel>().optional().nullable(),
   loraVersionId: z.string().optional(),
   loraWeight: z.number().min(0).max(1).optional(),
@@ -38,6 +41,10 @@ export async function generateCharacter(input: GenerateCharacterInput): Promise<
     if (!validation.success) {
         return { success: false, message: 'Invalid input.', error: validation.error.message };
     }
+    
+    const uid = await verifyAndGetUid();
+    const userProfile = await getUserProfile(uid);
+    const userApiKey = userProfile?.preferences?.huggingFaceApiKey;
 
     const { 
         description, 
@@ -61,6 +68,7 @@ export async function generateCharacter(input: GenerateCharacterInput): Promise<
             engineId: selectedModel.engine,
             modelId: selectedModel.engine === 'huggingface' ? selectedModel.hf_id : undefined,
             aspectRatio,
+            userApiKey: userApiKey || undefined,
         };
         
         if (selectedLora && selectedModel.engine === 'huggingface') {
