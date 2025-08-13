@@ -6,7 +6,6 @@
 
 import { z } from 'zod';
 import { generate } from 'genkit';
-import { ai } from '@/ai/genkit';
 import type { GenerationCommonOptions } from 'genkit/ai';
 
 
@@ -33,9 +32,8 @@ export async function queryLlm<T extends z.ZodTypeAny>(
 ): Promise<z.infer<T>> {
   const { engineId, modelId, userApiKey } = config;
 
-  let requestConfig: GenerationCommonOptions | undefined;
-  let reference;
-
+  let requestConfig: GenerationCommonOptions = {};
+  
   if (engineId === 'openrouter') {
     const systemApiKey = process.env.OPENROUTER_API_KEY;
     const apiKey = userApiKey || systemApiKey;
@@ -43,22 +41,16 @@ export async function queryLlm<T extends z.ZodTypeAny>(
     if (!apiKey) {
       throw new Error(`OpenRouter API key is not configured on the server or provided by the user.`);
     }
-
-    reference = ai.model(modelId, {
-      config: {
+    
+    // For OpenRouter, we need to pass the API key and specify the provider in the config.
+    requestConfig = {
         apiKey,
-        // OpenRouter uses the OpenAI API format, so we can specify the provider.
-        // This helps Genkit use the correct request structure.
-        provider: 'openai', 
-      }
-    });
-
-  } else { // Default to 'gemini'
-    reference = ai.model(modelId);
+        provider: 'openai',
+    };
   }
 
   const { output } = await generate({
-    model: reference,
+    model: modelId,
     prompt: prompt,
     output: {
         schema: outputSchema,
