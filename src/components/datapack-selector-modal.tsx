@@ -186,11 +186,40 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
 
 function PackGallery({ 
     packs, 
-    onChoosePack 
+    onChoosePack,
+    isLoading
 }: { 
     packs: DataPack[], 
-    onChoosePack: (pack: DataPack) => void 
+    onChoosePack: (pack: DataPack) => void,
+    isLoading: boolean,
 }) {
+    if (isLoading) {
+        return (
+            <div className="flex-grow flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        )
+    }
+
+    if (packs.length === 0) {
+        return (
+            <div className="flex flex-col h-full items-center justify-center">
+                <DialogHeader className="text-center">
+                    <DialogTitle className="font-headline text-3xl">No DataPacks Found</DialogTitle>
+                    <DialogDescription>You haven't installed any DataPacks yet.</DialogDescription>
+                </DialogHeader>
+                <Alert className="mt-4">
+                    <Package className="h-4 w-4" />
+                    <AlertTitle>Your collection is empty!</AlertTitle>
+                    <AlertDescription>
+                        Visit the catalog to add some creative packs.
+                        <Button asChild variant="link" className="p-0 h-auto ml-1"><Link href="/datapacks">Go to Catalog</Link></Button>
+                    </AlertDescription>
+                </Alert>
+            </div>
+        )
+    }
+    
     return (
         <div className="flex flex-col h-full">
             <DialogHeader>
@@ -232,6 +261,7 @@ export function DataPackSelectorModal({
     packs,
 }: DataPackSelectorModalProps) {
     const [wizardPack, setWizardPack] = useState<DataPack | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (!isOpen) {
@@ -251,26 +281,7 @@ export function DataPackSelectorModal({
             return <WizardGrid pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} onBack={() => setWizardPack(null)} />;
         }
         
-        if (packs.length === 0) {
-            return (
-                <>
-                    <DialogHeader>
-                        <DialogTitle>No DataPacks Found</DialogTitle>
-                        <DialogDescription>You haven't installed any DataPacks yet. Visit the catalog to add some.</DialogDescription>
-                    </DialogHeader>
-                    <Alert>
-                        <Package className="h-4 w-4" />
-                        <AlertTitle>No DataPacks Installed</AlertTitle>
-                        <AlertDescription>
-                            You haven't installed any DataPacks yet. Visit the catalog to add some to your collection.
-                            <Button asChild variant="link" className="p-0 h-auto ml-1"><Link href="/datapacks">Go to Catalog</Link></Button>
-                        </AlertDescription>
-                    </Alert>
-                </>
-            )
-        }
-        
-        return <PackGallery packs={packs} onChoosePack={setWizardPack} />;
+        return <PackGallery packs={packs} onChoosePack={setWizardPack} isLoading={isLoading} />;
     };
 
     return (
