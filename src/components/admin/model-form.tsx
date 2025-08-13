@@ -28,7 +28,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
         resolver: zodResolver(UpsertModelSchema),
         defaultValues: model ? { ...model, triggerWords: model.triggerWords?.join(', ') } : {
             name: '',
-            type: 'model',
+            type: 'lora',
             engine: 'huggingface',
             hf_id: '',
             civitaiModelId: '',
@@ -102,7 +102,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                         
                         <TabsContent value="manual">
                             <div className="py-4 grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
+                                <div className="space-y-2 col-span-2">
                                     <Label>Name</Label>
                                     <Input {...form.register('name')} />
                                 </div>
@@ -112,7 +112,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                         control={form.control}
                                         name="type"
                                         render={({ field }) => (
-                                            <Select onValueChange={field.onChange} value={field.value}>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="model">Base Model</SelectItem>
@@ -128,7 +128,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                         control={form.control}
                                         name="engine"
                                         render={({ field }) => (
-                                            <Select onValueChange={field.onChange} value={field.value}>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="gemini">Gemini</SelectItem>
@@ -139,8 +139,8 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                         )}
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>Execution ID</Label>
+                                <div className="space-y-2 col-span-2">
+                                    <Label>Execution ID (e.g. Hugging Face ID)</Label>
                                     <Input {...form.register('hf_id')} placeholder="e.g., stabilityai/sdxl" />
                                 </div>
                                 {form.watch('type') === 'lora' && (

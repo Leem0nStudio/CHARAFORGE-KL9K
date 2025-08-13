@@ -5,11 +5,11 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { deleteCharacter, updateCharacterStatus, updateCharacterDataPackSharing } from '@/app/actions/character-write';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { deleteCharacter } from '@/app/actions/character-write';
+import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Loader2, Settings, Pencil, Trash2, ShieldCheck, ShieldOff, GalleryHorizontal, GitBranch } from 'lucide-react';
+import { Loader2, Settings, Pencil, Trash2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import type { Character } from '@/types/character';
 import { BranchButton } from './branch-button';
@@ -25,22 +25,7 @@ export function CharacterImageActions({ character, currentUserId, isOwner }: Cha
     const { toast } = useToast();
     const router = useRouter();
     const [isDeleting, startDeleteTransition] = useTransition();
-    const [isUpdating, startUpdateTransition] = useTransition();
-
-    const handleUpdate = (updateAction: () => Promise<any>) => {
-        startUpdateTransition(async () => {
-            const result = await updateAction();
-            toast({
-                title: result.success ? 'Success!' : 'Update Failed',
-                description: result.message,
-                variant: result.success ? 'default' : 'destructive',
-            });
-            if (result.success) {
-                 router.refresh();
-            }
-        });
-    };
-
+    
     const handleDelete = async () => {
         startDeleteTransition(async () => {
             try {
@@ -57,16 +42,6 @@ export function CharacterImageActions({ character, currentUserId, isOwner }: Cha
         });
     };
     
-    const handleTogglePublicStatus = () => {
-        const newStatus = character.status === 'public' ? 'private' : 'public';
-        handleUpdate(() => updateCharacterStatus(character.id, newStatus));
-    };
-
-    const handleToggleDataPackSharing = () => {
-        const newSharingStatus = !character.isSharedToDataPack;
-        handleUpdate(() => updateCharacterDataPackSharing(character.id, newSharingStatus));
-    };
-    
     const canBranch = currentUserId && !isOwner && character.branchingPermissions === 'public' && character.status === 'public';
 
 
@@ -77,16 +52,11 @@ export function CharacterImageActions({ character, currentUserId, isOwner }: Cha
 
                 {isOwner && (
                     <>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="secondary" size="icon" asChild>
-                                    <Link href={`/characters/${character.id}/edit`}>
-                                        <Pencil />
-                                    </Link>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Edit Character</p></TooltipContent>
-                        </Tooltip>
+                        <Link href={`/characters/${character.id}/edit`}>
+                            <Button>
+                                <Pencil className="mr-2" /> Edit Character
+                            </Button>
+                        </Link>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                  <Tooltip>
@@ -97,28 +67,9 @@ export function CharacterImageActions({ character, currentUserId, isOwner }: Cha
                                 </Tooltip>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
-                                <DropdownMenuItem asChild>
-                                    <Link href={`/characters/${character.id}/edit`}><Pencil className="mr-2" /> Edit Details</Link>
+                                <DropdownMenuItem onSelect={() => router.push(`/characters/${character.id}/edit?tab=sharing`)}>
+                                    <Settings className="mr-2" /> Sharing & Permissions
                                 </DropdownMenuItem>
-
-                                <DropdownMenuItem onClick={() => router.push(`/characters/${character.id}/edit`)}>
-                                    <GitBranch className="mr-2" /> Versioning & Perms
-                                </DropdownMenuItem>
-                                
-                                <DropdownMenuSeparator />
-
-                                <DropdownMenuItem onClick={handleTogglePublicStatus} disabled={isUpdating}>
-                                    {isUpdating ? <Loader2 className="mr-2 animate-spin" /> : (
-                                        character.status === 'public' ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>
-                                    )}
-                                    {character.status === 'public' ? "Make Private" : "Make Public"}
-                                </DropdownMenuItem>
-                                {character.dataPackId && (
-                                    <DropdownMenuItem onClick={handleToggleDataPackSharing} disabled={isUpdating || character.status !== 'public'}>
-                                            {isUpdating ? <Loader2 className="mr-2 animate-spin" /> : <GalleryHorizontal className="mr-2"/>}
-                                            {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to Gallery"}
-                                    </DropdownMenuItem>
-                                )}
                                 
                                 <DropdownMenuSeparator />
                                 
@@ -137,7 +88,7 @@ export function CharacterImageActions({ character, currentUserId, isOwner }: Cha
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className={buttonVariants({ variant: "destructive" })}>
+                                            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive-hover">
                                                 {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                                 Delete
                                             </AlertDialogAction>

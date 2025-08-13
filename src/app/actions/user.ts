@@ -45,7 +45,9 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
             };
         }
         
-        let finalPhotoUrl: string | null = null;
+        const userRef = adminDb.collection('users').doc(uid);
+        const currentUserDoc = await userRef.get();
+        let finalPhotoUrl: string | null = currentUserDoc.data()?.photoURL || null;
         
         if (photoFile && photoFile.size > 0) {
             if (photoFile.size > 5 * 1024 * 1024) { // 5MB limit
@@ -58,23 +60,16 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
             finalPhotoUrl = `${publicUrl}?t=${new Date().getTime()}`;
         }
 
-        const userRef = adminDb.collection('users').doc(uid);
         const updates: { [key: string]: any } = {
-            displayName: validation.data.displayName
+            displayName: validation.data.displayName,
+            photoURL: finalPhotoUrl
         };
         
-        if (finalPhotoUrl) {
-            updates.photoURL = finalPhotoUrl;
-            updates.avatarUpdatedAt = FieldValue.serverTimestamp();
-        }
-
-        if (Object.keys(updates).length > 0) {
-            await userRef.update(updates);
-        }
+        await userRef.update(updates);
         
         await adminAuth.updateUser(uid, {
             displayName: validation.data.displayName,
-            photoURL: finalPhotoUrl ?? undefined,
+            photoURL: finalPhotoUrl,
         });
 
         revalidatePath('/profile');
@@ -226,5 +221,3 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     return null;
   }
 }
-
-    

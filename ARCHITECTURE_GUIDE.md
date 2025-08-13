@@ -1,3 +1,4 @@
+
 # 🏛️ CharaForge: Architectural Guide & Best Practices
 
 This document outlines the core architectural patterns and decisions that form the foundation of the CharaForge application. Adhering to these patterns is crucial for maintaining the security, reliability, and maintainability of the project as it evolves.
@@ -21,11 +22,11 @@ This document outlines the core architectural patterns and decisions that form t
 ### How It Works
 
 1.  **Client-Side Login (`use-auth.tsx`):** The user authenticates with Firebase on the client.
-2.  **Token to Server (`set-cookie/route.ts`):** Upon successful login, the Firebase ID Token is immediately sent to a dedicated, internal API endpoint (`/api/auth/set-cookie`).
-3.  **Secure Cookie Creation:** This endpoint creates a **secure, `HTTPOnly` cookie**.
+2.  **Token to Server (`set-cookie/route.ts`):** Upon successful login, the Firebase ID Token is immediately sent to a dedicated, internal API endpoint (`/api/auth/set-cookie`). The `useAuth` hook now **awaits** this step to ensure completion.
+3.  **Secure Cookie Creation:** This endpoint creates a **secure, `HTTPOnly`, `SameSite=Lax` cookie**.
     -   `HTTPOnly`: This flag makes the cookie inaccessible to client-side JavaScript, which is the primary defense against XSS token theft.
     -   `Secure`: Ensures the cookie is only sent over HTTPS.
-    -   `SameSite=Lax`: Provides a good balance of security and usability.
+    -   `SameSite=Lax`: Provides a good balance of security and usability, ensuring the cookie is sent with Server Action requests.
 4.  **Server-Side Verification (`lib/auth/server.ts`):** The `verifyAndGetUid` function is the gatekeeper for all secure server actions. It reads the token **from the cookie**, not from the request body, and verifies it using the Firebase Admin SDK.
 
 ### Implementation Rule
@@ -44,7 +45,7 @@ All Server Actions that require authentication **MUST** call `verifyAndGetUid()`
 
 ### How It Works
 
-1.  **Define a Schema (`actions/characters.ts`, etc.):** For every Server Action that accepts data, a `zod` schema is defined. This schema is the single source of truth for the expected data structure, types, and constraints (e.g., `min`, `max` length).
+1.  **Define a Schema (`types/*.ts`):** For every Server Action that accepts data, a `zod` schema is defined. This schema is the single source of truth for the expected data structure, types, and constraints (e.g., `min`, `max` length). These schemas are co-located with their relevant TypeScript types.
 2.  **Validate on Entry:** The **very first step** inside the Server Action is to call `schema.safeParse(data)` on the incoming data.
 3.  **Act on Result:**
     -   If the validation succeeds (`success: true`), the action proceeds with the sanitized, type-safe data.

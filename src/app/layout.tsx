@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
@@ -22,8 +23,8 @@ const bebasNeue = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
-  title: 'CharaForge',
-  description: 'AI-powered character and image generation.',
+  title: 'CharaForge - AI Character Forge',
+  description: 'AI-powered character generation for writers, artists, and game masters. Create unique characters with detailed biographies and portraits.',
 };
 
 export default function RootLayout({
@@ -33,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('min-h-screen bg-background font-body antialiased', exo2.variable, bebasNeue.variable)}>
+      <body className={cn('min-h-screen bg-background font-sans antialiased', exo2.variable, bebasNeue.variable)}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -43,7 +44,7 @@ export default function RootLayout({
           <AuthProvider>
             <div className="relative flex min-h-screen flex-col">
               <SiteHeader />
-              <div className="flex-1 pb-20 sm:pb-0">{children}</div>
+              <main className="flex-1">{children}</main>
               <SiteFooter />
               <MobileBottomNav />
             </div>

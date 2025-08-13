@@ -105,10 +105,10 @@ export function CharacterCard({ character }: CharacterCardProps) {
                             <User className="h-3 w-3" />
                             <span>by {character.userName}</span>
                         </Link>
-                        {isBranch && (
+                        {isBranch && character.originalAuthorName && (
                             <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
                                 <GitBranch className="h-3 w-3" />
-                                <span>from {character.originalAuthorName || 'Unknown'}</span>
+                                <span>from {character.originalAuthorName}</span>
                             </div>
                         )}
                     </div>

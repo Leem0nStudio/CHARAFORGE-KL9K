@@ -1,83 +1,75 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Nueva Paleta - Alto Contraste Neutro */
-    --background: 222 47% 11%; /* Gris Oscuro - #111827 */
-    --foreground: 210 40% 98%; /* Casi Blanco - #F9FAFB */
+    --background: 222 47% 11%; 
+    --foreground: 210 40% 98%; 
 
-    /* Tarjetas y Elementos de UI */
-    --card: 224 22% 16%; /* Gris Medio - #1F2937 */
-    --card-foreground: 210 40% 98%; /* #F9FAFB */
-    --card-highlight: 223 21% 20%; /* #283343 - para hover */
+    --card: 224 22% 16%;
+    --card-foreground: 210 40% 98%; 
+    --card-highlight: 223 21% 20%; 
 
-    --popover: 222 47% 11%; /* #111827 */
-    --popover-foreground: 210 40% 98%; /* #F9FAFB */
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
 
-    /* Primario (Acciones) - Azul Vibrante */
-    --primary: 217 91% 60%; /* #3B82F6 */
-    --primary-foreground: 210 40% 98%; /* #F9FAFB */
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%; 
     --primary-hover: 217 91% 65%;
 
-    /* Secundario (Botones, etc.) */
-    --secondary: 224 22% 21%; /* Gris Claro - #293548 */
-    --secondary-foreground: 210 40% 98%; /* #F9FAFB */
+    --secondary: 224 22% 21%;
+    --secondary-foreground: 210 40% 98%; 
     --secondary-hover: 223 21% 25%;
 
-    /* Muted (Texto secundario) */
     --muted: 223 21% 25%;
-    --muted-foreground: 223 15% 65%; /* #9CA3AF */
+    --muted-foreground: 223 15% 65%;
     
-    /* Acento (Énfasis) */
     --accent: 217 91% 60%; 
     --accent-foreground: 210 40% 98%;
 
-    /* Destructive (Peligro) */
-    --destructive: 0 72% 51%; /* #EF4444 */
+    --destructive: 0 72% 51%; 
     --destructive-foreground: 210 40% 98%;
     --destructive-hover: 0 72% 56%;
 
-    /* Bordes y Anillos */
-    --border: 217 19% 27%; /* #374151 */
+    --border: 217 19% 27%;
     --input: 217 19% 27%;
     --ring: 217 91% 60%;
     
-    --radius: 0.5rem; /* Bordes ligeramente más redondeados */
+    --radius: 0.5rem;
   }
 
   .dark {
-    /* La paleta ya está diseñada para ser oscura, así que la mantenemos */
-    --background: 222 47% 11%; /* Gris Oscuro - #111827 */
-    --foreground: 210 40% 98%; /* Casi Blanco - #F9FAFB */
+    --background: 222 47% 11%; 
+    --foreground: 210 40% 98%; 
 
-    --card: 224 22% 16%; /* Gris Medio - #1F2937 */
-    --card-foreground: 210 40% 98%; /* #F9FAFB */
-    --card-highlight: 223 21% 20%; /* #283343 - para hover */
+    --card: 224 22% 16%;
+    --card-foreground: 210 40% 98%; 
+    --card-highlight: 223 21% 20%;
 
-    --popover: 222 47% 11%; /* #111827 */
-    --popover-foreground: 210 40% 98%; /* #F9FAFB */
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 217 91% 60%; /* #3B82F6 */
-    --primary-foreground: 210 40% 98%; /* #F9FAFB */
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%; 
     --primary-hover: 217 91% 65%;
 
-    --secondary: 224 22% 21%; /* Gris Claro - #293548 */
-    --secondary-foreground: 210 40% 98%; /* #F9FAFB */
+    --secondary: 224 22% 21%;
+    --secondary-foreground: 210 40% 98%; 
     --secondary-hover: 223 21% 25%;
 
     --muted: 223 21% 25%;
-    --muted-foreground: 223 15% 65%; /* #9CA3AF */
+    --muted-foreground: 223 15% 65%;
     
     --accent: 217 91% 60%; 
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 72% 51%; /* #EF4444 */
+    --destructive: 0 72% 51%; 
     --destructive-foreground: 210 40% 98%;
     --destructive-hover: 0 72% 56%;
 
-    --border: 217 19% 27%; /* #374151 */
+    --border: 217 19% 27%;
     --input: 217 19% 27%;
     --ring: 217 91% 60%;
   }
@@ -94,5 +86,36 @@
   }
   .font-headline {
     font-family: 'Bebas Neue', sans-serif;
+  }
+}
+
+/* Custom Animation for Pulse Glow */
+@layer utilities {
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+  .animate-subtle-pulse {
+      animation: subtle-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 2px hsl(var(--primary)));
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 8px hsl(var(--primary)));
+  }
+}
+
+@keyframes subtle-pulse {
+  0%, 100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
   }
 }

@@ -1,3 +1,4 @@
+
 import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon } from 'lucide-react';
 
 export interface NavItem {
@@ -11,7 +12,7 @@ export interface NavItem {
 export const mainNavItems: NavItem[] = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/datapacks', label: 'DataPacks', icon: Package },
-    { href: '/character-generator', label: 'Create', icon: Swords, isPrimary: true },
+    { href: '/character-generator', label: 'Forge', icon: Swords, isPrimary: true },
     { href: '/story-forge', label: 'Story Forge', icon: ScrollText, requiresAuth: true },
     { href: '/profile', label: 'Profile', icon: UserCircle, requiresAuth: true },
 ];
@@ -25,12 +26,12 @@ export const adminNavItems: NavItem[] = [
 
 // Corresponds to the text-chart-* classes in tailwind.config.ts
 const slotCategoryColorClasses = {
-    appearance: 'text-chart-1 bg-chart-1/10', // Blue
-    equipment: 'text-chart-5 bg-chart-5/10',   // Red
-    style: 'text-chart-2 bg-chart-2/10',       // Green
-    setting: 'text-chart-3 bg-chart-3/10',     // Yellow
-    class: 'text-chart-4 bg-chart-4/10',       // Orange
-    misc: 'text-muted-foreground bg-muted-foreground/10',
+    appearance: 'text-chart-1 bg-chart-1/10 border-chart-1/50', // Blue
+    equipment: 'text-chart-5 bg-chart-5/10 border-chart-5/50',   // Red
+    style: 'text-chart-2 bg-chart-2/10 border-chart-2/50',       // Green
+    setting: 'text-chart-3 bg-chart-3/10 border-chart-3/50',     // Yellow
+    class: 'text-chart-4 bg-chart-4/10 border-chart-4/50',       // Orange
+    misc: 'text-muted-foreground bg-muted-foreground/10 border-muted-foreground/20',
 };
 type SlotCategory = keyof typeof slotCategoryColorClasses;
 

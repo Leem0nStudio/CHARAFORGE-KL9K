@@ -1,32 +1,29 @@
 
 "use client";
 
-import { Character } from "@/types/character";
-import { UserProfile } from "@/types/user";
+import Link from 'next/link';
+import Image from 'next/image';
+import { User, ImagePlus } from "lucide-react";
+import type { Character } from "@/types/character";
+import type { UserProfile } from "@/types/user";
 import { SectionTitle } from "@/components/section-title";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Pencil, ImagePlus } from "lucide-react";
 import { CharacterCard } from "@/components/character/character-card";
-import Link from "next/link";
 import { BackButton } from "@/components/back-button";
 import { SiteFooter } from "@/components/site-footer";
 import { CharacterImageActions } from "@/components/character/character-image-actions";
 
 interface CharacterPageClientProps {
   character: Character;
-  userProfile: UserProfile | null;
-  showAdminFeatures: boolean;
+  currentUserId: string | null;
   creationsForDataPack: Character[];
 }
 
 export function CharacterPageClient({
   character,
-  userProfile,
-  showAdminFeatures,
+  currentUserId,
   creationsForDataPack,
 }: CharacterPageClientProps) {
-  const isOwner = userProfile?.uid === character.userId;
+  const isOwner = currentUserId === character.userId;
   const showRelatedCreations = creationsForDataPack.length > 0;
 
   return (
@@ -57,7 +54,7 @@ export function CharacterPageClient({
           <div className="mt-4 flex flex-col sm:flex-row gap-2">
             <CharacterImageActions 
               character={character}
-              currentUserId={userProfile?.uid || null}
+              currentUserId={currentUserId}
               isOwner={isOwner}
             />
           </div>
@@ -74,18 +71,16 @@ export function CharacterPageClient({
             )}
           </div>
 
-          <div className="mb-6 text-sm text-muted-foreground flex items-center gap-2">
-            <span>Created by: {character.userName || "Unknown User"}</span>
+          <div className="mb-6 text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+            <Link href={`/users/${character.userId}`} className="flex items-center gap-1 hover:text-primary">
+                <User className="w-4 h-4"/> <span>by {character.userName || "Unknown User"}</span>
+            </Link>
             {character.dataPackName && (
               <>
                 <span className="mx-1">•</span>
-                <span>From DataPack: {character.dataPackName}</span>
-              </>
-            )}
-            {character.tags && character.tags.length > 0 && (
-              <>
-                <span className="mx-1">•</span>
-                <span>Tags: {character.tags.join(", ")}</span>
+                 <Link href={`/datapacks/${character.dataPackId}`} className="hover:text-primary">
+                    <span>From DataPack: {character.dataPackName}</span>
+                 </Link>
               </>
             )}
           </div>
@@ -106,22 +101,6 @@ export function CharacterPageClient({
             {creationsForDataPack.map((creation) => (
               <CharacterCard key={creation.id} character={creation} />
             ))}
-          </div>
-        </div>
-      )}
-
-      {showAdminFeatures && (
-        <div className="mt-16 border-t pt-8">
-          <SectionTitle title="Admin Info" subtitle="Debugging and administrative information."/>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-            <div>
-              <p><strong>Character ID:</strong> {character.id}</p>
-              <p><strong>User ID:</strong> {character.userId}</p>
-              <p><strong>DataPack ID:</strong> {character.dataPackId || "N/A"}</p>
-            </div>
-            <div>
-              <p><strong>Created At:</strong> {new Date(character.createdAt).toLocaleString()}</p>
-            </div>
           </div>
         </div>
       )}

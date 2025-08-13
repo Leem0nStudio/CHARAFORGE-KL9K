@@ -28,24 +28,3 @@ export function AnvilIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-
-
-/**
- * A reusable server component that displays the application logo.
- * It falls back to the default AnvilIcon.
- * @param className - Optional classes to apply to the container.
- * @param iconClassName - Optional classes to apply to the icon/image itself.
- */
-export function AppLogo({ className, iconClassName }: { className?: string, iconClassName?: string }) {
-    // For now, this component only returns the default icon.
-    // The logic to fetch a dynamic logo will be added separately to avoid architectural issues.
-    return (
-        <div className={className}>
-            <AnvilIcon 
-                className={cn("h-8 w-8", iconClassName)}
-            />
-        </div>
-    );
-}
-
-    
