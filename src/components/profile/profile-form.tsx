@@ -30,10 +30,11 @@ export function ProfileForm({ user }: { user: UserProfile }) {
       if (state.success) {
         toast({ title: 'Success!', description: state.message });
         if (state.newAvatarUrl) {
+          // Update the auth context so the UI reflects the change immediately
           setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl } : null);
         }
       } else {
-        toast({ variant: 'destructive', title: 'Update Failed', description: state.message });
+        toast({ variant: 'destructive', title: 'Update Failed', description: state.error || state.message });
       }
     }
   }, [state, toast, setUserProfile]);
@@ -104,5 +105,3 @@ export function ProfileForm({ user }: { user: UserProfile }) {
     </Card>
   );
 }
-
-    

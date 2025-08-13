@@ -17,6 +17,8 @@ import { Loader2, Star, Trash2, FileUp, Wand2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { v4 as uuidv4 } from 'uuid';
+import { generateCharacter } from '@/app/actions/generation';
+import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 
 const UpdateImagesSchema = z.object({
     primaryImageUrl: z.string().url("A primary image must be selected."),
@@ -37,8 +39,6 @@ export function EditGalleryTab({ character }: { character: Character }) {
     },
   });
 
-  // This effect ensures the form is re-synchronized if the character prop changes
-  // (e.g., after a server-side refresh).
   useEffect(() => {
     form.reset({
         primaryImageUrl: character.imageUrl,
@@ -61,12 +61,11 @@ export function EditGalleryTab({ character }: { character: Character }) {
             const destinationPath = `usersImg/${character.userId}/${character.id}/${fileName}`;
             const newImageUrl = await uploadToStorage(file, destinationPath);
             
-            // Immediately update the character in the database
             const newGallery = [...(character.gallery || []), newImageUrl];
             await updateCharacterImages(character.id, newGallery, character.imageUrl);
 
             toast({ title: "Image Uploaded!", description: "The new image has been added to your gallery."});
-            router.refresh(); // Refresh the page to get the latest state
+            router.refresh(); 
         } catch (error) {
              const message = error instanceof Error ? error.message : "Could not upload the image.";
              toast({ variant: 'destructive', title: 'Upload Failed', description: message });
@@ -81,11 +80,15 @@ export function EditGalleryTab({ character }: { character: Character }) {
     }
 
     startGenerateTransition(async () => {
-        // TODO: Pass a real engine config. For now, we'll use an empty one which might default or fail.
-        const result = await generateNewCharacterImage(character.id, character.description, {} as any);
+        // This is a placeholder engine config. In a real scenario, you'd let the user choose.
+        const engineConfig: ImageEngineConfig = {
+            engineId: 'gemini',
+            aspectRatio: '1:1',
+        }
+        const result = await generateNewCharacterImage(character.id, character.description, engineConfig);
         if (result.success && result.newImageUrl) {
             toast({ title: "Image Generated!", description: result.message});
-            router.refresh(); // The server action already updated the DB, just refresh.
+            router.refresh(); 
         } else {
              toast({ variant: 'destructive', title: 'Generation Failed', description: result.message });
         }
@@ -98,6 +101,11 @@ export function EditGalleryTab({ character }: { character: Character }) {
   
   const handleRemoveImage = (urlToRemove: string) => {
     const newGallery = character.gallery?.filter(url => url !== urlToRemove) || [];
+    if (newGallery.length === 0) {
+        toast({ variant: 'destructive', title: 'Action not allowed', description: 'You cannot remove the last image.' });
+        return;
+    }
+    
     startUpdateTransition(async () => {
         const newPrimary = (form.watch('primaryImageUrl') === urlToRemove) ? (newGallery[0] || '') : form.watch('primaryImageUrl');
         const result = await updateCharacterImages(character.id, newGallery, newPrimary);
@@ -123,6 +131,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
             variant: result.success ? 'default' : 'destructive',
       });
       if (result.success) {
+        form.reset({ primaryImageUrl: data.primaryImageUrl });
         router.refresh();
       }
     });
@@ -150,7 +159,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                 <Star className="mr-2" /> {primaryImageUrl === url ? 'Primary' : 'Set Primary'}
                             </Button>
                             <Button type="button" variant="destructive" size="sm" className="w-full" onClick={() => handleRemoveImage(url)} disabled={gallery.length <= 1 || isLoading}>
-                                { isUpdating && gallery.length > 1 ? <Loader2 className="animate-spin" /> : <><Trash2 className="mr-2" /> Remove</>}
+                                { isLoading && gallery.length > 1 ? <Loader2 className="animate-spin" /> : <><Trash2 className="mr-2" /> Remove</>}
                             </Button>
                         </div>
                         {primaryImageUrl === url && (

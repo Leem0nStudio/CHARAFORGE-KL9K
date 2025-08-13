@@ -24,43 +24,37 @@ interface CharacterImageActionsProps {
 export function CharacterImageActions({ character, currentUserId, isOwner }: CharacterImageActionsProps) {
     const { toast } = useToast();
     const router = useRouter();
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeleting, startDeleteTransition] = useTransition();
     const [isUpdating, startUpdateTransition] = useTransition();
 
     const handleUpdate = (updateAction: () => Promise<any>) => {
         startUpdateTransition(async () => {
-            try {
-                const result = await updateAction();
-                toast({
-                    title: result.success ? 'Success!' : 'Update Failed',
-                    description: result.message,
-                });
-                if (result.success) router.refresh();
-            } catch (error) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Update Failed',
-                    description: error instanceof Error ? error.message : 'An unexpected error occurred.',
-                });
+            const result = await updateAction();
+            toast({
+                title: result.success ? 'Success!' : 'Update Failed',
+                description: result.message,
+                variant: result.success ? 'default' : 'destructive',
+            });
+            if (result.success) {
+                 router.refresh();
             }
         });
     };
 
     const handleDelete = async () => {
-        setIsDeleting(true);
-        try {
-            await deleteCharacter(character.id);
-            toast({ title: 'Character Deleted', description: `${character.name} has been removed.` });
-            router.push('/characters');
-        } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: 'Deletion Failed',
-                description: error instanceof Error ? error.message : 'Could not delete the character.',
-            });
-        } finally {
-            setIsDeleting(false);
-        }
+        startDeleteTransition(async () => {
+            try {
+                await deleteCharacter(character.id);
+                toast({ title: 'Character Deleted', description: `${character.name} has been removed.` });
+                router.push('/characters');
+            } catch (error) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Deletion Failed',
+                    description: error instanceof Error ? error.message : 'Could not delete the character.',
+                });
+            }
+        });
     };
     
     const handleTogglePublicStatus = () => {
@@ -107,22 +101,24 @@ export function CharacterImageActions({ character, currentUserId, isOwner }: Cha
                                     <Link href={`/characters/${character.id}/edit`}><Pencil className="mr-2" /> Edit Details</Link>
                                 </DropdownMenuItem>
 
-                                <DropdownMenuItem asChild>
-                                <Link href={`/characters/${character.id}/edit`}><GitBranch className="mr-2" /> Versioning & Perms</Link>
+                                <DropdownMenuItem onClick={() => router.push(`/characters/${character.id}/edit`)}>
+                                    <GitBranch className="mr-2" /> Versioning & Perms
                                 </DropdownMenuItem>
                                 
                                 <DropdownMenuSeparator />
 
                                 <DropdownMenuItem onClick={handleTogglePublicStatus} disabled={isUpdating}>
-                                    {character.status === 'public' ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>}
+                                    {isUpdating ? <Loader2 className="mr-2 animate-spin" /> : (
+                                        character.status === 'public' ? <ShieldOff className="mr-2"/> : <ShieldCheck className="mr-2"/>
+                                    )}
                                     {character.status === 'public' ? "Make Private" : "Make Public"}
                                 </DropdownMenuItem>
                                 {character.dataPackId && (
-                                    <DropdownMenuItem onClick={handleToggleDataPackSharing} disabled={isUpdating}>
-                                            <GalleryHorizontal className="mr-2"/>
+                                    <DropdownMenuItem onClick={handleToggleDataPackSharing} disabled={isUpdating || character.status !== 'public'}>
+                                            {isUpdating ? <Loader2 className="mr-2 animate-spin" /> : <GalleryHorizontal className="mr-2"/>}
                                             {character.isSharedToDataPack ? "Unshare from Gallery" : "Share to Gallery"}
-                                        </DropdownMenuItem>
-                                    )}
+                                    </DropdownMenuItem>
+                                )}
                                 
                                 <DropdownMenuSeparator />
                                 
