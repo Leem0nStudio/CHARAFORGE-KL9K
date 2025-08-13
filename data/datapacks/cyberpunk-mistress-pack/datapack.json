@@ -1,13 +1,12 @@
-
 {
-    "name": "Cyberpunk Mistress Pack",
+    "name": "Cyberpunk Mistress Pack - Danbooru Edition",
     "author": "CharaForge",
-    "description": "A detailed pack for creating dominant and alluring cyberpunk characters with a wide range of high-tech modifications and styles.",
-    "type": "free",
-    "price": 0,
-    "tags": ["cyberpunk", "sci-fi", "character", "detailed"],
+    "description": "Versión premium con tags oficiales de Danbooru para crear personajes dominantes y atractivos de estética cyberpunk, con alta granularidad en detalles visuales y cyber-mods.",
+    "type": "premium",
+    "price": 9.99,
+    "tags": ["danbooru", "cyberpunk", "sci-fi", "character", "premium"],
     "schema": {
-        "promptTemplate": "A cinematic, ultra-detailed cyberpunk portrait of {name}, a {role} known as the \"Cyberpunk Mistress\", wearing {headwear}, with {hairstyle}, and a {upper_torso}. She has {body_type} and {breast_shape} breasts, dressed with {arms}, {hands}, {waist}, and {legs}. Her look is completed with {eye_style}, {facial_detail}, and {cyber_mods}. The scene is illuminated by {lighting_style} in a {background_setting}. --no blurry, lowres, watermark, pixelated, disfigured, malformed limbs, poorly drawn, multiple heads, bad anatomy",
+        "promptTemplate": "A highly detailed illustration of {name}, a {role}, wearing {headwear}, with {hairstyle}, and a {upper_torso}. She has {body_type} and {breast_shape} breasts, dressed with {arms}, {hands}, {waist}, and {legs}. Her look is completed with {eye_style}, {facial_detail}, and {cyber_mods}. Background is {background_setting}, lit with {lighting_style}. Tags: {danbooru_tags}",
         "slots": [
             {
                 "id": "name",
@@ -20,179 +19,179 @@
                 "label": "Archetype",
                 "defaultOption": "netrunner dominatrix with chrome implants",
                 "options": [
-                    { "label": "Netrunner Dominatrix", "value": "netrunner dominatrix with chrome implants" },
-                    { "label": "Rogue Enforcer", "value": "rogue enforcer controlling the neon underworld" },
-                    { "label": "Corporate Mistress", "value": "corporate mistress with lethal fashion sense" },
-                    { "label": "AI Cult Leader", "value": "AI cult leader with sensual charisma" },
-                    { "label": "Street Samurai Temptress", "value": "street samurai temptress in high-tech armor" }
+                    { "label": "Netrunner Dominatrix", "value": "netrunner_dominatrix" },
+                    { "label": "Rogue Enforcer", "value": "rogue_enforcer" },
+                    { "label": "Corporate Mistress", "value": "corporate_mistress" },
+                    { "label": "AI Cult Leader", "value": "ai_cult_leader" },
+                    { "label": "Street Samurai Temptress", "value": "street_samurai_temptress" }
                 ]
             },
             {
                 "id": "headwear",
                 "label": "Headwear",
-                "defaultOption": "cybernetic visor with HUD display",
+                "defaultOption": "cybernetic visor",
                 "options": [
-                    { "label": "Cybernetic Visor", "value": "cybernetic visor with HUD display" },
-                    { "label": "Transparent Helmet", "value": "transparent helmet with neural cables" },
-                    { "label": "Neon Circuit Crown", "value": "crown of neon circuits" },
-                    { "label": "Glossy Latex Hood", "value": "glossy latex hood with antennae" },
-                    { "label": "Holographic Headset", "value": "holographic headset with signal pulses" }
+                    { "label": "Cybernetic Visor", "value": "cybernetic_visor" },
+                    { "label": "Transparent Helmet", "value": "transparent_helmet" },
+                    { "label": "Neon Circuit Crown", "value": "neon_circuit_crown" },
+                    { "label": "Latex Hood", "value": "latex_hood" },
+                    { "label": "Holographic Headset", "value": "holographic_headset" }
                 ]
             },
             {
                 "id": "hairstyle",
                 "label": "Hair Style and Color",
-                 "defaultOption": "long iridescent braids with electric glow",
+                "defaultOption": "long_iridescent_braids",
                 "options": [
-                    { "label": "Iridescent Braids", "value": "long iridescent braids with electric glow" },
-                    { "label": "Bioluminescent Mohawk", "value": "shaved sides with bioluminescent mohawk" },
-                    { "label": "Fiberoptic Buns", "value": "twin buns with fiberoptic strands" },
-                    { "label": "Chrome-Dipped Bob", "value": "chrome-dipped straight bob" },
-                    { "label": "Wild Synthetic Curls", "value": "wild synthetic curls in magenta and teal" }
+                    { "label": "Long Iridescent Braids", "value": "long_iridescent_braids" },
+                    { "label": "Bioluminescent Mohawk", "value": "bioluminescent_mohawk" },
+                    { "label": "Fiberoptic Buns", "value": "fiberoptic_buns" },
+                    { "label": "Chrome Bob", "value": "chrome_bob" },
+                    { "label": "Synthetic Curls", "value": "synthetic_curls" }
                 ]
             },
             {
                 "id": "eye_style",
                 "label": "Eye Design",
-                 "defaultOption": "glowing red cyber-eyes with targeting overlay",
+                "defaultOption": "glowing_red_eyes",
                 "options": [
-                    { "label": "Glowing Red Cyber-Eyes", "value": "glowing red cyber-eyes with targeting overlay" },
-                    { "label": "Gold-Plated Pupils", "value": "gold-plated mechanical pupils" },
-                    { "label": "Digital Irises", "value": "digital irises shaped like circuit glyphs" },
-                    { "label": "Translucent Eyeballs", "value": "translucent eyeballs showing wires inside" },
-                    { "label": "Void-Black Scanning Eyes", "value": "void-black eyes with scanning beams" }
+                    { "label": "Glowing Red Eyes", "value": "glowing_red_eyes" },
+                    { "label": "Gold Pupils", "value": "gold_pupils" },
+                    { "label": "Digital Irises", "value": "digital_irises" },
+                    { "label": "Translucent Eyeballs", "value": "translucent_eyeballs" },
+                    { "label": "Void-Black Eyes", "value": "void_black_eyes" }
                 ]
             },
             {
                 "id": "facial_detail",
                 "label": "Facial Details",
-                "defaultOption": "full glossy lips with micro-tattoos",
+                "defaultOption": "glossy_lips_micro_tattoos",
                 "options": [
-                    { "label": "Glossy Lips & Micro-Tattoos", "value": "full glossy lips with micro-tattoos" },
-                    { "label": "Glowing Hex-Code Tattoos", "value": "glowing facial tattoos in hexcode shapes" },
-                    { "label": "Mechanical Jaw", "value": "mechanical jaw with exposed wiring" },
-                    { "label": "Chrome Dermal Plates", "value": "high cheekbones with chrome dermal plates" },
-                    { "label": "Neural Piercings", "value": "piercings aligned with neural nodes" }
+                    { "label": "Glossy Lips with Micro Tattoos", "value": "glossy_lips_micro_tattoos" },
+                    { "label": "Glowing Hex Tattoos", "value": "glowing_hex_tattoos" },
+                    { "label": "Mechanical Jaw", "value": "mechanical_jaw" },
+                    { "label": "Chrome Cheek Plates", "value": "chrome_cheek_plates" },
+                    { "label": "Neural Piercings", "value": "neural_piercings" }
                 ]
             },
             {
                 "id": "upper_torso",
                 "label": "Upper Torso",
-                "defaultOption": "corset made of armored alloy plates",
+                "defaultOption": "armored_alloy_corset",
                 "options": [
-                    { "label": "Armored Alloy Corset", "value": "corset made of armored alloy plates" },
-                    { "label": "Transparent Neon Harness", "value": "transparent chest harness with neon filaments" },
-                    { "label": "High-Collar Bodysuit", "value": "high-collar bodysuit with cyber-runes" },
-                    { "label": "Latex Top with Power Plugs", "value": "latex top with power interface plugs" },
-                    { "label": "Ribbed Kevlar Bustier", "value": "ribbed kevlar bustier with tech vents" }
+                    { "label": "Armored Alloy Corset", "value": "armored_alloy_corset" },
+                    { "label": "Transparent Neon Harness", "value": "transparent_neon_harness" },
+                    { "label": "High-Collar Bodysuit", "value": "high_collar_bodysuit" },
+                    { "label": "Latex Top with Plugs", "value": "latex_top_with_plugs" },
+                    { "label": "Kevlar Bustier", "value": "kevlar_bustier" }
                 ]
             },
             {
                 "id": "arms",
                 "label": "Arms",
-                "defaultOption": "mechanical arms with exposed pistons",
+                "defaultOption": "mechanical_arms",
                 "options": [
-                    { "label": "Mechanical Arms", "value": "mechanical arms with exposed pistons" },
-                    { "label": "LED-Embedded Sleeves", "value": "synthetic sleeves embedded with LEDs" },
-                    { "label": "Transparent Gloves", "value": "transparent gloves revealing wireframe structure" },
-                    { "label": "Chrome Musculature", "value": "chrome musculature with neural tattoos" },
-                    { "label": "Fiberoptic Nerves", "value": "full-arm bodymods with fiberoptic nerves" }
+                    { "label": "Mechanical Arms", "value": "mechanical_arms" },
+                    { "label": "LED Sleeves", "value": "led_sleeves" },
+                    { "label": "Transparent Gloves", "value": "transparent_gloves" },
+                    { "label": "Chrome Musculature", "value": "chrome_musculature" },
+                    { "label": "Fiberoptic Nerves", "value": "fiberoptic_nerves" }
                 ]
             },
             {
                 "id": "hands",
                 "label": "Hands",
-                "defaultOption": "claw-like fingers tipped with data ports",
+                "defaultOption": "claw_data_port_fingers",
                 "options": [
-                    { "label": "Claw-like Data-Port Fingers", "value": "claw-like fingers tipped with data ports" },
-                    { "label": "Black Latex Gloves", "value": "black latex gloves with steel fingertips" },
-                    { "label": "Bare Hands, Glowing Veins", "value": "bare hands with glowing veins" },
-                    { "label": "Hologram-Typing Cyber-Fingers", "value": "cybernetic fingers typing holograms" },
-                    { "label": "Wired Leather Gloves", "value": "leather gloves wired to a wrist-computer" }
+                    { "label": "Claw Data-Port Fingers", "value": "claw_data_port_fingers" },
+                    { "label": "Black Latex Gloves", "value": "black_latex_gloves" },
+                    { "label": "Bare Hands with Glowing Veins", "value": "bare_hands_glowing_veins" },
+                    { "label": "Hologram Typing Fingers", "value": "hologram_typing_fingers" },
+                    { "label": "Wired Leather Gloves", "value": "wired_leather_gloves" }
                 ]
             },
             {
                 "id": "waist",
                 "label": "Waist and Accessories",
-                "defaultOption": "tactical belt with smart grenades",
+                "defaultOption": "tactical_belt_smart_grenades",
                 "options": [
-                    { "label": "Tactical Belt with Smart Grenades", "value": "tactical belt with smart grenades" },
-                    { "label": "Mesh Utility Sash", "value": "mesh utility sash with biometric pouches" },
-                    { "label": "Armored Hip Plates", "value": "armored hip plates with neon striping" },
-                    { "label": "Chain-Linked Belt", "value": "chain-linked belt with chrome charms" },
-                    { "label": "Exposed Motion Circuitry", "value": "exposed abdomen with motion circuitry" }
+                    { "label": "Tactical Belt with Smart Grenades", "value": "tactical_belt_smart_grenades" },
+                    { "label": "Mesh Utility Sash", "value": "mesh_utility_sash" },
+                    { "label": "Armored Hip Plates", "value": "armored_hip_plates" },
+                    { "label": "Chain-Linked Belt", "value": "chain_linked_belt" },
+                    { "label": "Exposed Motion Circuitry", "value": "exposed_motion_circuitry" }
                 ]
             },
             {
                 "id": "legs",
                 "label": "Legwear",
-                "defaultOption": "armored thigh-high boots with jet boosters",
+                "defaultOption": "armored_thigh_high_boots",
                 "options": [
-                    { "label": "High-Slit Latex Skirt", "value": "high-slit latex skirt with plasma filaments" },
-                    { "label": "Armored Thigh-High Boots", "value": "armored thigh-high boots with jet boosters" },
-                    { "label": "Transparent Code Leggings", "value": "transparent leggings with shifting code" },
-                    { "label": "Chrome Greaves", "value": "chrome greaves with built-in holsters" },
-                    { "label": "Circuit-Printed Tights", "value": "circuit-printed tights under combat plating" }
+                    { "label": "High-Slit Latex Skirt", "value": "high_slit_latex_skirt" },
+                    { "label": "Armored Thigh-High Boots", "value": "armored_thigh_high_boots" },
+                    { "label": "Transparent Code Leggings", "value": "transparent_code_leggings" },
+                    { "label": "Chrome Greaves", "value": "chrome_greaves" },
+                    { "label": "Circuit-Printed Tights", "value": "circuit_printed_tights" }
                 ]
             },
             {
                 "id": "breast_shape",
                 "label": "Breast Shape",
-                "defaultOption": "large and perky with cyber-smooth finish",
+                "defaultOption": "large_perky_cyber",
                 "options": [
-                    { "label": "Large and Perky", "value": "large and perky with cyber-smooth finish" },
-                    { "label": "Athletic and Firm", "value": "athletic and firm with tech-enhanced support" },
-                    { "label": "Voluptuous and Gravity-Defying", "value": "voluptuous and gravity-defying" },
-                    { "label": "Medium with LED Tattoos", "value": "medium size with LED tattoos" },
-                    { "label": "Small and Shapely", "value": "small and shapely with a chrome overlay" }
+                    { "label": "Large and Perky", "value": "large_perky_cyber" },
+                    { "label": "Athletic and Firm", "value": "athletic_firm_cyber" },
+                    { "label": "Voluptuous Gravity-Defying", "value": "voluptuous_gravity_defying" },
+                    { "label": "Medium with LED Tattoos", "value": "medium_led_tattoos" },
+                    { "label": "Small and Shapely", "value": "small_shapely_chrome" }
                 ]
             },
             {
                 "id": "body_type",
                 "label": "Body Type",
-                "defaultOption": "tall and athletic with augmented joints",
+                "defaultOption": "tall_athletic_augmented",
                 "options": [
-                    { "label": "Tall and Athletic", "value": "tall and athletic with augmented joints" },
-                    { "label": "Slender and Flexible", "value": "slender and flexible with soft tech implants" },
-                    { "label": "Curvy and Dominant", "value": "curvy and dominant with reinforced muscles" },
-                    { "label": "Compact and Agile", "value": "compact and agile with magnetic skin" },
-                    { "label": "Statuesque and Regal", "value": "statuesque and regal with chrome-lined torso" }
+                    { "label": "Tall and Athletic", "value": "tall_athletic_augmented" },
+                    { "label": "Slender and Flexible", "value": "slender_flexible_softtech" },
+                    { "label": "Curvy and Dominant", "value": "curvy_dominant_reinforced" },
+                    { "label": "Compact and Agile", "value": "compact_agile_magnetic" },
+                    { "label": "Statuesque and Regal", "value": "statuesque_regal_chrome" }
                 ]
             },
             {
                 "id": "cyber_mods",
                 "label": "Cybernetic Enhancements",
-                "defaultOption": "spine-mounted data cables glowing with energy",
+                "defaultOption": "spine_mounted_data_cables",
                 "options": [
-                    { "label": "Spine-Mounted Data Cables", "value": "spine-mounted data cables glowing with energy" },
-                    { "label": "Retractable Shoulder Drones", "value": "retractable shoulder drones" },
-                    { "label": "Reactive Light Skin", "value": "skin embedded with reactive lights" },
-                    { "label": "Exposed Tech-Lined Ribs", "value": "exposed ribs lined with tech conduits" },
-                    { "label": "Arm & Thigh Interface Ports", "value": "interface ports along the arms and thighs" }
+                    { "label": "Spine-Mounted Data Cables", "value": "spine_mounted_data_cables" },
+                    { "label": "Retractable Shoulder Drones", "value": "retractable_shoulder_drones" },
+                    { "label": "Reactive Light Skin", "value": "reactive_light_skin" },
+                    { "label": "Exposed Tech-Lined Ribs", "value": "exposed_tech_lined_ribs" },
+                    { "label": "Arm & Thigh Interface Ports", "value": "arm_thigh_interface_ports" }
                 ]
             },
             {
                 "id": "lighting_style",
                 "label": "Lighting & Mood",
-                "defaultOption": "red and blue neon rim light with smoke haze",
+                "defaultOption": "neon_rim_light_haze",
                 "options": [
-                    { "label": "Neon Rim Light & Haze", "value": "red and blue neon rim light with smoke haze" },
-                    { "label": "Dramatic Billboard Shadows", "value": "dramatic shadows under pulsating billboard" },
-                    { "label": "Backlit by Electric Rain", "value": "backlit by electric rain and city lights" },
-                    { "label": "Glossy Spotlight", "value": "spotlight from above casting glossy reflections" },
-                    { "label": "Violet Augmented Glow", "value": "violet glow from augmented environment" }
+                    { "label": "Neon Rim Light & Haze", "value": "neon_rim_light_haze" },
+                    { "label": "Billboard Shadows", "value": "billboard_shadows" },
+                    { "label": "Backlit Electric Rain", "value": "backlit_electric_rain" },
+                    { "label": "Glossy Spotlight", "value": "glossy_spotlight" },
+                    { "label": "Violet Augmented Glow", "value": "violet_augmented_glow" }
                 ]
             },
             {
                 "id": "background_setting",
                 "label": "Background Scene",
-                "defaultOption": "cyberpunk alley dripping with graffiti and neon",
+                "defaultOption": "cyberpunk_alley",
                 "options": [
-                    { "label": "Cyberpunk Alley", "value": "cyberpunk alley dripping with graffiti and neon" },
-                    { "label": "Synthwave Nightclub", "value": "nightclub full of synthwave dancers and lasers" },
-                    { "label": "Data Temple", "value": "data temple with glowing circuits and monoliths" },
-                    { "label": "Megacity Rooftop", "value": "rooftop with view of megacity skyline" },
-                    { "label": "Underground Hacker Lab", "value": "underground hacker lab with giant holo-screens" }
+                    { "label": "Cyberpunk Alley", "value": "cyberpunk_alley" },
+                    { "label": "Synthwave Nightclub", "value": "synthwave_nightclub" },
+                    { "label": "Data Temple", "value": "data_temple" },
+                    { "label": "Megacity Rooftop", "value": "megacity_rooftop" },
+                    { "label": "Underground Hacker Lab", "value": "underground_hacker_lab" }
                 ]
             }
         ]
