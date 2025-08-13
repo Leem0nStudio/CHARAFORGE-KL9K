@@ -1,18 +1,16 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Loader2 } from 'lucide-react';
-import type { UserPreferences, UserProfile } from '@/types/user';
-import type { DataPack } from '@/types/datapack';
-import { getInstalledDataPacks } from '@/app/actions/datapacks';
+import type { UserPreferences } from '@/types/user';
 import { BackButton } from '@/components/back-button';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// Import the newly created tab components
+// Import the tab components
 import { ProfileForm } from '@/components/profile/profile-form';
 import { PreferencesForm } from '@/components/profile/preferences-form';
 import { StatsTab } from '@/components/profile/stats-tab';
@@ -23,8 +21,6 @@ import { SecurityTab } from '@/components/profile/security-tab';
 export default function ProfilePage() {
   const { userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
 
   // Default preferences to avoid null issues before userProfile is loaded
   const defaultPreferences: UserPreferences = {
@@ -43,34 +39,13 @@ export default function ProfilePage() {
     }
   }, [userProfile?.preferences]);
 
-  const loadInstalledPacks = useCallback(async () => {
-    try {
-      const packs = await getInstalledDataPacks();
-      setInstalledPacks(packs);
-    } catch (error) {
-      console.error("Failed to load installed packs", error);
-    }
-  }, []);
-
   useEffect(() => {
-    if (authLoading) return; // Wait until auth state is resolved
-
-    if (!userProfile) {
+    if (!authLoading && !userProfile) {
       router.push('/login');
-      return;
     }
-    
-    // Auth is loaded and we have a user profile, now load their data
-    const loadData = async () => {
-        setIsLoading(true);
-        await loadInstalledPacks();
-        setIsLoading(false);
-    }
-    loadData();
-
-  }, [userProfile, authLoading, router, loadInstalledPacks]);
+  }, [userProfile, authLoading, router]);
   
-  if (authLoading || isLoading || !userProfile) {
+  if (authLoading || !userProfile) {
     return (
       <div className="flex items-center justify-center h-screen w-full">
          <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -102,10 +77,7 @@ export default function ProfilePage() {
                 <ProfileForm user={userProfile} />
             </TabsContent>
             <TabsContent value="datapacks" className="space-y-4">
-                <DataPacksTab 
-                    packs={installedPacks} 
-                    isLoading={isLoading}
-                />
+                <DataPacksTab />
             </TabsContent>
             <TabsContent value="prefs" className="space-y-4">
                 <PreferencesForm 

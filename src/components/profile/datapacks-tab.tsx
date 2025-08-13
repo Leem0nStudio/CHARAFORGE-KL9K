@@ -1,18 +1,32 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Wand2 } from 'lucide-react';
 import type { DataPack } from '@/types/datapack';
+import { getInstalledDataPacks } from '@/app/actions/datapacks';
 
-interface DataPacksTabProps {
-    packs: DataPack[];
-    isLoading: boolean;
-}
+export function DataPacksTab() {
+    const [packs, setPacks] = useState<DataPack[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-export function DataPacksTab({ packs, isLoading }: DataPacksTabProps) {
+    useEffect(() => {
+        const loadPacks = async () => {
+            setIsLoading(true);
+            try {
+                const installedPacks = await getInstalledDataPacks();
+                setPacks(installedPacks);
+            } catch (error) {
+                console.error("Failed to load installed datapacks", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadPacks();
+    }, []);
 
     if (isLoading) {
         return (
@@ -61,5 +75,5 @@ export function DataPacksTab({ packs, isLoading }: DataPacksTabProps) {
                 )}
             </CardContent>
         </Card>
-    )
+    );
 }

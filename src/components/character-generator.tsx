@@ -20,12 +20,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacter, type GenerateCharacterInput } from "@/app/actions/generation";
 import { getModels } from "@/app/actions/ai-models";
-import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { DataPackSelectorModal } from "./datapack-selector-modal";
 import { Badge } from "./ui/badge";
-import type { DataPack } from "@/types/datapack";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { cn } from "@/lib/utils";
 import { TagAssistantModal } from "./tag-assistant-modal";
@@ -120,7 +118,6 @@ export function CharacterGenerator() {
   
   const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
   const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
-  const [installedPacks, setInstalledPacks] = useState<DataPack[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [activePackName, setActivePackName] = useState<string | null>(null);
@@ -181,16 +178,14 @@ export function CharacterGenerator() {
                 updatedAt: new Date(),
             };
 
-            const [models, loras, packs] = await Promise.all([
+            const [models, loras] = await Promise.all([
                 getModels('model'),
                 getModels('lora'),
-                getInstalledDataPacks(),
             ]);
             
             const allBaseModels = [geminiPlaceholder, ...models];
             setAvailableModels(allBaseModels);
             setAvailableLoras(loras);
-            setInstalledPacks(packs);
 
             if (allBaseModels.length > 0) {
                 generationForm.setValue('selectedModel', allBaseModels[0]);
@@ -333,7 +328,6 @@ export function CharacterGenerator() {
       isOpen={isPackModalOpen}
       onClose={() => setIsPackModalOpen(false)}
       onPromptGenerated={handlePromptGenerated}
-      packs={installedPacks}
     />
     <TagAssistantModal
         isOpen={isTagModalOpen}

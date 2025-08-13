@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
+import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -185,14 +186,28 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
 }
 
 function PackGallery({ 
-    packs, 
     onChoosePack,
-    isLoading
 }: { 
-    packs: DataPack[], 
     onChoosePack: (pack: DataPack) => void,
-    isLoading: boolean,
 }) {
+    const [isLoading, setIsLoading] = useState(true);
+    const [packs, setPacks] = useState<DataPack[]>([]);
+
+    useEffect(() => {
+        const loadPacks = async () => {
+            setIsLoading(true);
+            try {
+                const installedPacks = await getInstalledDataPacks();
+                setPacks(installedPacks);
+            } catch (error) {
+                console.error("Failed to load installed datapacks for selector", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadPacks();
+    }, []);
+
     if (isLoading) {
         return (
             <div className="flex-grow flex items-center justify-center">
@@ -250,7 +265,6 @@ interface DataPackSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
     onPromptGenerated: (prompt: string, packName: string, tags: string[], packId: string) => void;
-    packs: DataPack[];
 }
 
 
@@ -258,10 +272,8 @@ export function DataPackSelectorModal({
     isOpen, 
     onClose, 
     onPromptGenerated,
-    packs,
 }: DataPackSelectorModalProps) {
     const [wizardPack, setWizardPack] = useState<DataPack | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (!isOpen) {
@@ -281,7 +293,7 @@ export function DataPackSelectorModal({
             return <WizardGrid pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} onBack={() => setWizardPack(null)} />;
         }
         
-        return <PackGallery packs={packs} onChoosePack={setWizardPack} isLoading={isLoading} />;
+        return <PackGallery onChoosePack={setWizardPack} />;
     };
 
     return (
