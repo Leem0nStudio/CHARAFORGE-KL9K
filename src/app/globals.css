@@ -84,6 +84,9 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  main {
+    @apply pb-24 sm:pb-0;
+  }
   .font-headline {
     font-family: 'Bebas Neue', sans-serif;
   }
