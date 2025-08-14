@@ -8,6 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
 import { client } from "@gradio/client";
+import { googleAI } from '@genkit-ai/googleai';
 
 // Helper function to get image dimensions in pixels.
 function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
@@ -136,11 +137,11 @@ const generateCharacterImageFlow = ai.defineFlow(
         try {
             const { width, height } = getDimensions(aspectRatio);
             const { media } = await ai.generate({
-                // @ts-ignore
-                model: 'gemini-2.0-flash-preview-image-generation',
+                model: googleAI.model('gemini-2.0-flash-preview-image-generation', {
+                    width,
+                    height,
+                }),
                 prompt: description,
-                width,
-                height,
                 config: {
                     responseModalities: ['TEXT', 'IMAGE'],
                 },
