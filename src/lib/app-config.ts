@@ -1,4 +1,5 @@
 
+
 import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon } from 'lucide-react';
 import type { AiModel } from '@/types/ai-model';
 
@@ -45,6 +46,18 @@ export const textModels: AiModel[] = [
         engine: 'openrouter',
         civitaiModelId: '0',
         hf_id: 'openai/gpt-4o',
+        versionId: '1.0',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        coverMediaUrl: 'https://cdn.openai.com/production/assets/images/openai-logomark.3be6b7b3.svg',
+    },
+    {
+        id: 'gpt-oss-20b-placeholder',
+        name: 'GPT-OSS 20B (Free)',
+        type: 'model',
+        engine: 'openrouter',
+        civitaiModelId: '0',
+        hf_id: 'openai/gpt-oss-20b:free',
         versionId: '1.0',
         createdAt: new Date(),
         updatedAt: new Date(),
