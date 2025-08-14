@@ -179,7 +179,7 @@ function CharacterSelector({
                                 </Avatar>
                                 <div className="flex-1">
                                     <p className="font-semibold">{char.name}</p>
-                                    <p className="text-xs text-muted-foreground">{char.alignment}</p>
+                                    <p className="text-xs text-muted-foreground">{char.archetype || char.description}</p>
                                 </div>
                             </div>
                         ))}
@@ -197,7 +197,7 @@ function CharacterSelector({
     )
 }
 
-function StoryGenerator({ 
+function LoreForgeGenerator({ 
     cast, 
     characters,
     onUpdateCast,
@@ -408,7 +408,7 @@ function LoreForgeContent() {
                                 exit={{ opacity: 0, x: -20 }}
                                 transition={{ duration: 0.3 }}
                             >
-                                <StoryGenerator 
+                                <LoreForgeGenerator 
                                     cast={selectedCast} 
                                     characters={characters}
                                     onUpdateCast={handleUpdateCast}
