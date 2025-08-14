@@ -25,7 +25,7 @@ export const geminiImagePlaceholder: AiModel = {
 
 export const geminiTextPlaceholder: AiModel = {
     id: 'gemini-text-placeholder',
-    name: 'Gemini Text Generation',
+    name: 'Gemini 1.5 Flash',
     type: 'model',
     engine: 'gemini',
     civitaiModelId: '0', 
@@ -34,6 +34,35 @@ export const geminiTextPlaceholder: AiModel = {
     createdAt: new Date(),
     updatedAt: new Date(),
 };
+
+// Define a list of default text models available to all users.
+export const textModels: AiModel[] = [
+    geminiTextPlaceholder,
+    {
+        id: 'gpt-4o-placeholder',
+        name: 'OpenAI GPT-4o',
+        type: 'model',
+        engine: 'openrouter',
+        civitaiModelId: '0',
+        hf_id: 'openai/gpt-4o',
+        versionId: '1.0',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        coverMediaUrl: 'https://cdn.openai.com/production/assets/images/openai-logomark.3be6b7b3.svg',
+    },
+    {
+        id: 'llama3-70b-placeholder',
+        name: 'Meta Llama 3 70B',
+        type: 'model',
+        engine: 'openrouter',
+        civitaiModelId: '0',
+        hf_id: 'meta-llama/llama-3-70b-instruct',
+        versionId: '1.0',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        coverMediaUrl: 'https://cdn.iconscout.com/icon/free/png-256/free-meta-3694462-3079633.png',
+    }
+];
 
 
 export const mainNavItems: NavItem[] = [

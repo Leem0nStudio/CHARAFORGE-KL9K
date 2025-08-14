@@ -16,14 +16,14 @@ interface ModelSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSelect: (model: AiModel) => void;
-    type: 'model' | 'lora';
+    type: 'model' | 'lora' | 'text';
     models: AiModel[];
     isLoading: boolean;
 }
 
 export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models, isLoading }: ModelSelectorModalProps) {
-    const title = type === 'model' ? 'Select Base Model' : 'Select LoRA';
-    const description = `Choose a ${type} to use for image generation.`;
+    const title = type === 'model' ? 'Select Base Model' : type === 'lora' ? 'Select LoRA' : 'Select Text Model';
+    const description = `Choose a ${type} to use for generation.`;
 
     const renderSkeletons = () => (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -47,7 +47,7 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models, is
                     <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
                 <div className="flex-grow flex flex-col">
-                    {isLoading ? renderSkeletons() : (
+                    {isLoading && type !== 'text' ? renderSkeletons() : (
                          <>
                             {models.length === 0 ? (
                                 <div className="flex-grow flex items-center justify-center">

@@ -43,7 +43,7 @@ import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/types";
 import { PromptTagInput } from "./prompt-tag-input";
 import type { DataPack } from "@/types/datapack";
-import { geminiImagePlaceholder } from "@/lib/app-config";
+import { geminiImagePlaceholder, textModels } from "@/lib/app-config";
 
 
 
@@ -83,11 +83,12 @@ export function CharacterGenerator() {
   const [initialPack, setInitialPack] = useState<DataPack | null>(null);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
-  const [modelModalType, setModelModalType] = useState<'model' | 'lora'>('model');
+  const [modelModalType, setModelModalType] = useState<'model' | 'lora' | 'text'>('model');
   
   const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
   const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(true);
+  const [selectedTextModel, setSelectedTextModel] = useState<AiModel>(textModels[0]);
 
   const [activePackName, setActivePackName] = useState<string | null>(null);
   const [activePackId, setActivePackId] = useState<string | null>(null);
@@ -187,22 +188,27 @@ export function CharacterGenerator() {
 
     startGenerationTransition(async () => {
         let userApiKey: string | undefined;
-        // The text engine is currently hardcoded to Gemini, but we check for OpenRouter key in case this changes.
-        if (userProfile?.preferences?.openRouterApiKey) {
-            userApiKey = userProfile?.preferences?.openRouterApiKey;
+        if (selectedTextModel.engine === 'openrouter') {
+             userApiKey = userProfile?.preferences?.openRouterApiKey;
         }
+
+      const engineConfig = {
+            engineId: selectedTextModel.engine,
+            modelId: selectedTextModel.hf_id,
+            userApiKey: userApiKey,
+      };
 
       const result = await generateCharacterSheetData({ 
           description: data.description,
           targetLanguage: data.targetLanguage,
-          userApiKey: userApiKey,
+          engineConfig: engineConfig,
       });
       
       if (result.success && result.data) {
         setGenerationResult({
           ...result.data,
           dataPackId: activePackId,
-          textEngine: 'gemini', // Hardcoded for now as it's the only one used for text
+          textEngine: selectedTextModel.engine,
         });
         toast({ title: "Character Sheet Generated!", description: "Review the details and then generate the portrait." });
       } else {
@@ -211,7 +217,7 @@ export function CharacterGenerator() {
         toast({ variant: "destructive", title: "Generation Failed", description: errorMessage });
       }
     });
-  }, [authUser, toast, activePackId, userProfile]);
+  }, [authUser, toast, activePackId, userProfile, selectedTextModel]);
   
   const onGeneratePortrait = useCallback(async () => {
     if (!authUser || !generationResult) return;
@@ -295,24 +301,26 @@ export function CharacterGenerator() {
     });
   }
   
-  const handleOpenModelModal = (type: 'model' | 'lora') => {
+  const handleOpenModelModal = (type: 'model' | 'lora' | 'text') => {
       setModelModalType(type);
       setIsModelModalOpen(true);
   }
 
   const handleModelSelect = (model: AiModel) => {
-    if (model.type === 'model') {
+    if (model.type === 'model' && modelModalType !== 'text') {
         generationForm.setValue('selectedModel', model, { shouldValidate: true });
         if (model.engine !== 'huggingface') {
             generationForm.setValue('selectedLora', null); 
         }
-    } else {
+    } else if (model.type === 'lora') {
         generationForm.setValue('selectedLora', model);
         const defaultVersion = model.versions?.[0];
         if (defaultVersion) {
             generationForm.setValue('loraVersionId', defaultVersion.id);
         }
         generationForm.setValue('loraWeight', 0.75);
+    } else if (modelModalType === 'text') {
+        setSelectedTextModel(model);
     }
     setIsModelModalOpen(false);
   }
@@ -342,7 +350,7 @@ export function CharacterGenerator() {
         onClose={() => setIsModelModalOpen(false)}
         onSelect={handleModelSelect}
         type={modelModalType}
-        models={modelModalType === 'model' ? availableModels : availableLoras}
+        models={modelModalType === 'model' ? availableModels : modelModalType === 'text' ? textModels : availableLoras}
         isLoading={isLoadingModels}
     />
     <div className="grid gap-8 lg:grid-cols-5 items-start">
@@ -449,8 +457,15 @@ export function CharacterGenerator() {
                             <AccordionItem value="engine">
                                 <AccordionTrigger>AI Settings</AccordionTrigger>
                                 <AccordionContent className="space-y-4 pt-2">
+                                     <VisualModelSelector
+                                        label="Text Model (LLM)"
+                                        model={selectedTextModel}
+                                        onOpen={() => handleOpenModelModal('text')}
+                                        disabled={!canInteract}
+                                        isLoading={false}
+                                    />
                                     <VisualModelSelector
-                                        label="Base Model"
+                                        label="Image Model"
                                         model={selectedModel}
                                         onOpen={() => handleOpenModelModal('model')}
                                         disabled={!canInteract}

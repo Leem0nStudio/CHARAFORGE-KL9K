@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Skeleton } from "./ui/skeleton";
 import { Label } from "./ui/label";
 import { MediaDisplay } from "./media-display";
-import { Settings } from "lucide-react";
+import { Settings, Bot } from "lucide-react";
 import type { AiModel } from "@/types/ai-model";
 
 interface VisualModelSelectorProps {
@@ -41,7 +41,7 @@ export function VisualModelSelector({ label, model, onOpen, disabled, isLoading 
                     {model?.coverMediaUrl ? (
                         <MediaDisplay url={model.coverMediaUrl} type={model.coverMediaType} alt={model.name || 'Model'} className="object-cover" />
                     ) : (
-                        <div className="flex items-center justify-center h-full text-muted-foreground"><Settings /></div>
+                        <div className="flex items-center justify-center h-full text-muted-foreground"><Bot /></div>
                     )}
                 </div>
                 <div className="text-left">

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
-import { TextEngineConfigSchema } from '@/ai/flows/character-sheet/types';
+import { TextEngineConfigSchema, type TextEngineConfig } from '@/ai/flows/character-sheet/types';
 import type { AiModel } from '@/types/ai-model';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { getUserProfile } from './user';
@@ -16,7 +16,7 @@ import type { GenerateCharacterSheetOutput } from '@/ai/flows/character-sheet/ty
 const GenerateSheetInputSchema = z.object({
   description: z.string().min(20).max(1000),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
-  userApiKey: z.string().optional(), // Now passed from client
+  engineConfig: TextEngineConfigSchema, // Now expects the full config
 });
 export type GenerateSheetInput = z.infer<typeof GenerateSheetInputSchema>;
 
@@ -55,19 +55,13 @@ export async function generateCharacterSheetData(input: GenerateSheetInput): Pro
     }
     await verifyAndGetUid();
 
-    const { description, targetLanguage, userApiKey } = validation.data;
+    const { description, targetLanguage, engineConfig } = validation.data;
 
     try {
-        const textEngineConfig = {
-            engineId: 'gemini',
-            modelId: 'googleai/gemini-1.5-flash-latest',
-            userApiKey: userApiKey,
-        };
-
         const result = await generateCharacterSheet({ 
             description, 
             targetLanguage, 
-            engineConfig: TextEngineConfigSchema.parse(textEngineConfig) 
+            engineConfig
         });
 
 
