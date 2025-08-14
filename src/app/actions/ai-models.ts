@@ -182,29 +182,29 @@ export async function getModelsForUser(type: 'model' | 'lora'): Promise<AiModel[
     const uid = await verifyAndGetUid();
 
     try {
-        // Query for system models (no userId)
-        const systemModelsQuery = adminDb.collection('ai_models')
+        const systemModelsSnapshot = await adminDb.collection('ai_models')
             .where('type', '==', type)
-            .where('userId', '==', null) // Ensure we only get system models
-            .orderBy('createdAt', 'desc')
             .get();
 
-        // Query for user-specific models
         const userModelsQuery = adminDb.collection('ai_models')
             .where('type', '==', type)
             .where('userId', '==', uid)
             .orderBy('createdAt', 'desc')
             .get();
 
-        const [systemSnapshot, userSnapshot] = await Promise.all([systemModelsQuery, userModelsQuery]);
+        const [systemSnapshot, userSnapshot] = await Promise.all([systemModelsSnapshot, userModelsQuery]);
 
         const models: AiModel[] = [];
         const modelIds = new Set<string>();
 
         const processSnapshot = (snapshot: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>) => {
             snapshot.docs.forEach(doc => {
-                if (!modelIds.has(doc.id)) {
-                    const data = doc.data();
+                const data = doc.data();
+                // **CRITICAL FIX**: Only add system models if they DON'T have a userId field.
+                const isSystemModel = !data.userId;
+                const isUserModel = data.userId === uid;
+
+                if (!modelIds.has(doc.id) && (isSystemModel || isUserModel)) {
                     models.push({
                         ...data,
                         id: doc.id,
@@ -215,9 +215,11 @@ export async function getModelsForUser(type: 'model' | 'lora'): Promise<AiModel[
                 }
             });
         };
-
-        processSnapshot(userSnapshot); // User models first, so they appear at the top
+        
+        processSnapshot(userSnapshot);
         processSnapshot(systemSnapshot);
+        
+        models.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         return models;
     } catch (error) {
