@@ -584,7 +584,7 @@ export function CharacterGenerator() {
                                         render={({ field }) => (
                                             <FormItem className="w-full">
                                                 <div className="flex justify-between items-center">
-                                                    <FormLabel className="flex items-center gap-1.5 text-xs"><Info className="h-3 w-3"/> Image Prompt</FormLabel>
+                                                    <p className="flex items-center gap-1.5 text-xs"><Info className="h-3 w-3"/> Image Prompt</p>
                                                     <Button type="button" size="sm" variant="link" className="text-xs h-auto p-0">Regenerate</Button>
                                                 </div>
                                                 <FormControl>
