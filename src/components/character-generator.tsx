@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useTransition } from "react";
+import { useState, useEffect, useCallback, useTransition, use } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
@@ -23,13 +24,14 @@ import {
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
     ScrollArea,
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-    Label
 } from "@/components/ui";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/actions/generation";
 import { getModelsForUser } from "@/app/actions/ai-models";
+import { getDataPackForAdmin } from "@/app/actions/datapacks";
 import { Skeleton } from "./ui/skeleton";
 import { DataPackSelectorModal } from "./datapack-selector-modal";
 import { cn } from "@/lib/utils";
@@ -39,6 +41,7 @@ import type { AiModel } from '@/types/ai-model';
 import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/types";
 import { PromptTagInput } from "./prompt-tag-input";
+import type { DataPack } from "@/types/datapack";
 
 
 const geminiPlaceholder: AiModel = {
@@ -77,12 +80,14 @@ type GenerationResult = GenerateCharacterSheetOutput & {
 };
 
 export function CharacterGenerator() {
+  const searchParams = useSearchParams();
   const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null);
   const [isGenerating, startGenerationTransition] = useTransition();
   const [isSaving, startSavingTransition] = useTransition();
   const [generationError, setGenerationError] = useState<string | null>(null);
 
   const [isPackModalOpen, setIsPackModalOpen] = useState(false);
+  const [initialPack, setInitialPack] = useState<DataPack | null>(null);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [modelModalType, setModelModalType] = useState<'model' | 'lora'>('model');
@@ -128,9 +133,12 @@ export function CharacterGenerator() {
         if (!authUser) return;
         setIsLoadingModels(true);
         try {
-            const [models, loras] = await Promise.all([
+            const packIdFromUrl = searchParams.get('packId');
+            
+            const [models, loras, initialPackData] = await Promise.all([
                 getModelsForUser('model'),
                 getModelsForUser('lora'),
+                packIdFromUrl ? getDataPackForAdmin(packIdFromUrl) : Promise.resolve(null),
             ]);
             
             const allBaseModels = [geminiPlaceholder, ...models];
@@ -140,6 +148,12 @@ export function CharacterGenerator() {
             if (!generationForm.getValues('selectedModel')) {
                 generationForm.setValue('selectedModel', allBaseModels[0]);
             }
+            
+            if (initialPackData) {
+                setInitialPack(initialPackData);
+                setIsPackModalOpen(true);
+            }
+
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' });
         } finally {
@@ -147,7 +161,7 @@ export function CharacterGenerator() {
         }
     }
     loadInitialData();
-  }, [authUser, toast, generationForm]);
+  }, [authUser, toast, generationForm, searchParams]);
 
   useEffect(() => {
     if (generationResult?.physicalDescription) {
@@ -303,6 +317,7 @@ export function CharacterGenerator() {
       isOpen={isPackModalOpen}
       onClose={() => setIsPackModalOpen(false)}
       onPromptGenerated={handlePromptGenerated}
+      initialPack={initialPack}
     />
     <TagAssistantModal
         isOpen={isTagModalOpen}
@@ -634,3 +649,5 @@ export function CharacterGenerator() {
     </>
   );
 }
+
+    

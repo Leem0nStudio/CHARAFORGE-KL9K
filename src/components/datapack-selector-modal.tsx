@@ -264,40 +264,42 @@ function PackGallery({
     return (
         <>
             <DataPackInfoDialog pack={infoPack} isOpen={!!infoPack} onClose={() => setInfoPack(null)} />
-             <ScrollArea className="flex-grow my-4 pr-4 -mr-4">
-                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    {packs.map(pack => (
-                       <Card key={pack.id} className="overflow-hidden group relative aspect-square">
-                            <Image
-                                src={pack.coverImageUrl || 'https://placehold.co/600x600.png'}
-                                alt={pack.name}
-                                fill
-                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                data-ai-hint="datapack cover image"
-                            />
-                             <div className="absolute inset-0 bg-black/50 flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <div />
-                                 <div className="flex flex-col items-center justify-center gap-2">
-                                     <Button type="button" size="sm" className="w-full" onClick={() => onChoosePack(pack)}>
-                                        <Wand2 className="mr-2 h-4 w-4"/> Use
-                                    </Button>
-                                    <Button type="button" variant="secondary" size="sm" className="w-full" onClick={() => setInfoPack(pack)}>
-                                        <Info className="mr-2 h-4 w-4"/> Info
-                                    </Button>
+             <div className="flex-grow min-h-0 py-4">
+                <ScrollArea className="h-full pr-4 -mr-4">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        {packs.map(pack => (
+                           <Card key={pack.id} className="overflow-hidden group relative aspect-square">
+                                <Image
+                                    src={pack.coverImageUrl || 'https://placehold.co/600x600.png'}
+                                    alt={pack.name}
+                                    fill
+                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                    data-ai-hint="datapack cover image"
+                                />
+                                 <div className="absolute inset-0 bg-black/50 flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <div />
+                                     <div className="flex flex-col items-center justify-center gap-2">
+                                         <Button type="button" size="sm" className="w-full" onClick={() => onChoosePack(pack)}>
+                                            <Wand2 className="mr-2 h-4 w-4"/> Use
+                                        </Button>
+                                        <Button type="button" variant="secondary" size="sm" className="w-full" onClick={() => setInfoPack(pack)}>
+                                            <Info className="mr-2 h-4 w-4"/> Info
+                                        </Button>
+                                    </div>
+                                    <div>
+                                         <CardTitle className="text-white font-bold drop-shadow-lg">{pack.name}</CardTitle>
+                                    </div>
                                 </div>
-                                <div>
-                                     <CardTitle className="text-white font-bold drop-shadow-lg">{pack.name}</CardTitle>
+                                {/* Visible title when not hovering */}
+                                 <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent pointer-events-none group-hover:opacity-0 transition-opacity">
+                                    <CardTitle className="text-white font-bold drop-shadow-lg">{pack.name}</CardTitle>
                                 </div>
-                            </div>
-                            {/* Visible title when not hovering */}
-                             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent pointer-events-none group-hover:opacity-0 transition-opacity">
-                                <CardTitle className="text-white font-bold drop-shadow-lg">{pack.name}</CardTitle>
-                            </div>
-                       </Card>
-                    ))}
-                 </div>
-            </ScrollArea>
+                           </Card>
+                        ))}
+                     </div>
+                </ScrollArea>
+             </div>
         </>
     );
 }
@@ -307,6 +309,7 @@ interface DataPackSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
     onPromptGenerated: (prompt: string, packName: string, tags: string[], packId: string) => void;
+    initialPack?: DataPack | null;
 }
 
 
@@ -314,16 +317,20 @@ export function DataPackSelectorModal({
     isOpen, 
     onClose, 
     onPromptGenerated,
+    initialPack,
 }: DataPackSelectorModalProps) {
     const [wizardPack, setWizardPack] = useState<DataPack | null>(null);
 
     useEffect(() => {
+        if (isOpen && initialPack) {
+            setWizardPack(initialPack);
+        }
         if (!isOpen) {
             setTimeout(() => {
                 setWizardPack(null);
             }, 300);
         }
-    }, [isOpen]);
+    }, [isOpen, initialPack]);
     
     const handlePromptGeneratedAndClose = useCallback((prompt: string, packName: string, tags: string[], packId: string) => {
         onPromptGenerated(prompt, packName, tags, packId);
@@ -332,7 +339,7 @@ export function DataPackSelectorModal({
     
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className={cn("max-h-[90vh] flex flex-col h-full", wizardPack ? "sm:max-w-3xl" : "sm:max-w-4xl")}>
+            <DialogContent className={cn("max-h-[90vh] flex flex-col", wizardPack ? "sm:max-w-3xl" : "sm:max-w-4xl h-full sm:h-auto")}>
                 {wizardPack ? (
                     <WizardGrid pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} onBack={() => setWizardPack(null)} />
                 ) : (
@@ -345,9 +352,9 @@ export function DataPackSelectorModal({
                             </DialogDescription>
                         </DialogHeader>
                     </div>
-                    <div className="flex-grow min-h-0">
-                        <PackGallery onChoosePack={setWizardPack} />
-                    </div>
+                    
+                    <PackGallery onChoosePack={setWizardPack} />
+                    
                      <div className="flex-shrink-0 pt-4 border-t">
                         <DialogFooter>
                             <p className="text-sm text-muted-foreground mr-auto">Need more options?</p>
@@ -362,3 +369,5 @@ export function DataPackSelectorModal({
         </Dialog>
     )
 }
+
+    

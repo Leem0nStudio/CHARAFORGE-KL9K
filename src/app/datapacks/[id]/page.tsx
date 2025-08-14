@@ -12,6 +12,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getSlotCategory } from '@/lib/app-config';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Wand2 } from 'lucide-react';
 
 
 interface DataPackDetailPageProps {
@@ -72,7 +74,14 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                     ))}
                 </div>
                 <p className="mt-4 text-base text-card-foreground/80">{pack.description}</p>
-                 <DataPackClient pack={pack} />
+                <div className="mt-6 flex items-center gap-4">
+                     <Button asChild className="w-full md:w-auto" size="lg">
+                        <Link href={`/character-generator?packId=${pack.id}`}>
+                            <Wand2 className="mr-2" /> Use this DataPack
+                        </Link>
+                    </Button>
+                    <DataPackClient pack={pack} />
+                </div>
             </div>
         </div>
         
@@ -136,3 +145,5 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
     </div>
   );
 }
+
+    

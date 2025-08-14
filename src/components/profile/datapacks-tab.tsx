@@ -9,6 +9,7 @@ import { Loader2, Wand2 } from 'lucide-react';
 import type { DataPack } from '@/types/datapack';
 import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { useAuth } from '@/hooks/use-auth';
+import { DataPackCard } from '../datapack/datapack-card';
 
 export function DataPacksTab() {
     const [packs, setPacks] = useState<DataPack[]>([]);
@@ -54,19 +55,16 @@ export function DataPacksTab() {
             </CardHeader>
             <CardContent>
                 {packs.length > 0 ? (
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {packs.map(pack => (
-                            <div key={pack.id} className="border p-4 rounded-lg flex items-center justify-between">
-                                <div>
-                                    <h3 className="font-semibold">{pack.name}</h3>
-                                    <p className="text-sm text-muted-foreground">by {pack.author}</p>
-                                </div>
-                                <Button asChild variant="secondary" size="sm">
+                           <div key={pack.id}>
+                               <DataPackCard pack={pack} isCompact={true} />
+                               <Button asChild variant="secondary" size="sm" className="w-full mt-2">
                                     <Link href={`/character-generator?packId=${pack.id}`}>
-                                        <Wand2 className="mr-2 h-4 w-4" /> Use
+                                        <Wand2 className="mr-2 h-4 w-4" /> Use Pack
                                     </Link>
                                 </Button>
-                            </div>
+                           </div>
                         ))}
                     </div>
                 ) : (
@@ -81,3 +79,5 @@ export function DataPacksTab() {
         </Card>
     );
 }
+
+    

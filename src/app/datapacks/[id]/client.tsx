@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { installDataPack } from '@/app/actions/datapacks';
-import { Wand2, Download, ShoppingCart, Loader2, Check } from 'lucide-react';
+import { Download, ShoppingCart, Loader2, Check } from 'lucide-react';
 import type { DataPack } from '@/types/datapack';
 
 export function DataPackClient({ pack }: { pack: DataPack; }) {
@@ -62,14 +62,14 @@ export function DataPackClient({ pack }: { pack: DataPack; }) {
 
         if (pack.type === 'premium') {
              return (
-                 <Button onClick={handlePurchase} className="w-full md:w-auto" disabled={isPending} size="lg">
+                 <Button onClick={handlePurchase} className="w-full md:w-auto" disabled={isPending} size="lg" variant="secondary">
                     <ShoppingCart className="mr-2" /> Purchase for ${pack.price}
                 </Button>
             )
         }
 
         return (
-            <Button onClick={handleInstall} className="w-full md:w-auto" disabled={isPending} size="lg">
+            <Button onClick={handleInstall} className="w-full md:w-auto" disabled={isPending} size="lg" variant="secondary">
                 {isPending ? (
                     <Loader2 className="mr-2 animate-spin" />
                 ) : (
@@ -81,13 +81,10 @@ export function DataPackClient({ pack }: { pack: DataPack; }) {
     };
     
     return (
-        <div className="mt-6 flex items-center gap-4">
-           {renderButtons()}
-           <Button asChild className="w-full md:w-auto" size="lg" variant="secondary">
-                <Link href="/character-generator">
-                    <Wand2 className="mr-2" /> Go to Generator
-                </Link>
-            </Button>
-        </div>
+        <>
+            {renderButtons()}
+        </>
     )
 }
+
+    
