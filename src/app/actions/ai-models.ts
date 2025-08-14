@@ -182,29 +182,25 @@ export async function getModelsForUser(type: 'model' | 'lora'): Promise<AiModel[
     const uid = await verifyAndGetUid();
 
     try {
+        // Fetch all system models (where userId does not exist)
         const systemModelsSnapshot = await adminDb.collection('ai_models')
             .where('type', '==', type)
+            .where('userId', '==', null)
             .get();
-
-        const userModelsQuery = adminDb.collection('ai_models')
+        
+        // Fetch all models for the specific user
+        const userModelsSnapshot = await adminDb.collection('ai_models')
             .where('type', '==', type)
             .where('userId', '==', uid)
-            .orderBy('createdAt', 'desc')
             .get();
-
-        const [systemSnapshot, userSnapshot] = await Promise.all([systemModelsSnapshot, userModelsQuery]);
 
         const models: AiModel[] = [];
         const modelIds = new Set<string>();
 
         const processSnapshot = (snapshot: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>) => {
             snapshot.docs.forEach(doc => {
-                const data = doc.data();
-                // **CRITICAL FIX**: Only add system models if they DON'T have a userId field.
-                const isSystemModel = !data.userId;
-                const isUserModel = data.userId === uid;
-
-                if (!modelIds.has(doc.id) && (isSystemModel || isUserModel)) {
+                if (!modelIds.has(doc.id)) {
+                    const data = doc.data();
                     models.push({
                         ...data,
                         id: doc.id,
@@ -216,8 +212,8 @@ export async function getModelsForUser(type: 'model' | 'lora'): Promise<AiModel[
             });
         };
         
-        processSnapshot(userSnapshot);
-        processSnapshot(systemSnapshot);
+        processSnapshot(systemModelsSnapshot);
+        processSnapshot(userModelsSnapshot);
         
         models.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 

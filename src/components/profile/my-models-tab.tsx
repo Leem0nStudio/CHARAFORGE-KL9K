@@ -21,6 +21,7 @@ import {
 } from '@/components/ui';
 import { Loader2, PlusCircle, Pencil, Trash2, Bot } from 'lucide-react';
 import { MediaDisplay } from '../media-display';
+import { useAuth } from '@/hooks/use-auth';
 
 function ModelEditDialog({ 
     model, 
@@ -186,16 +187,17 @@ function ModelEditDialog({
 export function MyModelsTab() {
     const [models, setModels] = useState<AiModel[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { userProfile } = useAuth();
 
     const fetchModels = async () => {
         setIsLoading(true);
         try {
-            // Note: This fetches system models too. We filter client-side.
-            const userModels = await getModelsForUser('model');
-            const userLoras = await getModelsForUser('lora');
-            // Only show models created by the user (they have a userId)
-            const allUserModels = [...userModels, ...userLoras].filter(m => m.userId);
-            setModels(allUserModels);
+            const allModels = await getModelsForUser('model');
+            const allLoras = await getModelsForUser('lora');
+            
+            const userModels = [...allModels, ...allLoras].filter(m => m.userId === userProfile?.uid);
+            setModels(userModels);
+
         } catch (error) {
             console.error("Failed to fetch user models", error);
         } finally {
@@ -204,8 +206,10 @@ export function MyModelsTab() {
     };
     
     useEffect(() => {
-        fetchModels();
-    }, []);
+        if(userProfile) {
+            fetchModels();
+        }
+    }, [userProfile]);
 
     if (isLoading) {
         return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
