@@ -19,7 +19,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { deleteUserAccount, updateUserPreferences } from '@/app/actions/user';
 import { Loader2, KeyRound, Info, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
@@ -35,29 +34,35 @@ export function SecurityTab() {
   const [isDeleting, startDeleteTransition] = useTransition();
   const [isSavingPrefs, startPrefsTransition] = useTransition();
 
+  // Initialize state directly from the user profile context
   const [huggingFaceApiKey, setHuggingFaceApiKey] = useState(userProfile?.preferences?.huggingFaceApiKey || '');
   const [openRouterApiKey, setOpenRouterApiKey] = useState(userProfile?.preferences?.openRouterApiKey || '');
 
+  // Update local state if the profile context changes from the outside
+  useEffect(() => {
+    setHuggingFaceApiKey(userProfile?.preferences?.huggingFaceApiKey || '');
+    setOpenRouterApiKey(userProfile?.preferences?.openRouterApiKey || '');
+  }, [userProfile]);
+
   const hasHfKey = !!userProfile?.preferences?.huggingFaceApiKey;
   const hasOrKey = !!userProfile?.preferences?.openRouterApiKey;
-
 
   const handleSavePreferences = () => {
     startPrefsTransition(async () => {
         if (!userProfile?.preferences) return;
         const newPreferences: UserPreferences = {
             ...userProfile.preferences,
-            huggingFaceApiKey: huggingFaceApiKey,
-            openRouterApiKey: openRouterApiKey,
+            huggingFaceApiKey: huggingFaceApiKey.trim() === '' ? undefined : huggingFaceApiKey,
+            openRouterApiKey: openRouterApiKey.trim() === '' ? undefined : openRouterApiKey,
         }
         const result = await updateUserPreferences(newPreferences);
         if (result.success) {
             toast({ title: "Preferences Saved!", description: result.message });
-            // Optimistically update the context
+            // Optimistically update the auth context to reflect the change immediately
             setUserProfile(prev => prev ? ({ ...prev, preferences: newPreferences }) : null);
-      } else {
-        toast({ variant: "destructive", title: "Error", description: result.message });
-      }
+        } else {
+            toast({ variant: "destructive", title: "Error", description: result.message });
+        }
     });
   };
 
@@ -73,14 +78,13 @@ export function SecurityTab() {
       }
     });
   };
-
+  
   const handleClearKey = (keyType: 'huggingFace' | 'openRouter') => {
       if(keyType === 'huggingFace') setHuggingFaceApiKey('');
       if(keyType === 'openRouter') setOpenRouterApiKey('');
       // The user still needs to press save to confirm the change
       toast({ title: "Key Cleared", description: "Press 'Save API Keys' to confirm this change."})
   }
-
 
   return (
     <div className="space-y-4">
@@ -108,11 +112,11 @@ export function SecurityTab() {
                         onChange={(e) => setHuggingFaceApiKey(e.target.value)}
                         className="flex-grow"
                     />
-                    {hasHfKey && <Button variant="ghost" type="button" onClick={() => handleClearKey('huggingFace')}>Clear</Button>}
+                    {huggingFaceApiKey && <Button variant="ghost" type="button" onClick={() => handleClearKey('huggingFace')}>Clear</Button>}
                 </div>
                  <div className={cn("flex items-center text-xs gap-2", hasHfKey ? "text-green-500" : "text-amber-500")}>
                     {hasHfKey ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4"/>}
-                    {hasHfKey ? "Key Configured" : "No Key Set"}
+                    {hasHfKey ? "An API key is configured and will be used." : "No key set. The system default key will be used."}
                 </div>
             </div>
             
@@ -135,11 +139,11 @@ export function SecurityTab() {
                         value={openRouterApiKey}
                         onChange={(e) => setOpenRouterApiKey(e.target.value)}
                     />
-                     {hasOrKey && <Button variant="ghost" type="button" onClick={() => handleClearKey('openRouter')}>Clear</Button>}
+                     {openRouterApiKey && <Button variant="ghost" type="button" onClick={() => handleClearKey('openRouter')}>Clear</Button>}
                 </div>
                 <div className={cn("flex items-center text-xs gap-2", hasOrKey ? "text-green-500" : "text-amber-500")}>
                     {hasOrKey ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4"/>}
-                    {hasOrKey ? "Key Configured" : "No Key Set"}
+                    {hasOrKey ? "An API key is configured and will be used." : "No key set. The system default key will be used."}
                 </div>
             </div>
 
@@ -170,7 +174,7 @@ export function SecurityTab() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteAccount} disabled={isDeleting}>
+                    <AlertDialogAction onClick={handleDeleteAccount} disabled={isDeleting} className="bg-destructive hover:bg-destructive/30">
                         {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Continue
                     </AlertDialogAction>

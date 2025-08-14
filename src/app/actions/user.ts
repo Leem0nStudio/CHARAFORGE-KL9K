@@ -128,18 +128,20 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
 
         const userRef = adminDb.collection('users').doc(uid);
         
+        // This ensures we are only trying to update the fields that exist in the UserPreferences type
         const { theme, notifications, privacy, huggingFaceApiKey, openRouterApiKey } = preferences;
 
-        const validPreferences: Partial<UserPreferences> = {
-            theme,
-            notifications,
-            privacy,
-            huggingFaceApiKey: huggingFaceApiKey && huggingFaceApiKey.trim() !== '' ? huggingFaceApiKey : FieldValue.delete(),
-            openRouterApiKey: openRouterApiKey && openRouterApiKey.trim() !== '' ? openRouterApiKey : FieldValue.delete()
+        // Use FieldValue.delete() to remove a field if the key is empty or undefined.
+        // This is crucial for clearing keys.
+        const preferencesToUpdate = {
+            'preferences.theme': theme,
+            'preferences.notifications': notifications,
+            'preferences.privacy': privacy,
+            'preferences.huggingFaceApiKey': huggingFaceApiKey || FieldValue.delete(),
+            'preferences.openRouterApiKey': openRouterApiKey || FieldValue.delete(),
         };
-        
 
-        await userRef.set({ preferences: validPreferences }, { merge: true });
+        await userRef.update(preferencesToUpdate);
 
         revalidatePath('/profile');
         revalidatePath('/');
