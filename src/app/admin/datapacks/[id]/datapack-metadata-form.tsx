@@ -111,5 +111,3 @@ export function DataPackMetadataForm({ form, onFileChange }: DataPackMetadataFor
     </Card>
   );
 }
-
-    
