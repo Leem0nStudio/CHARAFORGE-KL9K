@@ -298,12 +298,6 @@ function PackGallery({
                     ))}
                  </div>
             </ScrollArea>
-             <DialogFooter className="pt-4 border-t">
-                 <p className="text-sm text-muted-foreground mr-auto">Need more options?</p>
-                 <Button asChild variant="outline">
-                    <Link href="/datapacks">Browse Full Catalog</Link>
-                </Button>
-            </DialogFooter>
         </>
     );
 }
@@ -338,18 +332,30 @@ export function DataPackSelectorModal({
     
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className={cn("max-h-[90vh] flex flex-col", wizardPack ? "sm:max-w-3xl" : "sm:max-w-4xl")}>
+            <DialogContent className={cn("max-h-[90vh] flex flex-col h-full", wizardPack ? "sm:max-w-3xl" : "sm:max-w-4xl")}>
                 {wizardPack ? (
                     <WizardGrid pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} onBack={() => setWizardPack(null)} />
                 ) : (
                     <>
-                    <DialogHeader>
-                        <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
-                        <DialogDescription>
-                            Choose one of your installed packs to start building a prompt.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <PackGallery onChoosePack={setWizardPack} />
+                    <div className="flex-shrink-0">
+                        <DialogHeader>
+                            <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
+                            <DialogDescription>
+                                Choose one of your installed packs to start building a prompt.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
+                    <div className="flex-grow min-h-0">
+                        <PackGallery onChoosePack={setWizardPack} />
+                    </div>
+                     <div className="flex-shrink-0 pt-4 border-t">
+                        <DialogFooter>
+                            <p className="text-sm text-muted-foreground mr-auto">Need more options?</p>
+                             <Button asChild variant="outline">
+                                <Link href="/datapacks">Browse Full Catalog</Link>
+                            </Button>
+                        </DialogFooter>
+                    </div>
                     </>
                 )}
             </DialogContent>
