@@ -5,7 +5,7 @@ import { useState, useEffect, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { getModelsForUser, upsertUserAiModel, deleteModel } from '@/app/actions/ai-models';
+import { getModelsForUser, upsertUserAiModel, deleteModel, getModels } from '@/app/actions/ai-models';
 import type { AiModel, UpsertAiModel } from '@/types/ai-model';
 import { UpsertModelSchema } from '@/types/ai-model';
 import { 
@@ -17,11 +17,14 @@ import {
     Label,
     Textarea,
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-    Badge
+    Badge,
+    Tabs, TabsContent, TabsList, TabsTrigger,
 } from '@/components/ui';
-import { Loader2, PlusCircle, Pencil, Trash2, Bot } from 'lucide-react';
+import { Loader2, PlusCircle, Pencil, Trash2, Bot, SlidersHorizontal } from 'lucide-react';
 import { MediaDisplay } from '../media-display';
 import { useAuth } from '@/hooks/use-auth';
+import { imageModels } from '@/lib/app-config';
+import Link from 'next/link';
 
 function ModelEditDialog({ 
     model, 
@@ -183,24 +186,56 @@ function ModelEditDialog({
     );
 }
 
+function ModelList({ models, type, onEdit, isSystem = false }: { models: AiModel[], type: 'model' | 'lora', onEdit: (model: AiModel) => void, isSystem?: boolean }) {
+    if (models.length === 0) {
+        return null;
+    }
+    
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {models.map(model => (
+                <Card key={model.id} className="overflow-hidden flex flex-col">
+                    <CardHeader className="p-0">
+                         <div className="relative aspect-[4/3] bg-muted/20">
+                            <MediaDisplay url={model.coverMediaUrl} alt={model.name} />
+                             {isSystem && <Badge className="absolute top-2 left-2" variant="secondary">System</Badge>}
+                         </div>
+                    </CardHeader>
+                    <CardContent className="p-4 flex-grow">
+                        <CardTitle className="text-lg">{model.name}</CardTitle>
+                        <CardDescription className="text-xs truncate">{model.hf_id}</CardDescription>
+                         <div className="flex flex-wrap gap-1 mt-2">
+                            <Badge variant={model.type === 'lora' ? 'destructive' : 'default'}>{model.type}</Badge>
+                            {model.triggerWords?.slice(0, 2).map(word => <Badge key={word} variant="outline">{word}</Badge>)}
+                            {model.triggerWords && model.triggerWords.length > 2 && <Badge variant="outline">...</Badge>}
+                        </div>
+                    </CardContent>
+                     {!isSystem && (
+                         <CardFooter className="p-4 pt-0 mt-auto">
+                           <Button variant="outline" size="sm" className="w-full" onClick={() => onEdit(model)}><Pencil /> Edit</Button>
+                        </CardFooter>
+                     )}
+                </Card>
+            ))}
+        </div>
+    );
+}
+
 
 export function MyModelsTab() {
-    const [models, setModels] = useState<AiModel[]>([]);
+    const [allUserModels, setAllUserModels] = useState<AiModel[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { userProfile } = useAuth();
+    const [modelToEdit, setModelToEdit] = useState<AiModel | undefined>(undefined);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const fetchModels = async () => {
         if (!userProfile) return;
         setIsLoading(true);
         try {
-            // Fetch all models available to the user (system + their own)
-            const allModels = await getModelsForUser('model');
-            const allLoras = await getModelsForUser('lora');
-            
-            // Filter to show only the ones they own
-            const userOwnedModels = [...allModels, ...allLoras].filter(m => m.userId === userProfile.uid);
-            setModels(userOwnedModels);
-
+            const models = await getModelsForUser('model');
+            const loras = await getModelsForUser('lora');
+            setAllUserModels([...models, ...loras]);
         } catch (error) {
             console.error("Failed to fetch user models", error);
         } finally {
@@ -213,59 +248,76 @@ export function MyModelsTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userProfile]);
 
-    if (isLoading) {
-        return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    const handleEdit = (model: AiModel) => {
+        setModelToEdit(model);
+        setIsEditDialogOpen(true);
+    }
+    
+    const handleAddNew = () => {
+        setModelToEdit(undefined);
+        setIsEditDialogOpen(true);
     }
 
+    const userCreatedModels = allUserModels.filter(m => m.userId === userProfile?.uid);
+    const installedSystemModels = allUserModels.filter(m => !m.userId);
+
+    const userCreatedBaseModels = userCreatedModels.filter(m => m.type === 'model');
+    const userCreatedLoras = userCreatedModels.filter(m => m.type === 'lora');
+    const installedBaseModels = installedSystemModels.filter(m => m.type === 'model');
+    const installedLoras = installedSystemModels.filter(m => m.type === 'lora');
+
     return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>My Custom Models</CardTitle>
-                    <CardDescription>Manage your personal collection of AI models from Hugging Face.</CardDescription>
-                </div>
-                <ModelEditDialog 
-                    onSuccess={fetchModels} 
-                    trigger={<Button><PlusCircle /> Add New</Button>} 
-                />
-            </CardHeader>
-            <CardContent>
-                {models.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {models.map(model => (
-                            <Card key={model.id} className="overflow-hidden flex flex-col">
-                                <CardHeader className="p-0">
-                                     <div className="relative aspect-[4/3] bg-muted/20">
-                                        <MediaDisplay url={model.coverMediaUrl} alt={model.name} />
-                                     </div>
-                                </CardHeader>
-                                <CardContent className="p-4 flex-grow">
-                                    <CardTitle className="text-lg">{model.name}</CardTitle>
-                                    <CardDescription className="text-xs truncate">{model.hf_id}</CardDescription>
-                                     <div className="flex flex-wrap gap-1 mt-2">
-                                        <Badge variant="secondary">{model.type}</Badge>
-                                        {model.triggerWords?.slice(0, 2).map(word => <Badge key={word} variant="outline">{word}</Badge>)}
-                                        {model.triggerWords && model.triggerWords.length > 2 && <Badge variant="outline">...</Badge>}
-                                    </div>
-                                </CardContent>
-                                <CardFooter className="p-4 pt-0 mt-auto">
-                                    <ModelEditDialog 
-                                        model={model} 
-                                        onSuccess={fetchModels} 
-                                        trigger={<Button variant="outline" size="sm" className="w-full"><Pencil /> Edit</Button>}
-                                    />
-                                </CardFooter>
-                            </Card>
-                        ))}
+        <>
+            <ModelEditDialog 
+                model={modelToEdit}
+                onSuccess={fetchModels} 
+                trigger={<div/>}
+            />
+            <Card>
+                <CardHeader className="flex flex-row items-start justify-between">
+                    <div>
+                        <CardTitle>My Models & LoRAs</CardTitle>
+                        <CardDescription>Manage your custom models and installed system models.</CardDescription>
                     </div>
-                ) : (
-                    <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
-                        <Bot className="mx-auto h-12 w-12 mb-4" />
-                        <h3 className="text-lg font-semibold">No custom models yet.</h3>
-                        <p className="text-sm">Add your own models from Hugging Face to get started.</p>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+                     <div className="flex gap-2">
+                        <Button asChild variant="outline">
+                            <Link href="/models"><SlidersHorizontal/> Browse Catalog</Link>
+                        </Button>
+                        <ModelEditDialog 
+                            onSuccess={fetchModels}
+                            trigger={<Button><PlusCircle /> Add New</Button>}
+                        />
+                     </div>
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? (
+                        <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                    ) : allUserModels.length === 0 ? (
+                        <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
+                            <Bot className="mx-auto h-12 w-12 mb-4" />
+                            <h3 className="text-lg font-semibold">Your model collection is empty.</h3>
+                            <p className="text-sm">Add your own models from Hugging Face or install some from the catalog.</p>
+                        </div>
+                    ) : (
+                         <Tabs defaultValue="all" className="w-full">
+                            <TabsList>
+                                <TabsTrigger value="all">All ({allUserModels.length})</TabsTrigger>
+                                <TabsTrigger value="custom">My Custom Models ({userCreatedModels.length})</TabsTrigger>
+                                <TabsTrigger value="installed">Installed ({installedSystemModels.length})</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="all" className="mt-6">
+                                <ModelList models={allUserModels} type="model" onEdit={handleEdit}/>
+                            </TabsContent>
+                             <TabsContent value="custom" className="mt-6">
+                                <ModelList models={userCreatedModels} type="model" onEdit={handleEdit}/>
+                            </TabsContent>
+                             <TabsContent value="installed" className="mt-6">
+                                <ModelList models={installedSystemModels} type="model" onEdit={handleEdit} isSystem/>
+                            </TabsContent>
+                        </Tabs>
+                    )}
+                </CardContent>
+            </Card>
+        </>
     );
 }

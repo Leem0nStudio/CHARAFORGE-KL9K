@@ -106,7 +106,7 @@ export function CharacterGenerator() {
       targetLanguage: 'English',
       aspectRatio: '1:1',
       loraWeight: 0.75,
-      selectedModel: imageModels[0],
+      selectedModel: undefined, // Initialize as undefined
       selectedLora: null,
     },
   });
@@ -134,12 +134,11 @@ export function CharacterGenerator() {
                 packIdFromUrl ? getDataPackForAdmin(packIdFromUrl) : Promise.resolve(null),
             ]);
             
-            const allBaseModels = [...imageModels, ...userModels];
-            setAvailableModels(allBaseModels);
+            setAvailableModels(userModels);
             setAvailableLoras(userLoras);
 
-            if (!generationForm.getValues('selectedModel')) {
-                generationForm.setValue('selectedModel', allBaseModels[0]);
+            if (userModels.length > 0 && !generationForm.getValues('selectedModel')) {
+                generationForm.setValue('selectedModel', userModels[0]);
             }
             
             if (initialPackData) {

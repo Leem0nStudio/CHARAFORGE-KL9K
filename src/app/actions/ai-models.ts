@@ -121,7 +121,7 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
             name: modelInfo.name,
             civitaiModelId: modelInfo.id.toString(),
             type,
-            engine: type === 'model' ? 'huggingface' : 'huggingface',
+            engine: 'huggingface', 
             hf_id: suggestedHfId,
             versionId: latestVersion?.id?.toString() || '',
             coverMediaUrl,
@@ -153,39 +153,53 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
     }
 }
 
-export async function getModelsForUser(type: 'model' | 'lora'): Promise<AiModel[]> {
+/**
+ * Fetches the models available to a specific user.
+ * This includes system-wide models and the user's own custom models.
+ * @param uid The user's ID.
+ * @param type The type of model ('model' or 'lora').
+ * @returns A promise that resolves to an array of AiModel objects.
+ */
+async function fetchUserAndSystemModels(uid: string, type: 'model' | 'lora'): Promise<AiModel[]> {
     if (!adminDb) return [];
     
-    const uid = await verifyAndGetUid();
-
-    try {
-        const userModelsSnapshot = await adminDb.collection('ai_models')
+    // Fetch system models (no userId) and user-specific models concurrently.
+    const [systemModelsSnapshot, userModelsSnapshot] = await Promise.all([
+        adminDb.collection('ai_models')
+            .where('type', '==', type)
+            .where('userId', '==', null)
+            .orderBy('createdAt', 'desc')
+            .get(),
+        adminDb.collection('ai_models')
             .where('type', '==', type)
             .where('userId', '==', uid)
             .orderBy('createdAt', 'desc')
-            .get();
+            .get()
+    ]);
 
-        const userModels = userModelsSnapshot.docs.map(doc => {
+    const allModels = new Map<string, AiModel>();
+
+    const processSnapshot = (snapshot: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>) => {
+        snapshot.docs.forEach(doc => {
             const data = doc.data();
-            return {
+            const model: AiModel = {
                 ...data,
                 id: doc.id,
                 createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
                 updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
             } as AiModel;
+            if (!allModels.has(model.id)) {
+                allModels.set(model.id, model);
+            }
         });
+    };
 
-        // The system models are now just for images, text models are separate
-        const systemImageModels = (type === 'model') ? imageModels : [];
-
-        // Combine and return, ensuring user models come first
-        return [...userModels, ...systemImageModels];
-        
-    } catch (error) {
-        console.error(`Error fetching ${type}s for user:`, error);
-        return [];
-    }
+    processSnapshot(systemModelsSnapshot);
+    processSnapshot(userModelsSnapshot);
+    
+    return Array.from(allModels.values());
 }
+
 
 export async function upsertUserAiModel(formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
@@ -301,4 +315,96 @@ export async function getModels(type: 'model' | 'lora'): Promise<AiModel[]> {
     console.error(`Error fetching all ${type}s:`, error);
     return [];
   }
+}
+
+export async function getModelsForUser(type: 'model' | 'lora'): Promise<AiModel[]> {
+    const uid = await verifyAndGetUid();
+    if (!adminDb) return [];
+    
+    try {
+        const userDoc = await adminDb.collection('users').doc(uid).get();
+        const installedModelIds = userDoc.data()?.stats?.installedModels || [];
+
+        const [userModels, systemModels] = await Promise.all([
+            // Get models the user created
+             adminDb.collection('ai_models').where('userId', '==', uid).where('type', '==', type).get(),
+            // Get system models they have installed
+            installedModelIds.length > 0 
+                ? adminDb.collection('ai_models').where('id', 'in', installedModelIds).where('type', '==', type).get()
+                : Promise.resolve(null),
+        ]);
+
+        const allModels = new Map<string, AiModel>();
+
+        const processSnapshot = (snapshot: FirebaseFirestore.QuerySnapshot | null) => {
+            snapshot?.docs.forEach(doc => {
+                const data = doc.data();
+                const model = {
+                    ...data,
+                    id: doc.id,
+                    createdAt: data.createdAt?.toDate() || new Date(),
+                    updatedAt: data.updatedAt?.toDate() || new Date(),
+                } as AiModel;
+                if (!allModels.has(model.id)) {
+                    allModels.set(model.id, model);
+                }
+            });
+        };
+        
+        processSnapshot(userModels);
+        processSnapshot(systemModels);
+
+        const staticModels = type === 'model' ? imageModels : [];
+
+        for (const model of staticModels) {
+             if (!allModels.has(model.id)) {
+                allModels.set(model.id, model);
+            }
+        }
+
+        return Array.from(allModels.values()).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
+    } catch (error) {
+        console.error("Error fetching models for user:", error);
+        return [];
+    }
+}
+
+
+export async function installModel(modelId: string): Promise<ActionResponse> {
+    const uid = await verifyAndGetUid();
+    if (!adminDb) return { success: false, message: "Database service is not available."};
+
+    try {
+        const userRef = adminDb.collection('users').doc(uid);
+        const modelRef = adminDb.collection('ai_models').doc(modelId);
+
+        const [userDoc, modelDoc] = await Promise.all([userRef.get(), modelRef.get()]);
+
+        if (!modelDoc.exists) {
+            return { success: false, message: "This model does not exist." };
+        }
+        if (modelDoc.data()?.userId) {
+            return { success: false, message: "Cannot install a user-specific model." };
+        }
+
+        const installedModels = userDoc.data()?.stats?.installedModels || [];
+        if (installedModels.includes(modelId)) {
+            return { success: false, message: "You have already installed this model." };
+        }
+
+        await userRef.set({
+            stats: {
+                installedModels: FieldValue.arrayUnion(modelId),
+            },
+        }, { merge: true });
+
+        revalidatePath('/profile');
+        revalidatePath('/models');
+
+        return { success: true, message: "Model successfully installed!" };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        console.error("Install Model Error:", message);
+        return { success: false, message: "Failed to install model." };
+    }
 }

@@ -1,5 +1,5 @@
 
-import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon } from 'lucide-react';
+import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon, Download } from 'lucide-react';
 import type { AiModel } from '@/types/ai-model';
 
 export interface NavItem {
@@ -11,15 +11,34 @@ export interface NavItem {
 }
 
 // Static AI Model Definitions - these are fallbacks or system-provided defaults.
-// The primary source of truth is now the 'ai_models' collection in Firestore.
 export const imageModels: AiModel[] = [];
 
-export const textModels: AiModel[] = [];
+export const textModels: AiModel[] = [
+    {
+        id: 'gemini-1.5-flash',
+        name: 'Gemini 1.5 Flash',
+        type: 'model',
+        engine: 'gemini',
+        hf_id: 'google/gemini-1.5-flash-latest',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    },
+    {
+        id: 'gpt-4o',
+        name: 'GPT-4o',
+        type: 'model',
+        engine: 'openrouter',
+        hf_id: 'openai/gpt-4o',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    }
+];
 
 
 export const mainNavItems: NavItem[] = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/datapacks', label: 'DataPacks', icon: Package },
+    { href: '/models', label: 'AI Models', icon: Bot },
     { href: '/character-generator', label: 'Forge', icon: Swords, isPrimary: true },
     { href: '/lore-forge', label: 'Lore Forge', icon: ScrollText, requiresAuth: true },
     { href: '/profile', label: 'Profile', icon: UserCircle, requiresAuth: true },
