@@ -32,6 +32,7 @@ const generateCharacterSheetFlow = ai.defineFlow(
     
     let requestConfig: GenerationCommonOptions = {};
   
+    // For OpenRouter, we just need to supply the API key. Genkit handles the provider details.
     if (engineId === 'openrouter') {
       const systemApiKey = process.env.OPENROUTER_API_KEY;
       const apiKey = userApiKey || systemApiKey;
@@ -42,7 +43,6 @@ const generateCharacterSheetFlow = ai.defineFlow(
       
       requestConfig = {
           apiKey,
-          provider: 'openai',
       };
     }
 
