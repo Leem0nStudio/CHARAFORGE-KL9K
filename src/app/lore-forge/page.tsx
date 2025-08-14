@@ -344,6 +344,8 @@ function LoreForgeContent() {
             } else if (selectedCast && !userCasts.some(c => c.id === selectedCast.id)) {
                 // If selected cast was deleted, select first one
                 setSelectedCast(userCasts[0] || null);
+            } else if (userCasts.length === 0) {
+                setSelectedCast(null);
             }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Failed to load data', description: 'Could not fetch your casts and characters.' });
