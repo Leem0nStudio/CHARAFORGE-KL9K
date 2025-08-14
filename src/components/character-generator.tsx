@@ -44,6 +44,7 @@ import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/ty
 import { PromptTagInput } from "./prompt-tag-input";
 import type { DataPack } from "@/types/datapack";
 import { geminiImagePlaceholder, textModels } from "@/lib/app-config";
+import { TextEngineConfigSchema } from "@/ai/flows/character-sheet/types";
 
 
 
@@ -328,6 +329,7 @@ export function CharacterGenerator() {
   const isUiLoading = isGenerating || isSaving || authLoading || isLoadingModels;
   const canInteract = !isUiLoading && !!authUser;
   const watchDescription = generationForm.watch('description');
+  const watchPhysicalDescription = generationForm.watch('physicalDescription');
   const selectedModel = generationForm.watch('selectedModel');
   const selectedLora = generationForm.watch('selectedLora');
 
@@ -600,21 +602,17 @@ export function CharacterGenerator() {
                           ) : (
                             !isGenerating && (
                                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4 gap-4">
-                                     <FormField
-                                        control={generationForm.control}
-                                        name="physicalDescription"
-                                        render={({ field }) => (
-                                            <FormItem className="w-full">
-                                                <div className="flex justify-between items-center">
-                                                    <p className="flex items-center gap-1.5 text-xs"><Info className="h-3 w-3"/> Image Prompt</p>
-                                                    <Button type="button" size="sm" variant="link" className="text-xs h-auto p-0">Regenerate</Button>
-                                                </div>
-                                                <FormControl>
-                                                    <Textarea {...field} className="h-32 text-xs" />
-                                                </FormControl>
-                                            </FormItem>
-                                        )}
-                                     />
+                                     <div className="w-full space-y-2">
+                                        <div className="flex justify-between items-center">
+                                            <Label htmlFor="physicalDescription" className="flex items-center gap-1.5 text-xs"><Info className="h-3 w-3"/> Image Prompt</Label>
+                                        </div>
+                                        <Textarea 
+                                            id="physicalDescription"
+                                            value={watchPhysicalDescription}
+                                            onChange={(e) => generationForm.setValue('physicalDescription', e.target.value)}
+                                            className="h-32 text-xs" 
+                                        />
+                                     </div>
                                     <Button onClick={onGeneratePortrait} disabled={isGenerating}>
                                          <Wand2 className="mr-2" /> Generate Portrait
                                     </Button>
