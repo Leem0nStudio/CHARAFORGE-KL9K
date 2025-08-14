@@ -45,7 +45,7 @@ export default async function EditCharacterPage({
 }) {
   try {
     const character = await getCharacterForEdit(params.id);
-    const defaultTab = searchParams?.tab === 'sharing' ? 'sharing' : 'gallery';
+    const defaultTab = searchParams?.tab === 'sharing' ? 'sharing' : 'details';
     
     return (
       <div className="container py-8">
@@ -56,18 +56,18 @@ export default async function EditCharacterPage({
           <div className="max-w-4xl mx-auto mt-8">
               <Tabs defaultValue={defaultTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="gallery">Gallery</TabsTrigger>
                     <TabsTrigger value="details">Details</TabsTrigger>
+                    <TabsTrigger value="gallery">Gallery</TabsTrigger>
                     <TabsTrigger value="timeline">Timeline</TabsTrigger>
                     <TabsTrigger value="versions">Versions</TabsTrigger>
                     <TabsTrigger value="sharing">Sharing</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="gallery">
-                    <EditGalleryTab character={character} />
-                </TabsContent>
                 <TabsContent value="details">
                     <EditDetailsTab character={character} />
+                </TabsContent>
+                <TabsContent value="gallery">
+                    <EditGalleryTab character={character} />
                 </TabsContent>
                 <TabsContent value="timeline">
                     <EditTimelineTab character={character} />

@@ -79,8 +79,8 @@ export function EditDetailsTab({ character }: { character: Character }) {
                     description: character.description, 
                     engineConfig: TextEngineConfigSchema.parse(textEngineConfig) 
                 });
-                form.setValue('biography', result.biography, { shouldDirty: true });
-                form.setValue('physicalDescription', result.physicalDescription, { shouldDirty: true });
+                form.setValue('biography', result.biography || '', { shouldDirty: true });
+                form.setValue('physicalDescription', result.physicalDescription || '', { shouldDirty: true });
                 toast({
                     title: 'Content Regenerated!',
                     description: 'A new biography and physical description have been generated. Don\'t forget to save your changes.',
