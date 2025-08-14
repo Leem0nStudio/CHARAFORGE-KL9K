@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
-import { TextEngineConfigSchema, type TextEngineConfig } from '@/ai/flows/character-sheet/types';
+import { type TextEngineConfig } from '@/ai/flows/character-sheet/types';
 import type { AiModel } from '@/types/ai-model';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { getUserProfile } from './user';
@@ -16,7 +16,7 @@ import type { GenerateCharacterSheetOutput } from '@/ai/flows/character-sheet/ty
 const GenerateSheetInputSchema = z.object({
   description: z.string().min(20).max(1000),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
-  engineConfig: TextEngineConfigSchema, // Now expects the full config
+  engineConfig: z.custom<TextEngineConfig>(),
 });
 export type GenerateSheetInput = z.infer<typeof GenerateSheetInputSchema>;
 
@@ -65,7 +65,7 @@ export async function generateCharacterSheetData(input: GenerateSheetInput): Pro
         });
 
 
-        if (!result.biography) {
+        if (!result.name) {
             throw new Error('AI generation failed to return a complete character sheet.');
         }
 
