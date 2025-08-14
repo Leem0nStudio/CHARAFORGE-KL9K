@@ -1,7 +1,6 @@
 
 'use client';
 
-import { useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -22,15 +21,10 @@ type HomePageClientProps = {
     featuredCreations: Character[];
     topCreators: UserProfile[];
     newDataPacks: DataPack[];
+    heroCharacter: Character | null;
 }
 
-export function HomePageClient({ featuredCreations, topCreators, newDataPacks }: HomePageClientProps) {
-
-  const heroCharacter = useMemo(() => {
-    if (featuredCreations.length === 0) return null;
-    const lastFive = featuredCreations.slice(0, 5);
-    return lastFive[Math.floor(Math.random() * lastFive.length)];
-  }, [featuredCreations]);
+export function HomePageClient({ featuredCreations, topCreators, newDataPacks, heroCharacter }: HomePageClientProps) {
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -121,7 +115,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks }:
             <section id="creations" className="container">
                 <SectionTitle title="Community Gallery" subtitle="Discover legendary characters forged by our community." />
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                     {featuredCreations.slice(0, 8).map((creation, index) => (
+                     {featuredCreations.slice(0, 8).map((creation) => (
                          <CharacterCard key={creation.id} character={creation} />
                      ))}
                 </div>

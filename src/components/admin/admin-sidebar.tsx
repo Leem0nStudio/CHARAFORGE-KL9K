@@ -22,20 +22,24 @@ export function AdminSidebar() {
                 </div>
                  <div className="flex-1">
                     <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-                        {adminNavItems.map(item => (
-                            <Link
-                                key={item.label}
-                                href={item.href}
-                                className={cn(
-                                    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-primary",
-                                    pathname.startsWith(item.href) && item.href !== '/admin' && "bg-muted text-primary",
-                                    pathname === '/admin' && item.href === '/admin' && "bg-muted text-primary"
-                                )}
-                            >
-                                <item.icon className="h-4 w-4" />
-                                {item.label}
-                            </Link>
-                        ))}
+                        {adminNavItems.map(item => {
+                            const isActive = item.href === '/admin' 
+                                ? pathname === item.href 
+                                : pathname.startsWith(item.href);
+                            return (
+                                <Link
+                                    key={item.label}
+                                    href={item.href}
+                                    className={cn(
+                                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-primary",
+                                        isActive && "bg-muted text-primary"
+                                    )}
+                                >
+                                    <item.icon className="h-4 w-4" />
+                                    {item.label}
+                                </Link>
+                            );
+                        })}
                     </nav>
                 </div>
                 <div className="mt-auto p-4">
