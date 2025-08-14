@@ -3,11 +3,10 @@
 
 /**
  * @fileOverview An AI agent for generating character images.
- * This flow is now fully data-driven by the engineConfig object.
+ * This flow is now fully data-driven by the engineConfig object and uses the HF Inference API.
  */
 import { ai } from '@/ai/genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
-import { client } from "@gradio/client";
 import { googleAI } from '@genkit-ai/googleai';
 
 // Helper function to get image dimensions in pixels.
@@ -24,7 +23,8 @@ function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
 }
 
 /**
- * Queries a Hugging Face Space using the Gradio client.
+ * Queries the Hugging Face Inference API directly.
+ * This is more robust than relying on Gradio spaces.
  * @param {object} data The payload including inputs, model HF ID, and optional user API key.
  * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
  */
@@ -35,29 +35,51 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
     if (!apiKey) {
         throw new Error("Hugging Face API key is not configured on the server or provided by the user in their profile settings.");
     }
+
+    const inferenceApiUrl = `https://api-inference.huggingface.co/models/${data.modelId}`;
     
     try {
-        const app = await client(data.modelId, { hf_token: apiKey as `hf_${string}` });
-        const result: any = await app.predict("/predict", {
-            prompt: data.inputs,
-            negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
-            width: 1024,
-            height: 1024,
+        const response = await fetch(inferenceApiUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                inputs: data.inputs,
+            }),
         });
 
-        if (result && typeof result === 'object' && 'data' in result && Array.isArray(result.data) && result.data.length > 0) {
-            const imageResult = result.data[0];
-            if (typeof imageResult === 'string' && imageResult.startsWith('data:image')) {
-                return imageResult;
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`Hugging Face Inference API Error (${response.status}):`, errorBody);
+            // Provide a more user-friendly error message
+            if (response.status === 404) {
+                 throw new Error(`Model not found at the Hugging Face Inference API. Ensure '${data.modelId}' is a valid text-to-image model.`);
             }
+            if (response.status === 503) {
+                 throw new Error(`The model '${data.modelId}' is currently loading on Hugging Face. Please try again in a few moments.`);
+            }
+            throw new Error(`Hugging Face Inference API request failed with status ${response.status}.`);
         }
+
+        // The API returns the image as binary data (blob)
+        const imageBlob = await response.blob();
+        if (!imageBlob.type.startsWith('image/')) {
+            throw new Error('The Hugging Face API did not return a valid image file.');
+        }
+
+        // Convert the blob to a Buffer, then to a Base64 string to create the Data URI
+        const arrayBuffer = await imageBlob.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const base64Image = buffer.toString('base64');
+        const mimeType = imageBlob.type;
         
-        throw new Error("Received an unexpected response format from the Gradio API.");
+        return `data:${mimeType};base64,${base64Image}`;
 
     } catch (error) {
-        console.error("Gradio/Hugging Face API Error:", error);
+        console.error("Hugging Face Inference API Error:", error);
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
-        // This is a more specific error message to help debug.
         throw new Error(`Failed to generate image via Hugging Face. Error: ${message}`);
     }
 }
