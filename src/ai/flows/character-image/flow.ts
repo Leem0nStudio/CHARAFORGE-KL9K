@@ -6,7 +6,6 @@
  * This flow is now fully data-driven by the engineConfig object.
  */
 import { ai } from '@/ai/genkit';
-import { generate } from 'genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
 import { client } from "@gradio/client";
 
@@ -135,7 +134,7 @@ const generateCharacterImageFlow = ai.defineFlow(
     if (engineId === 'gemini') {
         try {
             const { width, height } = getDimensions(aspectRatio);
-            const { media } = await generate({
+            const { media } = await ai.generate({
                 // @ts-ignore
                 model: 'gemini-2.0-flash-preview-image-generation',
                 prompt: description,

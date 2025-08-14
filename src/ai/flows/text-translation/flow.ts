@@ -7,7 +7,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { generate } from 'genkit';
 import type { GenerationCommonOptions } from 'genkit/ai';
 import { 
   TranslateTextInputSchema, 
@@ -57,7 +56,7 @@ const translateTextFlow = ai.defineFlow(
       };
     }
 
-    const { output } = await generate({
+    const { output } = await ai.generate({
         model: modelId,
         prompt: prompt,
         output: {

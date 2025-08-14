@@ -6,7 +6,6 @@
  * This flow generates a structured character sheet from a simple description.
  */
 import { ai } from '@/ai/genkit';
-import { generate } from 'genkit';
 import type { GenerationCommonOptions } from 'genkit/ai';
 import { 
   GenerateCharacterSheetInputSchema, 
@@ -65,7 +64,7 @@ const generateCharacterSheetFlow = ai.defineFlow(
     - biography: A detailed, multi-paragraph biography exploring the character's backstory, personality, and motivations. Make it engaging and narrative-driven.
     `;
 
-    const { output } = await generate({
+    const { output } = await ai.generate({
         model: modelId,
         prompt: prompt,
         output: {
