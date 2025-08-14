@@ -10,7 +10,7 @@ import { CharacterCard } from '@/components/character/character-card';
 import { SectionTitle } from '@/components/section-title';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getSlotColorClass } from '@/lib/app-config';
+import { getSlotCategory } from '@/lib/app-config';
 import { cn } from '@/lib/utils';
 
 
@@ -63,7 +63,8 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                         <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
                             <Badge 
                                 variant="outline"
-                                className={cn('cursor-pointer hover:border-primary/50', getSlotColorClass(tag))}
+                                className="cursor-pointer hover:border-primary/50"
+                                data-category={getSlotCategory(tag)}
                             >
                                 {tag}
                             </Badge>
@@ -107,7 +108,7 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                             <Badge 
                                 key={slot.id} 
                                 variant="outline"
-                                className={cn(getSlotColorClass(slot.id))}
+                                data-category={getSlotCategory(slot.id)}
                             >
                                 {slot.label}
                             </Badge>

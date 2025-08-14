@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import Link from 'next/link';
 import { Badge } from './ui/badge';
-import { getSlotColorClass } from '@/lib/app-config';
+import { getSlotCategory } from '@/lib/app-config';
 
 function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, isOpen: boolean, onClose: () => void }) {
     if (!pack) return null;
@@ -44,7 +44,7 @@ function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, 
                                     <Badge 
                                         key={slot.id} 
                                         variant="outline"
-                                        className={cn(getSlotColorClass(slot.id))}
+                                        data-category={getSlotCategory(slot.id)}
                                     >
                                         {slot.label}
                                     </Badge>

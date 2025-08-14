@@ -5,7 +5,7 @@ import { searchCharactersByTag } from '@/app/actions/creations';
 import { BackButton } from '@/components/back-button';
 import { CharacterCard } from '@/components/character/character-card';
 import { Badge } from '@/components/ui/badge';
-import { getSlotColorClass } from '@/lib/app-config';
+import { getSlotCategory } from '@/lib/app-config';
 import { cn } from '@/lib/utils';
 import { Tag } from 'lucide-react';
 
@@ -46,7 +46,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg bg-card/50">
-                        <div>No characters found with the tag <Badge variant="outline" className={cn('ml-1 mr-1', getSlotColorClass(tag || ''))}>{tag}</Badge>.</div>
+                        <div>No characters found with the tag <Badge variant="outline" data-category={getSlotCategory(tag || '')} className="ml-1 mr-1">{tag}</Badge>.</div>
                     </div>
                 )}
             </div>

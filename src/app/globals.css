@@ -100,6 +100,26 @@
   .animate-subtle-pulse {
       animation: subtle-pulse 2s ease-in-out infinite;
   }
+
+  /* Data-driven styling for tags/badges */
+  [data-category="appearance"] {
+    @apply text-chart-1 bg-chart-1/10 border-chart-1/50;
+  }
+  [data-category="equipment"] {
+    @apply text-chart-5 bg-chart-5/10 border-chart-5/50;
+  }
+  [data-category="style"] {
+    @apply text-chart-2 bg-chart-2/10 border-chart-2/50;
+  }
+  [data-category="setting"] {
+    @apply text-chart-3 bg-chart-3/10 border-chart-3/50;
+  }
+  [data-category="class"] {
+    @apply text-chart-4 bg-chart-4/10 border-chart-4/50;
+  }
+  [data-category="misc"] {
+    @apply text-muted-foreground bg-muted-foreground/10 border-muted-foreground/20;
+  }
 }
 
 @keyframes pulse-glow {

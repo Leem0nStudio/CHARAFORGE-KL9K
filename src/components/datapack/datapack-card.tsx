@@ -8,7 +8,7 @@ import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription }
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { DataPack } from '@/types/datapack';
-import { getSlotColorClass } from '@/lib/app-config';
+import { getSlotCategory } from '@/lib/app-config';
 
 interface DataPackCardProps {
     pack: DataPack;
@@ -62,7 +62,8 @@ export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
                                     <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`} onClick={handleTagClick}>
                                         <Badge 
                                             variant="outline"
-                                            className={cn("cursor-pointer hover:border-primary/50", getSlotColorClass(tag))}
+                                            className="cursor-pointer hover:border-primary/50"
+                                            data-category={getSlotCategory(tag)}
                                         >
                                             {tag}
                                         </Badge>

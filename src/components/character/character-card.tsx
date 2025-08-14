@@ -9,7 +9,7 @@ import { Card, CardFooter, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import type { Character } from '@/types/character';
-import { getSlotColorClass } from '@/lib/app-config';
+import { getSlotCategory } from '@/lib/app-config';
 import { cn } from '@/lib/utils';
 
 interface CharacterCardProps {
@@ -80,7 +80,8 @@ export function CharacterCard({ character }: CharacterCardProps) {
                                 <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
                                     <Badge
                                         variant="outline"
-                                        className={cn("cursor-pointer hover:border-primary/50", getSlotColorClass(tag))}
+                                        className="cursor-pointer hover:border-primary/50"
+                                        data-category={getSlotCategory(tag)}
                                     >
                                       {tag.replace(/_/g, ' ')}
                                     </Badge>

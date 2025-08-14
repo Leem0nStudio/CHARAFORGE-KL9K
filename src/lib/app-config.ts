@@ -24,16 +24,7 @@ export const adminNavItems: NavItem[] = [
     { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
-// Corresponds to the text-chart-* classes in tailwind.config.ts
-const slotCategoryColorClasses = {
-    appearance: 'text-chart-1 bg-chart-1/10 border-chart-1/50', // Blue
-    equipment: 'text-chart-5 bg-chart-5/10 border-chart-5/50',   // Red
-    style: 'text-chart-2 bg-chart-2/10 border-chart-2/50',       // Green
-    setting: 'text-chart-3 bg-chart-3/10 border-chart-3/50',     // Yellow
-    class: 'text-chart-4 bg-chart-4/10 border-chart-4/50',       // Orange
-    misc: 'text-muted-foreground bg-muted-foreground/10 border-muted-foreground/20',
-};
-type SlotCategory = keyof typeof slotCategoryColorClasses;
+type SlotCategory = 'appearance' | 'equipment' | 'style' | 'setting' | 'class' | 'misc';
 
 const slotIdToCategoryMap: Record<string, SlotCategory> = {
     // Appearance
@@ -81,17 +72,18 @@ const slotIdToCategoryMap: Record<string, SlotCategory> = {
 };
 
 /**
- * Gets the Tailwind CSS color class for a given slot ID or tag based on its category.
+ * Gets the category for a given slot ID or tag.
  * @param id The ID of the slot or the tag string (e.g., 'hair_color', 'weapon', 'fantasy').
- * @returns A string containing the Tailwind CSS classes for the color.
+ * @returns A string representing the category.
  */
-export function getSlotColorClass(id: string): string {
+export function getSlotCategory(id: string): SlotCategory {
   // First, check if the ID matches a known slot ID
-  const category = slotIdToCategoryMap[id] || 'misc';
-  
-  // If we want to add specific keyword matching for general tags (like from datapack tags)
-  // we can add it here. For now, we default to the category mapping or misc.
-  // Example: if (id === 'fantasy') return slotCategoryColorClasses['class'];
+  const category = slotIdToCategoryMap[id];
+  if (category) return category;
 
-  return slotCategoryColorClasses[category];
+  // Add keyword-based matching for general tags
+  if (['fantasy', 'sci-fi', 'cyberpunk', 'horror'].some(t => id.includes(t))) return 'class';
+  if (['illustration', 'painting', 'photorealistic', 'sketch'].some(t => id.includes(t))) return 'style';
+
+  return 'misc';
 }
