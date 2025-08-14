@@ -40,3 +40,5 @@ export const GenerateCharacterImageOutputSchema = z.object({
     .describe('The generated image as a data URI, including MIME type and Base64 encoding.'),
 });
 export type GenerateCharacterImageOutput = z.infer<typeof GenerateCharacterImageOutputSchema>;
+
+    

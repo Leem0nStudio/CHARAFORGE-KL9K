@@ -208,7 +208,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     }
     
     if ((data as any).createdAt && (data as any).createdAt instanceof Timestamp) {
-        (data as any).createdAt = (data as any).createdAt.toMillis();
+        (data as any).createdAt = (data as any).toMillis();
     }
     
     if ((data as any).lastLogin && (data as any).lastLogin instanceof Timestamp) {
@@ -221,3 +221,5 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     return null;
   }
 }
+
+    
