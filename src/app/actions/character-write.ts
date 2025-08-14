@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -188,7 +189,10 @@ export async function saveCharacter(input: SaveCharacterInput) {
     const firstError = validation.error.errors[0];
     throw new Error(`Invalid input for ${firstError.path.join('.')}: ${firstError.message}`);
   }
-  const { name, biography, imageUrl: imageDataUri, dataPackId, tags, archetype, equipment, physicalDescription } = validation.data;
+  const { 
+      name, biography, imageUrl: imageDataUri, dataPackId, tags, 
+      archetype, equipment, physicalDescription, textEngine, imageEngine 
+  } = validation.data;
   
   const userId = await verifyAndGetUid();
   if (!adminDb) {
@@ -232,6 +236,8 @@ export async function saveCharacter(input: SaveCharacterInput) {
             archetype: archetype || null,
             equipment: equipment || null,
             physicalDescription: physicalDescription || null,
+            textEngine: textEngine || null,
+            imageEngine: imageEngine || null,
         };
 
         transaction.set(characterRef, characterData);

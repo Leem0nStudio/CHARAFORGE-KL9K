@@ -48,6 +48,9 @@ export type Character = {
   archetype?: string | null;
   equipment?: string[] | null;
   physicalDescription?: string | null;
+  // Engine Info
+  textEngine?: 'gemini' | 'openrouter';
+  imageEngine?: 'gemini' | 'openrouter' | 'huggingface';
 };
 
 // Zod validation schemas for character actions.
@@ -73,6 +76,8 @@ export const SaveCharacterInputSchema = z.object({
   archetype: z.string(),
   equipment: z.array(z.string()),
   physicalDescription: z.string(),
+  textEngine: z.enum(['gemini', 'openrouter']).optional(),
+  imageEngine: z.enum(['gemini', 'openrouter', 'huggingface']).optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
 

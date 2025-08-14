@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback, useTransition, use } from "react";
@@ -24,8 +25,8 @@ import {
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
     ScrollArea,
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+    Label,
 } from "@/components/ui";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
@@ -77,6 +78,8 @@ const generationFormSchema = z.object({
 type GenerationResult = GenerateCharacterSheetOutput & {
   imageUrl?: string | null;
   dataPackId?: string | null;
+  textEngine?: 'gemini' | 'openrouter';
+  imageEngine?: 'gemini' | 'openrouter' | 'huggingface';
 };
 
 export function CharacterGenerator() {
@@ -202,6 +205,7 @@ export function CharacterGenerator() {
         setGenerationResult({
           ...result.data,
           dataPackId: activePackId,
+          textEngine: 'gemini', // Hardcoded for now as it's the only one used for text
         });
         toast({ title: "Character Sheet Generated!", description: "Review the details and then generate the portrait." });
       } else {
@@ -227,7 +231,7 @@ export function CharacterGenerator() {
         });
         
         if (result.success && result.imageUrl) {
-            setGenerationResult(prev => prev ? { ...prev, imageUrl: result.imageUrl } : null);
+            setGenerationResult(prev => prev ? { ...prev, imageUrl: result.imageUrl, imageEngine: data.selectedModel.engine } : null);
             toast({ title: "Portrait Generated!", description: "The character image is now ready."});
         } else {
              const errorMessage = result.error || "An unknown error occurred during portrait generation.";
@@ -259,6 +263,8 @@ export function CharacterGenerator() {
           archetype: generationResult.archetype,
           equipment: generationResult.equipment,
           physicalDescription: generationForm.getValues('physicalDescription') || generationResult.physicalDescription,
+          textEngine: generationResult.textEngine,
+          imageEngine: generationResult.imageEngine,
         });
 
         toast({

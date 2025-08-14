@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { User, GitBranch, Layers, Package, Tag } from 'lucide-react';
+import { User, GitBranch, Layers, Package, Tag, Pilcrow, Image as ImageIcon } from 'lucide-react';
 import { Card, CardFooter, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -92,14 +93,43 @@ export function CharacterCard({ character }: CharacterCardProps) {
                      ) : (
                         <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-grow">{character.description}</p>
                      )}
-                     {character.dataPackName && (
-                        <Link href={`/datapacks/${character.dataPackId}`}>
-                            <Badge variant="secondary" className="mb-2 text-xs cursor-pointer hover:border-primary/50">
-                                <Package className="h-3 w-3 mr-1.5" />
-                                {character.dataPackName}
-                            </Badge>
-                        </Link>
+                     <div className="flex flex-wrap gap-1">
+                        {character.textEngine && (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Badge variant="secondary" className="capitalize"><Pilcrow className="mr-1" /> {character.textEngine}</Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Text generated with {character.textEngine}</p></TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
+                        {character.imageEngine && (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Badge variant="secondary" className="capitalize"><ImageIcon className="mr-1" /> {character.imageEngine}</Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Image generated with {character.imageEngine}</p></TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
+                         {character.dataPackName && (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Link href={`/datapacks/${character.dataPackId}`}>
+                                            <Badge variant="secondary" className="cursor-pointer hover:border-primary/50">
+                                                <Package className="mr-1.5" />
+                                                {character.dataPackName}
+                                            </Badge>
+                                        </Link>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Created with DataPack: {character.dataPackName}</p></TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                        )}
+                     </div>
                 </CardContent>
                 <CardFooter className="p-3 bg-card/50 mt-auto">
                     <div className="w-full">
@@ -119,3 +149,5 @@ export function CharacterCard({ character }: CharacterCardProps) {
         </motion.div>
     );
 }
+
+    
