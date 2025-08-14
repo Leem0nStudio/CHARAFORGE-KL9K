@@ -214,7 +214,9 @@ export async function saveCharacter(input: SaveCharacterInput) {
         const versionName = `v.${version}`;
         const initialVersion = { id: characterRef.id, name: versionName, version: version };
         
-        const tagsArray = tags ? tags.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean) : [];
+        const tagsArray = tags ? tags.split(',').map(tag => tag.trim().toLowerCase().replace(/ /g, '_')).filter(Boolean) : [];
+        const uniqueTags = [...new Set(tagsArray)];
+
 
         const characterData = {
             userId,
@@ -232,7 +234,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
             versions: [initialVersion],
             branchingPermissions: 'private',
             alignment: 'True Neutral',
-            tags: tagsArray,
+            tags: uniqueTags,
             archetype: archetype || null,
             equipment: equipment || null,
             physicalDescription: physicalDescription || null,
@@ -316,5 +318,3 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
     return { success: false, message };
   }
 }
-
-    

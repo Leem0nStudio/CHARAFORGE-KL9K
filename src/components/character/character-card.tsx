@@ -149,5 +149,3 @@ export function CharacterCard({ character }: CharacterCardProps) {
         </motion.div>
     );
 }
-
-    
