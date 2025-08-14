@@ -27,6 +27,8 @@ const alignmentOptions = [
 
 const FormSchema = z.object({
   name: z.string().min(1, "Name is required.").max(100, "Name cannot exceed 100 characters."),
+  archetype: z.string().optional(),
+  equipment: z.array(z.string()).optional(),
   biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
   alignment: z.enum(alignmentOptions),
 });
@@ -42,6 +44,8 @@ export function EditDetailsTab({ character }: { character: Character }) {
         resolver: zodResolver(FormSchema),
         defaultValues: {
             name: character.name,
+            archetype: character.archetype || '',
+            equipment: character.equipment || [],
             biography: character.biography,
             alignment: character.alignment || 'True Neutral',
         },
@@ -89,7 +93,7 @@ export function EditDetailsTab({ character }: { character: Character }) {
         <Card>
             <CardHeader>
                 <CardTitle>Core Details</CardTitle>
-                <CardDescription>Modify the fields below to update your character's story.</CardDescription>
+                <CardDescription>Modify the fields below to update your character's story and attributes.</CardDescription>
             </CardHeader>
             <CardContent>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -98,6 +102,10 @@ export function EditDetailsTab({ character }: { character: Character }) {
                             <Label htmlFor="name">Character Name</Label>
                             <Input id="name" {...form.register('name')} />
                             {form.formState.errors.name && <p className="text-sm font-medium text-destructive">{form.formState.errors.name.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="archetype">Archetype</Label>
+                            <Input id="archetype" {...form.register('archetype')} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="alignment">Alignment</Label>
@@ -116,6 +124,20 @@ export function EditDetailsTab({ character }: { character: Character }) {
                                 )}
                             />
                             {form.formState.errors.alignment && <p className="text-sm font-medium text-destructive">{form.formState.errors.alignment.message}</p>}
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="equipment">Equipment (comma-separated)</Label>
+                            <Controller
+                                name="equipment"
+                                control={form.control}
+                                render={({ field }) => (
+                                    <Input
+                                        id="equipment"
+                                        value={Array.isArray(field.value) ? field.value.join(', ') : ''}
+                                        onChange={(e) => field.onChange(e.target.value.split(',').map(item => item.trim()).filter(Boolean))}
+                                    />
+                                )}
+                            />
                         </div>
                     </div>
                    

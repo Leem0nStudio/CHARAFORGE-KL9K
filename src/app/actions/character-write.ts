@@ -142,7 +142,7 @@ export async function updateCharacterDataPackSharing(characterId: string, isShar
 
 export async function updateCharacter(
     characterId: string, 
-    data: { name: string, biography: string, alignment: Character['alignment'] }
+    data: Partial<Omit<Character, 'id' | 'createdAt'>>
 ): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
   if (!adminDb) {
@@ -160,7 +160,7 @@ export async function updateCharacter(
         };
     }
     
-    const { name, biography, alignment } = validatedFields.data;
+    const { name, biography, alignment, archetype, equipment } = validatedFields.data;
     const characterRef = adminDb.collection('characters').doc(characterId);
     
     const characterDoc = await characterRef.get();
@@ -169,7 +169,7 @@ export async function updateCharacter(
         return { success: false, message: 'Permission denied or character not found.' };
     }
   
-    await characterRef.update({ name, biography, alignment });
+    await characterRef.update({ name, biography, alignment, archetype, equipment });
 
     revalidatePath(`/characters/${characterId}/edit`);
     revalidatePath('/characters');
