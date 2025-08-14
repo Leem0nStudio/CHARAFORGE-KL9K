@@ -270,3 +270,35 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
         return { success: false, message: 'Failed to delete model.', error: message };
     }
 }
+
+
+/**
+ * Fetches all models of a given type ('model' or 'lora') from the database.
+ * This is intended for admin use or for populating selectors.
+ * It fetches models without a userId (system models) and user-specific models.
+ * @param type The type of model to fetch.
+ * @returns An array of AiModel objects.
+ */
+export async function getModels(type: 'model' | 'lora'): Promise<AiModel[]> {
+  if (!adminDb) return [];
+  try {
+    const snapshot = await adminDb
+      .collection('ai_models')
+      .where('type', '==', type)
+      .orderBy('createdAt', 'desc')
+      .get();
+      
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+      } as AiModel;
+    });
+  } catch (error) {
+    console.error(`Error fetching all ${type}s:`, error);
+    return [];
+  }
+}

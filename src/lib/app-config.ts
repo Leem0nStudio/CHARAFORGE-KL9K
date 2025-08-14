@@ -10,84 +10,11 @@ export interface NavItem {
     isPrimary?: boolean;
 }
 
-// Static AI Model Definitions
-export const imageModels: AiModel[] = [
-    {
-        id: 'gemini-placeholder',
-        name: 'Gemini Image Generation',
-        type: 'model',
-        engine: 'gemini',
-        civitaiModelId: '0',
-        hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
-        versionId: '1.0',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-    },
-     {
-        id: 'waiNSFWIllustrious_v140',
-        name: 'waiNSFWIllustrious v1.4.0',
-        type: 'model',
-        engine: 'huggingface',
-        hf_id: 'Ine007/waiNSFWIllustrious_v140',
-        civitaiModelId: '0', 
-        versionId: '1.0',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-    },
-];
+// Static AI Model Definitions - these are fallbacks or system-provided defaults.
+// The primary source of truth is now the 'ai_models' collection in Firestore.
+export const imageModels: AiModel[] = [];
 
-export const geminiTextPlaceholder: AiModel = {
-    id: 'gemini-text-placeholder',
-    name: 'Gemini 1.5 Flash',
-    type: 'model',
-    engine: 'gemini',
-    civitaiModelId: '0', 
-    hf_id: 'googleai/gemini-1.5-flash-latest',
-    versionId: '1.0',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-};
-
-// Define a list of default text models available to all users.
-export const textModels: AiModel[] = [
-    geminiTextPlaceholder,
-    {
-        id: 'gpt-4o-placeholder',
-        name: 'OpenAI GPT-4o',
-        type: 'model',
-        engine: 'openrouter',
-        civitaiModelId: '0',
-        hf_id: 'openai/gpt-4o',
-        versionId: '1.0',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        coverMediaUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/OpenAI_Logo.svg/1200px-OpenAI_Logo.svg.png',
-    },
-    {
-        id: 'gpt-oss-20b-placeholder',
-        name: 'GPT-OSS 20B (Free)',
-        type: 'model',
-        engine: 'openrouter',
-        civitaiModelId: '0',
-        hf_id: 'openai/gpt-oss-20b:free',
-        versionId: '1.0',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        coverMediaUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/OpenAI_Logo.svg/1200px-OpenAI_Logo.svg.png',
-    },
-    {
-        id: 'llama3-70b-placeholder',
-        name: 'Meta Llama 3 70B',
-        type: 'model',
-        engine: 'openrouter',
-        civitaiModelId: '0',
-        hf_id: 'meta-llama/llama-3-70b-instruct',
-        versionId: '1.0',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        coverMediaUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Meta-Logo.png',
-    }
-];
+export const textModels: AiModel[] = [];
 
 
 export const mainNavItems: NavItem[] = [
