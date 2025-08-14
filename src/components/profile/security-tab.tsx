@@ -91,9 +91,14 @@ export function SecurityTab() {
         </CardHeader>
         <CardContent className="space-y-6">
             <div className="space-y-2">
-                <Label htmlFor="hf-api-key" className="flex items-center gap-2">
-                    <KeyRound /> Hugging Face API Key
-                </Label>
+                <div className="flex justify-between items-center">
+                    <Label htmlFor="hf-api-key" className="flex items-center gap-2">
+                        <KeyRound /> Hugging Face API Key
+                    </Label>
+                     <Link href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+                        <Info className="h-3 w-3" /> Where do I find this?
+                    </Link>
+                </div>
                 <div className="flex items-center gap-2">
                     <Input 
                         id="hf-api-key" 
@@ -114,9 +119,14 @@ export function SecurityTab() {
             <Separator />
 
              <div className="space-y-2">
-                <Label htmlFor="or-api-key" className="flex items-center gap-2">
-                    <KeyRound /> OpenRouter API Key
-                </Label>
+                <div className="flex justify-between items-center">
+                    <Label htmlFor="or-api-key" className="flex items-center gap-2">
+                        <KeyRound /> OpenRouter API Key
+                    </Label>
+                     <Link href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+                        <Info className="h-3 w-3" /> Where do I find this?
+                    </Link>
+                </div>
                  <div className="flex items-center gap-2">
                     <Input 
                         id="or-api-key" 
