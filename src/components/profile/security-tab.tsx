@@ -21,11 +21,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { deleteUserAccount, updateUserPreferences } from '@/app/actions/user';
-import { Loader2, KeyRound, Info } from 'lucide-react';
+import { Loader2, KeyRound, Info, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import type { UserPreferences } from '@/types/user';
 import Link from 'next/link';
 import { Separator } from '../ui/separator';
+import { cn } from '@/lib/utils';
 
 export function SecurityTab() {
   const { toast } = useToast();
@@ -37,18 +38,9 @@ export function SecurityTab() {
   const [huggingFaceApiKey, setHuggingFaceApiKey] = useState(userProfile?.preferences?.huggingFaceApiKey || '');
   const [openRouterApiKey, setOpenRouterApiKey] = useState(userProfile?.preferences?.openRouterApiKey || '');
 
-  const handleDeleteAccount = () => {
-    startDeleteTransition(async () => {
-      const result = await deleteUserAccount();
-      if (result.success) {
-        toast({ title: 'Account Deleted', description: result.message });
-        router.push('/');
-        router.refresh(); 
-      } else {
-        toast({ variant: 'destructive', title: 'Error', description: result.message });
-      }
-    });
-  };
+  const hasHfKey = !!userProfile?.preferences?.huggingFaceApiKey;
+  const hasOrKey = !!userProfile?.preferences?.openRouterApiKey;
+
 
   const handleSavePreferences = () => {
     startPrefsTransition(async () => {
@@ -69,36 +61,54 @@ export function SecurityTab() {
     });
   };
 
+  const handleDeleteAccount = () => {
+    startDeleteTransition(async () => {
+      const result = await deleteUserAccount();
+      if (result.success) {
+        toast({ title: 'Account Deleted', description: result.message });
+        router.push('/');
+        router.refresh(); 
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+      }
+    });
+  };
+
+  const handleClearKey = (keyType: 'huggingFace' | 'openRouter') => {
+      if(keyType === 'huggingFace') setHuggingFaceApiKey('');
+      if(keyType === 'openRouter') setOpenRouterApiKey('');
+      // The user still needs to press save to confirm the change
+      toast({ title: "Key Cleared", description: "Press 'Save API Keys' to confirm this change."})
+  }
+
 
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>API Keys</CardTitle>
-          <CardDescription>Provide your own API keys to use as a fallback if the system's keys are rate-limited or to access premium models.</CardDescription>
+          <CardDescription>Provide your own API keys to use if the system's keys are rate-limited or to access premium models.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
             <div className="space-y-2">
                 <Label htmlFor="hf-api-key" className="flex items-center gap-2">
                     <KeyRound /> Hugging Face API Key
                 </Label>
-                <Input 
-                    id="hf-api-key" 
-                    type="password" 
-                    placeholder="hf_..."
-                    value={huggingFaceApiKey}
-                    onChange={(e) => setHuggingFaceApiKey(e.target.value)}
-                />
-                 <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Where to find your API Key?</AlertTitle>
-                    <AlertDescription>
-                        Using your own key can prevent generation failures if the system key is busy. You can create a free key in your Hugging Face account settings.
-                        <Button variant="link" asChild className="p-0 h-auto ml-1 font-semibold">
-                            <Link href="https://huggingface.co/settings/tokens" target="_blank">Get your key here.</Link>
-                        </Button>
-                    </AlertDescription>
-                </Alert>
+                <div className="flex items-center gap-2">
+                    <Input 
+                        id="hf-api-key" 
+                        type="password" 
+                        placeholder={hasHfKey ? '•••••••••••••••••••••••' : 'Enter your key...'}
+                        value={huggingFaceApiKey}
+                        onChange={(e) => setHuggingFaceApiKey(e.target.value)}
+                        className="flex-grow"
+                    />
+                    {hasHfKey && <Button variant="ghost" type="button" onClick={() => handleClearKey('huggingFace')}>Clear</Button>}
+                </div>
+                 <div className={cn("flex items-center text-xs gap-2", hasHfKey ? "text-green-500" : "text-amber-500")}>
+                    {hasHfKey ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4"/>}
+                    {hasHfKey ? "Key Configured" : "No Key Set"}
+                </div>
             </div>
             
             <Separator />
@@ -107,23 +117,20 @@ export function SecurityTab() {
                 <Label htmlFor="or-api-key" className="flex items-center gap-2">
                     <KeyRound /> OpenRouter API Key
                 </Label>
-                <Input 
-                    id="or-api-key" 
-                    type="password" 
-                    placeholder="sk-or-..."
-                    value={openRouterApiKey}
-                    onChange={(e) => setOpenRouterApiKey(e.target.value)}
-                />
-                 <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Where to find your API Key?</AlertTitle>
-                    <AlertDescription>
-                       OpenRouter provides access to models like DALL-E 3 and SDXL Turbo.
-                        <Button variant="link" asChild className="p-0 h-auto ml-1 font-semibold">
-                            <Link href="https://openrouter.ai/keys" target="_blank">Get your key here.</Link>
-                        </Button>
-                    </AlertDescription>
-                </Alert>
+                 <div className="flex items-center gap-2">
+                    <Input 
+                        id="or-api-key" 
+                        type="password" 
+                        placeholder={hasOrKey ? '•••••••••••••••••••••••' : 'Enter your key...'}
+                        value={openRouterApiKey}
+                        onChange={(e) => setOpenRouterApiKey(e.target.value)}
+                    />
+                     {hasOrKey && <Button variant="ghost" type="button" onClick={() => handleClearKey('openRouter')}>Clear</Button>}
+                </div>
+                <div className={cn("flex items-center text-xs gap-2", hasOrKey ? "text-green-500" : "text-amber-500")}>
+                    {hasOrKey ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4"/>}
+                    {hasOrKey ? "Key Configured" : "No Key Set"}
+                </div>
             </div>
 
             <Button onClick={handleSavePreferences} disabled={isSavingPrefs}>
