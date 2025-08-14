@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +35,7 @@ import type { AiModel } from '@/types/ai-model';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/types";
+import { PromptTagInput } from "./prompt-tag-input";
 
 const geminiPlaceholder: AiModel = {
     id: 'gemini-placeholder',
@@ -88,6 +89,7 @@ export function CharacterGenerator() {
 
   const [activePackName, setActivePackName] = useState<string | null>(null);
   const [activePackId, setActivePackId] = useState<string | null>(null);
+  const [promptMode, setPromptMode] = useState<'text' | 'tags'>('text');
   
   const { toast } = useToast();
   const { authUser, loading: authLoading } = useAuth();
@@ -342,13 +344,35 @@ export function CharacterGenerator() {
                                     <Package className="mr-2 h-3 w-3"/> Use DataPack
                                 </Button>
                               </div>
+                               <RadioGroup
+                                  value={promptMode}
+                                  onValueChange={(value: 'text' | 'tags') => setPromptMode(value)}
+                                  className="flex items-center space-x-2 mb-2"
+                               >
+                                    <Label htmlFor="mode-text" className={cn("flex items-center gap-1 cursor-pointer p-2 rounded-md text-xs", promptMode === 'text' && "bg-muted")}>
+                                        <RadioGroupItem value="text" id="mode-text" className="sr-only" />
+                                        <Text className="h-4 w-4" /> Text
+                                    </Label>
+                                     <Label htmlFor="mode-tags" className={cn("flex items-center gap-1 cursor-pointer p-2 rounded-md text-xs", promptMode === 'tags' && "bg-muted")}>
+                                         <RadioGroupItem value="tags" id="mode-tags" className="sr-only" />
+                                        <Tags className="h-4 w-4" /> Tags
+                                    </Label>
+                               </RadioGroup>
                               <FormControl>
-                                <Textarea
-                                  placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder..."
-                                  className="min-h-[250px] resize-none"
-                                  {...field}
-                                  disabled={!canInteract}
-                                />
+                                {promptMode === 'text' ? (
+                                    <Textarea
+                                        placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder..."
+                                        className="min-h-[250px] resize-none"
+                                        {...field}
+                                        disabled={!canInteract}
+                                    />
+                                ) : (
+                                    <PromptTagInput
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        disabled={!canInteract}
+                                    />
+                                )}
                               </FormControl>
                                <div className="flex items-center justify-between mt-2">
                                 {activePackName && (
