@@ -8,8 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from "@/components/ui/badge";
 
 export default async function AiModelsPage() {
-    const allModels = await getModels('model');
-    const allLoras = await getModels('lora');
+    const [allModels, allLoras] = await Promise.all([
+        getModels('model'),
+        getModels('lora')
+    ]);
 
     return (
         <AdminPageLayout

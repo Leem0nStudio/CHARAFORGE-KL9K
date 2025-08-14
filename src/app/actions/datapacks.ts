@@ -157,6 +157,34 @@ export async function getDataPackForAdmin(packId: string): Promise<DataPack | nu
     } as DataPack;
 }
 
+export async function getPublicDataPack(packId: string): Promise<DataPack | null> {
+    if (!adminDb) {
+        console.error('Database service is unavailable.');
+        return null;
+    }
+    try {
+        const docRef = adminDb.collection('datapacks').doc(packId);
+        const doc = await docRef.get();
+        if (!doc.exists) return null;
+
+        const data = doc.data();
+        const createdAt = data?.createdAt;
+        const updatedAt = data?.updatedAt;
+
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
+            updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
+        } as DataPack;
+
+    } catch (error) {
+        console.error("Error fetching single public datapack:", error);
+        return null;
+    }
+}
+
+
 export async function getPublicDataPacks(): Promise<DataPack[]> {
   if (!adminDb) {
     console.error('Database service is unavailable.');
@@ -338,5 +366,3 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         return [];
     }
 }
-
-    
