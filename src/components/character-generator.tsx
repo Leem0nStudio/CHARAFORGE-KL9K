@@ -43,7 +43,7 @@ import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/types";
 import { PromptTagInput } from "./prompt-tag-input";
 import type { DataPack } from "@/types/datapack";
-import { geminiImagePlaceholder, textModels } from "@/lib/app-config";
+import { imageModels, textModels } from "@/lib/app-config";
 import { TextEngineConfigSchema } from "@/ai/flows/character-sheet/types";
 
 
@@ -108,7 +108,7 @@ export function CharacterGenerator() {
       targetLanguage: 'English',
       aspectRatio: '1:1',
       loraWeight: 0.75,
-      selectedModel: geminiImagePlaceholder,
+      selectedModel: imageModels[0],
       selectedLora: null,
     },
   });
@@ -130,15 +130,15 @@ export function CharacterGenerator() {
         try {
             const packIdFromUrl = searchParams.get('packId');
             
-            const [models, loras, initialPackData] = await Promise.all([
+            const [userModels, userLoras, initialPackData] = await Promise.all([
                 getModelsForUser('model'),
                 getModelsForUser('lora'),
                 packIdFromUrl ? getDataPackForAdmin(packIdFromUrl) : Promise.resolve(null),
             ]);
             
-            const allBaseModels = [geminiImagePlaceholder, ...models];
+            const allBaseModels = [...imageModels, ...userModels];
             setAvailableModels(allBaseModels);
-            setAvailableLoras(loras);
+            setAvailableLoras(userLoras);
 
             if (!generationForm.getValues('selectedModel')) {
                 generationForm.setValue('selectedModel', allBaseModels[0]);

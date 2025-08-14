@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { User, AlertTriangle, ArrowRight } from 'lucide-react';
+import { User, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -34,8 +34,7 @@ export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         data-ai-hint="datapack cover image"
                     />
-                    <div className="absolute top-2 right-2 flex items-center gap-2">
-                        {pack.isNsfw && <Badge variant="destructive" className="font-bold"><AlertTriangle className="w-3 h-3 mr-1"/>NSFW</Badge>}
+                    <div className="absolute top-2 right-2">
                         <Badge className={cn(
                             "font-bold",
                             pack.type === 'premium' && "bg-yellow-500 text-black",

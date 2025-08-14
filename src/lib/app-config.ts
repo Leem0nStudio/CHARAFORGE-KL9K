@@ -11,17 +11,30 @@ export interface NavItem {
 }
 
 // Static AI Model Definitions
-export const geminiImagePlaceholder: AiModel = {
-    id: 'gemini-placeholder',
-    name: 'Gemini Image Generation',
-    type: 'model',
-    engine: 'gemini',
-    civitaiModelId: '0', 
-    hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
-    versionId: '1.0',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-};
+export const imageModels: AiModel[] = [
+    {
+        id: 'gemini-placeholder',
+        name: 'Gemini Image Generation',
+        type: 'model',
+        engine: 'gemini',
+        civitaiModelId: '0',
+        hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
+        versionId: '1.0',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    },
+     {
+        id: 'waiNSFWIllustrious_v140',
+        name: 'waiNSFWIllustrious v1.4.0',
+        type: 'model',
+        engine: 'huggingface',
+        hf_id: 'Ine007/waiNSFWIllustrious_v140',
+        civitaiModelId: '0', 
+        versionId: '1.0',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    },
+];
 
 export const geminiTextPlaceholder: AiModel = {
     id: 'gemini-text-placeholder',

@@ -41,7 +41,6 @@ export interface DataPack {
     createdAt: number;
     updatedAt?: number | null;
     schema: DataPackSchema;
-    isNsfw?: boolean;
 }
 
 // Zod Schemas for validation (both client and server)
@@ -81,7 +80,6 @@ export const DataPackFormSchema = z.object({
   price: z.number().min(0),
   tags: z.array(z.string()).optional(),
   schema: DataPackSchemaSchema,
-  isNsfw: z.boolean().optional(),
 });
 
 // Used for the server action (upsert)
