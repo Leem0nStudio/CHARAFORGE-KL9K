@@ -186,9 +186,16 @@ export function CharacterGenerator() {
     setGenerationError(null);
 
     startGenerationTransition(async () => {
+        let userApiKey: string | undefined;
+        // The text engine is currently hardcoded to Gemini, but we check for OpenRouter key in case this changes.
+        if (userProfile?.preferences?.openRouterApiKey) {
+            userApiKey = userProfile?.preferences?.openRouterApiKey;
+        }
+
       const result = await generateCharacterSheetData({ 
           description: data.description,
           targetLanguage: data.targetLanguage,
+          userApiKey: userApiKey,
       });
       
       if (result.success && result.data) {
@@ -204,7 +211,7 @@ export function CharacterGenerator() {
         toast({ variant: "destructive", title: "Generation Failed", description: errorMessage });
       }
     });
-  }, [authUser, toast, activePackId]);
+  }, [authUser, toast, activePackId, userProfile]);
   
   const onGeneratePortrait = useCallback(async () => {
     if (!authUser || !generationResult) return;

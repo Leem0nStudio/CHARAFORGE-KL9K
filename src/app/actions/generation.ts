@@ -16,6 +16,7 @@ import type { GenerateCharacterSheetOutput } from '@/ai/flows/character-sheet/ty
 const GenerateSheetInputSchema = z.object({
   description: z.string().min(20).max(1000),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
+  userApiKey: z.string().optional(), // Now passed from client
 });
 export type GenerateSheetInput = z.infer<typeof GenerateSheetInputSchema>;
 
@@ -54,12 +55,13 @@ export async function generateCharacterSheetData(input: GenerateSheetInput): Pro
     }
     await verifyAndGetUid();
 
-    const { description, targetLanguage } = validation.data;
+    const { description, targetLanguage, userApiKey } = validation.data;
 
     try {
         const textEngineConfig = {
             engineId: 'gemini',
             modelId: 'googleai/gemini-1.5-flash-latest',
+            userApiKey: userApiKey,
         };
 
         const result = await generateCharacterSheet({ 
