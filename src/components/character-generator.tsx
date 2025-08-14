@@ -9,34 +9,37 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { 
+    Button,
+    Card, CardContent, CardDescription, CardHeader, CardTitle,
+    Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+    Input,
+    Textarea,
+    Alert, AlertDescription, AlertTitle,
+    Badge,
+    RadioGroup, RadioGroupItem,
+    Slider,
+    Tabs, TabsContent, TabsList, TabsTrigger,
+    Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+    ScrollArea,
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+    Label
+} from "@/components/ui";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/actions/generation";
 import { getModelsForUser } from "@/app/actions/ai-models";
 import { Skeleton } from "./ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { DataPackSelectorModal } from "./datapack-selector-modal";
-import { Badge } from "./ui/badge";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { cn } from "@/lib/utils";
 import { TagAssistantModal } from "./tag-assistant-modal";
-import { Slider } from "./ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
-import { ScrollArea } from "./ui/scroll-area";
 import { ModelSelectorModal } from './model-selector-modal';
 import type { AiModel } from '@/types/ai-model';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/types";
 import { PromptTagInput } from "./prompt-tag-input";
-import { Label } from "@/components/ui/label";
+
 
 const geminiPlaceholder: AiModel = {
     id: 'gemini-placeholder',
