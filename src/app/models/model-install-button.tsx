@@ -49,3 +49,5 @@ export function ModelInstallButton({ modelId }: { modelId: string }) {
         </Button>
     )
 }
+
+    

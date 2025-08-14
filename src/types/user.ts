@@ -45,3 +45,5 @@ export interface UserProfile {
   preferences?: UserPreferences;
   avatarUpdatedAt?: number;
 }
+
+    
