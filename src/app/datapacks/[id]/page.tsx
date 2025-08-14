@@ -48,6 +48,7 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                 />
             </div>
             <div className="w-full md:w-2/3">
+                {pack.isNsfw && <Badge variant="destructive" className="mb-2">NSFW</Badge>}
                 <h1 className="text-4xl font-bold tracking-tight font-headline">{pack.name}</h1>
                 <p className="text-lg text-muted-foreground mt-2 flex items-center gap-2">
                     <User className="h-5 w-5" /> 
@@ -84,13 +85,18 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                  <CardHeader>
                     <CardTitle className="flex items-center gap-2 font-headline text-2xl">
                         <Quote className="text-primary" />
-                        Prompt Template
+                        Prompt Templates
                     </CardTitle>
-                    <CardDescription>This is the underlying template used to generate characters.</CardDescription>
+                    <CardDescription>This pack offers multiple templates to vary your creations.</CardDescription>
                  </CardHeader>
                  <CardContent>
-                    <div className="bg-muted/50 p-4 rounded-lg text-sm text-muted-foreground font-mono break-words">
-                        {pack.schema.promptTemplate}
+                     <div className="space-y-4">
+                        {pack.schema.promptTemplates.map((template, index) => (
+                            <div key={index} className="bg-muted/50 p-3 rounded-lg">
+                                <p className="font-semibold text-sm mb-1">{template.name}</p>
+                                <p className="text-xs text-muted-foreground font-mono break-words">{template.template}</p>
+                            </div>
+                        ))}
                     </div>
                  </CardContent>
             </Card>

@@ -12,7 +12,7 @@ import { Card, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Loader2, ArrowRight, Wand2, Package, ArrowLeft, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import type { DataPack, Option, Slot } from '@/types/datapack';
+import type { DataPack, Option, Slot, PromptTemplate } from '@/types/datapack';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import Link from 'next/link';
@@ -32,9 +32,14 @@ function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, 
                  <ScrollArea className="max-h-[60vh] -mx-6 px-6 py-4">
                      <div className="space-y-6">
                         <div>
-                            <h4 className="font-semibold mb-2">Prompt Template</h4>
-                            <div className="bg-muted/50 p-4 rounded-lg text-sm text-muted-foreground font-mono break-words">
-                                {pack.schema.promptTemplate}
+                            <h4 className="font-semibold mb-2">Prompt Templates</h4>
+                            <div className="space-y-2">
+                                {pack.schema.promptTemplates.map((template, index) => (
+                                    <div key={index} className="bg-muted/50 p-3 rounded-lg">
+                                        <p className="font-semibold text-sm mb-1">{template.name}</p>
+                                        <p className="text-xs text-muted-foreground font-mono break-words">{template.template}</p>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                         <div>
@@ -115,7 +120,7 @@ function OptionSelectModal({
     )
 }
 
-function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPromptGenerated: (prompt: string, packName: string, tags: string[], packId: string) => void, onBack: () => void }) {
+function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWizardComplete: (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => void, onBack: () => void }) {
     const { handleSubmit, watch, setValue } = useForm();
     const formValues = watch();
 
@@ -134,29 +139,8 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
     }, [pack.schema.slots, setValue]);
 
     const onSubmit = (data: any) => {
-        let prompt = pack.schema.promptTemplate || '';
-        
-        const fullData = { ...data };
-        pack.schema.slots.forEach(slot => {
-            if (slot.isLocked && slot.defaultOption) {
-                fullData[slot.id] = slot.defaultOption;
-            }
-        });
-        
-        const promptTags: string[] = [];
-        for (const key in fullData) {
-            if (fullData[key]) {
-               prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), fullData[key]);
-               promptTags.push(fullData[key]);
-            }
-        }
-        
-        prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/, ,/g, ',').replace(/, /g, ' ').replace(/,$/g, '').trim();
-        
-        // Combine prompt keywords with the pack's high-level tags
-        const allTags = [...(pack.tags || []), ...promptTags];
-
-        onPromptGenerated(prompt, pack.name, allTags, pack.id);
+        const defaultTemplate = pack.schema.promptTemplates[0];
+        onWizardComplete(data, pack, defaultTemplate);
     };
 
     return (
@@ -206,7 +190,7 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                         <ArrowLeft className="mr-2" /> Back
                     </Button>
                     <Button type="submit" size="lg" className="w-full sm:w-auto font-headline text-lg">
-                        Generate Prompt <ArrowRight className="ml-2" />
+                        Use Selections <ArrowRight className="ml-2" />
                     </Button>
                 </DialogFooter>
             </form>
@@ -278,7 +262,7 @@ function PackGallery({
                                     data-ai-hint="datapack cover image"
                                 />
                                  <div className="absolute inset-0 bg-black/50 flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                    <div />
+                                    <div className="flex justify-end">{pack.isNsfw && <Badge variant="destructive">NSFW</Badge>}</div>
                                      <div className="flex flex-col items-center justify-center gap-2">
                                          <Button type="button" size="sm" className="w-full" onClick={() => onChoosePack(pack)}>
                                             <Wand2 className="mr-2 h-4 w-4"/> Use
@@ -308,7 +292,7 @@ function PackGallery({
 interface DataPackSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onPromptGenerated: (prompt: string, packName: string, tags: string[], packId: string) => void;
+    onPromptGenerated: (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => void;
     initialPack?: DataPack | null;
 }
 
@@ -332,8 +316,8 @@ export function DataPackSelectorModal({
         }
     }, [isOpen, initialPack]);
     
-    const handlePromptGeneratedAndClose = useCallback((prompt: string, packName: string, tags: string[], packId: string) => {
-        onPromptGenerated(prompt, packName, tags, packId);
+    const handleWizardComplete = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
+        onPromptGenerated(wizardData, pack, template);
         onClose();
     }, [onPromptGenerated, onClose]);
     
@@ -341,7 +325,7 @@ export function DataPackSelectorModal({
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className={cn("max-h-[90vh] flex flex-col", wizardPack ? "sm:max-w-3xl" : "sm:max-w-4xl h-full sm:h-auto")}>
                 {wizardPack ? (
-                    <WizardGrid pack={wizardPack} onPromptGenerated={handlePromptGeneratedAndClose} onBack={() => setWizardPack(null)} />
+                    <WizardGrid pack={wizardPack} onWizardComplete={handleWizardComplete} onBack={() => setWizardPack(null)} />
                 ) : (
                     <>
                     <div className="flex-shrink-0">

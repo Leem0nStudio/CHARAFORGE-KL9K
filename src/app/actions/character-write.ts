@@ -191,7 +191,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
   }
   const { 
       name, biography, imageUrl: imageDataUri, dataPackId, tags, 
-      archetype, equipment, physicalDescription, textEngine, imageEngine 
+      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData
   } = validation.data;
   
   const userId = await verifyAndGetUid();
@@ -214,8 +214,10 @@ export async function saveCharacter(input: SaveCharacterInput) {
         const versionName = `v.${version}`;
         const initialVersion = { id: characterRef.id, name: versionName, version: version };
         
-        const tagsArray = tags ? tags.split(',').map(tag => tag.trim().toLowerCase().replace(/ /g, '_')).filter(Boolean) : [];
-        const uniqueTags = [...new Set(tagsArray)];
+        // Combine tags from wizard data and any manually entered tags
+        const wizardTags = wizardData ? Object.values(wizardData).map(tag => tag.trim().toLowerCase().replace(/ /g, '_')) : [];
+        const manualTags = tags ? tags.split(',').map(tag => tag.trim().toLowerCase().replace(/ /g, '_')) : [];
+        const uniqueTags = [...new Set([...wizardTags, ...manualTags].filter(Boolean))];
 
 
         const characterData = {
@@ -240,6 +242,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
             physicalDescription: physicalDescription || null,
             textEngine: textEngine || null,
             imageEngine: imageEngine || null,
+            wizardData: wizardData || null,
         };
 
         transaction.set(characterRef, characterData);

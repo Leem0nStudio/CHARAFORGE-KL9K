@@ -34,7 +34,8 @@ export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         data-ai-hint="datapack cover image"
                     />
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute top-2 right-2 flex gap-1">
+                        {pack.isNsfw && <Badge variant="destructive">NSFW</Badge>}
                         <Badge className={cn(
                             "font-bold",
                             pack.type === 'premium' && "bg-yellow-500 text-black",

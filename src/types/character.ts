@@ -51,6 +51,8 @@ export type Character = {
   // Engine Info
   textEngine?: 'gemini' | 'openrouter';
   imageEngine?: 'gemini' | 'openrouter' | 'huggingface';
+  // Wizard Data
+  wizardData?: Record<string, string> | null;
 };
 
 // Zod validation schemas for character actions.
@@ -73,12 +75,11 @@ export const SaveCharacterInputSchema = z.object({
   imageUrl: z.string().startsWith('data:image/'),
   dataPackId: z.string().optional().nullable(),
   tags: z.string().optional(),
-  archetype: z.string(),
-  equipment: z.array(z.string()),
-  physicalDescription: z.string(),
+  archetype: z.string().optional(),
+  equipment: z.array(z.string()).optional(),
+  physicalDescription: z.string().optional(),
   textEngine: z.enum(['gemini', 'openrouter']).optional(),
   imageEngine: z.enum(['gemini', 'openrouter', 'huggingface']).optional(),
+  wizardData: z.record(z.string()).optional().nullable(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
-
-    

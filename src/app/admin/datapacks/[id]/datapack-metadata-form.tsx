@@ -86,6 +86,23 @@ export function DataPackMetadataForm({ form, onFileChange }: DataPackMetadataFor
               <Label>Cover Image</Label>
               <Input type="file" accept="image/png" onChange={e => onFileChange(e.target.files?.[0] || null)} />
             </div>
+            <div>
+              <Controller
+                control={control}
+                name="isNsfw"
+                render={({ field }) => (
+                  <div className="flex items-center space-x-2 rounded-lg border p-3">
+                    <AlertTriangle className="text-destructive" />
+                    <Label htmlFor="isNsfw" className="flex-grow">Mark as NSFW</Label>
+                    <Switch
+                      id="isNsfw"
+                      checked={!!field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </div>
+                )}
+              />
+            </div>
           </div>
         </div>
       </CardContent>

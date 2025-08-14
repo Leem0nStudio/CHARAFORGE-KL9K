@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown } from "lucide-react";
 
 import { 
     Button,
@@ -41,7 +41,7 @@ import type { AiModel } from '@/types/ai-model';
 import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/types";
 import { PromptTagInput } from "./prompt-tag-input";
-import type { DataPack } from "@/types/datapack";
+import type { DataPack, PromptTemplate } from "@/types/datapack";
 import { imageModels, textModels } from "@/lib/app-config";
 
 
@@ -49,9 +49,10 @@ import { imageModels, textModels } from "@/lib/app-config";
 const generationFormSchema = z.object({
   description: z.string().min(20, {
     message: "Please enter a more detailed description (at least 20 characters).",
-  }).max(1000, {
-    message: "Description must not be longer than 1000 characters."
+  }).max(2000, {
+    message: "Description must not be longer than 2000 characters."
   }),
+  wizardData: z.record(z.string()).optional(),
   physicalDescription: z.string().optional(),
   tags: z.string().optional(),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
@@ -89,8 +90,8 @@ export function CharacterGenerator() {
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [selectedTextModel, setSelectedTextModel] = useState<AiModel>(textModels[0]);
 
-  const [activePackName, setActivePackName] = useState<string | null>(null);
-  const [activePackId, setActivePackId] = useState<string | null>(null);
+  const [activePack, setActivePack] = useState<DataPack | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
   const [promptMode, setPromptMode] = useState<'text' | 'tags'>('text');
   
   const { toast } = useToast();
@@ -111,11 +112,33 @@ export function CharacterGenerator() {
     },
   });
 
-  const handlePromptGenerated = useCallback((prompt: string, packName: string, tags: string[], packId: string) => {
+  const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
+    let prompt = template.template;
+    const allWizardData = { ...wizardData };
+    pack.schema.slots.forEach(slot => {
+        if (slot.isLocked && slot.defaultOption) {
+            allWizardData[slot.id] = slot.defaultOption;
+        }
+    });
+
+    const promptTags: string[] = [];
+    for (const key in allWizardData) {
+        if (allWizardData[key]) {
+           prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), allWizardData[key]);
+           promptTags.push(allWizardData[key]);
+        }
+    }
+    
+    prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/, ,/g, ',').replace(/, /g, ' ').replace(/,$/g, '').trim();
+    
     generationForm.setValue('description', prompt, { shouldValidate: true });
-    generationForm.setValue('tags', tags.join(','));
-    setActivePackName(packName);
-    setActivePackId(packId);
+    
+    const allTags = [...(pack.tags || []), ...Object.values(allWizardData)];
+    generationForm.setValue('tags', allTags.join(','));
+    generationForm.setValue('wizardData', wizardData);
+    
+    setActivePack(pack);
+    setSelectedTemplate(template);
     
     setIsPackModalOpen(false);
   }, [generationForm]);
@@ -205,7 +228,7 @@ export function CharacterGenerator() {
       if (result.success && result.data) {
         setGenerationResult({
           ...result.data,
-          dataPackId: activePackId,
+          dataPackId: activePack?.id,
           textEngine: selectedTextModel.engine,
         });
         toast({ title: "Character Sheet Generated!", description: "Review the details and then generate the portrait." });
@@ -215,7 +238,7 @@ export function CharacterGenerator() {
         toast({ variant: "destructive", title: "Generation Failed", description: errorMessage });
       }
     });
-  }, [authUser, toast, activePackId, userProfile, selectedTextModel]);
+  }, [authUser, toast, activePack, userProfile, selectedTextModel]);
   
   const onGeneratePortrait = useCallback(async () => {
     if (!authUser || !generationResult) return;
@@ -231,7 +254,7 @@ export function CharacterGenerator() {
         }
 
         const result = await generateCharacterPortrait({
-             physicalDescription: data.physicalDescription || generationResult.physicalDescription,
+             physicalDescription: data.physicalDescription || generationResult.physicalDescription || '',
              aspectRatio: data.aspectRatio,
              selectedModel: data.selectedModel,
              selectedLora: data.selectedLora,
@@ -261,20 +284,22 @@ export function CharacterGenerator() {
         });
         return;
     }
+    const formData = generationForm.getValues();
 
     startSavingTransition(async () => {
       try {
         const result = await saveCharacter({
           name: generationResult.name,
-          biography: generationResult.biography,
+          biography: generationResult.biography || '',
           imageUrl: generationResult.imageUrl!,
           dataPackId: generationResult.dataPackId,
-          tags: generationForm.getValues('tags'),
+          tags: formData.tags,
           archetype: generationResult.archetype,
           equipment: generationResult.equipment,
-          physicalDescription: generationForm.getValues('physicalDescription') || generationResult.physicalDescription,
+          physicalDescription: formData.physicalDescription || generationResult.physicalDescription,
           textEngine: generationResult.textEngine,
           imageEngine: generationResult.imageEngine,
+          wizardData: formData.wizardData
         });
 
         toast({
@@ -335,7 +360,7 @@ export function CharacterGenerator() {
     <DataPackSelectorModal 
       isOpen={isPackModalOpen}
       onClose={() => setIsPackModalOpen(false)}
-      onPromptGenerated={handlePromptGenerated}
+      onPromptGenerated={handleWizardDataChange}
       initialPack={initialPack}
     />
     <TagAssistantModal
@@ -382,41 +407,39 @@ export function CharacterGenerator() {
                                     <Package className="mr-2 h-3 w-3"/> Use DataPack
                                 </Button>
                               </div>
-                               <RadioGroup
-                                  value={promptMode}
-                                  onValueChange={(value: 'text' | 'tags') => setPromptMode(value)}
-                                  className="flex items-center space-x-2 mb-2"
-                               >
-                                    <Label htmlFor="mode-text" className={cn("flex items-center gap-1 cursor-pointer p-2 rounded-md text-xs", promptMode === 'text' && "bg-muted")}>
-                                        <RadioGroupItem value="text" id="mode-text" className="sr-only" />
-                                        <Text className="h-4 w-4" /> Text
-                                    </Label>
-                                     <Label htmlFor="mode-tags" className={cn("flex items-center gap-1 cursor-pointer p-2 rounded-md text-xs", promptMode === 'tags' && "bg-muted")}>
-                                         <RadioGroupItem value="tags" id="mode-tags" className="sr-only" />
-                                        <Tags className="h-4 w-4" /> Tags
-                                    </Label>
-                               </RadioGroup>
-                              <FormControl>
-                                {promptMode === 'text' ? (
-                                    <Textarea
-                                        placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder..."
-                                        className="min-h-[250px] resize-none"
-                                        {...field}
-                                        disabled={!canInteract}
-                                    />
-                                ) : (
-                                    <PromptTagInput
-                                        value={field.value}
-                                        onChange={field.onChange}
-                                        disabled={!canInteract}
-                                    />
+                               {activePack && selectedTemplate && (
+                                    <Select 
+                                      onValueChange={(value) => {
+                                        const newTemplate = activePack.schema.promptTemplates.find(t => t.name === value);
+                                        if (newTemplate) {
+                                            handleWizardDataChange(generationForm.getValues('wizardData') || {}, activePack, newTemplate);
+                                        }
+                                      }}
+                                      defaultValue={selectedTemplate.name}
+                                    >
+                                        <SelectTrigger className="mb-2">
+                                            <SelectValue placeholder="Select a prompt template..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {activePack.schema.promptTemplates.map(t => (
+                                                <SelectItem key={t.name} value={t.name}>{t.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 )}
+                              <FormControl>
+                                  <Textarea
+                                      placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder..."
+                                      className="min-h-[250px] resize-none"
+                                      {...field}
+                                      disabled={!canInteract}
+                                  />
                               </FormControl>
                                <div className="flex items-center justify-between mt-2">
-                                {activePackName && (
+                                {activePack && (
                                   <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
                                     <Package className="h-3 w-3" />
-                                    Using: {activePackName}
+                                    Using: {activePack.name}
                                   </Badge>
                                 )}
                                  <Button type="button" variant="link" size="sm" onClick={() => setIsTagModalOpen(true)} className="ml-auto">
@@ -638,7 +661,7 @@ export function CharacterGenerator() {
                             <div>
                                 <h4 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-2"><Swords className="h-4 w-4 text-primary"/> Equipment</h4>
                                 <ul className="list-disc list-inside text-card-foreground space-y-1 text-sm">
-                                    {generationResult.equipment.map((item, i) => <li key={i}>{item}</li>)}
+                                    {generationResult.equipment?.map((item, i) => <li key={i}>{item}</li>)}
                                 </ul>
                             </div>
                              <div>

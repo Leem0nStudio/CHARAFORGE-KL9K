@@ -1,10 +1,11 @@
+
 /**
  * @fileOverview Data schemas and types for the DataPack schema generation flow.
  * This file defines the Zod schemas for input and output validation,
  * and exports the corresponding TypeScript types.
  */
 
-import { z } from 'genkit';
+import { z } from 'zod';
 
 export const GenerateDataPackSchemaInputSchema = z.object({
   concept: z.string().describe('The core concept or theme for the DataPack (e.g., "cyberpunk space pirates", "lovecraftian horror investigators").'),
@@ -34,11 +35,14 @@ const SlotSchema = z.object({
     isLocked: z.boolean().optional().describe("If true, this slot is considered a core, unchangeable attribute of the pack and will not be shown to the user for configuration."),
 });
 
+const PromptTemplateSchema = z.object({
+  name: z.string().describe("A short, descriptive name for the template (e.g., 'Cinematic Portrait', 'Action Shot')."),
+  template: z.string().describe("A detailed Handlebars-style prompt template string. It must include placeholders for all defined slot IDs, e.g., 'A {style} portrait of a {race} {class}.'."),
+});
+
 export const GenerateDataPackSchemaOutputSchema = z.object({
-  promptTemplate: z.string().describe("A detailed Handlebars-style prompt template string. It must include placeholders for all defined slot IDs, e.g., 'A {style} portrait of a {race} {class}.'."),
+  promptTemplates: z.array(PromptTemplateSchema).describe("An array of 3-5 diverse and creative prompt templates."),
   slots: z.array(SlotSchema).describe("An array of 7-10 diverse and creative slot objects that define the customizable options for the DataPack."),
   tags: z.array(z.string()).describe("An array of 3-5 relevant, single-word, lowercase tags that categorize the datapack (e.g., ['fantasy', 'sci-fi', 'horror']).")
 });
 export type GenerateDataPackSchemaOutput = z.infer<typeof GenerateDataPackSchemaOutputSchema>;
-
-    

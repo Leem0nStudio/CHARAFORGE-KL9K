@@ -23,12 +23,14 @@ const prompt = ai.definePrompt({
   model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are an expert game designer and world-builder, specializing in creating rich, thematic character generation systems. Your task is to generate a complete DataPack schema for a character creator based on a given concept.
 
-The output must be a valid JSON object matching the provided schema, with a 'promptTemplate', a 'slots' array, and a 'tags' array.
+The output must be a valid JSON object matching the provided schema, with 'promptTemplates', 'slots', and 'tags'.
 
 Concept: {{{concept}}}
 
 Instructions:
-1.  **Prompt Template**: Create a detailed and descriptive prompt template. It MUST use placeholders in the format '{slot_id}' for every single slot you define in the 'slots' array. The template should combine the slots to form a coherent, high-quality image generation prompt.
+1.  **Prompt Templates**: Generate an array of 3 to 5 diverse and creative prompt templates.
+    *   Each template object must have a short, descriptive 'name' (e.g., "Cinematic Portrait", "Action Shot", "Sketch Style").
+    *   Each 'template' string MUST use placeholders in the format '{slot_id}' for every single slot you define in the 'slots' array. The templates should combine the slots to form coherent, high-quality image generation prompts with different narrative framing.
 2.  **Slots**: Generate an array of 7 to 10 diverse and creative slots.
     *   Each slot must have a unique 'id' in snake_case.
     *   Each slot must have a user-friendly 'label'.

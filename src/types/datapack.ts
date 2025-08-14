@@ -23,8 +23,13 @@ export interface Slot {
     isLocked?: boolean;
 }
 
+export interface PromptTemplate {
+    name: string;
+    template: string;
+}
+
 export interface DataPackSchema {
-    promptTemplate: string;
+    promptTemplates: PromptTemplate[]; // Changed from single template
     slots: Slot[];
     tags?: string[];
 }
@@ -41,6 +46,7 @@ export interface DataPack {
     createdAt: number;
     updatedAt?: number | null;
     schema: DataPackSchema;
+    isNsfw?: boolean; // New field for content warning
 }
 
 // Zod Schemas for validation (both client and server)
@@ -66,9 +72,15 @@ export const SlotSchema = z.object({
     isLocked: z.boolean().optional(),
 });
 
+export const PromptTemplateSchema = z.object({
+    name: z.string().min(1, 'Template name is required.'),
+    template: z.string().min(1, 'Template string is required.'),
+});
+
 export const DataPackSchemaSchema = z.object({
-    promptTemplate: z.string().min(1, 'Prompt template is required.'),
+    promptTemplates: z.array(PromptTemplateSchema).min(1, 'At least one prompt template is required.'),
     slots: z.array(SlotSchema).min(1, 'At least one slot is required.'),
+    tags: z.array(z.string()).optional(),
 });
 
 // Used for the entire form in the admin panel
@@ -80,6 +92,7 @@ export const DataPackFormSchema = z.object({
   price: z.number().min(0),
   tags: z.array(z.string()).optional(),
   schema: DataPackSchemaSchema,
+  isNsfw: z.boolean().optional(),
 });
 
 // Used for the server action (upsert)
