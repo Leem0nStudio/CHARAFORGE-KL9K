@@ -4,7 +4,14 @@
  */
 
 import {z} from 'genkit';
-import { TextEngineConfigSchema } from '@/ai/utils/llm-utils';
+
+// This is the configuration for any text-generation engine.
+export const TextEngineConfigSchema = z.object({
+  engineId: z.enum(['gemini', 'openrouter']).describe('The generation engine to use.'),
+  modelId: z.string().describe('The identifier for the base model (e.g., "googleai/gemini-1.5-flash-latest" or "openai/gpt-4o").'),
+  userApiKey: z.string().optional().describe("An optional, user-provided API key for the selected engine."),
+});
+export type TextEngineConfig = z.infer<typeof TextEngineConfigSchema>;
 
 export const GenerateCharacterSheetInputSchema = z.object({
   description: z.string().describe('A simple description of the character concept.'),

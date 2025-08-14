@@ -5,9 +5,8 @@
  * @fileOverview An AI agent for generating character images.
  * This flow is now fully data-driven by the engineConfig object.
  */
-
-import { generate } from 'genkit';
 import { ai } from '@/ai/genkit';
+import { generate } from 'genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
 import { client } from "@gradio/client";
 
@@ -81,7 +80,9 @@ async function queryOpenRouterAPI(data: { inputs: string, modelId: string, userA
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://charaforge.com',
+                'X-Title': 'CharaForge',
             },
             body: JSON.stringify({
                 model: data.modelId,
@@ -135,9 +136,9 @@ const generateCharacterImageFlow = ai.defineFlow(
         try {
             const { width, height } = getDimensions(aspectRatio);
             const { media } = await generate({
+                // @ts-ignore
                 model: 'gemini-2.0-flash-preview-image-generation',
                 prompt: description,
-                // @ts-ignore
                 width,
                 height,
                 config: {

@@ -5,9 +5,9 @@
  * @fileOverview Character sheet generation AI agent.
  * This flow generates a structured character sheet from a simple description.
  */
-
 import { ai } from '@/ai/genkit';
-import { queryLlm } from '@/ai/utils/llm-utils';
+import { generate } from 'genkit';
+import type { GenerationCommonOptions } from 'genkit/ai';
 import { 
   GenerateCharacterSheetInputSchema, 
   GenerateCharacterSheetOutputSchema, 
@@ -28,7 +28,24 @@ const generateCharacterSheetFlow = ai.defineFlow(
     outputSchema: GenerateCharacterSheetOutputSchema,
   },
   async (input) => {
-    const { description, targetLanguage } = input;
+    const { description, targetLanguage, engineConfig } = input;
+    const { engineId, modelId, userApiKey } = engineConfig;
+    
+    let requestConfig: GenerationCommonOptions = {};
+  
+    if (engineId === 'openrouter') {
+      const systemApiKey = process.env.OPENROUTER_API_KEY;
+      const apiKey = userApiKey || systemApiKey;
+
+      if (!apiKey) {
+        throw new Error(`OpenRouter API key is not configured on the server or provided by the user.`);
+      }
+      
+      requestConfig = {
+          apiKey,
+          provider: 'openai',
+      };
+    }
 
     const prompt = `You are a professional writer and game master specializing in creating rich character details. Your task is to generate a complete character sheet from a user's description.
 
@@ -48,11 +65,14 @@ const generateCharacterSheetFlow = ai.defineFlow(
     - biography: A detailed, multi-paragraph biography exploring the character's backstory, personality, and motivations. Make it engaging and narrative-driven.
     `;
 
-    const output = await queryLlm(
-        input.engineConfig,
-        prompt,
-        GenerateCharacterSheetOutputSchema
-    );
+    const { output } = await generate({
+        model: modelId,
+        prompt: prompt,
+        output: {
+            schema: GenerateCharacterSheetOutputSchema,
+        },
+        config: requestConfig,
+    });
     
     if (!output) {
       throw new Error('AI failed to generate a character sheet.');
