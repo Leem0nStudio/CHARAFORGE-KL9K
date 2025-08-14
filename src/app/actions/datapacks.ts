@@ -366,3 +366,45 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         return [];
     }
 }
+
+
+/**
+ * Searches for public datapacks that contain a specific tag in their 'tags' array.
+ * @param {string} tag The tag to search for.
+ * @returns {Promise<DataPack[]>} A promise resolving to an array of matching datapacks.
+ */
+export async function searchDataPacksByTag(tag: string): Promise<DataPack[]> {
+    if (!adminDb || !tag) {
+        return [];
+    }
+
+    try {
+        const dataPacksRef = adminDb.collection('datapacks');
+        const q = dataPacksRef
+            .where('tags', 'array-contains', tag.toLowerCase())
+            .orderBy('createdAt', 'desc')
+            .limit(20);
+        
+        const snapshot = await q.get();
+
+        if (snapshot.empty) {
+            return [];
+        }
+
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            const createdAt = data.createdAt;
+            const updatedAt = data.updatedAt;
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
+                updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
+            } as DataPack;
+        });
+
+    } catch (error) {
+        console.error(`Error searching for datapacks with tag "${tag}":`, error);
+        return [];
+    }
+}
