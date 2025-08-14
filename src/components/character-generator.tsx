@@ -68,7 +68,6 @@ const generationFormSchema = z.object({
 
 type GenerationResult = GenerateCharacterSheetOutput & {
   imageUrl?: string | null;
-  originalDescription: string;
   dataPackId?: string | null;
 };
 
@@ -226,7 +225,6 @@ export function CharacterGenerator() {
       try {
         const result = await saveCharacter({
           name: generationResult.name,
-          description: generationResult.originalDescription,
           biography: generationResult.biography,
           imageUrl: generationResult.imageUrl!,
           dataPackId: generationResult.dataPackId,

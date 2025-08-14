@@ -188,7 +188,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
     const firstError = validation.error.errors[0];
     throw new Error(`Invalid input for ${firstError.path.join('.')}: ${firstError.message}`);
   }
-  const { name, description, biography, imageUrl: imageDataUri, dataPackId, tags, archetype, equipment, physicalDescription } = validation.data;
+  const { name, biography, imageUrl: imageDataUri, dataPackId, tags, archetype, equipment, physicalDescription } = validation.data;
   
   const userId = await verifyAndGetUid();
   if (!adminDb) {
@@ -215,7 +215,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
         const characterData = {
             userId,
             name,
-            description,
+            description: physicalDescription,
             biography,
             imageUrl: storageUrl,
             gallery: [storageUrl],

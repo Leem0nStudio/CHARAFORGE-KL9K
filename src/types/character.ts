@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 
 /**
@@ -40,7 +41,7 @@ export type Character = {
   originalAuthorId?: string | null;
   originalAuthorName?: string | null;
   dataPackName?: string | null; // Added for display purposes
-  alignment: 'Lawful Good' | 'Neutral Good' | 'Chaotic Good' | 'Lawful Neutral' | 'True Neutral' | 'Chaotic Neutral' | 'Lawful Evil' | 'Neutral Evil' | 'Chaotic Evil';
+  alignment: 'Lawful Good' | 'Neutral Good' | 'Chaotic Good' | 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil';
   tags?: string[];
   timeline?: TimelineEvent[]; // New field for the character's timeline
   // New character sheet fields
@@ -62,13 +63,12 @@ export const UpdateCharacterSchema = z.object({
 
 export const SaveCharacterInputSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
-  description: z.string(),
   biography: z.string(),
   imageUrl: z.string().startsWith('data:image/'),
   dataPackId: z.string().optional().nullable(),
   tags: z.string().optional(),
   archetype: z.string().optional(),
   equipment: z.array(z.string()).optional(),
-  physicalDescription: z.string().optional(),
+  physicalDescription: z.string(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
