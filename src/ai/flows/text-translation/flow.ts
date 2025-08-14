@@ -42,6 +42,7 @@ const translateTextFlow = ai.defineFlow(
     
     let requestConfig: GenerationCommonOptions = {};
   
+    // For OpenRouter, we must supply the API key and explicitly set the provider.
     if (engineId === 'openrouter') {
       const systemApiKey = process.env.OPENROUTER_API_KEY;
       const apiKey = userApiKey || systemApiKey;
