@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Wand2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
-import type { TextEngineConfig } from '@/ai/utils/llm-utils';
+import { TextEngineConfigSchema } from '@/ai/flows/character-sheet/types';
 
 const alignmentOptions = [
     'Lawful Good', 'Neutral Good', 'Chaotic Good', 
@@ -31,6 +31,7 @@ const FormSchema = z.object({
   equipment: z.array(z.string()).optional(),
   biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
   alignment: z.enum(alignmentOptions),
+  physicalDescription: z.string().optional(),
 });
 type FormValues = z.infer<typeof FormSchema>;
 
@@ -48,6 +49,7 @@ export function EditDetailsTab({ character }: { character: Character }) {
             equipment: character.equipment || [],
             biography: character.biography,
             alignment: character.alignment || 'True Neutral',
+            physicalDescription: character.physicalDescription || character.description,
         },
     });
 
@@ -69,18 +71,19 @@ export function EditDetailsTab({ character }: { character: Character }) {
         startRegenerateTransition(async () => {
             try {
                 // This is where we could, in the future, let the user choose a text model.
-                const textEngineConfig: TextEngineConfig = {
+                const textEngineConfig = {
                     engineId: 'gemini',
                     modelId: 'googleai/gemini-1.5-flash-latest',
                 };
                 const result = await generateCharacterSheet({ 
                     description: character.description, 
-                    engineConfig: textEngineConfig 
+                    engineConfig: TextEngineConfigSchema.parse(textEngineConfig) 
                 });
                 form.setValue('biography', result.biography, { shouldDirty: true });
+                form.setValue('physicalDescription', result.physicalDescription, { shouldDirty: true });
                 toast({
-                    title: 'Biography Regenerated!',
-                    description: 'A new biography has been generated. Don\'t forget to save your changes.',
+                    title: 'Content Regenerated!',
+                    description: 'A new biography and physical description have been generated. Don\'t forget to save your changes.',
                 });
             } catch (error) {
                 const message = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -140,13 +143,18 @@ export function EditDetailsTab({ character }: { character: Character }) {
                             />
                         </div>
                     </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="physicalDescription">Physical Description (for Image Generation)</Label>
+                        <Textarea id="physicalDescription" {...form.register('physicalDescription')} className="min-h-[150px] w-full" />
+                    </div>
                    
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="biography">Biography</Label>
                              <Button type="button" variant="outline" size="sm" onClick={handleRegenerateBio} disabled={isRegenerating}>
                                 {isRegenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
-                                Regenerate
+                                Regenerate All Text
                             </Button>
                         </div>
                         <Textarea id="biography" {...form.register('biography')} className="min-h-[250px] w-full" />

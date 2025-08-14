@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
-import type { TextEngineConfig } from '@/ai/utils/llm-utils';
+import { TextEngineConfigSchema } from '@/ai/flows/character-sheet/types';
 import type { AiModel } from '@/types/ai-model';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { getUserProfile } from './user';
@@ -29,7 +29,7 @@ export type GenerateSheetOutput = {
 
 // Schema for the second step: generating the portrait
 const GeneratePortraitInputSchema = z.object({
-    description: z.string().min(20).max(1000),
+    physicalDescription: z.string().min(20, { message: "A detailed physical description is required." }).max(2000),
     aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
     selectedModel: z.custom<AiModel>().refine(data => !!data, { message: 'A base model must be selected.' }),
     selectedLora: z.custom<AiModel>().optional().nullable(),
@@ -56,12 +56,17 @@ export async function generateCharacterSheetData(input: GenerateSheetInput): Pro
     const { description, targetLanguage } = validation.data;
 
     try {
-        const textEngineConfig: TextEngineConfig = {
+        const textEngineConfig = {
             engineId: 'gemini',
             modelId: 'googleai/gemini-1.5-flash-latest',
         };
 
-        const result = await generateCharacterSheet({ description, targetLanguage, engineConfig: textEngineConfig });
+        const result = await generateCharacterSheet({ 
+            description, 
+            targetLanguage, 
+            engineConfig: TextEngineConfigSchema.parse(textEngineConfig) 
+        });
+
 
         if (!result.biography) {
             throw new Error('AI generation failed to return a complete character sheet.');
@@ -94,7 +99,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
     const userProfile = await getUserProfile(uid);
     
     const {
-        description,
+        physicalDescription,
         aspectRatio,
         selectedModel,
         selectedLora,
@@ -121,7 +126,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
             userApiKey: userApiKey,
         };
         
-        let finalDescription = description;
+        let finalDescription = physicalDescription;
 
         if (selectedLora && selectedModel.engine === 'huggingface') {
             const loraVersion = selectedLora.versions?.find(v => v.id === loraVersionId) 
@@ -136,7 +141,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
 
             if (loraVersion.triggerWords && loraVersion.triggerWords.length > 0) {
                 const words = loraVersion.triggerWords.join(', ');
-                finalDescription = `${words}, ${description}`;
+                finalDescription = `${words}, ${physicalDescription}`;
             }
         }
         

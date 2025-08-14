@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +54,7 @@ const generationFormSchema = z.object({
   }).max(1000, {
     message: "Description must not be longer than 1000 characters."
   }),
+  physicalDescription: z.string().optional(),
   tags: z.string().optional(),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
@@ -96,6 +97,7 @@ export function CharacterGenerator() {
     resolver: zodResolver(generationFormSchema),
     defaultValues: {
       description: "",
+      physicalDescription: "",
       tags: "",
       targetLanguage: 'English',
       aspectRatio: '1:1',
@@ -140,6 +142,12 @@ export function CharacterGenerator() {
     }
     loadInitialData();
   }, [authUser, toast, generationForm]);
+
+  useEffect(() => {
+    if (generationResult?.physicalDescription) {
+        generationForm.setValue('physicalDescription', generationResult.physicalDescription);
+    }
+  }, [generationResult, generationForm]);
   
 
   const handleAppendTags = (tags: string[]) => {
@@ -190,7 +198,7 @@ export function CharacterGenerator() {
     startGenerationTransition(async () => {
         const data = generationForm.getValues();
         const result = await generateCharacterPortrait({
-             description: generationResult.physicalDescription,
+             physicalDescription: data.physicalDescription || generationResult.physicalDescription,
              aspectRatio: data.aspectRatio,
              selectedModel: data.selectedModel,
              selectedLora: data.selectedLora,
@@ -230,7 +238,7 @@ export function CharacterGenerator() {
           tags: generationForm.getValues('tags'),
           archetype: generationResult.archetype,
           equipment: generationResult.equipment,
-          physicalDescription: generationResult.physicalDescription,
+          physicalDescription: generationForm.getValues('physicalDescription') || generationResult.physicalDescription,
         });
 
         toast({
@@ -520,14 +528,28 @@ export function CharacterGenerator() {
                                </div>
                              </>
                           ) : (
-                              !isGenerating && (
-                                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
-                                    <p className="mb-4 text-sm">Character sheet complete. Now, create the visual representation.</p>
+                            !isGenerating && (
+                                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4 gap-4">
+                                     <FormField
+                                        control={generationForm.control}
+                                        name="physicalDescription"
+                                        render={({ field }) => (
+                                            <FormItem className="w-full">
+                                                <div className="flex justify-between items-center">
+                                                    <FormLabel className="flex items-center gap-1.5 text-xs"><Info className="h-3 w-3"/> Image Prompt</FormLabel>
+                                                    <Button type="button" size="sm" variant="link" className="text-xs h-auto p-0">Regenerate</Button>
+                                                </div>
+                                                <FormControl>
+                                                    <Textarea {...field} className="h-32 text-xs" />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                     />
                                     <Button onClick={onGeneratePortrait} disabled={isGenerating}>
                                          <Wand2 className="mr-2" /> Generate Portrait
                                     </Button>
                                 </div>
-                              )
+                            )
                           )}
                       </div>
                   </div>

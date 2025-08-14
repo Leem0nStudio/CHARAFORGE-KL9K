@@ -61,6 +61,7 @@ export const UpdateCharacterSchema = z.object({
   alignment: z.enum(['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil']),
   archetype: z.string().optional(),
   equipment: z.array(z.string()).optional(),
+  physicalDescription: z.string().optional(),
 });
 
 export const SaveCharacterInputSchema = z.object({

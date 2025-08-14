@@ -160,7 +160,7 @@ export async function updateCharacter(
         };
     }
     
-    const { name, biography, alignment, archetype, equipment } = validatedFields.data;
+    const { name, biography, alignment, archetype, equipment, physicalDescription } = validatedFields.data;
     const characterRef = adminDb.collection('characters').doc(characterId);
     
     const characterDoc = await characterRef.get();
@@ -169,7 +169,7 @@ export async function updateCharacter(
         return { success: false, message: 'Permission denied or character not found.' };
     }
   
-    await characterRef.update({ name, biography, alignment, archetype, equipment });
+    await characterRef.update({ name, biography, alignment, archetype, equipment, physicalDescription });
 
     revalidatePath(`/characters/${characterId}/edit`);
     revalidatePath('/characters');
@@ -215,7 +215,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
         const characterData = {
             userId,
             name,
-            description: physicalDescription,
+            description: physicalDescription, // Use physical description as the base description
             biography,
             imageUrl: storageUrl,
             gallery: [storageUrl],
