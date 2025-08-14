@@ -7,7 +7,7 @@ import { verifyAndGetUid } from '@/lib/auth/server';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { StoryCast } from '@/types/story';
 import { generateStory as generateStoryFlow } from '@/ai/flows/story-generation/flow';
-import type { Character } from '@/types/character';
+import type { Character, TimelineEvent } from '@/types/character';
 
 type ActionResponse<T = null> = {
     success: boolean;
@@ -16,8 +16,9 @@ type ActionResponse<T = null> = {
     error?: string;
 };
 
-// Placeholder for full character details needed by the AI flow
-type CharacterDetailsForAI = Pick<Character, 'name' | 'biography' | 'alignment'>;
+// This now includes the timeline for a richer context.
+type CharacterDetailsForAI = Pick<Character, 'name' | 'biography' | 'alignment' | 'timeline'>;
+
 
 export async function getUserCasts(): Promise<StoryCast[]> {
     const uid = await verifyAndGetUid();
@@ -147,6 +148,7 @@ export async function generateStory(castId: string, storyPrompt: string): Promis
                 name: char.name,
                 biography: char.biography,
                 alignment: char.alignment || 'True Neutral', // Default alignment if not set
+                timeline: char.timeline || [], // Include the timeline
             };
         }).filter((c): c is CharacterDetailsForAI => c !== null);
 

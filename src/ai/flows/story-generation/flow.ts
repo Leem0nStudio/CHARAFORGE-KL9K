@@ -28,11 +28,17 @@ const generateStoryPrompt = ai.definePrompt({
   - **Name:** {{name}}
     - **Alignment:** {{alignment}}
     - **Biography:** {{biography}}
+    {{#if timeline.length}}
+    - **Key Life Events (Timeline):**
+      {{#each timeline}}
+      - **{{date}}:** {{title}} - {{description}}
+      {{/each}}
+    {{/if}}
   {{/each}}
 
   **Instructions:**
   1.  **Incorporate All Characters:** Every character from the cast must play a meaningful role in the story.
-  2.  **Respect Character Details:** The story must be consistent with each character's biography and alignment. A 'Lawful Good' knight should not behave like a 'Chaotic Evil' sorcerer, unless there's a very compelling plot reason. Use their backstories to inform their motivations and actions.
+  2.  **Respect Character Details:** The story must be consistent with each character's biography, alignment, and key life events from their timeline. Use their backstories to inform their motivations and actions.
   3.  **Create a Narrative Arc:** The story should have a clear beginning, middle, and end. Introduce a conflict, develop it through character interactions, and provide a satisfying resolution.
   4.  **Generate a Title:** Create a short, evocative title for the story that captures its essence.
   5.  **Output Format:** Respond ONLY with the JSON object containing the 'title' and 'story'. Do not include any other commentary.

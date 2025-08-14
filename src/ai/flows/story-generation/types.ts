@@ -6,10 +6,18 @@
 
 import { z } from 'genkit';
 
+const TimelineEventSchemaForStory = z.object({
+    id: z.string(),
+    date: z.string(),
+    title: z.string(),
+    description: z.string(),
+});
+
 const CharacterSchemaForStory = z.object({
     name: z.string().describe("The character's name."),
     biography: z.string().describe("A brief biography of the character."),
-    alignment: z.enum(['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil']).describe("The character's moral and ethical alignment (D&D style).")
+    alignment: z.enum(['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil']).describe("The character's moral and ethical alignment (D&D style)."),
+    timeline: z.array(TimelineEventSchemaForStory).optional().describe("An optional list of key events from the character's life."),
 });
 
 export const GenerateStoryInputSchema = z.object({
