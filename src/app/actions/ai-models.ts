@@ -10,6 +10,7 @@ import type { AiModel } from '@/types/ai-model';
 import { UpsertModelSchema, type UpsertAiModel } from '@/types/ai-model';
 import { suggestHfModel } from '@/ai/flows/hf-model-suggestion/flow';
 import { uploadToStorage } from '@/services/storage';
+import { imageModels, textModels } from '@/lib/app-config';
 
 type ActionResponse = {
     success: boolean;
@@ -152,17 +153,19 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
     }
 }
 
-export async function getModels(type: 'model' | 'lora'): Promise<AiModel[]> {
+export async function getModelsForUser(type: 'model' | 'lora'): Promise<AiModel[]> {
     if (!adminDb) return [];
+    
+    const uid = await verifyAndGetUid();
+
     try {
-        const snapshot = await adminDb.collection('ai_models')
+        const userModelsSnapshot = await adminDb.collection('ai_models')
             .where('type', '==', type)
+            .where('userId', '==', uid)
             .orderBy('createdAt', 'desc')
             .get();
 
-        if (snapshot.empty) return [];
-
-        return snapshot.docs.map(doc => {
+        const userModels = userModelsSnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 ...data,
@@ -171,59 +174,18 @@ export async function getModels(type: 'model' | 'lora'): Promise<AiModel[]> {
                 updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
             } as AiModel;
         });
-    } catch (error) {
-        console.error(`Error fetching ${type}s:`, error);
-        return [];
-    }
-}
 
-export async function getModelsForUser(type: 'model' | 'lora'): Promise<AiModel[]> {
-    if (!adminDb) return [];
-    const uid = await verifyAndGetUid();
+        // The system models are now just for images, text models are separate
+        const systemImageModels = (type === 'model') ? imageModels : [];
 
-    try {
-        // Fetch all system models (where userId does not exist)
-        const systemModelsSnapshot = await adminDb.collection('ai_models')
-            .where('type', '==', type)
-            .where('userId', '==', null)
-            .get();
+        // Combine and return, ensuring user models come first
+        return [...userModels, ...systemImageModels];
         
-        // Fetch all models for the specific user
-        const userModelsSnapshot = await adminDb.collection('ai_models')
-            .where('type', '==', type)
-            .where('userId', '==', uid)
-            .get();
-
-        const models: AiModel[] = [];
-        const modelIds = new Set<string>();
-
-        const processSnapshot = (snapshot: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>) => {
-            snapshot.docs.forEach(doc => {
-                if (!modelIds.has(doc.id)) {
-                    const data = doc.data();
-                    models.push({
-                        ...data,
-                        id: doc.id,
-                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-                        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
-                    } as AiModel);
-                    modelIds.add(doc.id);
-                }
-            });
-        };
-        
-        processSnapshot(systemModelsSnapshot);
-        processSnapshot(userModelsSnapshot);
-        
-        models.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        return models;
     } catch (error) {
         console.error(`Error fetching ${type}s for user:`, error);
         return [];
     }
 }
-
 
 export async function upsertUserAiModel(formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
