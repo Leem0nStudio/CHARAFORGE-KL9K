@@ -5,7 +5,7 @@
  */
 
 import {z} from 'genkit';
-import { TextEngineConfigSchema } from '@/ai/utils/llm-utils';
+import { TextEngineConfigSchema } from '@/ai/flows/character-sheet/types';
 
 export const TranslateTextInputSchema = z.object({
   text: z.string().describe('The text to be translated.'),

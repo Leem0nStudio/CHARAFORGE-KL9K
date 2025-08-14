@@ -7,7 +7,8 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { queryLlm } from '@/ai/utils/llm-utils';
+import { generate } from 'genkit';
+import type { GenerationCommonOptions } from 'genkit/ai';
 import { 
   TranslateTextInputSchema, 
   TranslateTextOutputSchema, 
@@ -29,6 +30,7 @@ const translateTextFlow = ai.defineFlow(
   },
   async (input) => {
     const { text, targetLanguage, engineConfig } = input;
+    const { engineId, modelId, userApiKey } = engineConfig;
     
     const prompt = `Translate the following text into ${targetLanguage}.
 
@@ -39,11 +41,31 @@ const translateTextFlow = ai.defineFlow(
     Text to translate:
     ${text}`;
     
-    const output = await queryLlm(
-        engineConfig,
-        prompt,
-        TranslateTextOutputSchema
-    );
+    let requestConfig: GenerationCommonOptions = {};
+  
+    if (engineId === 'openrouter') {
+      const systemApiKey = process.env.OPENROUTER_API_KEY;
+      const apiKey = userApiKey || systemApiKey;
+
+      if (!apiKey) {
+        throw new Error(`OpenRouter API key is not configured on the server or provided by the user.`);
+      }
+      
+      requestConfig = {
+          apiKey,
+          provider: 'openai',
+      };
+    }
+
+    const { output } = await generate({
+        model: modelId,
+        prompt: prompt,
+        output: {
+            schema: TranslateTextOutputSchema,
+        },
+        config: requestConfig,
+    });
+    
 
     if (!output) {
       throw new Error('AI failed to translate the text.');
