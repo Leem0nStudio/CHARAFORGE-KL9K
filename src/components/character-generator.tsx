@@ -43,19 +43,9 @@ import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/types";
 import { PromptTagInput } from "./prompt-tag-input";
 import type { DataPack } from "@/types/datapack";
+import { geminiImagePlaceholder } from "@/lib/app-config";
 
 
-const geminiPlaceholder: AiModel = {
-    id: 'gemini-placeholder',
-    name: 'Gemini Image Generation',
-    type: 'model',
-    engine: 'gemini',
-    civitaiModelId: '0', 
-    hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
-    versionId: '1.0',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-};
 
 const generationFormSchema = z.object({
   description: z.string().min(20, {
@@ -116,7 +106,7 @@ export function CharacterGenerator() {
       targetLanguage: 'English',
       aspectRatio: '1:1',
       loraWeight: 0.75,
-      selectedModel: geminiPlaceholder,
+      selectedModel: geminiImagePlaceholder,
       selectedLora: null,
     },
   });
@@ -144,7 +134,7 @@ export function CharacterGenerator() {
                 packIdFromUrl ? getDataPackForAdmin(packIdFromUrl) : Promise.resolve(null),
             ]);
             
-            const allBaseModels = [geminiPlaceholder, ...models];
+            const allBaseModels = [geminiImagePlaceholder, ...models];
             setAvailableModels(allBaseModels);
             setAvailableLoras(loras);
 

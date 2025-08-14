@@ -1,5 +1,6 @@
 
 import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon } from 'lucide-react';
+import type { AiModel } from '@/types/ai-model';
 
 export interface NavItem {
     href: string;
@@ -8,6 +9,32 @@ export interface NavItem {
     requiresAuth?: boolean;
     isPrimary?: boolean;
 }
+
+// Static AI Model Definitions
+export const geminiImagePlaceholder: AiModel = {
+    id: 'gemini-placeholder',
+    name: 'Gemini Image Generation',
+    type: 'model',
+    engine: 'gemini',
+    civitaiModelId: '0', 
+    hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
+    versionId: '1.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+};
+
+export const geminiTextPlaceholder: AiModel = {
+    id: 'gemini-text-placeholder',
+    name: 'Gemini Text Generation',
+    type: 'model',
+    engine: 'gemini',
+    civitaiModelId: '0', 
+    hf_id: 'googleai/gemini-1.5-flash-latest',
+    versionId: '1.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+};
+
 
 export const mainNavItems: NavItem[] = [
     { href: '/', label: 'Home', icon: Home },

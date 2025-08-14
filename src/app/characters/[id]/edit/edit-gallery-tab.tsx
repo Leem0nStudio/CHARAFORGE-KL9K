@@ -21,19 +21,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ModelSelectorModal } from '@/components/model-selector-modal';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 import type { AiModel } from '@/types/ai-model';
-
-const geminiPlaceholder: AiModel = {
-    id: 'gemini-placeholder',
-    name: 'Gemini Image Generation',
-    type: 'model',
-    engine: 'gemini',
-    civitaiModelId: '0', 
-    hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
-    versionId: '1.0',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-};
-
+import { geminiImagePlaceholder } from '@/lib/app-config';
 
 const UpdateImagesSchema = z.object({
     primaryImageUrl: z.string().url("A primary image must be selected."),
@@ -70,7 +58,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
       setIsLoadingModels(true);
       try {
         const models = await getModels('model');
-        setAvailableModels([geminiPlaceholder, ...models]);
+        setAvailableModels([geminiImagePlaceholder, ...models]);
       } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not load AI models.' });
       } finally {
