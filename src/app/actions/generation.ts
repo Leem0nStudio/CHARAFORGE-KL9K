@@ -35,6 +35,7 @@ const GeneratePortraitInputSchema = z.object({
     selectedLora: z.custom<AiModel>().optional().nullable(),
     loraVersionId: z.string().optional(),
     loraWeight: z.number().min(0).max(1).optional(),
+    userApiKey: z.string().optional(), // Now passed from client
 });
 export type GeneratePortraitInput = z.infer<typeof GeneratePortraitInputSchema>;
 
@@ -95,8 +96,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         return { success: false, message: 'Invalid input.', error: validation.error.message };
     }
 
-    const uid = await verifyAndGetUid();
-    const userProfile = await getUserProfile(uid);
+    await verifyAndGetUid();
     
     const {
         physicalDescription,
@@ -104,20 +104,14 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         selectedModel,
         selectedLora,
         loraVersionId,
-        loraWeight
+        loraWeight,
+        userApiKey, // User API key is now received directly
     } = validation.data;
 
     if (!selectedModel) {
         return { success: false, message: 'A base model must be selected for generation.' };
     }
     
-    let userApiKey: string | undefined;
-    if (selectedModel.engine === 'huggingface') {
-        userApiKey = userProfile?.preferences?.huggingFaceApiKey;
-    } else if (selectedModel.engine === 'openrouter') {
-        userApiKey = userProfile?.preferences?.openRouterApiKey;
-    }
-
      try {
         const imageEngineConfig: ImageEngineConfig = {
             engineId: selectedModel.engine,

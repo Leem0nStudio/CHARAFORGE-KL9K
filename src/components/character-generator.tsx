@@ -104,7 +104,7 @@ export function CharacterGenerator() {
   const [promptMode, setPromptMode] = useState<'text' | 'tags'>('text');
   
   const { toast } = useToast();
-  const { authUser, loading: authLoading } = useAuth();
+  const { authUser, userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
@@ -221,6 +221,14 @@ export function CharacterGenerator() {
     
     startGenerationTransition(async () => {
         const data = generationForm.getValues();
+        
+        let userApiKey: string | undefined;
+        if (data.selectedModel.engine === 'huggingface') {
+            userApiKey = userProfile?.preferences?.huggingFaceApiKey;
+        } else if (data.selectedModel.engine === 'openrouter') {
+            userApiKey = userProfile?.preferences?.openRouterApiKey;
+        }
+
         const result = await generateCharacterPortrait({
              physicalDescription: data.physicalDescription || generationResult.physicalDescription,
              aspectRatio: data.aspectRatio,
@@ -228,6 +236,7 @@ export function CharacterGenerator() {
              selectedLora: data.selectedLora,
              loraVersionId: data.loraVersionId,
              loraWeight: data.loraWeight,
+             userApiKey: userApiKey,
         });
         
         if (result.success && result.imageUrl) {
@@ -239,7 +248,7 @@ export function CharacterGenerator() {
              toast({ variant: "destructive", title: "Portrait Failed", description: errorMessage });
         }
     });
-  }, [authUser, toast, generationResult, generationForm]);
+  }, [authUser, toast, generationResult, generationForm, userProfile]);
 
 
   async function onSave() {
@@ -655,5 +664,3 @@ export function CharacterGenerator() {
     </>
   );
 }
-
-    
