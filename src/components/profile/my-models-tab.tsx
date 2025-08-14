@@ -32,7 +32,6 @@ function ModelEditDialog({
     const [isOpen, setIsOpen] = useState(false);
     const [isProcessing, startTransition] = useTransition();
     const { toast } = useToast();
-    const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
 
     const isEditing = !!model;
 
@@ -52,27 +51,51 @@ function ModelEditDialog({
             form.reset(model ? { ...model, triggerWords: model.triggerWords?.join(', ') } : {
                 name: '', type: 'lora', engine: 'huggingface', hf_id: '', triggerWords: ''
             });
-            setCoverImageFile(null);
         }
     }, [isOpen, model, form]);
     
+    // This is now the handler for the form's submit event.
+    const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault(); // Prevent default form submission
+        
+        // Manually trigger validation
+        form.handleSubmit(
+            (data) => { // onSuccess
+                startTransition(async () => {
+                    // Create FormData and append all fields
+                    const formData = new FormData();
+                    if (model?.id) {
+                        formData.append('id', model.id);
+                    }
+                    formData.append('name', data.name);
+                    formData.append('type', data.type);
+                    formData.append('hf_id', data.hf_id);
+                    if (data.triggerWords) {
+                        formData.append('triggerWords', Array.isArray(data.triggerWords) ? data.triggerWords.join(',') : data.triggerWords);
+                    }
 
-    const onSubmit = (values: UpsertAiModel) => {
-        startTransition(async () => {
-            let imageBuffer: Buffer | undefined = undefined;
-            if (coverImageFile) {
-                const arrayBuffer = await coverImageFile.arrayBuffer();
-                imageBuffer = Buffer.from(arrayBuffer);
+                    // Append the file if it exists
+                    const coverImageFile = (event.target as HTMLFormElement).coverImage.files[0];
+                    if (coverImageFile) {
+                        formData.append('coverImage', coverImageFile);
+                    }
+
+                    const result = await upsertUserAiModel(formData);
+
+                    if (result.success) {
+                        toast({ title: 'Success', description: result.message });
+                        setIsOpen(false);
+                        onSuccess();
+                    } else {
+                        toast({ variant: 'destructive', title: 'Error', description: result.error || result.message });
+                    }
+                });
+            },
+            (errors) => { // onError
+                console.error("Form validation failed:", errors);
+                toast({ variant: 'destructive', title: 'Invalid Data', description: 'Please check the form for errors.'});
             }
-            const result = await upsertUserAiModel({ ...values, id: model?.id }, imageBuffer);
-            if (result.success) {
-                toast({ title: 'Success', description: result.message });
-                setIsOpen(false);
-                onSuccess();
-            } else {
-                toast({ variant: 'destructive', title: 'Error', description: result.error });
-            }
-        });
+        )(event); // Invoke the handler
     };
     
     const handleDelete = () => {
@@ -93,7 +116,7 @@ function ModelEditDialog({
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{trigger}</DialogTrigger>
             <DialogContent>
-                <form onSubmit={form.handleSubmit(onSubmit)}>
+                <form onSubmit={handleFormSubmit}>
                     <DialogHeader>
                         <DialogTitle>{isEditing ? `Edit: ${model?.name}` : 'Add Custom Model'}</DialogTitle>
                         <DialogDescription>Add a model from Hugging Face to use in the generator.</DialogDescription>
@@ -123,7 +146,7 @@ function ModelEditDialog({
                         </div>
                         <div className="space-y-2 col-span-2">
                             <Label>Cover Image</Label>
-                            <Input type="file" accept="image/png, image/jpeg" onChange={(e) => setCoverImageFile(e.target.files?.[0] || null)} />
+                            <Input name="coverImage" id="coverImage" type="file" accept="image/png, image/jpeg" />
                         </div>
                     </div>
                     <DialogFooter className="sm:justify-between mt-4">
@@ -165,8 +188,10 @@ export function MyModelsTab() {
     const fetchModels = async () => {
         setIsLoading(true);
         try {
+            // Note: This fetches system models too. We filter client-side.
             const userModels = await getModelsForUser('model');
             const userLoras = await getModelsForUser('lora');
+            // Only show models created by the user (they have a userId)
             const allUserModels = [...userModels, ...userLoras].filter(m => m.userId);
             setModels(allUserModels);
         } catch (error) {

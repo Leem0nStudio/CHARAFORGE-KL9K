@@ -227,15 +227,28 @@ export async function getModelsForUser(type: 'model' | 'lora'): Promise<AiModel[
 }
 
 
-export async function upsertUserAiModel(data: UpsertAiModel, coverImage?: Buffer): Promise<ActionResponse> {
+export async function upsertUserAiModel(formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const validation = UpsertModelSchema.safeParse(data);
+    
+    // Extract data from FormData
+    const rawData = {
+        id: formData.get('id') || undefined,
+        name: formData.get('name'),
+        type: formData.get('type'),
+        engine: 'huggingface', // Hardcoded as user models are currently only this type
+        hf_id: formData.get('hf_id'),
+        triggerWords: formData.get('triggerWords'),
+        // coverMediaUrl is handled separately
+    };
+
+    const validation = UpsertModelSchema.safeParse(rawData);
     if (!validation.success) {
         return { success: false, message: 'Invalid data provided.', error: validation.error.message };
     }
 
     const { id, ...modelData } = validation.data;
     const isNew = !id;
+    const coverImageFile = formData.get('coverImage') as File | null;
 
     try {
         const docRef = isNew ? adminDb.collection('ai_models').doc() : adminDb.collection('ai_models').doc(id);
@@ -248,9 +261,10 @@ export async function upsertUserAiModel(data: UpsertAiModel, coverImage?: Buffer
         }
         
         let coverMediaUrl = modelData.coverMediaUrl || null;
-        if (coverImage) {
+        if (coverImageFile && coverImageFile.size > 0) {
             const destinationPath = `usersImg/${uid}/ai_models/${docRef.id}/cover.png`;
-            coverMediaUrl = await uploadToStorage(coverImage, destinationPath, 'image/png');
+            // uploadToStorage can handle File objects directly now.
+            coverMediaUrl = await uploadToStorage(coverImageFile, destinationPath);
         }
 
         const finalData = {
