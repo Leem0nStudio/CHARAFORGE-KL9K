@@ -37,7 +37,7 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
     
     try {
         const app = await client(data.modelId, { hf_token: apiKey as `hf_${string}` });
-        const result: any = await app.predict("/predict", { // Standardized to /predict
+        const result: any = await app.predict("/predict", {
             prompt: data.inputs,
             negative_prompt: "blurry, low quality, bad anatomy, deformed, disfigured, poor details, watermark, text, signature",
             width: 1024,
@@ -56,6 +56,7 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
     } catch (error) {
         console.error("Gradio/Hugging Face API Error:", error);
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        // This is a more specific error message to help debug.
         throw new Error(`Failed to generate image via Hugging Face. Error: ${message}`);
     }
 }
@@ -75,7 +76,7 @@ async function queryOpenRouterAPI(data: { inputs: string, modelId: string, userA
     }
     
     try {
-        const response = await fetch("https://openrouter.ai/api/v1/images/generations", { // Updated endpoint for images
+        const response = await fetch("https://openrouter.ai/api/v1/images/generations", {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
@@ -87,8 +88,8 @@ async function queryOpenRouterAPI(data: { inputs: string, modelId: string, userA
                 model: data.modelId,
                 prompt: data.inputs,
                 n: 1,
-                size: "1024x1024", // Adjust as needed, or make dynamic
-                response_format: "b64_json" // Request Base64 to avoid a second network call
+                size: "1024x1024",
+                response_format: "b64_json"
             })
         });
 
