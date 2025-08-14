@@ -608,7 +608,7 @@ export function CharacterGenerator() {
                                         </div>
                                         <Textarea 
                                             id="physicalDescription"
-                                            value={watchPhysicalDescription}
+                                            value={watchPhysicalDescription || ''}
                                             onChange={(e) => generationForm.setValue('physicalDescription', e.target.value)}
                                             className="h-32 text-xs" 
                                         />
@@ -623,37 +623,34 @@ export function CharacterGenerator() {
                   </div>
 
                   <div className="md:col-span-3">
-                        <Tabs defaultValue="sheet">
-                            <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="sheet">Character Sheet</TabsTrigger>
-                                <TabsTrigger value="bio">Biography</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="sheet" className="mt-4 space-y-4">
-                                <div className="flex items-baseline gap-2">
-                                    <User className="h-6 w-6 text-primary"/>
-                                    <h4 className="text-lg font-semibold">Name:</h4>
-                                    <p className="text-lg text-muted-foreground">{generationResult.name}</p>
+                        <div className="space-y-4">
+                            <div className="flex items-baseline gap-2">
+                                <User className="h-6 w-6 text-primary shrink-0"/>
+                                <div>
+                                    <h4 className="text-sm font-semibold text-muted-foreground">Name</h4>
+                                    <p className="text-lg font-bold">{generationResult.name}</p>
                                 </div>
-                                <div className="flex items-baseline gap-2">
-                                    <Shield className="h-6 w-6 text-primary"/>
-                                    <h4 className="text-lg font-semibold">Archetype:</h4>
-                                    <p className="text-lg text-muted-foreground">{generationResult.archetype}</p>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <Shield className="h-6 w-6 text-primary shrink-0"/>
+                                <div>
+                                    <h4 className="text-sm font-semibold text-muted-foreground">Archetype</h4>
+                                    <p className="text-lg font-bold">{generationResult.archetype}</p>
                                 </div>
-                                <div className="flex flex-col gap-2">
-                                    <h4 className="text-lg font-semibold flex items-center gap-2"><Swords className="h-6 w-6 text-primary"/> Equipment</h4>
-                                    <ul className="list-disc list-inside text-muted-foreground pl-2 space-y-1">
-                                        {generationResult.equipment.map((item, i) => <li key={i}>{item}</li>)}
-                                    </ul>
-                                </div>
-                            </TabsContent>
-                            <TabsContent value="bio">
-                                 <ScrollArea className="h-80 pr-4 mt-4">
-                                    <div className="space-y-4 text-muted-foreground text-sm whitespace-pre-wrap">
-                                        {generationResult.biography}
-                                    </div>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-2"><Swords className="h-4 w-4 text-primary"/> Equipment</h4>
+                                <ul className="list-disc list-inside text-card-foreground space-y-1 text-sm">
+                                    {generationResult.equipment.map((item, i) => <li key={i}>{item}</li>)}
+                                </ul>
+                            </div>
+                             <div>
+                                <h4 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-2"><FileText className="h-4 w-4 text-primary"/> Biography</h4>
+                                 <ScrollArea className="h-48 pr-4 border rounded-md p-3 bg-muted/20">
+                                    <p className="text-sm whitespace-pre-wrap">{generationResult.biography}</p>
                                 </ScrollArea>
-                            </TabsContent>
-                        </Tabs>
+                            </div>
+                        </div>
 
                         <div className="mt-6">
                             <Button onClick={onSave} className="w-full" disabled={!canInteract || isSaving || !generationResult.imageUrl}>
