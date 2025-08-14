@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { Clapperboard } from 'lucide-react';
+import { Bot, Settings } from 'lucide-react';
 
 interface MediaDisplayProps {
     url?: string | null;
@@ -16,12 +16,15 @@ export function MediaDisplay({ url, type, alt, className }: MediaDisplayProps) {
     if (!url) {
         return (
             <div className="w-full h-full flex items-center justify-center bg-muted/50 text-muted-foreground">
-                <Clapperboard className="w-12 h-12" />
+                <Settings className="w-12 h-12" />
             </div>
         )
     }
 
-    if (type === 'video') {
+    // Heuristic to detect video if type is not specified
+    const isVideo = type === 'video' || (!type && (url.includes('.mp4') || url.includes('octet-stream')));
+
+    if (isVideo) {
         return (
             <video
                 key={url} // Add key to force re-render when URL changes
