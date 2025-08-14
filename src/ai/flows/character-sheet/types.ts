@@ -22,10 +22,10 @@ export type GenerateCharacterSheetInput = z.infer<typeof GenerateCharacterSheetI
 
 export const GenerateCharacterSheetOutputSchema = z.object({
   name: z.string().describe("The character's generated name."),
-  archetype: z.string().describe("The character's archetype, class, or role."),
-  equipment: z.array(z.string()).describe("A list of the character's key equipment or weapons."),
-  physicalDescription: z.string().describe("A detailed physical description suitable for an image prompt."),
-  biography: z.string().describe("The character's detailed, narrative biography."),
+  archetype: z.string().describe("The character's archetype, class, or role.").optional(),
+  equipment: z.array(z.string()).describe("A list of the character's key equipment or weapons.").optional(),
+  physicalDescription: z.string().describe("A detailed physical description suitable for an image prompt.").optional(),
+  biography: z.string().describe("The character's detailed, narrative biography.").optional(),
 });
 export type GenerateCharacterSheetOutput = z.infer<typeof GenerateCharacterSheetOutputSchema>;
 
