@@ -169,7 +169,7 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                     Click on any card to change its selection.
                 </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full max-h-[80vh] sm:max-h-full">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-grow min-h-0">
                  <OptionSelectModal
                     isOpen={!!activeSlot}
                     onClose={() => setActiveSlot(null)}
@@ -190,20 +190,20 @@ function WizardGrid({ pack, onPromptGenerated, onBack }: { pack: DataPack, onPro
                                     onClick={() => setActiveSlot(slot)}
                                     className="cursor-pointer hover:bg-muted/50 transition-colors h-full flex flex-col"
                                 >
-                                    <div className="p-3">
-                                        <div className="text-base font-logo tracking-wider">{slot.label}</div>
+                                    <div className="p-3 pb-0">
+                                        <div className="text-sm text-muted-foreground">{slot.label}</div>
                                     </div>
-                                    <div className="p-3 pt-0 flex-grow">
-                                         <p className="text-sm text-primary font-semibold truncate">{selectedOption?.label || 'None'}</p>
+                                    <div className="p-3 flex-grow flex items-center">
+                                         <p className="text-base text-primary font-semibold whitespace-normal">{selectedOption?.label || 'None'}</p>
                                     </div>
                                 </Card>
                             )
                         })}
                      </div>
                 </ScrollArea>
-                <DialogFooter className="flex-none pt-4 border-t">
+                <DialogFooter className="flex-none pt-4 border-t mt-auto">
                     <Button type="button" variant="ghost" onClick={onBack}>
-                        <ArrowLeft className="mr-2" /> Back to Packs
+                        <ArrowLeft className="mr-2" /> Back
                     </Button>
                     <Button type="submit" size="lg" className="w-full sm:w-auto font-headline text-lg">
                         Generate Prompt <ArrowRight className="ml-2" />
@@ -369,5 +369,3 @@ export function DataPackSelectorModal({
         </Dialog>
     )
 }
-
-    
