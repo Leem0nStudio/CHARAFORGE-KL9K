@@ -12,7 +12,7 @@ import {
     Button,
     Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
     Input,
     Label,
     Textarea,
@@ -190,13 +190,16 @@ export function MyModelsTab() {
     const { userProfile } = useAuth();
 
     const fetchModels = async () => {
+        if (!userProfile) return;
         setIsLoading(true);
         try {
+            // Fetch all models available to the user (system + their own)
             const allModels = await getModelsForUser('model');
             const allLoras = await getModelsForUser('lora');
             
-            const userModels = [...allModels, ...allLoras].filter(m => m.userId === userProfile?.uid);
-            setModels(userModels);
+            // Filter to show only the ones they own
+            const userOwnedModels = [...allModels, ...allLoras].filter(m => m.userId === userProfile.uid);
+            setModels(userOwnedModels);
 
         } catch (error) {
             console.error("Failed to fetch user models", error);
@@ -206,9 +209,8 @@ export function MyModelsTab() {
     };
     
     useEffect(() => {
-        if(userProfile) {
-            fetchModels();
-        }
+        fetchModels();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userProfile]);
 
     if (isLoading) {
