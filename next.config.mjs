@@ -1,14 +1,19 @@
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
         remotePatterns: [
             {
                 protocol: 'https',
+                hostname: 'storage.googleapis.com',
+            },
+            {
+                protocol: 'https',
                 hostname: 'placehold.co',
             },
             {
                 protocol: 'https',
-                hostname: 'storage.googleapis.com',
+                hostname: 'image.civitai.com',
             },
             {
                 protocol: 'https',
@@ -17,13 +22,9 @@ const nextConfig = {
              {
                 protocol: 'https',
                 hostname: 'cdn.iconscout.com',
-            },
-            {
-                protocol: 'https',
-                hostname: 'image.civitai.com',
             }
-        ],
-    },
+        ]
+    }
 };
 
 export default nextConfig;

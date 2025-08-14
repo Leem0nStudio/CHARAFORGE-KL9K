@@ -20,6 +20,8 @@ async function getIsAdmin(): Promise<boolean> {
 
   } catch (error) {
     // If the token is invalid, expired, or verification fails, they are not an admin.
+    // This also handles cases where the cookie is present but malformed.
+    console.warn("Admin check failed (user is not an admin or token is invalid):", error instanceof Error ? error.message : "Unknown error");
     return false;
   }
 }
