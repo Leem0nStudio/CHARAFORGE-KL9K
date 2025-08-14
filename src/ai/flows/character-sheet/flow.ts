@@ -6,13 +6,72 @@
  * This flow generates a structured character sheet from a simple description.
  */
 import { ai } from '@/ai/genkit';
-import type { GenerationCommonOptions } from 'genkit/ai';
+import { z } from 'zod';
 import { 
   GenerateCharacterSheetInputSchema, 
   GenerateCharacterSheetOutputSchema, 
   type GenerateCharacterSheetInput, 
   type GenerateCharacterSheetOutput 
 } from './types';
+
+/**
+ * Queries the OpenRouter API for text generation.
+ * @param {object} data The payload including prompt, model ID, and optional user API key.
+ * @returns {Promise<GenerateCharacterSheetOutput>} A promise that resolves to the parsed AI output.
+ */
+async function queryOpenRouterTextAPI(data: { prompt: string, modelId: string, userApiKey?: string }): Promise<GenerateCharacterSheetOutput> {
+    const systemApiKey = process.env.OPENROUTER_API_KEY;
+    const apiKey = data.userApiKey || systemApiKey;
+
+    if (!apiKey) {
+        throw new Error("OpenRouter API key is not configured on the server or provided by the user in their profile settings.");
+    }
+    
+    try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://charaforge.com',
+                'X-Title': 'CharaForge',
+            },
+            body: JSON.stringify({
+                model: data.modelId,
+                response_format: { type: "json_object" },
+                messages: [
+                    { role: "system", content: "You are an AI assistant that generates character sheets. Respond with a valid JSON object based on the user's prompt, conforming to the provided schema." },
+                    { role: "user", content: data.prompt }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`OpenRouter API request failed with status ${response.status}: ${errorBody}`);
+        }
+
+        const result = await response.json();
+        
+        if (result.choices && result.choices[0]?.message?.content) {
+            const content = JSON.parse(result.choices[0].message.content);
+            // Validate the received JSON against our Zod schema
+            const validation = GenerateCharacterSheetOutputSchema.safeParse(content);
+            if (!validation.success) {
+                console.error("OpenRouter response failed Zod validation:", validation.error);
+                throw new Error("Received an unexpected response format from the OpenRouter API.");
+            }
+            return validation.data;
+        }
+        
+        throw new Error("Received an unexpected response structure from the OpenRouter API.");
+
+    } catch (error) {
+        console.error("OpenRouter API Error:", error);
+        const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        throw new Error(`Failed to generate character sheet via OpenRouter. Error: ${message}`);
+    }
+}
 
 
 export async function generateCharacterSheet(input: GenerateCharacterSheetInput): Promise<GenerateCharacterSheetOutput> {
@@ -30,23 +89,6 @@ const generateCharacterSheetFlow = ai.defineFlow(
     const { description, targetLanguage, engineConfig } = input;
     const { engineId, modelId, userApiKey } = engineConfig;
     
-    let requestConfig: GenerationCommonOptions = {};
-  
-    // For OpenRouter, we must supply the API key and explicitly set the provider.
-    if (engineId === 'openrouter') {
-      const systemApiKey = process.env.OPENROUTER_API_KEY;
-      const apiKey = userApiKey || systemApiKey;
-
-      if (!apiKey) {
-        throw new Error(`OpenRouter API key is not configured on the server or provided by the user.`);
-      }
-      
-      requestConfig = {
-          apiKey,
-          provider: 'openai', // This is required for OpenRouter to correctly route to models like GPT-4o
-      };
-    }
-
     const prompt = `You are a professional writer and game master specializing in creating rich character details. Your task is to generate a complete character sheet from a user's description.
 
     Based on the provided description, generate all the required fields.
@@ -65,13 +107,21 @@ const generateCharacterSheetFlow = ai.defineFlow(
     - biography: A detailed, multi-paragraph biography exploring the character's backstory, personality, and motivations. Make it engaging and narrative-driven.
     `;
 
+    if (engineId === 'openrouter') {
+        return await queryOpenRouterTextAPI({
+            prompt: prompt,
+            modelId: modelId,
+            userApiKey: userApiKey,
+        });
+    }
+
+    // Default to Gemini engine
     const { output } = await ai.generate({
         model: modelId,
         prompt: prompt,
         output: {
             schema: GenerateCharacterSheetOutputSchema,
         },
-        config: requestConfig,
     });
     
     if (!output) {

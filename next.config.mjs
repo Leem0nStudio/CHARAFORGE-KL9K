@@ -9,19 +9,11 @@ const nextConfig = {
             },
             {
                 protocol: 'https',
-                hostname: 'placehold.co',
-            },
-            {
-                protocol: 'https',
                 hostname: 'image.civitai.com',
             },
             {
                 protocol: 'https',
-                hostname: 'cdn.openai.com',
-            },
-             {
-                protocol: 'https',
-                hostname: 'cdn.iconscout.com',
+                hostname: 'upload.wikimedia.org',
             }
         ]
     }

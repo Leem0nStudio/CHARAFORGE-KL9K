@@ -1,5 +1,4 @@
 
-
 import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon } from 'lucide-react';
 import type { AiModel } from '@/types/ai-model';
 
@@ -49,7 +48,7 @@ export const textModels: AiModel[] = [
         versionId: '1.0',
         createdAt: new Date(),
         updatedAt: new Date(),
-        coverMediaUrl: 'https://cdn.openai.com/production/assets/images/openai-logomark.3be6b7b3.svg',
+        coverMediaUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/OpenAI_Logo.svg/1200px-OpenAI_Logo.svg.png',
     },
     {
         id: 'gpt-oss-20b-placeholder',
@@ -61,7 +60,7 @@ export const textModels: AiModel[] = [
         versionId: '1.0',
         createdAt: new Date(),
         updatedAt: new Date(),
-        coverMediaUrl: 'https://cdn.openai.com/production/assets/images/openai-logomark.3be6b7b3.svg',
+        coverMediaUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/OpenAI_Logo.svg/1200px-OpenAI_Logo.svg.png',
     },
     {
         id: 'llama3-70b-placeholder',
@@ -73,7 +72,7 @@ export const textModels: AiModel[] = [
         versionId: '1.0',
         createdAt: new Date(),
         updatedAt: new Date(),
-        coverMediaUrl: 'https://cdn.iconscout.com/icon/free/png-256/free-meta-3694462-3079633.png',
+        coverMediaUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Meta-Logo.png',
     }
 ];
 
