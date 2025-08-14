@@ -13,7 +13,7 @@ export const mainNavItems: NavItem[] = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/datapacks', label: 'DataPacks', icon: Package },
     { href: '/character-generator', label: 'Forge', icon: Swords, isPrimary: true },
-    { href: '/story-forge', label: 'Story Forge', icon: ScrollText, requiresAuth: true },
+    { href: '/lore-forge', label: 'Lore Forge', icon: ScrollText, requiresAuth: true },
     { href: '/profile', label: 'Profile', icon: UserCircle, requiresAuth: true },
 ];
 

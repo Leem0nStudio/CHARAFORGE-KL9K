@@ -15,8 +15,11 @@ const TimelineEventSchemaForStory = z.object({
 
 const CharacterSchemaForStory = z.object({
     name: z.string().describe("The character's name."),
+    archetype: z.string().optional().describe("The character's class or archetype (e.g., 'Grizzled Detective')."),
+    physicalDescription: z.string().optional().describe("A detailed physical description of the character's appearance and clothing."),
     biography: z.string().describe("A brief biography of the character."),
     alignment: z.enum(['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil']).describe("The character's moral and ethical alignment (D&D style)."),
+    equipment: z.array(z.string()).optional().describe("A list of the character's key equipment or weapons."),
     timeline: z.array(TimelineEventSchemaForStory).optional().describe("An optional list of key events from the character's life."),
 });
 

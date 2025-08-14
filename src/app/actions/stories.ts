@@ -16,8 +16,8 @@ type ActionResponse<T = null> = {
     error?: string;
 };
 
-// This now includes the timeline for a richer context.
-type CharacterDetailsForAI = Pick<Character, 'name' | 'biography' | 'alignment' | 'timeline'>;
+// This now includes the full character sheet for a richer context.
+type CharacterDetailsForAI = Pick<Character, 'name' | 'biography' | 'alignment' | 'timeline' | 'archetype' | 'equipment' | 'physicalDescription'>;
 
 
 export async function getUserCasts(): Promise<StoryCast[]> {
@@ -75,7 +75,7 @@ export async function createStoryCast(data: { name: string; description: string 
         }
         const createdData = createdDoc.data() as any;
 
-        revalidatePath('/story-forge'); 
+        revalidatePath('/lore-forge'); 
 
         return {
             success: true,
@@ -111,7 +111,7 @@ export async function updateStoryCastCharacters(castId: string, characterIds: st
         updatedAt: FieldValue.serverTimestamp(),
     });
     
-    revalidatePath('/story-forge');
+    revalidatePath('/lore-forge');
     return { success: true, message: 'Story cast updated.' };
 }
 
@@ -147,8 +147,11 @@ export async function generateStory(castId: string, storyPrompt: string): Promis
             return {
                 name: char.name,
                 biography: char.biography,
-                alignment: char.alignment || 'True Neutral', // Default alignment if not set
-                timeline: char.timeline || [], // Include the timeline
+                alignment: char.alignment || 'True Neutral',
+                timeline: char.timeline || [],
+                archetype: char.archetype || undefined,
+                equipment: char.equipment || undefined,
+                physicalDescription: char.physicalDescription || char.description || undefined,
             };
         }).filter((c): c is CharacterDetailsForAI => c !== null);
 

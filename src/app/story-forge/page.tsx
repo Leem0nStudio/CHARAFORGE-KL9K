@@ -292,7 +292,7 @@ function StoryGenerator({
                 </div>
 
                 <div>
-                    <h3 className="text-lg font-semibold mb-2">Story Prompt</h3>
+                    <h3 className="text-lg font-semibold mb-2">Lore Prompt</h3>
                     <Textarea 
                         placeholder="e.g., The cast discovers a mysterious artifact in an ancient ruin..."
                         value={prompt}
@@ -304,7 +304,7 @@ function StoryGenerator({
             <CardFooter className="flex-col items-stretch gap-4">
                  <Button onClick={handleGenerateStory} disabled={isGenerating} size="lg" className="w-full font-headline text-lg">
                     {isGenerating ? <Loader2 className="mr-2 animate-spin"/> : <Wand2 className="mr-2"/>}
-                    Generate Story
+                    Generate Lore
                 </Button>
                  {generatedStory && (
                     <motion.div initial={{ opacity: 0, y:10 }} animate={{ opacity: 1, y: 0 }} className="border p-4 rounded-lg bg-background">
@@ -319,7 +319,7 @@ function StoryGenerator({
     )
 }
 
-function StoryForgeContent() {
+function LoreForgeContent() {
     const { authUser, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
@@ -388,7 +388,7 @@ function StoryForgeContent() {
 
     return (
         <div className="container py-8">
-            <BackButton title="Story Forge" description="Create epic tales starring your own characters." />
+            <BackButton title="Lore Forge" description="Create epic tales starring your own characters." />
             <div className="grid lg:grid-cols-3 gap-8 items-start max-w-7xl mx-auto mt-8">
                 <div className="lg:col-span-1">
                     <CastsList
@@ -419,7 +419,7 @@ function StoryForgeContent() {
                                 <div className="text-center text-muted-foreground">
                                     <Users className="h-12 w-12 mx-auto mb-4" />
                                     <h3 className="text-xl font-semibold">No Cast Selected</h3>
-                                    <p>Create or select a cast to start forging a story.</p>
+                                    <p>Create or select a cast to start forging your lore.</p>
                                 </div>
                             </Card>
                         )}
@@ -430,14 +430,14 @@ function StoryForgeContent() {
     )
 }
 
-export default function StoryForgePage() {
+export default function LoreForgePage() {
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center h-screen w-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         }>
-            <StoryForgeContent />
+            <LoreForgeContent />
         </Suspense>
     );
 }
