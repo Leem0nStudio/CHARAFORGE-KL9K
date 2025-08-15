@@ -7,7 +7,16 @@
     "price": 0,
     "tags": ["fantasy", "rpg", "classic", "starter"],
     "schema": {
-        "promptTemplate": "A {style} portrait of a {gender} {race} {class}, with {hair_style} {hair_color} hair. They are wearing a {armor_torso} and {armor_legs}, wielding a {weapon}. The background is a {background_setting}.",
+        "promptTemplates": [
+            {
+                "name": "Detailed Illustration",
+                "template": "A {style} portrait of a {gender} {race} {class}, with {hair_style} {hair_color} hair. They are wearing a {armor_torso} and {armor_legs}, wielding a {weapon}. The background is a {background_setting}."
+            },
+            {
+                "name": "Oil Painting",
+                "template": "An oil painting of a {gender} {race} {class} warrior, with {hair_style} {hair_color} hair and clad in {armor_torso}. They carry a {weapon}, standing before a {background_setting}."
+            }
+        ],
         "slots": [
             {
                 "id": "style",
