@@ -91,7 +91,7 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                  </CardHeader>
                  <CardContent>
                      <div className="space-y-4">
-                        {pack.schema.promptTemplates.map((template, index) => (
+                        {Array.isArray(pack.schema?.promptTemplates) && pack.schema.promptTemplates.map((template, index) => (
                             <div key={index} className="bg-muted/50 p-3 rounded-lg">
                                 <p className="font-semibold text-sm mb-1">{template.name}</p>
                                 <p className="text-xs text-muted-foreground font-mono break-words">{template.template}</p>
@@ -112,7 +112,7 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                 </CardHeader>
                  <CardContent>
                     <div className="flex flex-wrap gap-2">
-                         {pack.schema.slots.map((slot) => (
+                         {Array.isArray(pack.schema?.slots) && pack.schema.slots.map((slot) => (
                             <Badge 
                                 key={slot.id} 
                                 variant="outline"
