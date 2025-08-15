@@ -1,35 +1,23 @@
 
 {
-    "name": "Basic Fantasy Pack",
+    "name": "Fantasy Basics",
     "author": "CharaForge",
-    "description": "A foundational pack for creating classic fantasy characters. Includes races, classes, and basic equipment.",
+    "description": "A foundational pack for creating classic fantasy characters. Includes common races, classes, and basic equipment.",
     "type": "free",
     "price": 0,
-    "tags": ["fantasy", "rpg", "classic", "starter"],
+    "tags": ["fantasy", "rpg", "classic", "starter", "free"],
     "schema": {
         "promptTemplates": [
             {
-                "name": "Detailed Illustration",
-                "template": "A {style} portrait of a {gender} {race} {class}, with {hair_style} {hair_color} hair. They are wearing a {armor_torso} and {armor_legs}, wielding a {weapon}. The background is a {background_setting}."
+                "name": "Detailed Portrait",
+                "template": "A detailed fantasy illustration portrait of a {gender} {race} {class}, with {hair_style} {hair_color} hair. They are wearing a {armor_torso} and wielding a {weapon}. The background is a {background_setting}."
             },
             {
-                "name": "Oil Painting",
-                "template": "An oil painting of a {gender} {race} {class} warrior, with {hair_style} {hair_color} hair and clad in {armor_torso}. They carry a {weapon}, standing before a {background_setting}."
+                "name": "Oil Painting Style",
+                "template": "An oil painting of a {gender} {race} {class}, with {hair_style} {hair_color} hair and clad in {armor_torso}. They carry a {weapon}, standing before a {background_setting}, dramatic lighting."
             }
         ],
         "slots": [
-            {
-                "id": "style",
-                "label": "Art Style",
-                "type": "select",
-                "defaultOption": "detailed fantasy illustration",
-                "options": [
-                    { "label": "Fantasy Illustration", "value": "detailed fantasy illustration" },
-                    { "label": "Oil Painting", "value": "oil painting" },
-                    { "label": "Pencil Sketch", "value": "pencil sketch" },
-                    { "label": "Photorealistic", "value": "photorealistic" }
-                ]
-            },
             {
                 "id": "gender",
                 "label": "Gender",
@@ -60,8 +48,7 @@
                 "options": [
                     { "label": "Warrior", "value": "warrior" },
                     { "label": "Mage", "value": "mage" },
-                    { "label": "Rogue", "value": "rogue" },
-                    { "label": "Cleric", "value": "cleric" }
+                    { "label": "Rogue", "value": "rogue" }
                 ]
             },
             {
@@ -72,8 +59,7 @@
                 "options": [
                     { "label": "Long", "value": "long" },
                     { "label": "Short", "value": "short" },
-                    { "label": "Braided", "value": "braided" },
-                    { "label": "Bald", "value": "bald" }
+                    { "label": "Braided", "value": "braided" }
                 ]
             },
             {
@@ -95,20 +81,9 @@
                 "defaultOption": "leather tunic",
                 "options": [
                     { "label": "Leather Tunic", "value": "leather tunic" },
-                    { "label": "Chainmail Shirt", "value": "chainmail shirt" },
-                    { "label": "Steel Breastplate", "value": "steel breastplate" },
+                    { "label": "Chainmail", "value": "chainmail shirt" },
+                    { "label": "Steel Plate", "value": "steel breastplate" },
                     { "label": "Simple Robe", "value": "simple robe" }
-                ]
-            },
-            {
-                "id": "armor_legs",
-                "label": "Leg Armor",
-                "type": "select",
-                "defaultOption": "cloth trousers",
-                "options": [
-                    { "label": "Cloth Trousers", "value": "cloth trousers" },
-                    { "label": "Leather Greaves", "value": "leather greaves" },
-                    { "label": "Plate Leggings", "value": "plate leggings" }
                 ]
             },
             {
@@ -118,8 +93,8 @@
                 "defaultOption": "longsword",
                 "options": [
                     { "label": "Longsword", "value": "longsword" },
-                    { "label": "Bow and Arrow", "value": "bow and arrow" },
-                    { "label": "Magic Staff", "value": "glowing magic staff" },
+                    { "label": "Bow", "value": "bow and arrow" },
+                    { "label": "Staff", "value": "glowing magic staff" },
                     { "label": "Dagger", "value": "sharp dagger" }
                 ]
             },
@@ -127,12 +102,11 @@
                 "id": "background_setting",
                 "label": "Background",
                 "type": "select",
-                "defaultOption": "misty forest",
+                "defaultOption": "misty_forest",
                 "options": [
                     { "label": "Misty Forest", "value": "misty forest" },
-                    { "label": "Castle Parapet", "value": "castle parapet" },
-                    { "label": "Tavern Interior", "value": "cozy tavern interior" },
-                    { "label": "Mountain Peak", "value": "snowy mountain peak" }
+                    { "label": "Castle Wall", "value": "castle parapet" },
+                    { "label": "Tavern", "value": "cozy tavern interior" }
                 ]
             }
         ]

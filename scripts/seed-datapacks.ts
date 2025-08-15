@@ -27,10 +27,55 @@ const bucket = getStorage().bucket();
 
 const DATA_PACKS_DIR = path.join(process.cwd(), 'data', 'datapacks');
 
+/**
+ * Deletes all documents in a collection in batches.
+ * @param collectionRef The collection to clear.
+ * @param batchSize The number of documents to delete at once.
+ */
+async function deleteCollection(collectionRef: FirebaseFirestore.CollectionReference, batchSize: number) {
+    const query = collectionRef.orderBy('__name__').limit(batchSize);
+
+    return new Promise<void>((resolve, reject) => {
+        deleteQueryBatch(query, resolve).catch(reject);
+    });
+}
+
+async function deleteQueryBatch(query: FirebaseFirestore.Query, resolve: () => void) {
+    const snapshot = await query.get();
+
+    const batchSize = snapshot.size;
+    if (batchSize === 0) {
+        // When there are no documents left, we are done
+        resolve();
+        return;
+    }
+
+    // Delete documents in a batch
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    // Recurse on the next process tick, to avoid
+    // exploding the stack.
+    process.nextTick(() => {
+        deleteQueryBatch(query, resolve);
+    });
+}
+
+
 async function seedDataPacks() {
-    console.log('Starting DataPack seeding process...');
+    console.log('🔥 Starting DataPack seeding process...');
 
     try {
+        // Step 1: Delete all existing datapacks from Firestore
+        console.log('🗑️  Clearing existing DataPacks from Firestore...');
+        const collectionRef = db.collection('datapacks');
+        await deleteCollection(collectionRef, 50);
+        console.log('✅ Existing DataPacks cleared.');
+        
+        // Step 2: Proceed with seeding new datapacks
         const packFolders = await fs.readdir(DATA_PACKS_DIR);
 
         for (const packId of packFolders) {
@@ -41,11 +86,16 @@ async function seedDataPacks() {
                 continue;
             }
 
-            console.log(`Processing DataPack: ${packId}`);
+            console.log(`\n📦 Processing DataPack: ${packId}`);
 
-            // The new source of truth for all pack data is datapack.json
             const dataPackJsonPath = path.join(packPath, 'datapack.json');
-            const dataPackJsonExists = await fs.access(dataPackJsonPath).then(() => true).catch(() => false);
+            let dataPackJsonExists = false;
+            try {
+                await fs.access(dataPackJsonPath);
+                dataPackJsonExists = true;
+            } catch {
+                // File doesn't exist
+            }
 
             if (!dataPackJsonExists) {
                 console.warn(`- Skipping ${packId}: datapack.json not found.`);
@@ -53,6 +103,12 @@ async function seedDataPacks() {
             }
 
             const dataPackContent = await fs.readFile(dataPackJsonPath, 'utf-8');
+            // Check if content is empty (for deletion)
+            if (dataPackContent.trim() === '') {
+                console.log(`- Skipping ${packId} as its datapack.json is empty.`);
+                continue;
+            }
+            
             const dataPackData = JSON.parse(dataPackContent);
 
             let coverImageUrl = null;
@@ -69,23 +125,18 @@ async function seedDataPacks() {
                     coverImageUrl = bucket.file(destination).publicUrl();
                     console.log(`- Cover image uploaded to ${coverImageUrl}`);
                  } else {
-                    console.log('- No cover image found.');
+                    console.log('- No cover image found for this pack.');
                  }
             } catch (e) {
                 console.error(`- Error uploading cover image for ${packId}:`, e);
             }
             
-            // The schema is now embedded within datapack.json
             const docData = {
                 ...dataPackData,
                 id: packId,
                 coverImageUrl: coverImageUrl,
                 createdAt: FieldValue.serverTimestamp(),
             };
-
-            // The schema is already part of docData, so no need to handle schemaUrl
-            delete docData.schemaUrl;
-            delete docData.schemaPath;
 
             await db.collection('datapacks').doc(packId).set(docData, { merge: true });
             console.log(`- Data for ${packId} saved to Firestore.`);
