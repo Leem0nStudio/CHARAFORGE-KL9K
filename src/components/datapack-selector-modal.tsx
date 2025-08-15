@@ -34,7 +34,7 @@ function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, 
                         <div>
                             <h4 className="font-semibold mb-2">Prompt Templates</h4>
                             <div className="space-y-2">
-                                {pack.schema.promptTemplates.map((template, index) => (
+                                {pack.schema.promptTemplates?.map((template, index) => (
                                     <div key={index} className="bg-muted/50 p-3 rounded-lg">
                                         <p className="font-semibold text-sm mb-1">{template.name}</p>
                                         <p className="text-xs text-muted-foreground font-mono break-words">{template.template}</p>
@@ -128,6 +128,9 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
 
     const wizardSlots = pack.schema.slots.filter(slot => !slot.isLocked);
 
+    // **CRITICAL FIX**: Add defensive check to ensure promptTemplates is a valid array.
+    const hasValidTemplates = Array.isArray(pack.schema.promptTemplates) && pack.schema.promptTemplates.length > 0;
+
     useEffect(() => {
         pack.schema.slots.forEach(slot => {
             if (slot.defaultOption) {
@@ -139,9 +142,39 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
     }, [pack.schema.slots, setValue]);
 
     const onSubmit = (data: any) => {
+        // **CRITICAL FIX**: Repeat the validation here before submission.
+        if (!hasValidTemplates) {
+             console.error("Attempted to submit a DataPack with an invalid or missing promptTemplates array.", pack);
+             return; // Prevent submission
+        }
         const defaultTemplate = pack.schema.promptTemplates[0];
         onWizardComplete(data, pack, defaultTemplate);
     };
+
+    if (!hasValidTemplates) {
+        return (
+            <>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
+                        <Wand2 className="h-6 w-6 text-destructive" /> Configuration Error
+                    </DialogTitle>
+                </DialogHeader>
+                <div className="flex-grow flex items-center justify-center">
+                    <Alert variant="destructive">
+                      <AlertTitle>Invalid DataPack</AlertTitle>
+                      <AlertDescription>
+                        This DataPack (`{pack.name}`) is missing valid prompt templates and cannot be used. Please correct it in the admin panel.
+                      </AlertDescription>
+                    </Alert>
+                </div>
+                <DialogFooter className="flex-none pt-4 border-t mt-auto">
+                    <Button type="button" variant="ghost" onClick={onBack}>
+                        <ArrowLeft className="mr-2" /> Back
+                    </Button>
+                </DialogFooter>
+            </>
+        )
+    }
 
     return (
         <>
