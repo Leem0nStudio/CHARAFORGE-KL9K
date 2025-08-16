@@ -8,7 +8,6 @@ import { verifyAndGetUid } from '@/lib/auth/server';
 import type { AiModel } from '@/types/ai-model';
 import { Readable } from 'stream';
 import { finished } from 'stream/promises';
-import { getUserProfile } from '@/app/actions/user';
 
 type ActionResponse = {
     success: boolean;
@@ -34,6 +33,9 @@ export async function syncModelToStorage(modelId: string): Promise<ActionRespons
 
     try {
         const civitaiApiKey = process.env.CIVITAI_API_KEY;
+        if (!civitaiApiKey) {
+            return { success: false, message: 'Civitai API key is not configured on the server. Please add it to your .env file.' };
+        }
 
         const modelDoc = await modelRef.get();
         if (!modelDoc.exists) {
@@ -56,14 +58,10 @@ export async function syncModelToStorage(modelId: string): Promise<ActionRespons
             return { success: false, message: 'Could not find a download URL for this model version.' };
         }
 
-        let downloadUrl = primaryFile.downloadUrl;
-        if (civitaiApiKey) {
-            downloadUrl += `?token=${civitaiApiKey}`;
-        }
+        let downloadUrl = `${primaryFile.downloadUrl}?token=${civitaiApiKey}`;
         
         const fileName = primaryFile.name;
         
-        // Determine the destination folder based on the model type
         const modelTypeFolder = model.type === 'model' ? 'Models' : 'LoRas';
         const destinationPath = `SDXL/${modelTypeFolder}/${fileName}`;
         
