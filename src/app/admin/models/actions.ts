@@ -8,6 +8,7 @@ import { verifyAndGetUid } from '@/lib/auth/server';
 import type { AiModel } from '@/types/ai-model';
 import { Readable } from 'stream';
 import { finished } from 'stream/promises';
+import { getUserProfile } from '@/app/actions/user';
 
 type ActionResponse = {
     success: boolean;
@@ -25,13 +26,16 @@ async function getCivitaiModelVersionInfo(versionId: string): Promise<any> {
 }
 
 export async function syncModelToStorage(modelId: string): Promise<ActionResponse> {
-    await verifyAndGetUid(); // Ensure user is admin
+    const adminUid = await verifyAndGetUid(); // Ensure user is admin
     if (!adminDb) {
         return { success: false, message: 'Database service is unavailable.' };
     }
     const modelRef = adminDb.collection('ai_models').doc(modelId);
 
     try {
+        const adminProfile = await getUserProfile(adminUid);
+        const civitaiApiKey = adminProfile?.preferences?.civitaiApiKey;
+
         const modelDoc = await modelRef.get();
         if (!modelDoc.exists) {
             return { success: false, message: 'Model not found in database.' };
@@ -53,7 +57,12 @@ export async function syncModelToStorage(modelId: string): Promise<ActionRespons
             return { success: false, message: 'Could not find a download URL for this model version.' };
         }
 
-        const downloadUrl = primaryFile.downloadUrl;
+        let downloadUrl = primaryFile.downloadUrl;
+        // Append API key if it exists to authorize the download
+        if (civitaiApiKey) {
+            downloadUrl += `?token=${civitaiApiKey}`;
+        }
+        
         const fileName = primaryFile.name;
         const destinationPath = `civitai-models/${modelId}/${fileName}`;
         
@@ -62,7 +71,9 @@ export async function syncModelToStorage(modelId: string): Promise<ActionRespons
         const response = await fetch(downloadUrl);
 
         if (!response.ok || !response.body) {
-            throw new Error(`Failed to download model from Civitai: ${response.statusText}`);
+             const errorText = await response.text();
+             console.error("Civitai Download Error:", errorText);
+             throw new Error(`Failed to download model from Civitai: ${response.statusText}`);
         }
         
         const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
