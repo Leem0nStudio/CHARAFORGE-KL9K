@@ -116,8 +116,10 @@ const generateCharacterSheetFlow = ai.defineFlow(
     }
 
     // Default to Gemini engine
+    const finalModelId = engineId === 'gemini' ? 'gemini-1.5-flash-latest' : modelId;
+    
     const { output } = await ai.generate({
-        model: modelId,
+        model: finalModelId,
         prompt: prompt,
         output: {
             schema: GenerateCharacterSheetOutputSchema,
@@ -131,5 +133,3 @@ const generateCharacterSheetFlow = ai.defineFlow(
     return output;
   }
 );
-
-    

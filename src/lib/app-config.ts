@@ -31,7 +31,7 @@ export const textModels: AiModel[] = [
         name: 'Gemini 1.5 Flash',
         type: 'model',
         engine: 'gemini',
-        hf_id: 'google/gemini-1.5-flash-latest',
+        hf_id: 'gemini-1.5-flash-latest', // Corrected ID for Genkit googleAI() plugin
         createdAt: new Date(),
         updatedAt: new Date(),
     },
