@@ -2,7 +2,7 @@
 import { getModels } from "@/app/actions/ai-models";
 import { AdminPageLayout } from "@/components/admin/admin-page-layout";
 import { ModelForm } from "@/components/admin/model-form";
-import { ModelCard } from "./model-card";
+import { ModelCard } from "@/components/admin/model-card";
 
 export default async function AiModelsPage() {
     const [allModels, allLoras] = await Promise.all([
