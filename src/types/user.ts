@@ -27,7 +27,6 @@ export type UserPreferences = {
     };
     huggingFaceApiKey?: string;
     openRouterApiKey?: string; 
-    civitaiApiKey?: string;
 }
 
 /**

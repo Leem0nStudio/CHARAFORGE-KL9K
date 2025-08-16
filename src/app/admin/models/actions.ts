@@ -26,15 +26,14 @@ async function getCivitaiModelVersionInfo(versionId: string): Promise<any> {
 }
 
 export async function syncModelToStorage(modelId: string): Promise<ActionResponse> {
-    const adminUid = await verifyAndGetUid(); // Ensure user is admin
+    await verifyAndGetUid(); 
     if (!adminDb) {
         return { success: false, message: 'Database service is unavailable.' };
     }
     const modelRef = adminDb.collection('ai_models').doc(modelId);
 
     try {
-        const adminProfile = await getUserProfile(adminUid);
-        const civitaiApiKey = adminProfile?.preferences?.civitaiApiKey;
+        const civitaiApiKey = process.env.CIVITAI_API_KEY;
 
         const modelDoc = await modelRef.get();
         if (!modelDoc.exists) {
