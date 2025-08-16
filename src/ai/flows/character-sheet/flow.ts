@@ -115,8 +115,8 @@ const generateCharacterSheetFlow = ai.defineFlow(
         });
     }
 
-    // Default to Gemini engine
-    const finalModelId = engineId === 'gemini' ? 'gemini-1.5-flash-latest' : modelId;
+    // Default to Gemini engine, ensuring the correct model ID format for Genkit.
+    const finalModelId = engineId === 'gemini' ? 'googleai/gemini-1.5-flash-latest' : modelId;
     
     const { output } = await ai.generate({
         model: finalModelId,
