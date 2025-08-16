@@ -345,7 +345,7 @@ export function CharacterGenerator() {
   const handleModelSelect = (model: AiModel) => {
     if (model.type === 'model' && modelModalType !== 'text') {
         generationForm.setValue('selectedModel', model, { shouldValidate: true });
-        if (model.engine !== 'huggingface') {
+        if (model.engine !== 'huggingface' && model.engine !== 'vertexai') {
             generationForm.setValue('selectedLora', null); 
         }
     } else if (model.type === 'lora') {
@@ -506,7 +506,7 @@ export function CharacterGenerator() {
                                         disabled={!canInteract}
                                         isLoading={isLoadingModels}
                                     />
-                                    {selectedModel?.engine === 'huggingface' && (
+                                    {(selectedModel?.engine === 'huggingface' || selectedModel?.engine === 'vertexai') && (
                                      <>
                                         <VisualModelSelector
                                             label="LoRA (Optional)"
@@ -704,3 +704,5 @@ export function CharacterGenerator() {
     </>
   );
 }
+
+    

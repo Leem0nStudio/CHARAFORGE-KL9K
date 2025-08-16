@@ -8,6 +8,8 @@
 import { ai } from '@/ai/genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
 import { googleAI } from '@genkit-ai/googleai';
+import type { GenerationCommonOptions } from 'genkit/ai';
+
 
 // Helper function to get image dimensions in pixels.
 function getDimensions(aspectRatio: '1:1' | '16:9' | '9:16' | undefined) {
@@ -151,7 +153,7 @@ const generateCharacterImageFlow = ai.defineFlow(
   },
   async (input) => {
     const { description, engineConfig } = input;
-    const { engineId, modelId, aspectRatio, userApiKey } = engineConfig;
+    const { engineId, modelId, aspectRatio, userApiKey, lora } = engineConfig;
     
     let imageUrl: string | undefined;
 
@@ -181,12 +183,22 @@ const generateCharacterImageFlow = ai.defineFlow(
             }
             // Genkit's googleAI plugin handles Vertex AI endpoints by using 'vertexai/' prefix.
             // The modelId should be the full endpoint ID from your GCP project.
+            
+            const generationConfig: GenerationCommonOptions = {
+                 responseModalities: ['TEXT', 'IMAGE'],
+            };
+            
+            // If a LoRA is specified, add it to the config for Vertex AI.
+            // Note: The LoRA must already be deployed to the same endpoint in the GCP console.
+            if (lora) {
+                generationConfig.lora = lora.id; // Here, lora.id is the Civitai ID, which should match the LoRA alias in Vertex
+                generationConfig.lora_strength = lora.weight;
+            }
+            
             const { media } = await ai.generate({
                 model: `vertexai/${modelId}`,
                 prompt: description,
-                config: {
-                    responseModalities: ['TEXT', 'IMAGE'],
-                },
+                config: generationConfig,
             });
             imageUrl = media?.url;
         } catch (error) {
@@ -237,3 +249,5 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
+
+    

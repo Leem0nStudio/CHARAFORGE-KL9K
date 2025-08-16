@@ -120,12 +120,12 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         
         let finalDescription = physicalDescription;
 
-        if (selectedLora && selectedModel.engine === 'huggingface') {
+        if (selectedLora && (selectedModel.engine === 'huggingface' || selectedModel.engine === 'vertexai')) {
             const loraVersion = selectedLora.versions?.find(v => v.id === loraVersionId) 
                 || { id: selectedLora.versionId, triggerWords: selectedLora.triggerWords };
 
             imageEngineConfig.lora = {
-                id: selectedLora.civitaiModelId,
+                id: selectedLora.civitaiModelId || selectedLora.name, // Fallback to name for Vertex AI alias
                 versionId: loraVersion.id,
                 weight: loraWeight || 0.75,
                 triggerWords: loraVersion.triggerWords,
@@ -155,5 +155,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         return { success: false, message: 'Failed to generate portrait.', error: message };
     }
 }
+
+    
 
     
