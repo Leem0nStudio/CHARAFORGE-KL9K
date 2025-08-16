@@ -157,54 +157,44 @@ const generateCharacterImageFlow = ai.defineFlow(
     
     let imageUrl: string | undefined;
 
-    if (engineId === 'gemini') {
+    if (engineId === 'gemini' || engineId === 'vertexai') {
         try {
             const { width, height } = getDimensions(aspectRatio);
-            const { media } = await ai.generate({
-                model: googleAI.model('gemini-2.0-flash-preview-image-generation', {
-                    width,
-                    height,
-                }),
-                prompt: description,
-                config: {
-                    responseModalities: ['TEXT', 'IMAGE'],
-                },
-            });
-            imageUrl = media?.url;
-        } catch (error) {
-            console.error("Error generating image with Gemini:", error);
-            const message = error instanceof Error ? error.message : "An unknown error occurred with the Gemini engine.";
-            throw new Error(`Failed to generate character image via Gemini. ${message}`);
-        }
-    } else if (engineId === 'vertexai') {
-        try {
-            if (!modelId) {
-                throw new Error("Vertex AI Endpoint ID is required for this engine.");
-            }
-            // Genkit's googleAI plugin handles Vertex AI endpoints by using 'vertexai/' prefix.
-            // The modelId should be the full endpoint ID from your GCP project.
             
             const generationConfig: GenerationCommonOptions = {
-                 responseModalities: ['TEXT', 'IMAGE'],
+                responseModalities: ['TEXT', 'IMAGE'],
             };
             
-            // If a LoRA is specified, add it to the config for Vertex AI.
-            // Note: The LoRA must already be deployed to the same endpoint in the GCP console.
-            if (lora) {
-                generationConfig.lora = lora.id; // Here, lora.id is the Civitai ID, which should match the LoRA alias in Vertex
+            let finalModelId: string;
+            if (engineId === 'gemini') {
+                finalModelId = 'gemini-2.0-flash-preview-image-generation';
+                generationConfig.width = width;
+                generationConfig.height = height;
+            } else { // vertexai
+                 if (!modelId) {
+                    throw new Error("Vertex AI Endpoint ID is required for this engine.");
+                 }
+                 finalModelId = `vertexai/${modelId}`;
+            }
+
+            // Centralized LoRA config. Works for Vertex AI.
+            if (lora && (engineId === 'vertexai')) {
+                generationConfig.lora = lora.id;
                 generationConfig.lora_strength = lora.weight;
             }
-            
+
             const { media } = await ai.generate({
-                model: `vertexai/${modelId}`,
+                model: finalModelId,
                 prompt: description,
                 config: generationConfig,
             });
+
             imageUrl = media?.url;
         } catch (error) {
-            console.error("Error generating image with Vertex AI:", error);
-            const message = error instanceof Error ? error.message : "An unknown error occurred with the Vertex AI engine.";
-            throw new Error(`Failed to generate character image via Vertex AI. ${message}`);
+            const prettyEngineName = engineId === 'gemini' ? 'Gemini' : 'Vertex AI';
+            console.error(`Error generating image with ${prettyEngineName}:`, error);
+            const message = error instanceof Error ? error.message : `An unknown error occurred with the ${prettyEngineName} engine.`;
+            throw new Error(`Failed to generate character image via ${prettyEngineName}. ${message}`);
         }
     } else if (engineId === 'huggingface') {
         try {
@@ -249,5 +239,3 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
-
-    
