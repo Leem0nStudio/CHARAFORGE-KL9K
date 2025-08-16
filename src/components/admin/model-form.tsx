@@ -131,6 +131,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
+                                                    <SelectItem value="vertexai">Vertex AI</SelectItem>
                                                     <SelectItem value="gemini">Gemini</SelectItem>
                                                     <SelectItem value="huggingface">Hugging Face / Gradio</SelectItem>
                                                     <SelectItem value="openrouter">OpenRouter</SelectItem>
