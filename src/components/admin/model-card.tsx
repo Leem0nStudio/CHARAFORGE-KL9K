@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Cloud, CloudCog, CloudCheck, AlertCircle, RotateCw } from 'lucide-react';
-import { syncModelToStorage } from './actions';
+import { syncModelToStorage } from '@/app/admin/models/actions';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
