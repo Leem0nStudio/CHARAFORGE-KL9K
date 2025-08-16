@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 interface AiModelVersion {
@@ -10,7 +11,7 @@ export interface AiModel {
   id: string;
   name: string;
   type: 'model' | 'lora';
-  engine: 'huggingface' | 'gemini' | 'openrouter';
+  engine: 'huggingface' | 'gemini' | 'openrouter' | 'vertexai';
   hf_id: string;
   civitaiModelId?: string;
   versionId?: string;
@@ -27,7 +28,7 @@ export const UpsertModelSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, 'Name is required'),
   type: z.enum(['model', 'lora']),
-  engine: z.enum(['huggingface', 'gemini', 'openrouter']),
+  engine: z.enum(['huggingface', 'gemini', 'openrouter', 'vertexai']),
   hf_id: z.string().min(1, 'Execution ID is required'),
   civitaiModelId: z.string().optional(),
   versionId: z.string().optional(),
