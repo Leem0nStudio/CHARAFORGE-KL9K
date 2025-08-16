@@ -41,8 +41,8 @@ export async function syncModelToStorage(modelId: string): Promise<ActionRespons
         }
         const model = modelDoc.data() as AiModel;
 
-        if (!model.versionId) {
-            return { success: false, message: 'Model does not have a Civitai version ID set.' };
+        if (!model.civitaiModelId || !model.versionId) {
+            return { success: false, message: 'Model does not have a Civitai model or version ID set.' };
         }
 
         await modelRef.update({ syncStatus: 'syncing' });
@@ -57,15 +57,16 @@ export async function syncModelToStorage(modelId: string): Promise<ActionRespons
         }
 
         let downloadUrl = primaryFile.downloadUrl;
-        // Append API key if it exists to authorize the download
         if (civitaiApiKey) {
             downloadUrl += `?token=${civitaiApiKey}`;
         }
         
         const fileName = primaryFile.name;
-        const destinationPath = `civitai-models/${modelId}/${fileName}`;
         
-        // Use node-fetch for streaming
+        // Determine the destination folder based on the model type
+        const modelTypeFolder = model.type === 'model' ? 'Models' : 'LoRas';
+        const destinationPath = `SDXL/${modelTypeFolder}/${fileName}`;
+        
         const fetch = (await import('node-fetch')).default;
         const response = await fetch(downloadUrl);
 
