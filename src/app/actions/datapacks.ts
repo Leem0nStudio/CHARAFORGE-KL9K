@@ -323,14 +323,21 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
         throw new Error('Database service not available.');
     }
 
-    const uid = await verifyAndGetUid();
+    let uid: string;
+    try {
+        uid = await verifyAndGetUid();
+    } catch (error) {
+        // User is not logged in, return an empty array as they have no installed packs.
+        return [];
+    }
+
     const userRef = adminDb.collection('users').doc(uid);
     const userDoc = await userRef.get();
     
     const installedPackIds = userDoc.data()?.stats?.installedPacks || [];
 
+    // All users should have access to the basic fantasy pack, even if not explicitly installed.
     const packIdsToFetch = new Set(installedPackIds);
-    packIdsToFetch.add('basic-fantasy-pack'); 
 
     const uniquePackIds = Array.from(packIdsToFetch);
 
@@ -340,7 +347,6 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
 
     try {
         const packsRef = adminDb.collection('datapacks');
-        // **CRITICAL FIX**: Use FieldPath.documentId() for querying document IDs on the server.
         const packsSnapshot = await packsRef.where(FieldPath.documentId(), 'in', uniquePackIds).get();
 
         if (packsSnapshot.empty) {

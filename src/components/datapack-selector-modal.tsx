@@ -128,7 +128,6 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
 
     const wizardSlots = pack.schema.slots.filter(slot => !slot.isLocked);
 
-    // **CRITICAL FIX**: Add defensive check to ensure promptTemplates is a valid array.
     const hasValidTemplates = Array.isArray(pack.schema.promptTemplates) && pack.schema.promptTemplates.length > 0;
 
     useEffect(() => {
@@ -142,10 +141,9 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
     }, [pack.schema.slots, setValue]);
 
     const onSubmit = (data: any) => {
-        // **CRITICAL FIX**: Repeat the validation here before submission.
         if (!hasValidTemplates) {
              console.error("Attempted to submit a DataPack with an invalid or missing promptTemplates array.", pack);
-             return; // Prevent submission
+             return;
         }
         const defaultTemplate = pack.schema.promptTemplates[0];
         onWizardComplete(data, pack, defaultTemplate);
