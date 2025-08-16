@@ -11,7 +11,19 @@ export interface NavItem {
 }
 
 // Static AI Model Definitions - these are fallbacks or system-provided defaults.
-export const imageModels: AiModel[] = [];
+export const imageModels: AiModel[] = [
+    {
+        id: 'vertexai-sdxl-illustrious',
+        name: 'Illustrious SDXL (Vertex AI)',
+        type: 'model',
+        engine: 'vertexai',
+        // This is the Endpoint ID from the user's GCP project
+        hf_id: '1497098330914684928', 
+        coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    }
+];
 
 export const textModels: AiModel[] = [
     {

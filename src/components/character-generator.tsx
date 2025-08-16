@@ -69,7 +69,7 @@ type GenerationResult = GenerateCharacterSheetOutput & {
   imageUrl?: string | null;
   dataPackId?: string | null;
   textEngine?: 'gemini' | 'openrouter';
-  imageEngine?: 'gemini' | 'openrouter' | 'huggingface';
+  imageEngine?: 'gemini' | 'openrouter' | 'huggingface' | 'vertexai';
 };
 
 export function CharacterGenerator() {
@@ -107,7 +107,7 @@ export function CharacterGenerator() {
       targetLanguage: 'English',
       aspectRatio: '1:1',
       loraWeight: 0.75,
-      selectedModel: undefined, // Initialize as undefined
+      selectedModel: imageModels[0] || undefined,
       selectedLora: null,
     },
   });
@@ -146,7 +146,17 @@ export function CharacterGenerator() {
   
   useEffect(() => {
     async function loadInitialData() {
-        if (!authUser) return;
+        // Set static default model immediately
+        const defaultModel = imageModels[0];
+        if (defaultModel) {
+            generationForm.setValue('selectedModel', defaultModel);
+        }
+
+        if (!authUser) {
+            setIsLoadingModels(false);
+            return;
+        };
+
         setIsLoadingModels(true);
         try {
             const packIdFromUrl = searchParams.get('packId');
@@ -157,12 +167,15 @@ export function CharacterGenerator() {
                 packIdFromUrl ? getDataPackForAdmin(packIdFromUrl) : Promise.resolve(null),
             ]);
             
-            setAvailableModels(userModels);
+            // Combine system models with user models, ensuring no duplicates
+            const allAvailableModels = [...imageModels];
+            userModels.forEach(um => {
+                if (!allAvailableModels.some(sm => sm.id === um.id)) {
+                    allAvailableModels.push(um);
+                }
+            });
+            setAvailableModels(allAvailableModels);
             setAvailableLoras(userLoras);
-
-            if (userModels.length > 0 && !generationForm.getValues('selectedModel')) {
-                generationForm.setValue('selectedModel', userModels[0]);
-            }
             
             if (initialPackData) {
                 setInitialPack(initialPackData);
