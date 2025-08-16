@@ -73,6 +73,8 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
           installedPacks: [],
           subscriptionTier: 'free',
           memberSince: serverTimestamp(),
+          points: 0, // Initialize gamification points
+          unlockedAchievements: [], // Initialize empty achievements list
         }
       });
     } else {
@@ -175,5 +177,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-    

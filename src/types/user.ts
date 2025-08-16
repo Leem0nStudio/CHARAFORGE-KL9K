@@ -12,6 +12,8 @@ export interface UserStats {
   installedModels?: string[]; // Added to track installed models
   subscriptionTier: string;
   memberSince: number; // Stored as milliseconds since epoch
+  points?: number; // Total gamification points
+  unlockedAchievements?: string[]; // Array of Achievement IDs
 }
 
 export type UserPreferences = {
