@@ -56,7 +56,8 @@ export async function upsertModel(data: UpsertAiModel): Promise<ActionResponse> 
             await docRef.set({ 
                 ...finalData, 
                 id: docRef.id,
-                createdAt: FieldValue.serverTimestamp()
+                createdAt: FieldValue.serverTimestamp(),
+                syncStatus: 'notsynced',
             });
         }
         
@@ -132,6 +133,7 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
                 name: v.name, 
                 triggerWords: [...new Set([...(v.trainedWords || []), ...(modelInfo.tags || [])])]
             })),
+            syncStatus: 'notsynced',
         };
         
         const docRef = adminDb.collection('ai_models').doc();

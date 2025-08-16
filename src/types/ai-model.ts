@@ -7,6 +7,8 @@ interface AiModelVersion {
   triggerWords?: string[];
 }
 
+export type SyncStatus = 'synced' | 'syncing' | 'notsynced';
+
 export interface AiModel {
   id: string;
   name: string;
@@ -22,6 +24,7 @@ export interface AiModel {
   createdAt: Date;
   updatedAt: Date;
   userId?: string; // If present, it's a user-specific model
+  syncStatus?: SyncStatus;
 }
 
 export const UpsertModelSchema = z.object({
@@ -44,6 +47,7 @@ export const UpsertModelSchema = z.object({
     name: z.string(),
     triggerWords: z.array(z.string()).optional(),
   })).optional(),
+  syncStatus: z.enum(['synced', 'syncing', 'notsynced']).optional(),
 });
 
 export type UpsertAiModel = z.infer<typeof UpsertModelSchema>;
