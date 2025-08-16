@@ -209,12 +209,12 @@ export async function saveCharacter(input: SaveCharacterInput) {
 
     await adminDb.runTransaction(async (transaction) => {
         const userDoc = await transaction.get(userRef);
+        const userData = userDoc.data();
 
         const version = 1;
         const versionName = `v.${version}`;
         const initialVersion = { id: characterRef.id, name: versionName, version: version };
         
-        // Combine tags from wizard data and any manually entered tags
         const wizardTags = wizardData ? Object.values(wizardData).map(tag => tag.trim().toLowerCase().replace(/ /g, '_')) : [];
         const manualTags = tags ? tags.split(',').map(tag => tag.trim().toLowerCase().replace(/ /g, '_')) : [];
         const uniqueTags = [...new Set([...wizardTags, ...manualTags].filter(Boolean))];
@@ -223,7 +223,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
         const characterData = {
             userId,
             name,
-            description: physicalDescription, // Use physical description as the base description
+            description: physicalDescription, 
             biography,
             imageUrl: storageUrl,
             gallery: [storageUrl],
@@ -247,14 +247,22 @@ export async function saveCharacter(input: SaveCharacterInput) {
 
         transaction.set(characterRef, characterData);
         
-        if (!userDoc.exists || !userDoc.data()?.stats) {
-            transaction.set(userRef, { 
-                stats: { charactersCreated: 1 } 
-            }, { merge: true });
+        const userStats = userData?.stats || {};
+        const isFirstCharacter = (userStats.charactersCreated || 0) === 0;
+
+        const updates: { [key: string]: any } = {
+            'stats.charactersCreated': FieldValue.increment(1)
+        };
+
+        if (isFirstCharacter) {
+            updates['stats.unlockedAchievements'] = FieldValue.arrayUnion('first_character');
+            updates['stats.points'] = FieldValue.increment(10); // Points for first character
+        }
+
+        if (!userDoc.exists) {
+            transaction.set(userRef, { stats: updates }, { merge: true });
         } else {
-            transaction.update(userRef, {
-                'stats.charactersCreated': FieldValue.increment(1)
-            });
+            transaction.update(userRef, updates);
         }
     });
 
