@@ -186,7 +186,7 @@ const generateCharacterImageFlow = ai.defineFlow(
             }
 
             const { media } = await ai.generate({
-                model: googleAI.model(finalModelId),
+                model: finalModelId,
                 prompt: description,
                 config: generationConfig,
             });
