@@ -13,13 +13,17 @@ function CharacterGeneratorWrapper() {
   const { authUser, loading } = useAuth();
   const router = useRouter();
 
+  // We no longer redirect if the user is not logged in.
+  // The CharacterGenerator component will handle the UI for unauthenticated users.
+  /*
   useEffect(() => {
     if (!loading && !authUser) {
       router.push('/login');
     }
   }, [authUser, loading, router]);
+  */
 
-  if (loading || !authUser) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen w-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

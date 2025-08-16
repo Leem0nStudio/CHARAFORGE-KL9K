@@ -53,7 +53,8 @@ export async function generateCharacterSheetData(input: GenerateSheetInput): Pro
     if (!validation.success) {
         return { success: false, message: 'Invalid input.', error: validation.error.message };
     }
-    await verifyAndGetUid();
+    // This action can now be called by unauthenticated users.
+    // await verifyAndGetUid();
 
     const { description, targetLanguage, engineConfig } = validation.data;
 
@@ -92,7 +93,8 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         return { success: false, message: 'Invalid input.', error: validation.error.message };
     }
 
-    await verifyAndGetUid();
+    // This action can now be called by unauthenticated users.
+    // await verifyAndGetUid();
     
     const {
         physicalDescription,
