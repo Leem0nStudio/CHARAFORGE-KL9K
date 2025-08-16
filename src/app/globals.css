@@ -90,6 +90,33 @@
   .font-headline {
     font-family: 'Bebas Neue', sans-serif;
   }
+  /* Embla Carousel Styles */
+  .embla {
+    overflow: hidden;
+  }
+  .embla__container {
+    display: flex;
+  }
+  .embla__slide {
+    flex: 0 0 100%;
+    min-width: 0;
+    padding: 0 1rem;
+  }
+  @screen sm {
+    .embla__slide {
+      flex: 0 0 50%;
+    }
+  }
+  @screen lg {
+    .embla__slide {
+      flex: 0 0 33.3333%;
+    }
+  }
+  @screen xl {
+     .embla__slide {
+      flex: 0 0 25%;
+    }
+  }
 }
 
 /* Custom Animation for Pulse Glow */
