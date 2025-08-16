@@ -1,0 +1,160 @@
+
+{
+    "name": "Fantasy Core",
+    "author": "CharaForge",
+    "description": "The premium version of Fantasy Basics. Create epic fantasy characters with expanded options for armor, mythical races, and enchanted locations.",
+    "type": "premium",
+    "price": 4.99,
+    "tags": ["fantasy", "rpg", "epic", "premium", "detailed"],
+    "isNsfw": false,
+    "schema": {
+        "promptTemplates": [
+            {
+                "name": "Epic Cinematic Portrait",
+                "template": "Epic cinematic portrait of a legendary {gender} {race} {class}, {expression}. They wear ornate {armor_torso} and {armor_legs}, wielding a powerful {weapon}. Their {hair_style} {hair_color} hair flows in the wind. The background is a breathtaking {background_setting}, with {lighting} lighting."
+            },
+            {
+                "name": "Grim Dark Style",
+                "template": "A grim, dark fantasy painting of a battle-hardened {gender} {race} {class}, {expression}, wearing worn {armor_torso} and {armor_legs}. They carry a menacing {weapon}, lurking in a {background_setting} under {lighting}."
+            },
+            {
+                "name": "Character Sheet Concept",
+                "template": "Full body character concept art of a {gender} {race} {class} on a white background, clean detailed line art. They are equipped with a {weapon}, and wearing {armor_torso} and {armor_legs}."
+            }
+        ],
+        "slots": [
+            {
+                "id": "gender",
+                "label": "Gender",
+                "type": "select",
+                "defaultOption": "female",
+                "options": [
+                    { "label": "Female", "value": "female" },
+                    { "label": "Male", "value": "male" }
+                ]
+            },
+            {
+                "id": "race",
+                "label": "Race",
+                "type": "select",
+                "defaultOption": "dragonborn",
+                "options": [
+                    { "label": "Dragonborn", "value": "dragonborn" },
+                    { "label": "Tiefling", "value": "tiefling" },
+                    { "label": "Aasimar", "value": "aasimar (angelic being)" },
+                    { "label": "Warforged", "value": "warforged (construct)" },
+                    { "label": "Tabaxi", "value": "tabaxi (cat-like humanoid)" }
+                ]
+            },
+            {
+                "id": "class",
+                "label": "Class",
+                "type": "select",
+                "defaultOption": "paladin",
+                "options": [
+                    { "label": "Paladin", "value": "paladin" },
+                    { "label": "Warlock", "value": "warlock" },
+                    { "label": "Druid", "value": "druid" },
+                    { "label": "Artificer", "value": "artificer" },
+                    { "label": "Barbarian", "value": "barbarian" }
+                ]
+            },
+            {
+                "id": "expression",
+                "label": "Expression",
+                "type": "select",
+                "defaultOption": "a determined look",
+                "options": [
+                    { "label": "Determined", "value": "a determined look" },
+                    { "label": "Serene", "value": "a serene expression" },
+                    { "label": "Menacing", "value": "a menacing stare" },
+                    { "label": "Joyful", "value": "a joyful smile" }
+                ]
+            },
+            {
+                "id": "hair_style",
+                "label": "Hair Style",
+                "type": "select",
+                "defaultOption": "ornate braids",
+                "options": [
+                    { "label": "Ornate Braids", "value": "ornate braids" },
+                    { "label": "Wild and Unkempt", "value": "wild and unkempt" },
+                    { "label": "Elegant Updo", "value": "elegant updo" },
+                    { "label": "Top Knot", "value": "top knot" }
+                ]
+            },
+            {
+                "id": "hair_color",
+                "label": "Hair Color",
+                "type": "select",
+                "defaultOption": "silver",
+                "options": [
+                    { "label": "Silver", "value": "silver" },
+                    { "label": "Crimson Red", "value": "crimson red" },
+                    { "label": "Deep Blue", "value": "deep blue" },
+                    { "label": "Pure White", "value": "pure white" }
+                ]
+            },
+            {
+                "id": "armor_torso",
+                "label": "Torso Armor",
+                "type": "select",
+                "defaultOption": "ornate adamantine breastplate",
+                "options": [
+                    { "label": "Adamantine Plate", "value": "ornate adamantine breastplate" },
+                    { "label": "Dragon Scale Mail", "value": "dragon scale mail" },
+                    { "label": "Enchanted Robes", "value": "glowing enchanted robes" },
+                    { "label": "Spiked Leather", "value": "spiked leather armor" }
+                ]
+            },
+            {
+                "id": "armor_legs",
+                "label": "Leg Armor",
+                "type": "select",
+                "defaultOption": "plate leggings",
+                "options": [
+                    { "label": "Plate Leggings", "value": "plate leggings" },
+                    { "label": "Leather Trousers", "value": "leather trousers" },
+                    { "label": "Armored Kilt", "value": "armored kilt" },
+                    { "label": "Flowing Skirt", "value": "long flowing skirt" }
+                ]
+            },
+            {
+                "id": "weapon",
+                "label": "Weapon",
+                "type": "select",
+                "defaultOption": "flaming greatsword",
+                "options": [
+                    { "label": "Flaming Greatsword", "value": "flaming greatsword" },
+                    { "label": "Sun-forged Hammer", "value": "sun-forged warhammer" },
+                    { "label": "Crystal Staff", "value": "crystal-topped staff" },
+                    { "label": "Soul-Stealing Scythe", "value": "soul-stealing scythe" }
+                ]
+            },
+            {
+                "id": "background_setting",
+                "label": "Background",
+                "type": "select",
+                "defaultOption": "a floating city in the clouds",
+                "options": [
+                    { "label": "Floating City", "value": "a floating city in the clouds" },
+                    { "label": "Volcanic Lair", "value": "a volcanic lair" },
+                    { "label": "Ancient Forest", "value": "an ancient, glowing forest" },
+                    { "label": "Dragon's Graveyard", "value": "a dragon's graveyard" }
+                ]
+            },
+            {
+                "id": "lighting",
+                "label": "Lighting",
+                "type": "select",
+                "defaultOption": "god rays",
+                "options": [
+                    { "label": "God Rays", "value": "god rays" },
+                    { "label": "Eerie Moonlight", "value": "eerie moonlight" },
+                    { "label": "Magical Glow", "value": "magical glow" },
+                    { "label": "Sunrise", "value": "golden sunrise" }
+                ]
+            }
+        ]
+    }
+}

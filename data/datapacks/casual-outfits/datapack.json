@@ -1,0 +1,106 @@
+
+{
+    "name": "Casual Outfits",
+    "author": "CharaForge",
+    "description": "Create characters with modern, everyday clothing. Perfect for contemporary, slice-of-life, or urban fantasy settings.",
+    "type": "free",
+    "price": 0,
+    "tags": ["modern", "casual", "fashion", "urban", "free"],
+    "schema": {
+        "promptTemplates": [
+            {
+                "name": "Street Style Photo",
+                "template": "A full-body street style photograph of a {gender} person with {hair_style} {hair_color} hair. They are wearing a {topwear}, {bottomwear}, and {footwear}. The background is a {background_setting}."
+            },
+            {
+                "name": "Cozy Indoor Portrait",
+                "template": "A cozy indoor portrait of a {gender} person, wearing a comfortable {topwear} and {bottomwear}. They have {hair_style} {hair_color} hair. They are in a {background_setting}."
+            }
+        ],
+        "slots": [
+            {
+                "id": "gender",
+                "label": "Gender",
+                "type": "select",
+                "defaultOption": "woman",
+                "options": [
+                    { "label": "Woman", "value": "woman" },
+                    { "label": "Man", "value": "man" },
+                    { "label": "Person", "value": "person" }
+                ]
+            },
+            {
+                "id": "hair_style",
+                "label": "Hair Style",
+                "type": "select",
+                "defaultOption": "messy bun",
+                "options": [
+                    { "label": "Messy Bun", "value": "messy bun" },
+                    { "label": "Short and Styled", "value": "short and styled" },
+                    { "label": "Long and Wavy", "value": "long and wavy" },
+                    { "label": "Bob Cut", "value": "bob cut" }
+                ]
+            },
+            {
+                "id": "hair_color",
+                "label": "Hair Color",
+                "type": "select",
+                "defaultOption": "light brown",
+                "options": [
+                    { "label": "Light Brown", "value": "light brown" },
+                    { "label": "Dyed Pink", "value": "dyed pink" },
+                    { "label": "Jet Black", "value": "jet black" },
+                    { "label": "Platinum Blonde", "value": "platinum blonde" }
+                ]
+            },
+            {
+                "id": "topwear",
+                "label": "Topwear",
+                "type": "select",
+                "defaultOption": "graphic t-shirt",
+                "options": [
+                    { "label": "Graphic T-Shirt", "value": "graphic t-shirt" },
+                    { "label": "Oversized Hoodie", "value": "oversized hoodie" },
+                    { "label": "Button-up Shirt", "value": "button-up shirt" },
+                    { "label": "Tank Top", "value": "tank top" }
+                ]
+            },
+            {
+                "id": "bottomwear",
+                "label": "Bottomwear",
+                "type": "select",
+                "defaultOption": "ripped jeans",
+                "options": [
+                    { "label": "Ripped Jeans", "value": "ripped jeans" },
+                    { "label": "Cargo Shorts", "value": "cargo shorts" },
+                    { "label": "Pleated Skirt", "value": "pleated skirt" },
+                    { "label": "Sweatpants", "value": "sweatpants" }
+                ]
+            },
+            {
+                "id": "footwear",
+                "label": "Footwear",
+                "type": "select",
+                "defaultOption": "classic sneakers",
+                "options": [
+                    { "label": "Sneakers", "value": "classic sneakers" },
+                    { "label": "Combat Boots", "value": "combat boots" },
+                    { "label": "Sandals", "value": "sandals" },
+                    { "label": "High Heels", "value": "high heels" }
+                ]
+            },
+            {
+                "id": "background_setting",
+                "label": "Background",
+                "type": "select",
+                "defaultOption": "bustling city street",
+                "options": [
+                    { "label": "City Street", "value": "bustling city street" },
+                    { "label": "Cozy Cafe", "value": "cozy cafe interior" },
+                    { "label": "Skate Park", "value": "local skate park" },
+                    { "label": "Library", "value": "quiet library aisle" }
+                ]
+            }
+        ]
+    }
+}

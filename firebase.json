@@ -4,6 +4,9 @@
     "rules": "firestore.rules"
   },
   "storage": {
-    "rules": "storage.rules"
+    "cors": "cors.json"
+  },
+  "functions": {
+    "source": "src/ai"
   }
 }

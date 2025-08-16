@@ -1,89 +1,95 @@
-import { getAuth } from 'firebase-admin/auth';
-import { cookies } from 'next/headers';
-import { User } from 'lucide-react';
-import { adminApp, adminDb } from '@/lib/firebase/server';
-import { CharacterCard } from '@/components/character-card';
-import { redirect } from 'next/navigation';
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
+import { getCharacters } from '../actions/character-read';
+import { buttonVariants } from '@/components/ui/button';
+import { BackButton } from '@/components/back-button';
 import type { Character } from '@/types/character';
+import { cn } from '@/lib/utils';
+import { Loader2, User, Swords } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { CharacterCard } from '@/components/character/character-card';
 
 
-async function getCharactersForUser(userId: string): Promise<Character[]> {
-  if (!adminDb) {
-    return [];
-  }
-  try {
-    const snapshot = await adminDb
-      .collection('characters')
-      .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
-      .get();
+export default function CharactersPage() {
+  const { authUser, loading: authLoading } = useAuth();
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-    if (snapshot.empty) {
-      return [];
+  useEffect(() => {
+    if (authLoading) return;
+    if (!authUser) {
+      router.push('/login');
+      return;
+    }
+    
+    async function fetchCharacters() {
+        setLoading(true);
+        try {
+        const fetchedCharacters = await getCharacters();
+        setCharacters(fetchedCharacters);
+        } catch (error) {
+        console.error("Failed to fetch characters:", error);
+        } finally {
+        setLoading(false);
+        }
     }
 
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      const createdAtDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
-      return {
-        id: doc.id,
-        name: data.name || 'Unnamed Character',
-        description: data.description || '',
-        biography: data.biography || '',
-        imageUrl: data.imageUrl || '',
-        userId: data.userId,
-        status: data.status === 'public' ? 'public' : 'private',
-        createdAt: createdAtDate,
-      };
-    });
-  } catch (error: unknown) {
-    return [];
+    fetchCharacters();
+  }, [authUser, authLoading, router]);
+  
+  
+  if (authLoading || loading) {
+     return (
+      <div className="flex items-center justify-center h-screen w-full">
+         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
-}
-
-export default async function CharactersPage() {
-  const cookieStore = cookies();
-  const idToken = cookieStore.get('firebaseIdToken')?.value;
-
-  if (!idToken) {
-    redirect('/login');
-  }
-
-  let uid: string;
-  try {
-      if (!adminApp) {
-          throw new Error("Authentication service is not available.");
-      }
-    const auth = getAuth(adminApp);
-    const decodedToken = await auth.verifyIdToken(idToken);
-    uid = decodedToken.uid;
-  } catch (error: unknown) {
-    redirect('/login');
-  }
-
-  const characters = await getCharactersForUser(uid);
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <main className="flex-1 p-4 md:p-10">
-        <div className="mx-auto grid w-full max-w-6xl gap-2 mb-8">
-          <h1 className="text-3xl font-semibold font-headline tracking-wider">My Characters</h1>
-          <p className="text-muted-foreground">A gallery of all the characters you have forged.</p>
-        </div>
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {characters.length > 0 ? (
-              characters.map((character) => (
-                <CharacterCard key={character.id} character={character} />
-              ))
-            ) : (
-              <div className="col-span-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card">
-                  <User className="h-12 w-12 mb-4 text-primary" />
-                  <p className="text-lg font-medium font-headline tracking-wider">No characters yet</p>
-                  <p className="text-sm">Go to the homepage to start creating!</p>
+    <div className="container py-8">
+        <BackButton 
+            title="My Characters"
+            description="Your personal collection of forged characters."
+        />
+      
+      <div className="max-w-7xl mx-auto">
+          {characters.length > 0 ? (
+                <motion.div 
+                    className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                        hidden: {},
+                        visible: {
+                            transition: {
+                                staggerChildren: 0.05,
+                            },
+                        },
+                    }}
+                >
+                    {characters.map(character => (
+                       <CharacterCard key={character.id} character={character} />
+                    ))}
+                </motion.div>
+          ) : (
+              <div className="col-span-full w-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
+                  <User className="h-16 w-16 mb-4 text-primary/70" />
+                  <h2 className="text-2xl font-medium font-headline tracking-wider mb-2">Your Gallery is Empty</h2>
+                  <p className="max-w-xs mx-auto mb-6">It looks like you haven't forged any characters yet. Let's bring your first legend to life!</p>
+                  <Link href="/character-generator" className={cn(buttonVariants({ size: 'lg' }), "bg-accent text-accent-foreground hover:bg-accent/90")}>
+                      <Swords className="mr-2 h-5 w-5" />
+                      Forge a New Character
+                  </Link>
               </div>
-            )}
-        </div>
-      </main>
+          )}
+      </div>
     </div>
   );
 }
