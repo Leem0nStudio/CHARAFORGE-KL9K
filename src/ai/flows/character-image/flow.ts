@@ -167,14 +167,16 @@ const generateCharacterImageFlow = ai.defineFlow(
             
             let finalModelId: string;
             if (engineId === 'gemini') {
-                finalModelId = 'gemini-2.0-flash-preview-image-generation';
+                finalModelId = 'googleai/gemini-2.0-flash-preview-image-generation';
                 generationConfig.width = width;
                 generationConfig.height = height;
             } else { // vertexai
                  if (!modelId) {
                     throw new Error("Vertex AI Endpoint ID is required for this engine.");
                  }
-                 finalModelId = `vertexai/${modelId}`;
+                 // CRITICAL FIX: The model ID for a Vertex endpoint should NOT be prefixed.
+                 // The Genkit plugin handles routing based on the engine.
+                 finalModelId = modelId;
             }
 
             // Centralized LoRA config. Works for Vertex AI.
@@ -184,7 +186,7 @@ const generateCharacterImageFlow = ai.defineFlow(
             }
 
             const { media } = await ai.generate({
-                model: finalModelId,
+                model: googleAI.model(finalModelId),
                 prompt: description,
                 config: generationConfig,
             });
