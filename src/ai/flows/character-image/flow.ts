@@ -174,6 +174,26 @@ const generateCharacterImageFlow = ai.defineFlow(
             const message = error instanceof Error ? error.message : "An unknown error occurred with the Gemini engine.";
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
+    } else if (engineId === 'vertexai') {
+        try {
+            if (!modelId) {
+                throw new Error("Vertex AI Endpoint ID is required for this engine.");
+            }
+            // Genkit's googleAI plugin handles Vertex AI endpoints by using 'vertexai/' prefix.
+            // The modelId should be the full endpoint ID from your GCP project.
+            const { media } = await ai.generate({
+                model: `vertexai/${modelId}`,
+                prompt: description,
+                config: {
+                    responseModalities: ['TEXT', 'IMAGE'],
+                },
+            });
+            imageUrl = media?.url;
+        } catch (error) {
+            console.error("Error generating image with Vertex AI:", error);
+            const message = error instanceof Error ? error.message : "An unknown error occurred with the Vertex AI engine.";
+            throw new Error(`Failed to generate character image via Vertex AI. ${message}`);
+        }
     } else if (engineId === 'huggingface') {
         try {
             if (!modelId) {
@@ -217,5 +237,3 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
-
-    
