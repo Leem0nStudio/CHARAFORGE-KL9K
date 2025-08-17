@@ -8,7 +8,6 @@ import type { AiModel } from '@/types/ai-model';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Cloud, CloudCog, CloudCheck, RotateCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { syncModelToStorage } from '@/app/admin/models/actions';
@@ -36,22 +35,22 @@ function SyncButton({ model }: { model: AiModel }) {
     }
 
     const syncStatus = model.syncStatus || 'notsynced';
+    
     const statusMap = {
-        notsynced: { icon: <Cloud className="mr-2"/>, text: 'Sync', color: 'bg-blue-500 hover:bg-blue-600', disabled: false },
-        syncing: { icon: <CloudCog className="mr-2 animate-spin" />, text: 'Syncing...', color: 'bg-amber-500', disabled: true },
-        synced: { icon: <CloudCheck className="mr-2" />, text: 'Synced', color: 'bg-green-500', disabled: true },
+        notsynced: { text: 'Sync Now', color: 'bg-blue-600 hover:bg-blue-700', disabled: false, animate: false },
+        syncing: { text: 'Syncing...', color: 'bg-amber-500', disabled: true, animate: true },
+        synced: { text: 'Synced', color: 'bg-green-600', disabled: true, animate: false },
     }
     const currentStatus = statusMap[syncStatus];
 
     return (
         <Button 
             size="sm" 
-            className={cn("w-full mt-2", currentStatus.color)}
+            className={cn("w-full mt-2", currentStatus.color, currentStatus.animate && "animate-pulse")}
             disabled={currentStatus.disabled || isSyncing}
             onClick={handleSync}
         >
-            {isSyncing ? <RotateCw className="mr-2 animate-spin"/> : currentStatus.icon}
-            {currentStatus.text}
+            {isSyncing ? "Please Wait..." : currentStatus.text}
         </Button>
     )
 }
