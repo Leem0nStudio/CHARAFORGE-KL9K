@@ -121,11 +121,12 @@ const generateCharacterImageFlow = ai.defineFlow(
                  if (!modelId) {
                     throw new Error("Vertex AI Endpoint ID is required for this engine.");
                  }
+                 // For Vertex AI, the modelId from the config is the Endpoint ID.
                  finalModelId = `googleai/${modelId}`;
             }
 
             // Centralized LoRA config for Vertex AI.
-            // It uses the configured alias for the lora.id.
+            // It uses the configured vertexAiAlias for the lora.id.
             if (lora && lora.id && engineId === 'vertexai') {
                 generationConfig.lora = lora.id;
                 generationConfig.lora_strength = lora.weight;

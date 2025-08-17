@@ -17,7 +17,7 @@ export const imageModels: AiModel[] = [
         name: 'Illustrious SDXL (Vertex AI)',
         type: 'model',
         engine: 'vertexai',
-        // This is the Endpoint ID from the user's GCP project
+        // This is the Endpoint ID from the user's GCP project, NOT a Hugging Face ID.
         hf_id: '1497098330914684928', 
         coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
         createdAt: new Date(),

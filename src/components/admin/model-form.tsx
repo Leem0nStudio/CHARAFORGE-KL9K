@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -84,6 +85,8 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
 
     const watchEngine = form.watch('engine');
 
+    const executionIdLabel = watchEngine === 'vertexai' ? 'Vertex AI Endpoint ID' : 'Execution ID (e.g. Hugging Face ID)';
+
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent className="sm:max-w-2xl">
@@ -144,8 +147,8 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                     />
                                 </div>
                                 <div className="space-y-2 col-span-2">
-                                    <Label>Execution ID (e.g. Hugging Face ID or Vertex Endpoint ID)</Label>
-                                    <Input {...form.register('hf_id')} placeholder="e.g., stabilityai/sdxl or a numerical ID" />
+                                    <Label>{executionIdLabel}</Label>
+                                    <Input {...form.register('hf_id')} placeholder={watchEngine === 'vertexai' ? 'e.g., 1234567890123456789' : "e.g., stabilityai/sdxl"} />
                                 </div>
 
                                 {watchEngine === 'vertexai' && form.watch('type') === 'lora' && (

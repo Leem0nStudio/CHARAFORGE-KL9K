@@ -113,6 +113,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
      try {
         const imageEngineConfig: ImageEngineConfig = {
             engineId: selectedModel.engine,
+            // For Vertex, modelId is the Endpoint ID. For others, it's the HF repo ID.
             modelId: selectedModel.engine !== 'gemini' ? selectedModel.hf_id : undefined,
             aspectRatio,
             userApiKey: userApiKey,
