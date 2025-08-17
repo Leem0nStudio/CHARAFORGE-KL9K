@@ -8,7 +8,7 @@ import type { AiModel } from '@/types/ai-model';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Cloud, CloudCog, CloudCheck, AlertCircle, RotateCw } from 'lucide-react';
+import { Cloud, CloudCog, CloudCheck, RotateCw } from 'lucide-react';
 import { syncModelToStorage } from '@/app/admin/models/sync-action';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
