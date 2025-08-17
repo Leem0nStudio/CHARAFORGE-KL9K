@@ -36,6 +36,11 @@ export async function syncModelToStorage(modelId: string): Promise<ActionRespons
         if (!civitaiApiKey) {
             return { success: false, message: 'Civitai API key is not configured on the server. Please add it to your .env file.' };
         }
+        
+        const modelsBucketName = process.env.MODELS_STORAGE_BUCKET;
+        if (!modelsBucketName) {
+            return { success: false, message: 'The MODELS_STORAGE_BUCKET environment variable is not set. Cannot sync models.'};
+        }
 
         const modelDoc = await modelRef.get();
         if (!modelDoc.exists) {
@@ -74,7 +79,7 @@ export async function syncModelToStorage(modelId: string): Promise<ActionRespons
              throw new Error(`Failed to download model from Civitai: ${response.statusText}`);
         }
         
-        const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+        const bucket = getStorage().bucket(modelsBucketName);
         const file = bucket.file(destinationPath);
         const stream = file.createWriteStream({
             metadata: {
