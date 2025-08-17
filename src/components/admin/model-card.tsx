@@ -9,9 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Cloud, CloudCog, CloudCheck, RotateCw } from 'lucide-react';
-import { syncModelToStorage } from '@/app/admin/models/sync-action';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { syncModelToStorage } from '@/app/admin/models/actions';
 
 // This component is defined and used only within this file.
 
