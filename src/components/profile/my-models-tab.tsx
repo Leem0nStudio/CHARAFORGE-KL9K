@@ -23,7 +23,6 @@ import {
 import { Loader2, PlusCircle, Pencil, Trash2, Bot, SlidersHorizontal } from 'lucide-react';
 import { MediaDisplay } from '../media-display';
 import { useAuth } from '@/hooks/use-auth';
-import { imageModels } from '@/lib/app-config';
 import Link from 'next/link';
 
 function ModelEditDialog({ 
@@ -186,37 +185,65 @@ function ModelEditDialog({
     );
 }
 
-function ModelList({ models, type, onEdit, isSystem = false }: { models: AiModel[], type: 'model' | 'lora', onEdit: (model: AiModel) => void, isSystem?: boolean }) {
+function ModelList({ models, onEdit }: { models: AiModel[], onEdit: (model: AiModel) => void }) {
     if (models.length === 0) {
         return null;
     }
     
+    const userModels = models.filter(m => m.userId);
+    const systemModels = models.filter(m => !m.userId);
+    
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {models.map(model => (
-                <Card key={model.id} className="overflow-hidden flex flex-col">
-                    <CardHeader className="p-0">
-                         <div className="relative aspect-[4/3] bg-muted/20">
-                            <MediaDisplay url={model.coverMediaUrl} alt={model.name} />
-                             {isSystem && <Badge className="absolute top-2 left-2" variant="secondary">System</Badge>}
-                         </div>
-                    </CardHeader>
-                    <CardContent className="p-4 flex-grow">
-                        <CardTitle className="text-lg">{model.name}</CardTitle>
-                        <CardDescription className="text-xs truncate">{model.hf_id}</CardDescription>
-                         <div className="flex flex-wrap gap-1 mt-2">
-                            <Badge variant={model.type === 'lora' ? 'destructive' : 'default'}>{model.type}</Badge>
-                            {model.triggerWords?.slice(0, 2).map(word => <Badge key={word} variant="outline">{word}</Badge>)}
-                            {model.triggerWords && model.triggerWords.length > 2 && <Badge variant="outline">...</Badge>}
-                        </div>
-                    </CardContent>
-                     {!isSystem && (
-                         <CardFooter className="p-4 pt-0 mt-auto">
-                           <Button variant="outline" size="sm" className="w-full" onClick={() => onEdit(model)}><Pencil /> Edit</Button>
-                        </CardFooter>
-                     )}
-                </Card>
-            ))}
+        <div className="space-y-6">
+            {userModels.length > 0 && (
+                <div>
+                    <h3 className="font-semibold mb-2">My Custom Models</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {userModels.map(model => (
+                            <Card key={model.id} className="overflow-hidden flex flex-col">
+                                <CardHeader className="p-0">
+                                     <div className="relative aspect-[4/3] bg-muted/20">
+                                        <MediaDisplay url={model.coverMediaUrl} alt={model.name} />
+                                     </div>
+                                </CardHeader>
+                                <CardContent className="p-4 flex-grow">
+                                    <CardTitle className="text-lg">{model.name}</CardTitle>
+                                    <CardDescription className="text-xs truncate">{model.hf_id}</CardDescription>
+                                     <div className="flex flex-wrap gap-1 mt-2">
+                                        <Badge variant={model.type === 'lora' ? 'destructive' : 'default'}>{model.type}</Badge>
+                                        {model.triggerWords?.slice(0, 2).map(word => <Badge key={word} variant="outline">{word}</Badge>)}
+                                        {model.triggerWords && model.triggerWords.length > 2 && <Badge variant="outline">...</Badge>}
+                                    </div>
+                                </CardContent>
+                                <CardFooter className="p-4 pt-0 mt-auto">
+                                   <Button variant="outline" size="sm" className="w-full" onClick={() => onEdit(model)}><Pencil /> Edit</Button>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            )}
+             {systemModels.length > 0 && (
+                <div>
+                    <h3 className="font-semibold mb-2">Installed System Models</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {systemModels.map(model => (
+                            <Card key={model.id} className="overflow-hidden flex flex-col">
+                                <CardHeader className="p-0">
+                                     <div className="relative aspect-[4/3] bg-muted/20">
+                                        <MediaDisplay url={model.coverMediaUrl} alt={model.name} />
+                                        <Badge className="absolute top-2 left-2" variant="secondary">System</Badge>
+                                     </div>
+                                </CardHeader>
+                                <CardContent className="p-4 flex-grow">
+                                    <CardTitle className="text-lg">{model.name}</CardTitle>
+                                    <CardDescription className="text-xs truncate">{model.hf_id}</CardDescription>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -233,6 +260,7 @@ export function MyModelsTab() {
         if (!userProfile) return;
         setIsLoading(true);
         try {
+            // This now gets all models available to the user.
             const models = await getModels('model', userProfile.uid);
             const loras = await getModels('lora', userProfile.uid);
             setAllUserModels([...models, ...loras]);
@@ -257,15 +285,7 @@ export function MyModelsTab() {
         setModelToEdit(undefined);
         setIsEditDialogOpen(true);
     }
-
-    const userCreatedModels = allUserModels.filter(m => m.userId === userProfile?.uid);
-    const installedSystemModels = allUserModels.filter(m => !m.userId);
-
-    const userCreatedBaseModels = userCreatedModels.filter(m => m.type === 'model');
-    const userCreatedLoras = userCreatedModels.filter(m => m.type === 'lora');
-    const installedBaseModels = installedSystemModels.filter(m => m.type === 'model');
-    const installedLoras = installedSystemModels.filter(m => m.type === 'lora');
-
+    
     return (
         <>
             <ModelEditDialog 
@@ -299,22 +319,7 @@ export function MyModelsTab() {
                             <p className="text-sm">Add your own models from Hugging Face or install some from the catalog.</p>
                         </div>
                     ) : (
-                         <Tabs defaultValue="all" className="w-full">
-                            <TabsList>
-                                <TabsTrigger value="all">All ({allUserModels.length})</TabsTrigger>
-                                <TabsTrigger value="custom">My Custom Models ({userCreatedModels.length})</TabsTrigger>
-                                <TabsTrigger value="installed">Installed ({installedSystemModels.length})</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="all" className="mt-6">
-                                <ModelList models={allUserModels} type="model" onEdit={handleEdit}/>
-                            </TabsContent>
-                             <TabsContent value="custom" className="mt-6">
-                                <ModelList models={userCreatedModels} type="model" onEdit={handleEdit}/>
-                            </TabsContent>
-                             <TabsContent value="installed" className="mt-6">
-                                <ModelList models={installedSystemModels} type="model" onEdit={handleEdit} isSystem/>
-                            </TabsContent>
-                        </Tabs>
+                         <ModelList models={allUserModels} type="model" onEdit={handleEdit}/>
                     )}
                 </CardContent>
             </Card>

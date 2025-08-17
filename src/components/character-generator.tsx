@@ -146,14 +146,11 @@ export function CharacterGenerator({ authUser }: { authUser: User | null }) {
   
   useEffect(() => {
     async function loadInitialData() {
-        // Set static default model immediately
-        const defaultModel = imageModels[0];
-        if (defaultModel) {
-            generationForm.setValue('selectedModel', defaultModel);
-        }
-
         if (!authUser) {
             setIsLoadingModels(false);
+            // For logged-out users, just show the static default models
+            generationForm.setValue('selectedModel', imageModels[0] || undefined);
+            setAvailableModels(imageModels);
             return;
         };
 
@@ -169,6 +166,12 @@ export function CharacterGenerator({ authUser }: { authUser: User | null }) {
             
             setAvailableModels(userModels);
             setAvailableLoras(userLoras);
+            
+            // Set a default model if one isn't already set or if the current one isn't in the new list
+            const currentModel = generationForm.getValues('selectedModel');
+            if (!currentModel || !userModels.find(m => m.id === currentModel.id)) {
+                generationForm.setValue('selectedModel', userModels[0] || imageModels[0]);
+            }
             
             if (initialPackData) {
                 setInitialPack(initialPackData);

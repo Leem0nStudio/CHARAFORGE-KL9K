@@ -311,7 +311,7 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
 
     try {
         if (uid) {
-            // User-specific logic
+            // User-specific logic: get user-created models and user-installed models
             const userDoc = await adminDb.collection('users').doc(uid).get();
             const installedModelIds = userDoc.data()?.stats?.installedModels || [];
 
@@ -325,6 +325,7 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
             if (userModels) processSnapshot(userModels);
             if (systemModels) processSnapshot(systemModels);
 
+            // Always include static system models for the user
             const staticModels = type === 'model' ? imageModels : [];
             staticModels.forEach(model => {
                 if (!allModels.has(model.id)) {
@@ -389,6 +390,8 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
+
+    
 
     
 
