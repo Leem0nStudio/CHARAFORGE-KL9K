@@ -45,13 +45,15 @@ export async function upsertModel(data: UpsertAiModel): Promise<ActionResponse> 
     try {
         const docRef = id ? adminDb.collection('ai_models').doc(id) : adminDb.collection('ai_models').doc();
         
-        const finalData = {
+        const finalData: Omit<AiModel, 'id' | 'createdAt' | 'updatedAt' | 'userId'> & { updatedAt: FieldValue, userId?: string | null } = {
             ...modelData,
             updatedAt: FieldValue.serverTimestamp(),
+            // This field should not be present for system models
+            userId: null,
         };
-
+        
         if (id) {
-            await docRef.update(finalData);
+            await docRef.update(finalData as any);
         } else {
             await docRef.set({ 
                 ...finalData, 
@@ -118,7 +120,7 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
         const triggerWords = [...new Set(combinedTriggerWords)];
 
 
-        const newModel: Omit<AiModel, 'id' | 'createdAt' | 'updatedAt'> = {
+        const newModel: Omit<AiModel, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = {
             name: modelInfo.name,
             civitaiModelId: modelInfo.id.toString(),
             type,
@@ -297,7 +299,8 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
             const snapshot = await adminDb
               .collection('ai_models')
               .where('type', '==', type)
-              .where('userId', '==', null) // Fetch only system models
+              // This was the issue. It was filtering for models with userId == null
+              // .where('userId', '==', null)
               .orderBy('createdAt', 'desc')
               .get();
             processSnapshot(snapshot);
