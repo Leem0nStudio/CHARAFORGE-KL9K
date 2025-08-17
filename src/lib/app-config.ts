@@ -1,14 +1,7 @@
 
+
 import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon, Download } from 'lucide-react';
 import type { AiModel } from '@/types/ai-model';
-
-export interface NavItem {
-    href: string;
-    label: string;
-    icon: LucideIcon;
-    requiresAuth?: boolean;
-    isPrimary?: boolean;
-}
 
 // Static AI Model Definitions - these are fallbacks or system-provided defaults.
 export const imageModels: AiModel[] = [
@@ -17,8 +10,8 @@ export const imageModels: AiModel[] = [
         name: 'Illustrious SDXL (Vertex AI)',
         type: 'model',
         engine: 'vertexai',
-        // This is the Endpoint ID from the user's GCP project, NOT a Hugging Face ID.
-        hf_id: '1497098330914684928', 
+        // This is the user's actual, valid Endpoint ID for the deployed SDXL model.
+        hf_id: '347255894214', 
         coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
         createdAt: new Date(),
         updatedAt: new Date(),
