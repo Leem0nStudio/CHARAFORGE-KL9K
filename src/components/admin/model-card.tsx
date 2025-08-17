@@ -13,6 +13,7 @@ import { syncModelToStorage } from '@/app/admin/models/sync-action';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
+// This component is defined and used only within this file.
 
 function SyncButton({ model }: { model: AiModel }) {
     const [isSyncing, startSyncTransition] = useTransition();
