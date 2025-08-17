@@ -111,12 +111,27 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
             coverMediaType = mediaInfo.type;
         }
 
+        let engine: AiModel['engine'] = 'huggingface';
         let suggestedHfId = '';
-        if (type === 'lora') {
+
+        // Check if there is an existing Vertex AI base model configured by the user.
+        const vertexBaseModelQuery = await adminDb.collection('ai_models')
+            .where('engine', '==', 'vertexai')
+            .where('type', '==', 'model')
+            .limit(1)
+            .get();
+
+        if (!vertexBaseModelQuery.empty) {
+            // If a Vertex AI model exists, prioritize it for new LoRAs.
+            const vertexBaseModel = vertexBaseModelQuery.docs[0].data();
+            engine = 'vertexai';
+            suggestedHfId = vertexBaseModel.hf_id;
+            console.log(`Vertex AI base model found ('${vertexBaseModel.name}'). Defaulting new LoRA to use its endpoint ID.`);
+        } else if (type === 'lora') {
             const suggestion = await suggestHfModel({ modelName: modelInfo.name });
             suggestedHfId = suggestion.suggestedHfId;
         } else if (type === 'model') {
-            suggestedHfId = modelInfo.name.toLowerCase().includes('sdxl') ? 'stabilityai/stable-diffusion-xl-base-1.0' : '';
+            suggestedHfId = modelInfo.name.toLowerCase().includes('sdxl') ? 'stabilityai/stable-diffusion-xl-base-1.0' : 'stabilityai/stable-diffusion-v1-5';
         }
         
         const combinedTriggerWords = [
@@ -130,7 +145,7 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
             name: modelInfo.name,
             civitaiModelId: modelInfo.id.toString(),
             type,
-            engine: 'huggingface', 
+            engine: engine, 
             hf_id: suggestedHfId,
             versionId: latestVersion?.id?.toString() || '',
             coverMediaUrl,
@@ -357,3 +372,5 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
+
+    
