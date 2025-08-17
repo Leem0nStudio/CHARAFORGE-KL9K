@@ -86,6 +86,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
     const watchEngine = form.watch('engine');
 
     const executionIdLabel = watchEngine === 'vertexai' ? 'Vertex AI Endpoint ID' : 'Execution ID (e.g. Hugging Face ID)';
+    const executionIdPlaceholder = watchEngine === 'vertexai' ? 'e.g., 1234567890123456789' : "e.g., stabilityai/sdxl";
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -148,7 +149,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                 </div>
                                 <div className="space-y-2 col-span-2">
                                     <Label>{executionIdLabel}</Label>
-                                    <Input {...form.register('hf_id')} placeholder={watchEngine === 'vertexai' ? 'e.g., 1234567890123456789' : "e.g., stabilityai/sdxl"} />
+                                    <Input {...form.register('hf_id')} placeholder={executionIdPlaceholder} />
                                 </div>
 
                                 {watchEngine === 'vertexai' && form.watch('type') === 'lora' && (
