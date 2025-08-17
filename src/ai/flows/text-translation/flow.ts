@@ -42,7 +42,6 @@ const translateTextFlow = ai.defineFlow(
     
     let requestConfig: GenerationCommonOptions = {};
   
-    // For OpenRouter, we must supply the API key and explicitly set the provider.
     if (engineId === 'openrouter') {
       const systemApiKey = process.env.OPENROUTER_API_KEY;
       const apiKey = userApiKey || systemApiKey;
@@ -54,6 +53,10 @@ const translateTextFlow = ai.defineFlow(
       requestConfig = {
           apiKey,
           provider: 'openai',
+          extraHeaders: {
+            'HTTP-Referer': 'https://charaforge.com',
+            'X-Title': 'CharaForge',
+          }
       };
     }
 

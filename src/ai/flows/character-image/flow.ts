@@ -7,7 +7,6 @@
  */
 import { ai } from '@/ai/genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
-import { googleAI } from '@genkit-ai/googleai';
 import type { GenerationCommonOptions } from 'genkit/ai';
 
 
@@ -87,58 +86,6 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
 }
 
 
-/**
- * Queries the OpenRouter API for image generation.
- * @param {object} data The payload including inputs, model ID, and optional user API key.
- * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
- */
-async function queryOpenRouterAPI(data: { inputs: string, modelId: string, userApiKey?: string, aspectRatio?: string }): Promise<string> {
-    const systemApiKey = process.env.OPENROUTER_API_KEY;
-    const apiKey = data.userApiKey || systemApiKey;
-
-    if (!apiKey) {
-        throw new Error("OpenRouter API key is not configured on the server or provided by the user in their profile settings.");
-    }
-    
-    try {
-        const response = await fetch("https://openrouter.ai/api/v1/images/generations", {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://charaforge.com',
-                'X-Title': 'CharaForge',
-            },
-            body: JSON.stringify({
-                model: data.modelId,
-                prompt: data.inputs,
-                n: 1,
-                size: "1024x1024",
-                response_format: "b64_json"
-            })
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`OpenRouter API request failed with status ${response.status}: ${errorBody}`);
-        }
-
-        const result = await response.json();
-        
-        if (result.data && Array.isArray(result.data) && result.data[0]?.b64_json) {
-            return `data:image/png;base64,${result.data[0].b64_json}`;
-        }
-        
-        throw new Error("Received an unexpected response format from the OpenRouter API.");
-
-    } catch (error) {
-        console.error("OpenRouter API Error:", error);
-        const message = error instanceof Error ? error.message : "An unknown error occurred.";
-        throw new Error(`Failed to generate image via OpenRouter. Error: ${message}`);
-    }
-}
-
-
 export async function generateCharacterImage(
   input: GenerateCharacterImageInput
 ): Promise<GenerateCharacterImageOutput> {
@@ -174,8 +121,6 @@ const generateCharacterImageFlow = ai.defineFlow(
                  if (!modelId) {
                     throw new Error("Vertex AI Endpoint ID is required for this engine.");
                  }
-                 // CRITICAL FIX: The model ID for a Vertex endpoint should NOT be prefixed.
-                 // The Genkit plugin handles routing based on the engine.
                  finalModelId = modelId;
             }
 
@@ -217,18 +162,42 @@ const generateCharacterImageFlow = ai.defineFlow(
         }
     } else if (engineId === 'openrouter') {
         try {
-             if (!modelId) {
+            if (!modelId) {
                 throw new Error("OpenRouter model ID is required for this engine.");
             }
-            imageUrl = await queryOpenRouterAPI({
-                inputs: description,
-                modelId: modelId,
-                userApiKey: userApiKey,
+            const systemApiKey = process.env.OPENROUTER_API_KEY;
+            const apiKey = userApiKey || systemApiKey;
+
+            if (!apiKey) {
+                throw new Error("OpenRouter API key is not configured on the server or provided by the user in their profile settings.");
+            }
+
+            const { media } = await ai.generate({
+                model: modelId,
+                prompt: description,
+                config: {
+                    apiKey: apiKey,
+                    provider: 'openai',
+                    size: "1024x1024",
+                    response_format: 'b64_json',
+                    extraHeaders: {
+                        'HTTP-Referer': 'https://charaforge.com',
+                        'X-Title': 'CharaForge',
+                    }
+                }
             });
+            
+            if (media?.url) {
+                // The URL is already a data URI in b64_json format when using this method
+                imageUrl = media.url;
+            } else {
+                 throw new Error("Received an unexpected response format from the OpenRouter API.");
+            }
+
         } catch (error) {
             console.error("Error in OpenRouter flow:", error);
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
-            throw new Error(message);
+            throw new Error(`Failed to generate image via OpenRouter. Error: ${message}`);
         }
     } else {
         throw new Error(`Unsupported image engine: ${engineId}`);
