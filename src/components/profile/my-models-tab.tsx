@@ -5,7 +5,7 @@ import { useState, useEffect, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { getModelsForUser, upsertUserAiModel, deleteModel, getModels } from '@/app/actions/ai-models';
+import { getModels, upsertUserAiModel, deleteModel } from '@/app/actions/ai-models';
 import type { AiModel, UpsertAiModel } from '@/types/ai-model';
 import { UpsertModelSchema } from '@/types/ai-model';
 import { 
@@ -233,8 +233,8 @@ export function MyModelsTab() {
         if (!userProfile) return;
         setIsLoading(true);
         try {
-            const models = await getModelsForUser('model');
-            const loras = await getModelsForUser('lora');
+            const models = await getModels('model', userProfile.uid);
+            const loras = await getModels('lora', userProfile.uid);
             setAllUserModels([...models, ...loras]);
         } catch (error) {
             console.error("Failed to fetch user models", error);

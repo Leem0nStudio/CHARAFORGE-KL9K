@@ -42,7 +42,7 @@ function CharacterGeneratorWrapper() {
              <h1 className="text-3xl font-bold tracking-tight font-headline">Character Generator</h1>
              <p className="text-muted-foreground">Bring your vision to life. Describe your character, or use a DataPack to get started.</p>
         </div>
-        <CharacterGenerator />
+        <CharacterGenerator authUser={authUser}/>
     </motion.div>
   )
 }
@@ -59,3 +59,5 @@ export default function CharacterGeneratorPage() {
     </Suspense>
   );
 }
+
+    

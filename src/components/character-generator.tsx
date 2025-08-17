@@ -30,7 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/actions/generation";
-import { getModelsForUser } from "@/app/actions/ai-models";
+import { getModels } from "@/app/actions/ai-models";
 import { getDataPackForAdmin } from "@/app/actions/datapacks";
 import { Skeleton } from "./ui/skeleton";
 import { DataPackSelectorModal } from "./datapack-selector-modal";
@@ -43,7 +43,7 @@ import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/ty
 import { PromptTagInput } from "./prompt-tag-input";
 import type { DataPack, PromptTemplate } from "@/types/datapack";
 import { imageModels, textModels } from "@/lib/app-config";
-
+import type { User } from "firebase/auth";
 
 
 const generationFormSchema = z.object({
@@ -72,7 +72,7 @@ type GenerationResult = GenerateCharacterSheetOutput & {
   imageEngine?: 'gemini' | 'openrouter' | 'huggingface' | 'vertexai';
 };
 
-export function CharacterGenerator() {
+export function CharacterGenerator({ authUser }: { authUser: User | null }) {
   const searchParams = useSearchParams();
   const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null);
   const [isGenerating, startGenerationTransition] = useTransition();
@@ -95,7 +95,7 @@ export function CharacterGenerator() {
   const [promptMode, setPromptMode] = useState<'text' | 'tags'>('text');
   
   const { toast } = useToast();
-  const { authUser, userProfile, loading: authLoading } = useAuth();
+  const { userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
@@ -162,19 +162,12 @@ export function CharacterGenerator() {
             const packIdFromUrl = searchParams.get('packId');
             
             const [userModels, userLoras, initialPackData] = await Promise.all([
-                getModelsForUser('model'),
-                getModelsForUser('lora'),
+                getModels('model', authUser.uid),
+                getModels('lora', authUser.uid),
                 packIdFromUrl ? getDataPackForAdmin(packIdFromUrl) : Promise.resolve(null),
             ]);
             
-            // Combine system models with user models, ensuring no duplicates
-            const allAvailableModels = [...imageModels];
-            userModels.forEach(um => {
-                if (!allAvailableModels.some(sm => sm.id === um.id)) {
-                    allAvailableModels.push(um);
-                }
-            });
-            setAvailableModels(allAvailableModels);
+            setAvailableModels(userModels);
             setAvailableLoras(userLoras);
             
             if (initialPackData) {
@@ -704,3 +697,5 @@ export function CharacterGenerator() {
     </>
   );
 }
+
+    
