@@ -34,6 +34,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
             hf_id: '',
             civitaiModelId: '',
             versionId: '',
+            baseModel: '',
             triggerWords: '',
             vertexAiAlias: '',
         },
@@ -84,6 +85,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
     }
 
     const watchEngine = form.watch('engine');
+    const watchType = form.watch('type');
 
     const executionIdLabel = watchEngine === 'vertexai' ? 'Vertex AI Endpoint ID' : 'Execution ID (e.g. Hugging Face ID)';
     const executionIdPlaceholder = watchEngine === 'vertexai' ? 'e.g., 1234567890123456789' : "e.g., stabilityai/sdxl";
@@ -151,6 +153,13 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                     <Label>{executionIdLabel}</Label>
                                     <Input {...form.register('hf_id')} placeholder={executionIdPlaceholder} />
                                 </div>
+                                {watchType === 'model' && (
+                                    <div className="space-y-2 col-span-2">
+                                        <Label>Base Model Identifier</Label>
+                                        <Input {...form.register('baseModel')} placeholder="e.g., SDXL 1.0, SD 1.5" />
+                                        <p className="text-xs text-muted-foreground">The exact string used by Civitai to identify this base model (e.g., "SDXL 1.0"). This is crucial for matching LoRAs correctly.</p>
+                                    </div>
+                                )}
 
                                 {watchEngine === 'vertexai' && form.watch('type') === 'lora' && (
                                      <div className="space-y-2 col-span-2">
@@ -274,3 +283,5 @@ export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: b
         </>
     );
 }
+
+    

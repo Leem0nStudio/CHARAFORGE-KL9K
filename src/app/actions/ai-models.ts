@@ -86,6 +86,10 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
 
         const modelInfo = await getCivitaiModelInfo(civitaiModelId);
         const latestVersion = modelInfo.modelVersions?.[0];
+
+        if (!latestVersion) {
+            return { success: false, message: "Could not find a valid version for this Civitai model." };
+        }
         
         let coverMediaUrl: string | null = null;
         let coverMediaType: 'image' | 'video' = 'image';
@@ -113,27 +117,36 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
 
         let engine: AiModel['engine'] = 'huggingface';
         let suggestedHfId = '';
+        const baseModelName = latestVersion.baseModel; // e.g., "SDXL 1.0"
 
-        // Check if there is an existing Vertex AI base model configured by the user.
-        const vertexBaseModelQuery = await adminDb.collection('ai_models')
-            .where('engine', '==', 'vertexai')
+        // Intelligent Base Model Linking
+        const baseModelQuery = await adminDb.collection('ai_models')
             .where('type', '==', 'model')
+            .where('baseModel', '==', baseModelName)
             .limit(1)
             .get();
 
-        if (!vertexBaseModelQuery.empty) {
-            // If a Vertex AI model exists, prioritize it for new LoRAs.
-            const vertexBaseModel = vertexBaseModelQuery.docs[0].data();
-            engine = 'vertexai';
-            suggestedHfId = vertexBaseModel.hf_id;
-            console.log(`Vertex AI base model found ('${vertexBaseModel.name}'). Defaulting new LoRA to use its endpoint ID.`);
-        } else if (type === 'lora') {
-            const suggestion = await suggestHfModel({ modelName: modelInfo.name });
-            suggestedHfId = suggestion.suggestedHfId;
-        } else if (type === 'model') {
-            // Leave blank for base models, as this needs to be manually configured by the admin,
-            // especially for a custom Vertex AI endpoint. This avoids guessing and makes the flow clearer.
-            suggestedHfId = ''; 
+        if (!baseModelQuery.empty) {
+            const baseModel = baseModelQuery.docs[0].data() as AiModel;
+            suggestedHfId = baseModel.hf_id;
+            engine = baseModel.engine;
+            console.log(`Found compatible base model '${baseModel.name}' for new LoRA. Engine: ${engine}, HF_ID: ${suggestedHfId}`);
+        } else {
+            const vertexBaseModelQuery = await adminDb.collection('ai_models')
+                .where('engine', '==', 'vertexai')
+                .where('type', '==', 'model')
+                .limit(1)
+                .get();
+
+            if (!vertexBaseModelQuery.empty) {
+                const vertexBaseModel = vertexBaseModelQuery.docs[0].data();
+                engine = 'vertexai';
+                suggestedHfId = vertexBaseModel.hf_id;
+                console.log(`Vertex AI base model found ('${vertexBaseModel.name}'). Defaulting new LoRA to use its endpoint ID.`);
+            } else if (type === 'lora') {
+                const suggestion = await suggestHfModel({ modelName: modelInfo.name });
+                suggestedHfId = suggestion.suggestedHfId;
+            }
         }
         
         const combinedTriggerWords = [
@@ -150,12 +163,14 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
             engine: engine, 
             hf_id: suggestedHfId,
             versionId: latestVersion?.id?.toString() || '',
+            baseModel: baseModelName,
             coverMediaUrl,
             coverMediaType,
             triggerWords: triggerWords,
             versions: modelInfo.modelVersions.map((v: any) => ({ 
                 id: v.id.toString(), 
                 name: v.name, 
+                baseModel: v.baseModel,
                 triggerWords: [...new Set([...(v.trainedWords || []), ...(modelInfo.tags || [])])]
             })),
             syncStatus: 'notsynced',
@@ -374,5 +389,7 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
+
+    
 
     

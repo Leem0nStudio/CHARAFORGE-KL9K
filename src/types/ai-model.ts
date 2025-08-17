@@ -4,6 +4,7 @@ import { z } from 'zod';
 interface AiModelVersion {
   id: string;
   name: string;
+  baseModel?: string;
   triggerWords?: string[];
 }
 
@@ -17,6 +18,7 @@ export interface AiModel {
   hf_id: string;
   civitaiModelId?: string;
   versionId?: string;
+  baseModel?: string; // The base model identifier, e.g., "SDXL 1.0"
   coverMediaUrl?: string | null;
   coverMediaType?: 'image' | 'video';
   triggerWords?: string[];
@@ -36,6 +38,7 @@ export const UpsertModelSchema = z.object({
   hf_id: z.string().min(1, 'Execution ID is required'),
   civitaiModelId: z.string().optional(),
   versionId: z.string().optional(),
+  baseModel: z.string().optional(),
   coverMediaUrl: z.string().url().nullable().optional(),
   coverMediaType: z.enum(['image', 'video']).optional(),
   triggerWords: z.union([z.string(), z.array(z.string())]).optional().transform(val => {
@@ -46,10 +49,13 @@ export const UpsertModelSchema = z.object({
   versions: z.array(z.object({
     id: z.string(),
     name: z.string(),
+    baseModel: z.string().optional(),
     triggerWords: z.array(z.string()).optional(),
   })).optional(),
   syncStatus: z.enum(['synced', 'syncing', 'notsynced']).optional(),
-  vertexAiAlias: z.string().optional(), // Alias for Vertex AI LoRAs
+  vertexAiAlias: z.string().optional(),
 });
 
 export type UpsertAiModel = z.infer<typeof UpsertModelSchema>;
+
+    
