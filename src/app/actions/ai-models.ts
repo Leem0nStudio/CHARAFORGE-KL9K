@@ -131,7 +131,7 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
             suggestedHfId = baseModel.hf_id;
             engine = baseModel.engine;
             console.log(`Found compatible base model '${baseModel.name}' for new LoRA. Engine: ${engine}, HF_ID: ${suggestedHfId}`);
-        } else {
+        } else if (type === 'lora') {
             const vertexBaseModelQuery = await adminDb.collection('ai_models')
                 .where('engine', '==', 'vertexai')
                 .where('type', '==', 'model')
@@ -143,7 +143,7 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
                 engine = 'vertexai';
                 suggestedHfId = vertexBaseModel.hf_id;
                 console.log(`Vertex AI base model found ('${vertexBaseModel.name}'). Defaulting new LoRA to use its endpoint ID.`);
-            } else if (type === 'lora') {
+            } else {
                 const suggestion = await suggestHfModel({ modelName: modelInfo.name });
                 suggestedHfId = suggestion.suggestedHfId;
             }
@@ -283,8 +283,8 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
 
 /**
  * Fetches all models of a given type ('model' or 'lora') from the database.
- * If a UID is provided, it fetches models specific to that user (created and installed).
- * If no UID is provided, it fetches all system-wide models (for admin use).
+ * If a UID is provided, it fetches models specific to that user (created and installed system models).
+ * If no UID is provided, it fetches ALL system and user models for admin view.
  * @param type The type of model to fetch.
  * @param uid Optional. The user's ID to fetch user-specific models.
  * @returns An array of AiModel objects.
@@ -311,19 +311,19 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
 
     try {
         if (uid) {
-            // User-specific logic: get user-created models and user-installed models
+            // User-specific logic: get user-created models, user-installed models, and static system models
             const userDoc = await adminDb.collection('users').doc(uid).get();
             const installedModelIds = userDoc.data()?.stats?.installedModels || [];
 
-            const [userModels, systemModels] = await Promise.all([
+            const [userCreatedModels, installedSystemModels] = await Promise.all([
                 adminDb.collection('ai_models').where('userId', '==', uid).where('type', '==', type).get(),
                 installedModelIds.length > 0 
                     ? adminDb.collection('ai_models').where('id', 'in', installedModelIds).where('type', '==', type).get()
-                    : Promise.resolve(null),
+                    : Promise.resolve({ docs: [] } as FirebaseFirestore.QuerySnapshot), // Return empty snapshot
             ]);
 
-            if (userModels) processSnapshot(userModels);
-            if (systemModels) processSnapshot(systemModels);
+            processSnapshot(userCreatedModels);
+            processSnapshot(installedSystemModels);
 
             // Always include static system models for the user
             const staticModels = type === 'model' ? imageModels : [];
@@ -334,7 +334,7 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
             });
 
         } else {
-            // Admin/public logic: get all non-user-specific models
+            // Admin/public logic: get all models of the specified type
             const snapshot = await adminDb
               .collection('ai_models')
               .where('type', '==', type)
@@ -390,9 +390,5 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
-
-    
-
-    
 
     

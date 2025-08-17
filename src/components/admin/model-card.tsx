@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { syncModelToStorage } from '@/app/admin/models/actions';
+import { User } from 'lucide-react';
 
 // This component is defined and used only within this file.
 
@@ -69,7 +70,14 @@ export function ModelCard({ model }: { model: AiModel }) {
                  </div>
             </CardHeader>
             <CardContent className="p-4 flex-grow">
-                <CardTitle className="text-lg">{model.name}</CardTitle>
+                <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{model.name}</CardTitle>
+                    {model.userId && (
+                        <Badge variant="secondary" className="shrink-0">
+                            <User className="mr-1.5" /> User Model
+                        </Badge>
+                    )}
+                </div>
                 <CardDescription className="text-xs truncate">{model.hf_id}</CardDescription>
                 {model.triggerWords && model.triggerWords.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
@@ -85,3 +93,5 @@ export function ModelCard({ model }: { model: AiModel }) {
         </Card>
     )
 }
+
+    
