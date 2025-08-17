@@ -4,11 +4,69 @@
 import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
-import { FieldValue, FieldPath, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, FieldPath, Timestamp, QuerySnapshot } from 'firebase-admin/firestore';
+import type { DataPack } from '@/types/datapack';
+
+// Helper to fetch documents in batches of 30 for 'in' queries
+async function fetchDocsInBatches<T>(ids: string[], collection: string): Promise<Map<string, T>> {
+    if (!adminDb || ids.length === 0) return new Map();
+    const results = new Map<string, T>();
+    const collectionRef = adminDb.collection(collection);
+
+    // Firestore 'in' queries are limited to 30 items.
+    for (let i = 0; i < ids.length; i += 30) {
+        const batchIds = ids.slice(i, i + 30);
+        if (batchIds.length > 0) {
+            const snapshot = await collectionRef.where(FieldPath.documentId(), 'in', batchIds).get();
+            snapshot.forEach(doc => results.set(doc.id, doc.data() as T));
+        }
+    }
+    return results;
+}
+
+/**
+ * Takes a Firestore query snapshot of characters and enriches them with related data.
+ * @param snapshot The QuerySnapshot from the 'characters' collection.
+ * @returns A promise that resolves to an array of hydrated Character objects.
+ */
+async function hydrateCharacters(snapshot: QuerySnapshot): Promise<Character[]> {
+    if (snapshot.empty) {
+        return [];
+    }
+
+    const characters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Character));
+    
+    // 1. Collect all unique IDs needed for hydration
+    const userIds = new Set<string>();
+    const dataPackIds = new Set<string>();
+    characters.forEach(char => {
+        if (char.userId) userIds.add(char.userId);
+        if (char.originalAuthorId) userIds.add(char.originalAuthorId);
+        if (char.dataPackId) dataPackIds.add(char.dataPackId);
+    });
+
+    // 2. Fetch all related data in parallel batches
+    const [userProfiles, dataPacks] = await Promise.all([
+        fetchDocsInBatches<UserProfile>(Array.from(userIds), 'users'),
+        fetchDocsInBatches<DataPack>(Array.from(dataPackIds), 'datapacks')
+    ]);
+
+    // 3. Map characters to their final, hydrated form
+    return characters.map(char => {
+        const createdAt = char.createdAt as any;
+        return {
+            ...char,
+            createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
+            userName: userProfiles.get(char.userId)?.displayName || 'Anonymous',
+            originalAuthorName: userProfiles.get(char.originalAuthorId)?.displayName || char.originalAuthorName || null,
+            dataPackName: char.dataPackId ? dataPacks.get(char.dataPackId)?.name || null : null,
+        };
+    });
+}
+
 
 /**
  * Fetches public characters and ensures their image URLs are directly accessible.
- * Public images in Firebase Storage should have a simple, public URL.
  * @returns {Promise<Character[]>} A promise that resolves to an array of character objects.
  */
 export async function getPublicCharacters(): Promise<Character[]> {
@@ -20,46 +78,7 @@ export async function getPublicCharacters(): Promise<Character[]> {
     const charactersRef = adminDb.collection('characters');
     const q = charactersRef.where('status', '==', 'public').orderBy('createdAt', 'desc').limit(20);
     const snapshot = await q.get();
-
-    if (snapshot.empty) {
-      return [];
-    }
-
-    // Collect all user and datapack IDs to fetch them in batches
-    const userIds = new Set<string>();
-    const dataPackIds = new Set<string>();
-    snapshot.docs.forEach(doc => {
-      const data = doc.data();
-      if (data.userId) userIds.add(data.userId);
-      if (data.originalAuthorId) userIds.add(data.originalAuthorId);
-      if (data.dataPackId) dataPackIds.add(data.dataPackId);
-    });
-
-    const [userProfiles, dataPacks] = await Promise.all([
-      fetchProfilesInBatches(Array.from(userIds)),
-      fetchDataPacksInBatches(Array.from(dataPackIds))
-    ]);
-
-    const charactersData: Character[] = snapshot.docs.map(doc => {
-      const data = doc.data();
-      const userName = userProfiles.get(data.userId)?.displayName || 'Anonymous';
-      const originalAuthorName = userProfiles.get(data.originalAuthorId)?.displayName || data.originalAuthorName || null;
-      const dataPackName = data.dataPackId ? dataPacks.get(data.dataPackId)?.name || null : null;
-      
-      const createdAt = data.createdAt;
-      
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
-        userName,
-        originalAuthorName,
-        dataPackName,
-      } as Character;
-    });
-    
-    return charactersData;
-
+    return hydrateCharacters(snapshot);
   } catch (error) {
     console.error("Error fetching public characters:", error);
     return [];
@@ -86,37 +105,10 @@ export async function searchCharactersByTag(tag: string): Promise<Character[]> {
             .where('status', '==', 'public')
             .where('tags', 'array-contains', tag.toLowerCase())
             .orderBy('createdAt', 'desc')
-            .limit(50); // Limit to 50 results for performance
+            .limit(50);
         
         const snapshot = await q.get();
-
-        if (snapshot.empty) {
-            return [];
-        }
-        
-        const userIds = new Set<string>();
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            if (data.userId) userIds.add(data.userId);
-            if (data.originalAuthorId) userIds.add(data.originalAuthorId);
-        });
-
-        const userProfiles = await fetchProfilesInBatches(Array.from(userIds));
-
-        return snapshot.docs.map(doc => {
-            const data = doc.data();
-            const userName = userProfiles.get(data.userId)?.displayName || 'Anonymous';
-            const originalAuthorName = userProfiles.get(data.originalAuthorId)?.displayName || data.originalAuthorName || null;
-            const createdAt = data.createdAt;
-
-            return {
-                id: doc.id,
-                ...data,
-                createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
-                userName,
-                originalAuthorName,
-            } as Character;
-        });
+        return hydrateCharacters(snapshot);
 
     } catch (error) {
         console.error(`Error searching for tag "${tag}":`, error);
@@ -198,6 +190,7 @@ export async function getPublicCharactersForUser(userId: string): Promise<Charac
       return [];
     }
 
+    // This page doesn't need the full hydration, so we keep it simple.
     return snapshot.docs.map(doc => {
       const data = doc.data();
       const createdAt = data.createdAt;
@@ -212,38 +205,4 @@ export async function getPublicCharactersForUser(userId: string): Promise<Charac
     console.error(`Error fetching public characters for user ${userId}:`, error);
     return [];
   }
-}
-
-
-// Helper to fetch documents in batches of 10 for 'in' queries
-async function fetchProfilesInBatches(uids: string[]): Promise<Map<string, UserProfile>> {
-  if (!adminDb || uids.length === 0) return new Map();
-  const profiles = new Map<string, UserProfile>();
-  const userRef = adminDb.collection('users');
-
-  // Firestore 'in' queries are limited to 30 items in a single query.
-  // We'll use 10 for safety and to avoid large requests.
-  for (let i = 0; i < uids.length; i += 10) {
-    const batchUids = uids.slice(i, i + 10);
-    if (batchUids.length > 0) {
-      const snapshot = await userRef.where(FieldPath.documentId(), 'in', batchUids).get();
-      snapshot.forEach(doc => profiles.set(doc.id, doc.data() as UserProfile));
-    }
-  }
-  return profiles;
-}
-
-async function fetchDataPacksInBatches(packIds: string[]): Promise<Map<string, {name: string}>> {
-    if (!adminDb || packIds.length === 0) return new Map();
-    const packs = new Map<string, {name: string}>();
-    const packRef = adminDb.collection('datapacks');
-
-    for (let i = 0; i < packIds.length; i += 10) {
-        const batch = packIds.slice(i, i + 10);
-        if (batch.length > 0) {
-            const snapshot = await packRef.where(FieldPath.documentId(), 'in', batch).get();
-            snapshot.forEach(doc => packs.set(doc.id, { name: doc.data().name }));
-        }
-    }
-    return packs;
 }
