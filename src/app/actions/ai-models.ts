@@ -299,7 +299,6 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
             const snapshot = await adminDb
               .collection('ai_models')
               .where('type', '==', type)
-              .where('userId', '==', null)
               .orderBy('createdAt', 'desc')
               .get();
             processSnapshot(snapshot);
