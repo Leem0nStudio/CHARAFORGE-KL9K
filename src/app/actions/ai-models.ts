@@ -131,7 +131,9 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
             const suggestion = await suggestHfModel({ modelName: modelInfo.name });
             suggestedHfId = suggestion.suggestedHfId;
         } else if (type === 'model') {
-            suggestedHfId = modelInfo.name.toLowerCase().includes('sdxl') ? 'stabilityai/stable-diffusion-xl-base-1.0' : 'stabilityai/stable-diffusion-v1-5';
+            // Leave blank for base models, as this needs to be manually configured by the admin,
+            // especially for a custom Vertex AI endpoint. This avoids guessing and makes the flow clearer.
+            suggestedHfId = ''; 
         }
         
         const combinedTriggerWords = [
