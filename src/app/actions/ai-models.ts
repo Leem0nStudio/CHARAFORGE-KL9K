@@ -78,6 +78,12 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
     await verifyAndGetUid();
     
     try {
+        // Check if a model with this Civitai ID already exists
+        const existingModelQuery = await adminDb.collection('ai_models').where('civitaiModelId', '==', civitaiModelId).limit(1).get();
+        if (!existingModelQuery.empty) {
+            return { success: false, message: "A model with this Civitai ID already exists in the database." };
+        }
+
         const modelInfo = await getCivitaiModelInfo(civitaiModelId);
         const latestVersion = modelInfo.modelVersions?.[0];
         
