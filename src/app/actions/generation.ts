@@ -124,8 +124,17 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
             const loraVersion = selectedLora.versions?.find(v => v.id === loraVersionId) 
                 || { id: selectedLora.versionId, triggerWords: selectedLora.triggerWords };
 
+            // Use the Vertex AI alias if available, otherwise fall back to Civitai ID
+            const loraIdentifier = selectedModel.engine === 'vertexai' 
+                ? selectedLora.vertexAiAlias || selectedLora.civitaiModelId 
+                : selectedLora.civitaiModelId;
+
+            if (!loraIdentifier) {
+                throw new Error(`The selected LoRA '${selectedLora.name}' is not configured for use with the ${selectedModel.engine} engine.`);
+            }
+
             imageEngineConfig.lora = {
-                id: selectedLora.civitaiModelId || selectedLora.name, // Fallback to name for Vertex AI alias
+                id: loraIdentifier,
                 versionId: loraVersion.id,
                 weight: loraWeight || 0.75,
                 triggerWords: loraVersion.triggerWords,
@@ -155,7 +164,3 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         return { success: false, message: 'Failed to generate portrait.', error: message };
     }
 }
-
-    
-
-    

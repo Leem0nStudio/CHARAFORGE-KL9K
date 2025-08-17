@@ -25,6 +25,7 @@ export interface AiModel {
   updatedAt: Date;
   userId?: string; // If present, it's a user-specific model
   syncStatus?: SyncStatus;
+  vertexAiAlias?: string; // Alias for Vertex AI LoRAs
 }
 
 export const UpsertModelSchema = z.object({
@@ -48,6 +49,7 @@ export const UpsertModelSchema = z.object({
     triggerWords: z.array(z.string()).optional(),
   })).optional(),
   syncStatus: z.enum(['synced', 'syncing', 'notsynced']).optional(),
+  vertexAiAlias: z.string().optional(), // Alias for Vertex AI LoRAs
 });
 
 export type UpsertAiModel = z.infer<typeof UpsertModelSchema>;

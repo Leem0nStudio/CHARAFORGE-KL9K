@@ -34,6 +34,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
             civitaiModelId: '',
             versionId: '',
             triggerWords: '',
+            vertexAiAlias: '',
         },
     });
 
@@ -80,6 +81,8 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
             }
         });
     }
+
+    const watchEngine = form.watch('engine');
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -141,9 +144,18 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                     />
                                 </div>
                                 <div className="space-y-2 col-span-2">
-                                    <Label>Execution ID (e.g. Hugging Face ID)</Label>
-                                    <Input {...form.register('hf_id')} placeholder="e.g., stabilityai/sdxl or a Vertex Endpoint ID" />
+                                    <Label>Execution ID (e.g. Hugging Face ID or Vertex Endpoint ID)</Label>
+                                    <Input {...form.register('hf_id')} placeholder="e.g., stabilityai/sdxl or a numerical ID" />
                                 </div>
+
+                                {watchEngine === 'vertexai' && form.watch('type') === 'lora' && (
+                                     <div className="space-y-2 col-span-2">
+                                        <Label>Vertex AI Alias (Opcional)</Label>
+                                        <Input {...form.register('vertexAiAlias')} placeholder="e.g., my-anime-lora" />
+                                        <p className="text-xs text-muted-foreground">El alias exacto configurado en tu Endpoint de Vertex AI para este LoRA.</p>
+                                    </div>
+                                )}
+
                                 {form.watch('type') === 'lora' && (
                                     <div className="space-y-2 col-span-2">
                                         <Label>Trigger Words (comma-separated)</Label>

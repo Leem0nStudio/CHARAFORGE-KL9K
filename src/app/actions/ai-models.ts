@@ -357,5 +357,3 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
-
-    
