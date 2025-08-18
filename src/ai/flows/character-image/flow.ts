@@ -108,21 +108,23 @@ const generateCharacterImageFlow = ai.defineFlow(
         try {
             const { width, height } = getDimensions(aspectRatio);
             
-            // **CRITICAL FIX**: The model ID for image generation is always the official Google one.
-            // The endpoint customization happens in the 'config' object.
+            // The model ID for Google's image generation is always the official one.
+            // Customizations (like Vertex endpoints) are passed in the config object.
             const finalModelId = 'googleai/gemini-2.0-flash-preview-image-generation';
 
+            // **CRITICAL FIX**: The config object should be flat. Parameters like width, height,
+            // and endpointId should be at the top level of the config object, not nested.
             const generationConfig: GenerationCommonOptions = {
                 responseModalities: ['TEXT', 'IMAGE'],
-                width,
-                height,
+                width: width,
+                height: height,
             };
 
             if (engineId === 'vertexai') {
                 if (!modelId) {
                     throw new Error("Vertex AI Endpoint ID (from the base model) is required for this engine.");
                 }
-                // The endpoint ID is passed here, NOT in the model name.
+                // Add the endpointId directly to the config object.
                 generationConfig.endpointId = modelId;
 
                 // Centralized LoRA config for Vertex AI.
@@ -135,7 +137,7 @@ const generateCharacterImageFlow = ai.defineFlow(
             const { media } = await ai.generate({
                 model: finalModelId,
                 prompt: description,
-                config: generationConfig,
+                config: generationConfig, // Pass the flat config object
             });
 
             imageUrl = media?.url;
