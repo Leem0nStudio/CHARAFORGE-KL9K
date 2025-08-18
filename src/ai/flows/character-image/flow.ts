@@ -8,7 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
 import type { GenerationCommonOptions } from 'genkit/ai';
-import { googleAI } from '@genkit-ai/googleai';
+import { GoogleAuth } from 'google-auth-library';
 
 
 // Helper function to get image dimensions in pixels.
@@ -124,6 +124,69 @@ const generateCharacterImageFlow = ai.defineFlow(
             const message = error instanceof Error ? error.message : `An unknown error occurred with the Gemini engine.`;
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
+    } else if (engineId === 'vertexai' && modelId) {
+        let projectId: string | undefined;
+        let serviceAccount: any;
+
+        try {
+            const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+            if (!serviceAccountKey) {
+                throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.");
+            }
+            serviceAccount = JSON.parse(serviceAccountKey);
+            projectId = serviceAccount.project_id;
+        } catch (e) {
+            const errorMsg = e instanceof Error ? e.message : 'Unknown error';
+            throw new Error(`Failed to parse service account key. Error: ${errorMsg}`);
+        }
+        
+        if (!projectId) {
+            throw new Error("Could not determine Google Cloud Project ID from server environment.");
+        }
+
+        const location = 'us-central1';
+        const endpointUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/endpoints/${modelId}:predict`;
+
+        const { width, height } = getDimensions(aspectRatio);
+        const payload: any = {
+            instances: [{ "text": description }],
+            parameters: { "width": width, "height": height, "sampleCount": 1 }
+        };
+        
+        if (lora && lora.id) {
+            payload.parameters.lora_id = lora.id;
+            if (lora.weight) {
+                payload.parameters.lora_weight_alpha = lora.weight;
+            }
+        }
+        
+        try {
+            const auth = new GoogleAuth({
+                credentials: serviceAccount,
+                scopes: 'https://www.googleapis.com/auth/cloud-platform',
+            });
+            const client = await auth.getClient();
+            
+            const response = await client.request({
+                url: endpointUrl,
+                method: 'POST',
+                data: payload,
+            });
+
+            const responseData = response.data as any;
+            const prediction = responseData?.predictions?.[0];
+            
+            if (prediction?.bytesBase64Encoded) {
+                imageUrl = `data:image/png;base64,${prediction.bytesBase64Encoded}`;
+            } else {
+                console.error("Vertex AI response did not contain an image:", JSON.stringify(responseData, null, 2));
+                throw new Error("The model endpoint responded, but did not return a valid image.");
+            }
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.error?.message || error.message || "An unknown error occurred.";
+            console.error("Error calling Vertex AI endpoint:", JSON.stringify(error.response?.data, null, 2));
+            throw new Error(`Failed to get prediction from Vertex AI: ${errorMessage}`);
+        }
     } else if (engineId === 'huggingface') {
         try {
             if (!modelId) {
@@ -187,24 +250,7 @@ const generateCharacterImageFlow = ai.defineFlow(
             throw new Error(`Failed to generate image via OpenRouter. Error: ${message}`);
         }
     } else {
-        // Fallback for any other engine ID to avoid breaking the app completely.
-        console.warn(`The image generation engine '${engineId}' is not fully supported in this version. Falling back to Gemini.`);
-         try {
-            const { width, height } = getDimensions(aspectRatio);
-            const { media } = await ai.generate({
-                model: 'googleai/gemini-2.0-flash-preview-image-generation',
-                prompt: description,
-                config: {
-                    responseModalities: ['TEXT', 'IMAGE'],
-                    width,
-                    height,
-                },
-            });
-            imageUrl = media?.url;
-        } catch (error) {
-            console.error(`Fallback to Gemini failed:`, error);
-            throw new Error(`The selected engine '${engineId}' is not available, and the fallback to Gemini also failed.`);
-        }
+        throw new Error(`The image generation engine '${engineId}' is not supported.`);
     }
 
     if (!imageUrl) {

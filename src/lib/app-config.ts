@@ -17,6 +17,18 @@ export const imageModels: AiModel[] = [
     }
 ];
 
+export const geminiImagePlaceholder: AiModel = {
+    id: 'gemini-2-flash-image',
+    name: 'Gemini 2.0 Flash',
+    type: 'model',
+    engine: 'gemini',
+    hf_id: 'googleai/gemini-2.0-flash-preview-image-generation',
+    coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+}
+
+
 export const textModels: AiModel[] = [
     {
         id: 'gemini-1.5-flash',
@@ -53,7 +65,6 @@ export const adminNavItems: NavItem[] = [
     { href: '/admin/datapacks', label: 'DataPacks', icon: Package },
     { href: '/admin/models', label: 'AI Models', icon: Bot },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
-    { href: '/admin/vertex-test', label: 'Vertex Test', icon: TestTube },
 ];
 
 type SlotCategory = 'appearance' | 'equipment' | 'style' | 'setting' | 'class' | 'misc';
@@ -119,8 +130,5 @@ export function getSlotCategory(id: string): SlotCategory {
 
   return 'misc';
 }
-
-
-    
 
     
