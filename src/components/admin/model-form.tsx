@@ -163,9 +163,9 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
 
                                 {watchEngine === 'vertexai' && form.watch('type') === 'lora' && (
                                      <div className="space-y-2 col-span-2">
-                                        <Label>Vertex AI Alias (Opcional)</Label>
+                                        <Label>Vertex AI LoRA Alias</Label>
                                         <Input {...form.register('vertexAiAlias')} placeholder="e.g., my-anime-lora" />
-                                        <p className="text-xs text-muted-foreground">El alias exacto configurado en tu Endpoint de Vertex AI para este LoRA.</p>
+                                        <p className="text-xs text-muted-foreground">The exact alias configured in your Vertex AI Endpoint for this LoRA.</p>
                                     </div>
                                 )}
 
@@ -283,5 +283,3 @@ export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: b
         </>
     );
 }
-
-    

@@ -127,9 +127,10 @@ const generateCharacterImageFlow = ai.defineFlow(
                 config.endpointId = modelId;
 
                 // Centralized LoRA config for Vertex AI.
-                if (lora && lora.id) {
-                    config.lora = lora.id;
-                    config.lora_strength = lora.weight;
+                if (lora?.id && lora?.weight) {
+                   // Note: 'lora.id' here is expected to be the 'vertexAiAlias' from the model object.
+                   config.lora = lora.id;
+                   config.lora_strength = lora.weight;
                 }
             }
             

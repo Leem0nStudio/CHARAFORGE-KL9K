@@ -57,5 +57,3 @@ export const UpsertModelSchema = z.object({
 });
 
 export type UpsertAiModel = z.infer<typeof UpsertModelSchema>;
-
-    
