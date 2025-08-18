@@ -133,20 +133,21 @@ const generateCharacterImageFlow = ai.defineFlow(
         
         // **CRITICAL FIX**: Construct the exact payload Vertex AI expects for SDXL.
         // The payload must have an 'instances' array and a 'parameters' object.
-        const payload = {
+        const payload: {
+            instances: [{ text: string }];
+            parameters: Record<string, any>;
+        } = {
             instances: [
                 { text: description }
             ],
             parameters: {
                 width: width,
                 height: height,
-                // Add other parameters your model might accept here
                 sampleCount: 1, 
-            } as Record<string, any>
+            }
         };
 
         if (lora?.id) {
-            // Add LoRA parameters if provided, as expected by the model.
             payload.parameters.lora_id = lora.id;
             if (lora.weight) {
                 payload.parameters.lora_weight_alpha = lora.weight;
@@ -154,12 +155,12 @@ const generateCharacterImageFlow = ai.defineFlow(
         }
 
         try {
+             // The model here acts as a "proxy" to the Google Cloud ecosystem.
+             // The endpointId in the config directs the request to the correct custom model.
             const { output } = await ai.generate({
-                 // Use a generic model placeholder for the call, as the endpointId in custom will be used.
-                model: googleAI.model('gemini-1.0-pro'),
-                prompt: description, // Keep a prompt for Genkit validation, but the payload structure is what matters.
+                model: googleAI.model('gemini-1.0-pro'), 
+                prompt: description, // Pass a prompt to satisfy Genkit's validation.
                 config: {
-                    // This is the correct way to specify a custom endpoint and payload structure.
                     endpointId: modelId,
                     custom: payload,
                 },
@@ -271,4 +272,4 @@ const generateCharacterImageFlow = ai.defineFlow(
   }
 );
 
-      
+    
