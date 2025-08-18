@@ -8,6 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
 import type { GenerationCommonOptions } from 'genkit/ai';
+import { googleAI } from '@genkit-ai/googleai';
 
 
 // Helper function to get image dimensions in pixels.
@@ -123,6 +124,62 @@ const generateCharacterImageFlow = ai.defineFlow(
             const message = error instanceof Error ? error.message : `An unknown error occurred with the Gemini engine.`;
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
+    } else if (engineId === 'vertexai') {
+        if (!modelId) {
+            throw new Error("Vertex AI Endpoint ID (as modelId) is required for this engine.");
+        }
+        
+        const { width, height } = getDimensions(aspectRatio);
+        
+        // **CRITICAL FIX**: Construct the exact payload Vertex AI expects for SDXL.
+        // The payload must have an 'instances' array and a 'parameters' object.
+        const payload = {
+            instances: [
+                { text: description }
+            ],
+            parameters: {
+                width: width,
+                height: height,
+                // Add other parameters your model might accept here
+                sampleCount: 1, 
+            } as Record<string, any>
+        };
+
+        if (lora && lora.id) {
+            // Add LoRA parameters if provided, as expected by the model.
+            payload.parameters.lora_id = lora.id;
+            if (lora.weight) {
+                payload.parameters.lora_weight_alpha = lora.weight;
+            }
+        }
+
+        try {
+            const { output } = await ai.generate({
+                 // Use a generic model placeholder for the call, as the endpointId in custom will be used.
+                model: googleAI.model('gemini-1.0-pro'),
+                prompt: description, // Keep a prompt for Genkit validation, but the payload structure is what matters.
+                config: {
+                    // This is the correct way to specify a custom endpoint and payload structure.
+                    endpointId: modelId,
+                    custom: payload,
+                },
+            });
+            
+            // The result from a custom Vertex endpoint might be structured differently.
+            // We need to parse the base64 image data from the response.
+            const prediction = output as any;
+            if (prediction?.predictions?.[0]?.bytesBase64Encoded) {
+                const base64Image = prediction.predictions[0].bytesBase64Encoded;
+                imageUrl = `data:image/png;base64,${base64Image}`;
+            } else {
+                 console.error("Vertex AI response did not contain expected image data:", prediction);
+                 throw new Error("Received an unexpected response format from the Vertex AI endpoint.");
+            }
+        } catch (error) {
+            console.error(`Error generating image with Vertex AI:`, error);
+            const message = error instanceof Error ? error.message : `An unknown error occurred with the Vertex AI engine.`;
+            throw new Error(`Failed to generate character image via Vertex AI. ${message}`);
+        }
     } else if (engineId === 'huggingface') {
         try {
             if (!modelId) {
@@ -186,8 +243,7 @@ const generateCharacterImageFlow = ai.defineFlow(
             throw new Error(`Failed to generate image via OpenRouter. Error: ${message}`);
         }
     } else {
-        // Fallback for Vertex AI or any other engine ID to avoid breaking the app completely.
-        // In a real scenario, we would re-implement the Vertex AI logic correctly here.
+        // Fallback for any other engine ID to avoid breaking the app completely.
         console.warn(`The image generation engine '${engineId}' is not fully supported in this version. Falling back to Gemini.`);
          try {
             const { width, height } = getDimensions(aspectRatio);
@@ -214,3 +270,5 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
+
+    
