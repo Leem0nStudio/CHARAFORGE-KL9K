@@ -120,7 +120,7 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
         const baseModelName = latestVersion.baseModel; // e.g., "SDXL 1.0"
 
         // **NEW ARCHITECTURE**: Intelligently link to the correct base model.
-        if (type === 'lora' && baseModelName) {
+        if (baseModelName) {
             const baseModelQuery = await adminDb.collection('ai_models')
                 .where('type', '==', 'model')
                 .where('baseModel', '==', baseModelName)
@@ -380,5 +380,3 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
-
-    
