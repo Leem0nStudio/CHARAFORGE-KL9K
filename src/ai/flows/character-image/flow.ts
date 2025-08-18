@@ -131,12 +131,9 @@ const generateCharacterImageFlow = ai.defineFlow(
         
         const { width, height } = getDimensions(aspectRatio);
         
-        // **CRITICAL FIX**: Construct the exact payload Vertex AI expects for SDXL.
-        // The payload must have an 'instances' array and a 'parameters' object.
-        const payload: {
-            instances: [{ text: string }];
-            parameters: Record<string, any>;
-        } = {
+        // **CRITICAL FIX**: Construct the exact payload Vertex AI expects for a custom SDXL endpoint.
+        // This structure is based on the official Google Cloud documentation for calling prediction endpoints.
+        const vertexPayload = {
             instances: [
                 { text: description }
             ],
@@ -148,27 +145,22 @@ const generateCharacterImageFlow = ai.defineFlow(
         };
 
         if (lora?.id) {
-            payload.parameters.lora_id = lora.id;
+            (vertexPayload.parameters as any).lora_id = lora.id;
             if (lora.weight) {
-                payload.parameters.lora_weight_alpha = lora.weight;
+                (vertexPayload.parameters as any).lora_weight_alpha = lora.weight;
             }
         }
 
         try {
-             // The model here acts as a "proxy" to the Google Cloud ecosystem.
-             // The endpointId in the config directs the request to the correct custom model.
-            const { output } = await ai.generate({
-                model: googleAI.model('gemini-1.0-pro'), 
-                prompt: description, // Pass a prompt to satisfy Genkit's validation.
-                config: {
-                    endpointId: modelId,
-                    custom: payload,
-                },
-            });
+            // Use ai.run() for direct prediction endpoint calls, bypassing ai.generate() abstractions.
+            // The model reference must be prefixed with 'vertexai/' for custom endpoints.
+            const prediction = await ai.run({
+                model: `vertexai/${modelId}`,
+                input: vertexPayload,
+            }) as any;
             
             // The result from a custom Vertex endpoint might be structured differently.
             // We need to parse the base64 image data from the response.
-            const prediction = output as any;
             if (prediction?.predictions?.[0]?.bytesBase64Encoded) {
                 const base64Image = prediction.predictions[0].bytesBase64Encoded;
                 imageUrl = `data:image/png;base64,${base64Image}`;
@@ -271,5 +263,3 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
-
-    
