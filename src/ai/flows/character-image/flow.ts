@@ -145,7 +145,7 @@ const generateCharacterImageFlow = ai.defineFlow(
             } as Record<string, any>
         };
 
-        if (lora && lora.id) {
+        if (lora?.id) {
             // Add LoRA parameters if provided, as expected by the model.
             payload.parameters.lora_id = lora.id;
             if (lora.weight) {
@@ -271,4 +271,4 @@ const generateCharacterImageFlow = ai.defineFlow(
   }
 );
 
-    
+      
