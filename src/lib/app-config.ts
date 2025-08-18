@@ -6,8 +6,8 @@ import type { AiModel } from '@/types/ai-model';
 // Static AI Model Definitions - these are fallbacks or system-provided defaults.
 export const imageModels: AiModel[] = [
     {
-        id: 'vertexai-sdxl-illustrious',
-        name: 'Illustrious SDXL (Vertex AI)',
+        id: 'vertexai-sdxl-1-0',
+        name: 'Stable Diffusion XL 1.0 (Vertex AI)',
         type: 'model',
         engine: 'vertexai',
         // This is the user's actual, valid Endpoint ID for the deployed SDXL model.
@@ -119,3 +119,6 @@ export function getSlotCategory(id: string): SlotCategory {
 
   return 'misc';
 }
+
+
+    

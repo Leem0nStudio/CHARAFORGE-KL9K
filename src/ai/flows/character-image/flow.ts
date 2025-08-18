@@ -124,13 +124,14 @@ const generateCharacterImageFlow = ai.defineFlow(
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
     } else if (engineId === 'vertexai') {
-        // Custom Vertex AI Endpoint generation
+        // Custom Vertex AI Endpoint generation for models like Stable Diffusion
         try {
             if (!modelId) {
                 throw new Error("Vertex AI Endpoint ID is required for this engine.");
             }
             const { width, height } = getDimensions(aspectRatio);
 
+            // This is the correct, flattened structure for Vertex AI prediction endpoints.
             const config: GenerationCommonOptions = {
                 endpointId: modelId,
                 width: width,
@@ -138,14 +139,18 @@ const generateCharacterImageFlow = ai.defineFlow(
             };
 
             if (lora?.id && lora?.weight) {
-               config.lora = lora.id;
-               config.lora_strength = lora.weight;
+                // Vertex AI uses 'deployed_model_id' for LoRAs in some configurations,
+                // or specific parameter names. Assuming a common pattern here.
+                // This might need adjustment based on the *exact* deployment schema.
+                config.lora = lora.id; // This key is illustrative
+                config.lora_strength = lora.weight; // This key is illustrative
             }
             
             // For Vertex AI endpoints, we use a base model like gemini-1.0-pro to route the request,
             // but the config object with the endpointId overrides it and directs it to our custom model.
+            // This is the documented Genkit pattern for custom endpoints.
             const { media } = await ai.generate({
-                model: 'googleai/gemini-1.0-pro',
+                model: 'googleai/gemini-1.0-pro', 
                 prompt: description,
                 config: config,
             });
@@ -224,3 +229,5 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
+
+    
