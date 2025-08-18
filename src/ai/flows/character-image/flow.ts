@@ -104,50 +104,58 @@ const generateCharacterImageFlow = ai.defineFlow(
     
     let imageUrl: string | undefined;
 
-    if (engineId === 'gemini' || engineId === 'vertexai') {
+    if (engineId === 'gemini') {
+        // Standard Gemini image generation
         try {
             const { width, height } = getDimensions(aspectRatio);
-            
-            // The model must always be the official Google image generation model.
-            // Custom endpoints and LoRAs are passed via the config object.
-            const finalModelId = 'googleai/gemini-2.0-flash-preview-image-generation';
+            const { media } = await ai.generate({
+                model: 'googleai/gemini-2.0-flash-preview-image-generation',
+                prompt: description,
+                config: {
+                    responseModalities: ['TEXT', 'IMAGE'],
+                    width,
+                    height,
+                },
+            });
+            imageUrl = media?.url;
+        } catch (error) {
+            console.error(`Error generating image with Gemini:`, error);
+            const message = error instanceof Error ? error.message : `An unknown error occurred with the Gemini engine.`;
+            throw new Error(`Failed to generate character image via Gemini. ${message}`);
+        }
+    } else if (engineId === 'vertexai') {
+        // Custom Vertex AI Endpoint generation
+        try {
+            if (!modelId) {
+                throw new Error("Vertex AI Endpoint ID is required for this engine.");
+            }
+            const { width, height } = getDimensions(aspectRatio);
 
-            // **DEFINITIVE FIX**: The config object MUST be flat. Do NOT nest parameters
-            // inside a `generation_config` object. All parameters are top-level.
-            // This is the correct, verified structure for the Genkit API call.
             const config: GenerationCommonOptions = {
-                responseModalities: ['TEXT', 'IMAGE'],
+                endpointId: modelId,
                 width: width,
                 height: height,
             };
 
-            // If using a custom Vertex AI endpoint, add the endpointId to the config.
-            if (engineId === 'vertexai') {
-                if (!modelId) {
-                    throw new Error("Vertex AI Endpoint ID (from the base model) is required for this engine.");
-                }
-                config.endpointId = modelId;
-
-                // For Vertex AI, pass the LoRA alias and weight in the config.
-                if (lora?.id && lora?.weight) {
-                   // Note: 'lora.id' here is expected to be the 'vertexAiAlias' from the model object.
-                   config.lora = lora.id;
-                   config.lora_strength = lora.weight;
-                }
+            if (lora?.id && lora?.weight) {
+               config.lora = lora.id;
+               config.lora_strength = lora.weight;
             }
             
+            // For Vertex AI endpoints, we use a base model like gemini-1.0-pro to route the request,
+            // but the config object with the endpointId overrides it and directs it to our custom model.
             const { media } = await ai.generate({
-                model: finalModelId,
+                model: 'googleai/gemini-1.0-pro',
                 prompt: description,
-                config: config, // Pass the flat, correct config object
+                config: config,
             });
 
             imageUrl = media?.url;
+
         } catch (error) {
-            const prettyEngineName = engineId === 'gemini' ? 'Gemini' : 'Vertex AI';
-            console.error(`Error generating image with ${prettyEngineName}:`, error);
-            const message = error instanceof Error ? error.message : `An unknown error occurred with the ${prettyEngineName} engine.`;
-            throw new Error(`Failed to generate character image via ${prettyEngineName}. ${message}`);
+            console.error(`Error generating image with Vertex AI:`, error);
+            const message = error instanceof Error ? error.message : `An unknown error occurred with the Vertex AI engine.`;
+            throw new Error(`Failed to generate character image via Vertex AI. ${message}`);
         }
     } else if (engineId === 'huggingface') {
         try {
