@@ -119,31 +119,21 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
         let suggestedHfId = '';
         const baseModelName = latestVersion.baseModel; // e.g., "SDXL 1.0"
 
-        // Intelligent Base Model Linking
-        const baseModelQuery = await adminDb.collection('ai_models')
-            .where('type', '==', 'model')
-            .where('baseModel', '==', baseModelName)
-            .limit(1)
-            .get();
-
-        if (!baseModelQuery.empty) {
-            const baseModel = baseModelQuery.docs[0].data() as AiModel;
-            suggestedHfId = baseModel.hf_id;
-            engine = baseModel.engine;
-            console.log(`Found compatible base model '${baseModel.name}' for new LoRA. Engine: ${engine}, HF_ID: ${suggestedHfId}`);
-        } else if (type === 'lora') {
-            const vertexBaseModelQuery = await adminDb.collection('ai_models')
-                .where('engine', '==', 'vertexai')
+        // **NEW ARCHITECTURE**: Intelligently link to the correct base model.
+        if (type === 'lora' && baseModelName) {
+            const baseModelQuery = await adminDb.collection('ai_models')
                 .where('type', '==', 'model')
+                .where('baseModel', '==', baseModelName)
                 .limit(1)
                 .get();
 
-            if (!vertexBaseModelQuery.empty) {
-                const vertexBaseModel = vertexBaseModelQuery.docs[0].data();
-                engine = 'vertexai';
-                suggestedHfId = vertexBaseModel.hf_id;
-                console.log(`Vertex AI base model found ('${vertexBaseModel.name}'). Defaulting new LoRA to use its endpoint ID.`);
+            if (!baseModelQuery.empty) {
+                const baseModel = baseModelQuery.docs[0].data() as AiModel;
+                suggestedHfId = baseModel.hf_id; // Use the HF ID (or Endpoint ID) from the found base model
+                engine = baseModel.engine; // Inherit the engine from the base model
+                console.log(`Found compatible base model '${baseModel.name}' for new LoRA. Engine: ${engine}, Execution_ID: ${suggestedHfId}`);
             } else {
+                 // Fallback if no matching base model is registered in our DB
                 const suggestion = await suggestHfModel({ modelName: modelInfo.name });
                 suggestedHfId = suggestion.suggestedHfId;
             }
@@ -390,3 +380,5 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
+
+    
