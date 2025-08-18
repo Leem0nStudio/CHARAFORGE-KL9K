@@ -36,7 +36,6 @@ const GeneratePortraitInputSchema = z.object({
     selectedLora: z.custom<AiModel>().optional().nullable(),
     loraVersionId: z.string().optional(),
     loraWeight: z.number().min(0).max(1).optional(),
-    userApiKey: z.string().optional(), // Now passed from client
 });
 export type GeneratePortraitInput = z.infer<typeof GeneratePortraitInputSchema>;
 
@@ -53,16 +52,32 @@ export async function generateCharacterSheetData(input: GenerateSheetInput): Pro
     if (!validation.success) {
         return { success: false, message: 'Invalid input.', error: validation.error.message };
     }
-    // This action can now be called by unauthenticated users.
-    // await verifyAndGetUid();
-
+    
+    let uid: string | null = null;
+    try {
+        uid = await verifyAndGetUid();
+    } catch (error) {
+        // User is not logged in, which is acceptable.
+    }
+    
+    const userProfile = uid ? await getUserProfile(uid) : null;
     const { description, targetLanguage, engineConfig } = validation.data;
 
     try {
+        let userApiKey: string | undefined;
+        if (engineConfig.engineId === 'openrouter' && userProfile) {
+            userApiKey = userProfile.preferences?.openRouterApiKey;
+        }
+
+        const finalEngineConfig: TextEngineConfig = {
+            ...engineConfig,
+            userApiKey,
+        };
+
         const result = await generateCharacterSheet({ 
             description, 
             targetLanguage, 
-            engineConfig
+            engineConfig: finalEngineConfig
         });
 
 
@@ -93,8 +108,14 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         return { success: false, message: 'Invalid input.', error: validation.error.message };
     }
 
-    // This action can now be called by unauthenticated users.
-    // await verifyAndGetUid();
+    let uid: string | null = null;
+    try {
+        uid = await verifyAndGetUid();
+    } catch (error) {
+        // User is not logged in, which is acceptable.
+    }
+    
+    const userProfile = uid ? await getUserProfile(uid) : null;
     
     const {
         physicalDescription,
@@ -103,7 +124,6 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         selectedLora,
         loraVersionId,
         loraWeight,
-        userApiKey, // User API key is now received directly
     } = validation.data;
 
     if (!selectedModel) {
@@ -111,9 +131,17 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
     }
     
      try {
+        let userApiKey: string | undefined;
+        if (userProfile) {
+            if (selectedModel.engine === 'huggingface') {
+                userApiKey = userProfile.preferences?.huggingFaceApiKey;
+            } else if (selectedModel.engine === 'openrouter') {
+                userApiKey = userProfile.preferences?.openRouterApiKey;
+            }
+        }
+        
         const imageEngineConfig: ImageEngineConfig = {
             engineId: selectedModel.engine,
-            // For Vertex, modelId is the Endpoint ID. For others, it's the HF repo ID.
             modelId: selectedModel.engine !== 'gemini' ? selectedModel.hf_id : undefined,
             aspectRatio,
             userApiKey: userApiKey,
@@ -125,7 +153,6 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
             const loraVersion = selectedLora.versions?.find(v => v.id === loraVersionId) 
                 || { id: selectedLora.versionId, triggerWords: selectedLora.triggerWords };
 
-            // Use the Vertex AI alias if available, otherwise fall back to Civitai ID
             const loraIdentifier = selectedModel.engine === 'vertexai' 
                 ? selectedLora.vertexAiAlias || selectedLora.civitaiModelId 
                 : selectedLora.civitaiModelId;
