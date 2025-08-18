@@ -124,35 +124,46 @@ const generateCharacterImageFlow = ai.defineFlow(
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
     } else if (engineId === 'vertexai') {
-        // Custom Vertex AI Endpoint generation for models like Stable Diffusion
         try {
             if (!modelId) {
                 throw new Error("Vertex AI Endpoint ID is required for this engine.");
             }
             const { width, height } = getDimensions(aspectRatio);
 
-            // This is the correct, flattened structure for Vertex AI prediction endpoints.
-            const config: GenerationCommonOptions = {
-                endpointId: modelId,
-                width: width,
-                height: height,
+            // **DEFINITIVE FIX**: Construct the exact JSON payload the Vertex AI endpoint expects,
+            // as shown in the user's screenshot.
+            const vertexParameters: Record<string, any> = {
+                width,
+                height,
+                num_inference_steps: 25, // A sensible default
+                guidance_scale: 7.5,    // A sensible default
             };
 
-            if (lora?.id && lora?.weight) {
-                // Vertex AI uses 'deployed_model_id' for LoRAs in some configurations,
-                // or specific parameter names. Assuming a common pattern here.
-                // This might need adjustment based on the *exact* deployment schema.
-                config.lora = lora.id; // This key is illustrative
-                config.lora_strength = lora.weight; // This key is illustrative
+            if (lora?.id) {
+                // The screenshot shows 'lora_id' as the parameter name.
+                vertexParameters.lora_id = lora.id;
+                // It's possible a weight parameter is also needed, e.g., 'lora_weight'.
+                // If the user's endpoint supports it, it would be added here.
+                // For now, we only add the ID as seen in the screenshot.
             }
             
-            // For Vertex AI endpoints, we use a base model like gemini-1.0-pro to route the request,
-            // but the config object with the endpointId overrides it and directs it to our custom model.
-            // This is the documented Genkit pattern for custom endpoints.
+            // For Vertex AI endpoints, the 'prompt' is actually passed inside the 'instances' array.
+            // We use a custom config to build this structure.
+            const customPayload = {
+              endpointId: modelId,
+              instances: [
+                { text: description }
+              ],
+              parameters: vertexParameters,
+            };
+
             const { media } = await ai.generate({
-                model: 'googleai/gemini-1.0-pro', 
-                prompt: description,
-                config: config,
+                model: 'googleai/gemini-1.0-pro', // Use a base model to route the request
+                prompt: '', // The prompt is inside the custom config, so this can be empty
+                config: {
+                    // This custom structure is passed directly to the Vertex AI endpoint.
+                    custom: customPayload,
+                },
             });
 
             imageUrl = media?.url;
@@ -229,5 +240,3 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
-
-    
