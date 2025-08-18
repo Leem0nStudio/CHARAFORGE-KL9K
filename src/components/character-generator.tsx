@@ -700,5 +700,3 @@ export function CharacterGenerator({ authUser }: { authUser: User | null }) {
     </>
   );
 }
-
-    

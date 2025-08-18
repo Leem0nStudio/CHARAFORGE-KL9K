@@ -36,6 +36,7 @@ const GeneratePortraitInputSchema = z.object({
     selectedLora: z.custom<AiModel>().optional().nullable(),
     loraVersionId: z.string().optional(),
     loraWeight: z.number().min(0).max(1).optional(),
+    userApiKey: z.string().optional(), // Pass user API key for HF/OR
 });
 export type GeneratePortraitInput = z.infer<typeof GeneratePortraitInputSchema>;
 
@@ -108,15 +109,6 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         return { success: false, message: 'Invalid input.', error: validation.error.message };
     }
 
-    let uid: string | null = null;
-    try {
-        uid = await verifyAndGetUid();
-    } catch (error) {
-        // User is not logged in, which is acceptable.
-    }
-    
-    const userProfile = uid ? await getUserProfile(uid) : null;
-    
     const {
         physicalDescription,
         aspectRatio,
@@ -124,6 +116,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         selectedLora,
         loraVersionId,
         loraWeight,
+        userApiKey,
     } = validation.data;
 
     if (!selectedModel) {
@@ -131,15 +124,6 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
     }
     
      try {
-        let userApiKey: string | undefined;
-        if (userProfile) {
-            if (selectedModel.engine === 'huggingface') {
-                userApiKey = userProfile.preferences?.huggingFaceApiKey;
-            } else if (selectedModel.engine === 'openrouter') {
-                userApiKey = userProfile.preferences?.openRouterApiKey;
-            }
-        }
-        
         const imageEngineConfig: ImageEngineConfig = {
             engineId: selectedModel.engine,
             modelId: selectedModel.engine !== 'gemini' ? selectedModel.hf_id : undefined,
@@ -168,10 +152,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
                 triggerWords: loraVersion.triggerWords,
             };
 
-            if (loraVersion.triggerWords && loraVersion.triggerWords.length > 0) {
-                const words = loraVersion.triggerWords.join(', ');
-                finalDescription = `${words}, ${physicalDescription}`;
-            }
+            // Trigger words are now handled within the HF API call function
         }
         
         const imageResult = await generateCharacterImage({ description: finalDescription, engineConfig: imageEngineConfig });
