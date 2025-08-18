@@ -108,32 +108,30 @@ const generateCharacterImageFlow = ai.defineFlow(
         try {
             const { width, height } = getDimensions(aspectRatio);
             
+            // **CRITICAL FIX**: The model ID for image generation is always the official Google one.
+            // The endpoint customization happens in the 'config' object.
+            const finalModelId = 'googleai/gemini-2.0-flash-preview-image-generation';
+
             const generationConfig: GenerationCommonOptions = {
                 responseModalities: ['TEXT', 'IMAGE'],
+                width,
+                height,
             };
+
+            if (engineId === 'vertexai') {
+                if (!modelId) {
+                    throw new Error("Vertex AI Endpoint ID (from the base model) is required for this engine.");
+                }
+                // The endpoint ID is passed here, NOT in the model name.
+                generationConfig.endpointId = modelId;
+
+                // Centralized LoRA config for Vertex AI.
+                if (lora && lora.id) {
+                    generationConfig.lora = lora.id;
+                    generationConfig.lora_strength = lora.weight;
+                }
+            }
             
-            let finalModelId: string;
-            if (engineId === 'gemini') {
-                // For the public Gemini API, use the standard model name.
-                finalModelId = 'googleai/gemini-2.0-flash-preview-image-generation';
-                generationConfig.width = width;
-                generationConfig.height = height;
-            } else { // vertexai
-                 if (!modelId) {
-                    throw new Error("Vertex AI Endpoint ID is required for this engine.");
-                 }
-                 // **CRITICAL FIX**: For Vertex AI, the model ID must be prefixed with 'vertexai/'
-                 // to tell Genkit to use the private endpoint instead of the public Google AI API.
-                 finalModelId = `vertexai/${modelId}`;
-            }
-
-            // Centralized LoRA config for Vertex AI.
-            // It uses the configured vertexAiAlias for the lora.id.
-            if (lora && lora.id && engineId === 'vertexai') {
-                generationConfig.lora = lora.id;
-                generationConfig.lora_strength = lora.weight;
-            }
-
             const { media } = await ai.generate({
                 model: finalModelId,
                 prompt: description,
