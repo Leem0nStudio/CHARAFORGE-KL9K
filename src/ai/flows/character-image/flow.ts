@@ -109,11 +109,10 @@ const generateCharacterImageFlow = ai.defineFlow(
             const { width, height } = getDimensions(aspectRatio);
             
             // The model ID for Google's image generation is always the official one.
-            // Customizations (like Vertex endpoints) are passed in the config object.
             const finalModelId = 'googleai/gemini-2.0-flash-preview-image-generation';
 
-            // **CRITICAL FIX**: The config object should be flat. Parameters like width, height,
-            // and endpointId should be at the top level of the config object, not nested.
+            // **CRITICAL FIX**: The config object must be flat. Parameters like width, height,
+            // and endpointId are passed at the top level of the config object.
             const generationConfig: GenerationCommonOptions = {
                 responseModalities: ['TEXT', 'IMAGE'],
                 width: width,
