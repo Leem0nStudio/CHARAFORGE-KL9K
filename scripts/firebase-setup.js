@@ -17,7 +17,13 @@ const requiredServerVars = [
   'FIREBASE_SERVICE_ACCOUNT_KEY',
 ];
 
-const optionalServerVars = ['GEMINI_API_KEY', 'HUGGING_FACE_API_KEY', 'OPENROUTER_API_KEY', 'CIVITAI_API_KEY'];
+const optionalServerVars = [
+    'GEMINI_API_KEY', 
+    'HUGGING_FACE_API_KEY', 
+    'OPENROUTER_API_KEY', 
+    'CIVITAI_API_KEY',
+    'MODELS_STORAGE_BUCKET'
+];
 
 let allKeysPresent = true;
 let hasPlaceholderValues = false;
@@ -69,11 +75,11 @@ requiredServerVars.forEach(key => {
     }
 });
 
-console.log(chalk.yellow('\nChecking Optional AI Variables...'));
+console.log(chalk.yellow('\nChecking Optional AI & Storage Variables...'));
 optionalServerVars.forEach(key => {
     const value = process.env[key];
     if (!value || value === 'changeme' || value.startsWith('TU_') || value.startsWith('YOUR_')) {
-        console.warn(chalk.yellowBright(`[WARN] Optional AI variable ${key} is not set. AI features related to this key will not work.`));
+        console.warn(chalk.yellowBright(`[WARN] Optional variable ${key} is not set. Features related to this key may not work.`));
     } else {
         console.log(chalk.green(`[OK] ${key} is set.`));
     }
