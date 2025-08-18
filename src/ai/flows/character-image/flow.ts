@@ -108,11 +108,11 @@ const generateCharacterImageFlow = ai.defineFlow(
         try {
             const { width, height } = getDimensions(aspectRatio);
             
-            // The model ID for Google's image generation is always the official one.
             const finalModelId = 'googleai/gemini-2.0-flash-preview-image-generation';
 
             // **CRITICAL FIX**: Build the config object directly inside the generate call.
             // Do not use an intermediate `generationConfig` variable.
+            // The structure must be flat as required by the API.
             const config: GenerationCommonOptions = {
                 responseModalities: ['TEXT', 'IMAGE'],
                 width: width,
