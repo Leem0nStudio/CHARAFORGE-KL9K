@@ -13,17 +13,23 @@ type VertexTestResponse = {
 export async function runVertexTest(prompt: string): Promise<VertexTestResponse> {
     await verifyAndGetUid(); // Ensure the user is an authenticated admin
 
-    // --- Configuration: These values must match your Google Cloud setup ---
     let projectId: string | undefined;
+    let serviceAccount: any;
+
     try {
-        projectId = process.env.FIREBASE_PROJECT_ID || JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY!).project_id;
-    } catch(e) {
+        const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        if (!serviceAccountKey) {
+            throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.");
+        }
+        serviceAccount = JSON.parse(serviceAccountKey);
+        projectId = serviceAccount.project_id;
+    } catch (e) {
         console.error("Could not parse service account key to find Project ID", e);
+        return { success: false, message: `Failed to parse service account key. Error: ${e instanceof Error ? e.message : 'Unknown error'}`};
     }
     
-    const location = 'us-central1'; // As confirmed from your screenshot
-    const endpointId = '1497098330914684928'; // Your specific endpoint ID
-    // --- End Configuration ---
+    const location = 'us-central1';
+    const endpointId = '1497098330914684928';
     
     if (!projectId) {
         return { success: false, message: "Could not determine Google Cloud Project ID from server environment." };
@@ -31,7 +37,6 @@ export async function runVertexTest(prompt: string): Promise<VertexTestResponse>
 
     const endpointUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/endpoints/${endpointId}:predict`;
 
-    // 2. Build the exact payload your model expects
     const payload = {
         instances: [
             { "text": prompt }
@@ -44,11 +49,10 @@ export async function runVertexTest(prompt: string): Promise<VertexTestResponse>
     };
 
     try {
-        // 3. Authenticate explicitly using the service account and make the API call
+        // Authenticate explicitly by passing the parsed service account credentials.
         const auth = new GoogleAuth({
+            credentials: serviceAccount,
             scopes: 'https://www.googleapis.com/auth/cloud-platform',
-            // The library will automatically find the service account key from the environment
-            // when running in a Google Cloud environment.
         });
         const client = await auth.getClient();
         
@@ -58,7 +62,6 @@ export async function runVertexTest(prompt: string): Promise<VertexTestResponse>
             data: payload,
         });
 
-        // 4. Process the response
         const responseData = response.data as any;
         const prediction = responseData?.predictions?.[0];
         
@@ -77,7 +80,6 @@ export async function runVertexTest(prompt: string): Promise<VertexTestResponse>
             };
         }
     } catch (error: any) {
-        // Provide detailed error feedback for debugging
         const errorMessage = error.response?.data?.error?.message || error.message || "An unknown error occurred.";
         console.error("Error calling Vertex AI endpoint:", { 
             status: error.response?.status,
