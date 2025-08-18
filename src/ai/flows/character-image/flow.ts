@@ -76,7 +76,7 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
         const base64Image = buffer.toString('base64');
         const mimeType = imageBlob.type;
         
-        return `data:${'\'\''}${mimeType};base64,${base64Image}`;
+        return `data:${mimeType};base64,${base64Image}`;
 
     } catch (error) {
         console.error("Hugging Face Inference API Error:", error);
@@ -130,25 +130,17 @@ const generateCharacterImageFlow = ai.defineFlow(
             }
             const { width, height } = getDimensions(aspectRatio);
 
-            // **DEFINITIVE FIX**: Construct the exact JSON payload the Vertex AI endpoint expects,
-            // as shown in the user's screenshot.
             const vertexParameters: Record<string, any> = {
                 width,
                 height,
-                num_inference_steps: 25, // A sensible default
-                guidance_scale: 7.5,    // A sensible default
+                num_inference_steps: 25,
+                guidance_scale: 7.5,
             };
 
             if (lora?.id) {
-                // The screenshot shows 'lora_id' as the parameter name.
                 vertexParameters.lora_id = lora.id;
-                // It's possible a weight parameter is also needed, e.g., 'lora_weight'.
-                // If the user's endpoint supports it, it would be added here.
-                // For now, we only add the ID as seen in the screenshot.
             }
             
-            // For Vertex AI endpoints, the 'prompt' is actually passed inside the 'instances' array.
-            // We use a custom config to build this structure.
             const customPayload = {
               endpointId: modelId,
               instances: [
@@ -158,10 +150,9 @@ const generateCharacterImageFlow = ai.defineFlow(
             };
 
             const { media } = await ai.generate({
-                model: 'googleai/gemini-1.0-pro', // Use a base model to route the request
-                prompt: '', // The prompt is inside the custom config, so this can be empty
+                model: 'googleai/gemini-1.0-pro', 
+                prompt: description, // **FIX:** Provide the prompt here to satisfy the validation check.
                 config: {
-                    // This custom structure is passed directly to the Vertex AI endpoint.
                     custom: customPayload,
                 },
             });
