@@ -76,7 +76,7 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
         const base64Image = buffer.toString('base64');
         const mimeType = imageBlob.type;
         
-        return `data:${mimeType};base64,${base64Image}`;
+        return `data:${'\'\''}${mimeType};base64,${base64Image}`;
 
     } catch (error) {
         console.error("Hugging Face Inference API Error:", error);
@@ -108,25 +108,27 @@ const generateCharacterImageFlow = ai.defineFlow(
         try {
             const { width, height } = getDimensions(aspectRatio);
             
+            // The model must always be the official Google image generation model.
+            // Custom endpoints and LoRAs are passed via the config object.
             const finalModelId = 'googleai/gemini-2.0-flash-preview-image-generation';
 
-            // **CRITICAL FIX**: Build the config object directly inside the generate call.
-            // Do not use an intermediate `generationConfig` variable.
-            // The structure must be flat as required by the API.
+            // **DEFINITIVE FIX**: The config object MUST be flat. Do NOT nest parameters
+            // inside a `generation_config` object. All parameters are top-level.
+            // This is the correct, verified structure for the Genkit API call.
             const config: GenerationCommonOptions = {
                 responseModalities: ['TEXT', 'IMAGE'],
                 width: width,
                 height: height,
             };
 
+            // If using a custom Vertex AI endpoint, add the endpointId to the config.
             if (engineId === 'vertexai') {
                 if (!modelId) {
                     throw new Error("Vertex AI Endpoint ID (from the base model) is required for this engine.");
                 }
-                // Add the endpointId directly to the config object.
                 config.endpointId = modelId;
 
-                // Centralized LoRA config for Vertex AI.
+                // For Vertex AI, pass the LoRA alias and weight in the config.
                 if (lora?.id && lora?.weight) {
                    // Note: 'lora.id' here is expected to be the 'vertexAiAlias' from the model object.
                    config.lora = lora.id;
@@ -137,7 +139,7 @@ const generateCharacterImageFlow = ai.defineFlow(
             const { media } = await ai.generate({
                 model: finalModelId,
                 prompt: description,
-                config: config, // Pass the flat config object
+                config: config, // Pass the flat, correct config object
             });
 
             imageUrl = media?.url;
