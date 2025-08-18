@@ -1,6 +1,6 @@
 
 
-import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon, Download } from 'lucide-react';
+import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon, Download, TestTube } from 'lucide-react';
 import type { AiModel } from '@/types/ai-model';
 
 // Static AI Model Definitions - these are fallbacks or system-provided defaults.
@@ -53,6 +53,7 @@ export const adminNavItems: NavItem[] = [
     { href: '/admin/datapacks', label: 'DataPacks', icon: Package },
     { href: '/admin/models', label: 'AI Models', icon: Bot },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
+    { href: '/admin/vertex-test', label: 'Vertex Test', icon: TestTube },
 ];
 
 type SlotCategory = 'appearance' | 'equipment' | 'style' | 'setting' | 'class' | 'misc';
