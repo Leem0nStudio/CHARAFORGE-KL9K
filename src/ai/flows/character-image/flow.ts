@@ -124,55 +124,6 @@ const generateCharacterImageFlow = ai.defineFlow(
             const message = error instanceof Error ? error.message : `An unknown error occurred with the Gemini engine.`;
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
-    } else if (engineId === 'vertexai') {
-        if (!modelId) {
-            throw new Error("Vertex AI Endpoint ID (as modelId) is required for this engine.");
-        }
-        
-        const { width, height } = getDimensions(aspectRatio);
-        
-        // **CRITICAL FIX**: Construct the exact payload Vertex AI expects for a custom SDXL endpoint.
-        // This structure is based on the official Google Cloud documentation for calling prediction endpoints.
-        const vertexPayload = {
-            instances: [
-                { text: description }
-            ],
-            parameters: {
-                width: width,
-                height: height,
-                sampleCount: 1, 
-            }
-        };
-
-        if (lora?.id) {
-            (vertexPayload.parameters as any).lora_id = lora.id;
-            if (lora.weight) {
-                (vertexPayload.parameters as any).lora_weight_alpha = lora.weight;
-            }
-        }
-
-        try {
-            // Use ai.run() for direct prediction endpoint calls, bypassing ai.generate() abstractions.
-            // The model reference must be prefixed with 'vertexai/' for custom endpoints.
-            const prediction = await ai.run({
-                model: `vertexai/${modelId}`,
-                input: vertexPayload,
-            }) as any;
-            
-            // The result from a custom Vertex endpoint might be structured differently.
-            // We need to parse the base64 image data from the response.
-            if (prediction?.predictions?.[0]?.bytesBase64Encoded) {
-                const base64Image = prediction.predictions[0].bytesBase64Encoded;
-                imageUrl = `data:image/png;base64,${base64Image}`;
-            } else {
-                 console.error("Vertex AI response did not contain expected image data:", prediction);
-                 throw new Error("Received an unexpected response format from the Vertex AI endpoint.");
-            }
-        } catch (error) {
-            console.error(`Error generating image with Vertex AI:`, error);
-            const message = error instanceof Error ? error.message : `An unknown error occurred with the Vertex AI engine.`;
-            throw new Error(`Failed to generate character image via Vertex AI. ${message}`);
-        }
     } else if (engineId === 'huggingface') {
         try {
             if (!modelId) {

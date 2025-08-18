@@ -6,12 +6,11 @@ import type { AiModel } from '@/types/ai-model';
 // Static AI Model Definitions - these are fallbacks or system-provided defaults.
 export const imageModels: AiModel[] = [
     {
-        id: 'vertexai-sdxl-1-0',
-        name: 'Stable Diffusion XL 1.0 (Vertex AI)',
+        id: 'huggingface-sdxl-1-0',
+        name: 'Stable Diffusion XL 1.0',
         type: 'model',
-        engine: 'vertexai',
-        // This is the user's actual, valid Endpoint ID for the deployed SDXL model.
-        hf_id: '1497098330914684928', 
+        engine: 'huggingface',
+        hf_id: 'stabilityai/stable-diffusion-xl-base-1.0',
         coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -120,5 +119,7 @@ export function getSlotCategory(id: string): SlotCategory {
   return 'misc';
 }
 
+
+    
 
     
