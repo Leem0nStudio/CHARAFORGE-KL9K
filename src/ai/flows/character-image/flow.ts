@@ -122,9 +122,9 @@ const generateCharacterImageFlow = ai.defineFlow(
                  if (!modelId) {
                     throw new Error("Vertex AI Endpoint ID is required for this engine.");
                  }
-                 // **CRITICAL FIX**: For Vertex AI, the modelId IS the endpoint ID and should not be prefixed.
-                 // This ensures Genkit calls the private endpoint directly.
-                 finalModelId = modelId;
+                 // **CRITICAL FIX**: For Vertex AI, the model ID must be prefixed with 'vertexai/'
+                 // to tell Genkit to use the private endpoint instead of the public Google AI API.
+                 finalModelId = `vertexai/${modelId}`;
             }
 
             // Centralized LoRA config for Vertex AI.
