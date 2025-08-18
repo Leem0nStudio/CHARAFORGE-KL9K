@@ -11,7 +11,7 @@ export const imageModels: AiModel[] = [
         type: 'model',
         engine: 'vertexai',
         // This is the user's actual, valid Endpoint ID for the deployed SDXL model.
-        hf_id: '347255894214', 
+        hf_id: '1497098330914684928', 
         coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
         createdAt: new Date(),
         updatedAt: new Date(),
