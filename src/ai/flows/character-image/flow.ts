@@ -114,6 +114,7 @@ const generateCharacterImageFlow = ai.defineFlow(
             
             let finalModelId: string;
             if (engineId === 'gemini') {
+                // For the public Gemini API, use the standard model name.
                 finalModelId = 'googleai/gemini-2.0-flash-preview-image-generation';
                 generationConfig.width = width;
                 generationConfig.height = height;
@@ -122,6 +123,7 @@ const generateCharacterImageFlow = ai.defineFlow(
                     throw new Error("Vertex AI Endpoint ID is required for this engine.");
                  }
                  // **CRITICAL FIX**: For Vertex AI, the modelId IS the endpoint ID and should not be prefixed.
+                 // This ensures Genkit calls the private endpoint directly.
                  finalModelId = modelId;
             }
 
