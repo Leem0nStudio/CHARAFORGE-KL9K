@@ -14,7 +14,13 @@ export async function runVertexTest(prompt: string): Promise<VertexTestResponse>
     await verifyAndGetUid(); // Ensure the user is an authenticated admin
 
     // --- Configuration: These values must match your Google Cloud setup ---
-    const projectId = process.env.FIREBASE_PROJECT_ID || JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY!).project_id;
+    let projectId: string | undefined;
+    try {
+        projectId = process.env.FIREBASE_PROJECT_ID || JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY!).project_id;
+    } catch(e) {
+        console.error("Could not parse service account key to find Project ID", e);
+    }
+    
     const location = 'us-central1'; // As confirmed from your screenshot
     const endpointId = '1497098330914684928'; // Your specific endpoint ID
     // --- End Configuration ---
@@ -38,9 +44,11 @@ export async function runVertexTest(prompt: string): Promise<VertexTestResponse>
     };
 
     try {
-        // 3. Authenticate and make the API call
+        // 3. Authenticate explicitly using the service account and make the API call
         const auth = new GoogleAuth({
-            scopes: 'https://www.googleapis.com/auth/cloud-platform'
+            scopes: 'https://www.googleapis.com/auth/cloud-platform',
+            // The library will automatically find the service account key from the environment
+            // when running in a Google Cloud environment.
         });
         const client = await auth.getClient();
         
@@ -70,8 +78,12 @@ export async function runVertexTest(prompt: string): Promise<VertexTestResponse>
         }
     } catch (error: any) {
         // Provide detailed error feedback for debugging
-        console.error("Error calling Vertex AI endpoint:", error.response?.data || error.message);
         const errorMessage = error.response?.data?.error?.message || error.message || "An unknown error occurred.";
+        console.error("Error calling Vertex AI endpoint:", { 
+            status: error.response?.status,
+            data: error.response?.data,
+            message: errorMessage
+        });
         return {
             success: false,
             message: `Failed to get prediction from Vertex AI: ${errorMessage}`,
