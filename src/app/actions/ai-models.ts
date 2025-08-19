@@ -18,6 +18,7 @@ type ActionResponse = {
     error?: string;
 };
 
+// Source-specific API fetchers
 async function getCivitaiModelInfo(modelId: string): Promise<any> {
     const url = `https://civitai.com/api/v1/models/${modelId}`;
     const response = await fetch(url, { cache: 'no-store' });
@@ -33,6 +34,23 @@ async function getCivitaiModelInfo(modelId: string): Promise<any> {
     }
     return response.json();
 }
+
+async function getModelsLabModelInfo(modelId: string): Promise<any> {
+    const url = `https://modelslab.com/api/v1/models/${modelId}`;
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+        let errorBody = `Status: ${response.status}`;
+        try {
+            const errorJson = await response.json();
+            errorBody += ` ${errorJson.error || JSON.stringify(errorJson)}`;
+        } catch(e) {
+             errorBody += ` ${response.statusText}`;
+        }
+        throw new Error(`Failed to fetch model info from ModelsLab. ${errorBody}`);
+    }
+    return response.json();
+}
+
 
 export async function upsertModel(data: UpsertAiModel): Promise<ActionResponse> {
     await verifyAndGetUid();
@@ -74,21 +92,23 @@ export async function upsertModel(data: UpsertAiModel): Promise<ActionResponse> 
 }
 
 
-export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModelId: string): Promise<ActionResponse> {
+export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sourceModelId: string): Promise<ActionResponse> {
     await verifyAndGetUid();
     
     try {
-        // Check if a model with this Civitai ID already exists
-        const existingModelQuery = await adminDb.collection('ai_models').where('civitaiModelId', '==', civitaiModelId).limit(1).get();
+        // Determine which fetcher to use
+        const modelInfoFetcher = source === 'civitai' ? getCivitaiModelInfo : getModelsLabModelInfo;
+
+        const existingModelQuery = await adminDb.collection('ai_models').where(`${source}ModelId`, '==', sourceModelId).limit(1).get();
         if (!existingModelQuery.empty) {
-            return { success: false, message: "A model with this Civitai ID already exists in the database." };
+            return { success: false, message: `A model with this ${source} ID already exists.` };
         }
 
-        const modelInfo = await getCivitaiModelInfo(civitaiModelId);
+        const modelInfo = await modelInfoFetcher(sourceModelId);
         const latestVersion = modelInfo.modelVersions?.[0];
 
         if (!latestVersion) {
-            return { success: false, message: "Could not find a valid version for this Civitai model." };
+            return { success: false, message: `Could not find a valid version for this ${source} model.` };
         }
         
         let coverMediaUrl: string | null = null;
@@ -117,9 +137,8 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
 
         let engine: AiModel['engine'] = 'huggingface';
         let suggestedHfId = '';
-        const baseModelName = latestVersion.baseModel; // e.g., "SDXL 1.0"
+        const baseModelName = latestVersion.baseModel;
 
-        // **NEW ARCHITECTURE**: Intelligently link to the correct base model.
         if (baseModelName) {
             const baseModelQuery = await adminDb.collection('ai_models')
                 .where('type', '==', 'model')
@@ -129,11 +148,10 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
 
             if (!baseModelQuery.empty) {
                 const baseModel = baseModelQuery.docs[0].data() as AiModel;
-                suggestedHfId = baseModel.hf_id; // Use the HF ID (or Endpoint ID) from the found base model
-                engine = baseModel.engine; // Inherit the engine from the base model
-                console.log(`Found compatible base model '${baseModel.name}' for new LoRA. Engine: ${engine}, Execution_ID: ${suggestedHfId}`);
+                suggestedHfId = baseModel.hf_id; 
+                engine = baseModel.engine;
+                console.log(`Found compatible base model '${baseModel.name}'. Engine: ${engine}, Execution_ID: ${suggestedHfId}`);
             } else {
-                 // Fallback if no matching base model is registered in our DB
                 const suggestion = await suggestHfModel({ modelName: modelInfo.name });
                 suggestedHfId = suggestion.suggestedHfId;
             }
@@ -145,11 +163,11 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
         ];
         const triggerWords = [...new Set(combinedTriggerWords)];
 
-
         const newModel: Omit<AiModel, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = {
             name: modelInfo.name,
-            civitaiModelId: modelInfo.id.toString(),
-            type,
+            civitaiModelId: source === 'civitai' ? modelInfo.id.toString() : undefined,
+            modelslabModelId: source === 'modelslab' ? modelInfo.id.toString() : undefined,
+            type: modelInfo.type.toLowerCase(), // 'LORA' -> 'lora'
             engine: engine, 
             hf_id: suggestedHfId,
             versionId: latestVersion?.id?.toString() || '',
@@ -177,7 +195,7 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
         revalidatePath('/admin/models');
         revalidatePath('/character-generator');
         
-        return { success: true, message: `Model "${newModel.name}" added successfully.` };
+        return { success: true, message: `Model "${newModel.name}" from ${source} added successfully.` };
     
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -186,10 +204,10 @@ export async function addAiModelFromCivitai(type: 'model' | 'lora', civitaiModel
 }
 
 
+
 export async function upsertUserAiModel(formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     
-    // Extract data from FormData
     const rawData = {
         id: formData.get('id') || undefined,
         name: formData.get('name'),
@@ -197,7 +215,6 @@ export async function upsertUserAiModel(formData: FormData): Promise<ActionRespo
         engine: 'huggingface', // Hardcoded as user models are currently only this type
         hf_id: formData.get('hf_id'),
         triggerWords: formData.get('triggerWords'),
-        // coverMediaUrl is handled separately
     };
 
     const validation = UpsertModelSchema.safeParse(rawData);
@@ -222,7 +239,6 @@ export async function upsertUserAiModel(formData: FormData): Promise<ActionRespo
         let coverMediaUrl = modelData.coverMediaUrl || null;
         if (coverImageFile && coverImageFile.size > 0) {
             const destinationPath = `usersImg/${uid}/ai_models/${docRef.id}/cover.png`;
-            // uploadToStorage can handle File objects directly now.
             coverMediaUrl = await uploadToStorage(coverImageFile, destinationPath);
         }
 
@@ -271,14 +287,6 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
 }
 
 
-/**
- * Fetches all models of a given type ('model' or 'lora') from the database.
- * If a UID is provided, it fetches models specific to that user (created and installed system models).
- * If no UID is provided, it fetches ALL system and user models for admin view.
- * @param type The type of model to fetch.
- * @param uid Optional. The user's ID to fetch user-specific models.
- * @returns An array of AiModel objects.
- */
 export async function getModels(type: 'model' | 'lora', uid?: string): Promise<AiModel[]> {
     if (!adminDb) return [];
     
@@ -301,7 +309,6 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
 
     try {
         if (uid) {
-            // User-specific logic: get user-created models, user-installed models, and static system models
             const userDoc = await adminDb.collection('users').doc(uid).get();
             const installedModelIds = userDoc.data()?.stats?.installedModels || [];
 
@@ -315,7 +322,6 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
             processSnapshot(userCreatedModels);
             processSnapshot(installedSystemModels);
 
-            // Always include static system models for the user
             const staticModels = type === 'model' ? imageModels : [];
             staticModels.forEach(model => {
                 if (!allModels.has(model.id)) {
@@ -324,7 +330,6 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
             });
 
         } else {
-            // Admin/public logic: get all models of the specified type
             const snapshot = await adminDb
               .collection('ai_models')
               .where('type', '==', type)

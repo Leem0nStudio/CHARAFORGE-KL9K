@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { addAiModelFromCivitai, deleteModel, upsertModel } from '@/app/actions/ai-models';
+import { addAiModelFromSource, deleteModel, upsertModel } from '@/app/actions/ai-models';
 import { UpsertModelSchema, type AiModel, type UpsertAiModel } from '@/types/ai-model';
 
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
     const [isProcessing, startTransition] = useTransition();
     const { toast } = useToast();
     const isEditing = !!model;
+    const [importSource, setImportSource] = useState<'civitai' | 'modelslab'>('civitai');
 
     const form = useForm<UpsertAiModel>({
         resolver: zodResolver(UpsertModelSchema),
@@ -32,6 +33,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
             engine: 'huggingface',
             hf_id: '',
             civitaiModelId: '',
+            modelslabModelId: '',
             versionId: '',
             baseModel: '',
             triggerWords: '',
@@ -43,7 +45,6 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
 
     const onSubmit = (values: UpsertAiModel) => {
         startTransition(async () => {
-             // Attempt to parse workflow if it's a string
             let finalValues = { ...values };
             if (values.engine === 'comfyui' && typeof values.comfyWorkflow === 'string' && values.comfyWorkflow.trim()) {
                 try {
@@ -80,15 +81,15 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
         });
     };
     
-    const handleCivitaiImport = () => {
-        const civitaiId = form.getValues('civitaiModelId');
-        if (!civitaiId) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Civitai Model ID is required.'});
+    const handleSourceImport = () => {
+        const sourceModelId = form.getValues('civitaiModelId'); // Using one field for both for simplicity
+        if (!sourceModelId) {
+            toast({ variant: 'destructive', title: 'Error', description: `A Model ID from ${importSource} is required.`});
             return;
         }
 
         startTransition(async () => {
-            const result = await addAiModelFromCivitai(form.getValues('type'), civitaiId);
+            const result = await addAiModelFromSource(importSource, sourceModelId);
             if (result.success) {
                 toast({ title: 'Success', description: result.message });
                 setIsOpen(false);
@@ -125,7 +126,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                     <DialogHeader>
                         <DialogTitle>{isEditing ? `Edit: ${model.name}` : 'Add New AI Model'}</DialogTitle>
                         <DialogDescription>
-                            {isEditing ? "Update the model's configuration." : "Add a new model or LoRA from Civitai or manually."}
+                            {isEditing ? "Update the model's configuration." : "Add a new model or LoRA manually or by importing from a source."}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -133,12 +134,12 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                         {!isEditing && (
                             <TabsList className="grid w-full grid-cols-2">
                                 <TabsTrigger value="manual">Add Manually</TabsTrigger>
-                                <TabsTrigger value="civitai">Import from Civitai</TabsTrigger>
+                                <TabsTrigger value="import">Import from Source</TabsTrigger>
                             </TabsList>
                         )}
                         
                         <TabsContent value="manual">
-                            <div className="py-4 grid grid-cols-2 gap-4">
+                             <div className="py-4 grid grid-cols-2 gap-4">
                                 <div className="space-y-2 col-span-2">
                                     <Label>Name</Label>
                                     <Input {...form.register('name')} />
@@ -195,7 +196,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                     <div className="space-y-2 col-span-2">
                                         <Label>Base Model Identifier</Label>
                                         <Input {...form.register('baseModel')} placeholder="e.g., SDXL 1.0, SD 1.5" />
-                                        <p className="text-xs text-muted-foreground">The exact string used by Civitai to identify this base model (e.g., "SDXL 1.0"). This is crucial for matching LoRAs correctly.</p>
+                                        <p className="text-xs text-muted-foreground">The exact string used by sources to identify this base model (e.g., "SDXL 1.0"). Crucial for matching.</p>
                                     </div>
                                 )}
 
@@ -203,8 +204,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                      <div className="space-y-2 col-span-2">
                                         <Label>Vertex AI LoRA Alias</Label>
                                         <Input {...form.register('vertexAiAlias')} placeholder="e.g., my-anime-lora" />
-                                        <p className="text-xs text-muted-foreground">The exact alias configured in your Vertex AI Endpoint for this LoRA.</p>
-                                    </div>
+                                     </div>
                                 )}
 
                                 {form.watch('type') === 'lora' && (
@@ -239,41 +239,27 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                         />
                                      </div>
                                 )}
-
-                                {isEditing && (
-                                    <div className="space-y-2 col-span-2">
-                                        <Label>Cover Image</Label>
-                                        <Input name="coverImage" type="file" accept="image/png, image/jpeg, image/webp" />
-                                        <p className="text-xs text-muted-foreground">Upload a new image to replace the existing one.</p>
-                                    </div>
-                                )}
                             </div>
                         </TabsContent>
                         
                         {!isEditing && (
-                             <TabsContent value="civitai">
+                             <TabsContent value="import">
                                 <div className="py-4 space-y-4">
-                                    <div className="space-y-2">
-                                        <Label>Model Type</Label>
-                                          <Controller
-                                            control={form.control}
-                                            name="type"
-                                            render={({ field }) => (
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="model">Base Model</SelectItem>
-                                                        <SelectItem value="lora">LoRA</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
+                                     <div className="space-y-2">
+                                        <Label>Import Source</Label>
+                                        <Select onValueChange={(value: 'civitai' | 'modelslab') => setImportSource(value)} defaultValue={importSource}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="civitai">Civitai</SelectItem>
+                                                <SelectItem value="modelslab">ModelsLab</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="civitaiModelId">Civitai Model ID</Label>
-                                        <Input {...form.register('civitaiModelId')} id="civitaiModelId" placeholder="e.g., 9251" />
+                                        <Label htmlFor="sourceModelId">Model ID from {importSource}</Label>
+                                        <Input {...form.register('civitaiModelId')} id="sourceModelId" placeholder="e.g., 9251" />
                                     </div>
-                                     <Button type="button" onClick={handleCivitaiImport} disabled={isProcessing} className="w-full">
+                                     <Button type="button" onClick={handleSourceImport} disabled={isProcessing} className="w-full">
                                         {isProcessing && <Loader2 className="animate-spin mr-2"/>}
                                         Fetch & Add Model
                                     </Button>
@@ -339,5 +325,3 @@ export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: b
         </>
     );
 }
-
-    
