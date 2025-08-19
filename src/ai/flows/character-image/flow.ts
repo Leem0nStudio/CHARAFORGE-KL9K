@@ -153,22 +153,31 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
 
 
 /**
- * Queries the ModelsLab Inference API.
- * @param {object} data The payload including the prompt and model version ID.
+ * Queries the ModelsLab API.
+ * @param {object} data The payload including the prompt and model/LoRA configurations.
  * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
  */
-async function queryModelsLabAPI(data: { prompt: string, versionId: string }): Promise<string> {
-    const apiUrl = 'https://modelslab.com/api/v1/image/generation';
+async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId?: string, loraWeight?: number }): Promise<string> {
+    const apiUrl = 'https://modelslab.com/api/v6/images/text2img';
+    const payload: any = {
+        prompt: data.prompt,
+        model_id: data.modelId,
+    };
+    
+    if (data.loraId && data.loraWeight) {
+        payload.lora = {
+            model_id: data.loraId,
+            strength: data.loraWeight,
+        };
+    }
+    
     try {
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                prompt: data.prompt,
-                model_id: data.versionId,
-            }),
+            body: JSON.stringify(payload),
         });
         
         if (!response.ok) {
@@ -179,9 +188,7 @@ async function queryModelsLabAPI(data: { prompt: string, versionId: string }): P
         
         const result = await response.json();
         
-        // ModelsLab can return the image directly in the response
         if (result && result.output && result.output.length > 0) {
-            // The result is already a Base64 encoded Data URI
             return result.output[0];
         }
         
@@ -215,7 +222,7 @@ const generateCharacterImageFlow = ai.defineFlow(
     
     // Centralized prompt construction
     let finalDescription = description;
-    if (lora?.triggerWords && lora.triggerWords.length > 0) {
+    if (lora?.triggerWords && lora.triggerWords.length > 0 && engineId !== 'modelslab') {
         finalDescription = `${lora.triggerWords.join(', ')}, ${description}`;
         console.log(`Using LoRA. Appended trigger words. New prompt: ${finalDescription}`);
     }
@@ -241,12 +248,14 @@ const generateCharacterImageFlow = ai.defineFlow(
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
     } else if (engineId === 'modelslab') {
-        if (!engineConfig.versionId) {
-             throw new Error("ModelsLab engine requires a model Version ID for generation.");
+        if (!engineConfig.modelId) {
+             throw new Error("ModelsLab engine requires a base model ID for generation.");
         }
         imageUrl = await queryModelsLabAPI({
             prompt: finalDescription,
-            versionId: engineConfig.versionId,
+            modelId: engineConfig.modelId,
+            loraId: lora?.id,
+            loraWeight: lora?.weight
         });
 
     } else if (engineId === 'comfyui') {

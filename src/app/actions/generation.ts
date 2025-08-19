@@ -34,8 +34,7 @@ const GeneratePortraitInputSchema = z.object({
     aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
     selectedModel: z.custom<AiModel>().refine(data => !!data, { message: 'A base model must be selected.' }),
     selectedLora: z.custom<AiModel>().optional().nullable(),
-    loraVersionId: z.string().optional(),
-    loraWeight: z.number().min(0).max(1).optional(),
+    loraWeight: z.number().min(0).max(2).optional(),
     userApiKey: z.string().optional(), // Pass user API key for HF/OR
 });
 export type GeneratePortraitInput = z.infer<typeof GeneratePortraitInputSchema>;
@@ -114,7 +113,6 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         aspectRatio,
         selectedModel,
         selectedLora,
-        loraVersionId,
         loraWeight,
         userApiKey,
     } = validation.data;
@@ -124,36 +122,38 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
     }
     
      try {
+        // The primary ID for execution (HF ID, Vertex Endpoint, ModelsLab Model ID)
+        const executionModelId = selectedModel.engine === 'gemini' ? undefined : selectedModel.hf_id;
+
         const imageEngineConfig: ImageEngineConfig = {
             engineId: selectedModel.engine,
-            modelId: selectedModel.engine !== 'gemini' ? selectedModel.hf_id : undefined,
-            versionId: selectedModel.versionId, // Pass versionId for engines like ModelsLab
+            modelId: executionModelId,
             aspectRatio,
             userApiKey: userApiKey,
         };
         
         let finalDescription = physicalDescription;
 
-        if (selectedLora && (selectedModel.engine === 'huggingface' || selectedModel.engine === 'vertexai')) {
-            const loraVersion = selectedLora.versions?.find(v => v.id === loraVersionId) 
-                || { id: selectedLora.versionId, triggerWords: selectedLora.triggerWords };
-
-            const loraIdentifier = selectedModel.engine === 'vertexai' 
-                ? selectedLora.vertexAiAlias || selectedLora.civitaiModelId 
-                : selectedLora.civitaiModelId;
-
+        if (selectedLora) {
+            // LoRA ID is different based on engine
+            let loraIdentifier: string | undefined;
+            if (selectedModel.engine === 'vertexai') {
+                loraIdentifier = selectedLora.vertexAiAlias || selectedLora.civitaiModelId;
+            } else if (selectedModel.engine === 'modelslab') {
+                loraIdentifier = selectedLora.modelslabModelId;
+            } else {
+                 loraIdentifier = selectedLora.civitaiModelId;
+            }
+            
             if (!loraIdentifier) {
-                throw new Error(`The selected LoRA '${selectedLora.name}' is not configured for use with the ${selectedModel.engine} engine.`);
+                 throw new Error(`The selected LoRA '${selectedLora.name}' is not configured correctly for use with the ${selectedModel.engine} engine.`);
             }
 
             imageEngineConfig.lora = {
                 id: loraIdentifier,
-                versionId: loraVersion.id,
                 weight: loraWeight || 0.75,
-                triggerWords: loraVersion.triggerWords,
+                triggerWords: selectedLora.triggerWords,
             };
-
-            // Trigger words are now handled within the HF API call function
         }
         
         const imageResult = await generateCharacterImage({ description: finalDescription, engineConfig: imageEngineConfig });
