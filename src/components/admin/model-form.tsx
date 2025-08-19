@@ -104,7 +104,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
     const getExecutionIdLabel = () => {
         switch(watchEngine) {
             case 'vertexai': return 'Vertex AI Endpoint ID';
-            case 'comfyui': return 'Base Model Name (e.g., sdxl_base.safetensors)';
+            case 'comfyui': return 'Base Model Name (e.g., v1-5-pruned-emaonly.safetensors)';
             case 'huggingface': return 'Hugging Face Model ID';
             default: return 'Execution ID';
         }
@@ -112,7 +112,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
      const getExecutionIdPlaceholder = () => {
         switch(watchEngine) {
             case 'vertexai': return 'e.g., 1234567890123456789';
-            case 'comfyui': return 'sdxl_base.safetensors';
+            case 'comfyui': return 'v1-5-pruned-emaonly.safetensors';
             case 'huggingface': return 'e.g., stabilityai/sdxl';
             default: return 'Enter ID';
         }
