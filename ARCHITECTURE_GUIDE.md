@@ -96,5 +96,3 @@ Any part of the application that needs to upload a file to Firebase Storage **MU
 
 ### Implementation Rule
 All Zod schemas and TypeScript type definitions for a Genkit flow **MUST** reside in a dedicated `types.ts` file. The `flow.ts` file **MUST** contain only the flow's implementation logic and import its types.
-
-    
