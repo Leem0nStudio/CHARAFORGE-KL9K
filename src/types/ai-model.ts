@@ -18,6 +18,7 @@ export interface AiModel {
   hf_id: string; // Used for various IDs: HF ID, Vertex Endpoint ID, ModelsLab Model ID etc.
   civitaiModelId?: string;
   modelslabModelId?: string; 
+  versionId?: string; // Used by Civitai and ModelsLab
   baseModel?: string; // The base model identifier, e.g., "SDXL 1.0"
   coverMediaUrl?: string | null;
   coverMediaType?: 'image' | 'video';
@@ -38,9 +39,10 @@ export const UpsertModelSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   type: z.enum(['model', 'lora']),
   engine: z.enum(['huggingface', 'gemini', 'openrouter', 'vertexai', 'comfyui', 'modelslab']),
-  hf_id: z.string().min(1, 'Execution ID is required'),
+  hf_id: z.string().optional(), // Now optional at the base level
   civitaiModelId: z.string().optional(),
   modelslabModelId: z.string().optional(), 
+  versionId: z.string().optional(),
   baseModel: z.string().optional(),
   coverMediaUrl: z.string().url().nullable().optional(),
   coverMediaType: z.enum(['image', 'video']).optional(),
@@ -57,11 +59,18 @@ export const UpsertModelSchema = z.object({
   })).optional(),
   syncStatus: z.enum(['synced', 'syncing', 'notsynced']).optional(),
   vertexAiAlias: z.string().optional(),
-  // ComfyUI specific fields
   apiUrl: z.string().optional(),
   comfyWorkflow: z.any().optional(),
+}).refine(data => {
+    const requiredEngines = ['huggingface', 'vertexai', 'comfyui'];
+    if (requiredEngines.includes(data.engine)) {
+        return !!data.hf_id;
+    }
+    return true;
+}, {
+    message: "Execution ID is required for the selected engine.",
+    path: ["hf_id"], // Specify which field the error message applies to
 });
 
-export type UpsertAiModel = z.infer<typeof UpsertModelSchema>;
 
-    
+export type UpsertAiModel = z.infer<typeof UpsertModelSchema>;
