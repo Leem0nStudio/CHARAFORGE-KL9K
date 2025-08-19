@@ -32,6 +32,7 @@ export async function syncModelToStorage(modelId: string): Promise<ActionRespons
     const modelRef = adminDb.collection('ai_models').doc(modelId);
 
     try {
+        // This action specifically requires the system's Civitai API key from the environment.
         const civitaiApiKey = process.env.CIVITAI_API_KEY;
         if (!civitaiApiKey) {
             return { success: false, message: 'Civitai API key is not configured on the server. Please add it to your .env file.' };

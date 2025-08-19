@@ -105,7 +105,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
     const getExecutionIdLabel = () => {
         switch(watchEngine) {
             case 'vertexai': return 'Vertex AI Endpoint ID';
-            case 'comfyui': return 'Base Model Name (e.g., v1-5-pruned-emaonly.safetensors)';
+            case 'comfyui': return 'Default Base Model Filename';
             case 'huggingface': return 'Hugging Face Model ID';
             case 'modelslab': return 'ModelsLab Model ID';
             default: return 'Execution ID';
@@ -114,7 +114,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
      const getExecutionIdPlaceholder = () => {
         switch(watchEngine) {
             case 'vertexai': return 'e.g., 1234567890123456789';
-            case 'comfyui': return 'v1-5-pruned-emaonly.safetensors';
+            case 'comfyui': return 'e.g., v1-5-pruned-emaonly.safetensors';
             case 'huggingface': return 'e.g., stabilityai/sdxl';
             case 'modelslab': return 'e.g., 12345';
             default: return 'Enter ID';
@@ -337,5 +337,3 @@ export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: b
         </>
     );
 }
-
-    

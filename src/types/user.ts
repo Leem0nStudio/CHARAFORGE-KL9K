@@ -27,7 +27,6 @@ export type UserPreferences = {
     };
     huggingFaceApiKey?: string;
     openRouterApiKey?: string;
-    civitaiApiKey?: string;
 }
 
 /**
@@ -49,5 +48,3 @@ export interface UserProfile {
   preferences?: UserPreferences;
   avatarUpdatedAt?: number;
 }
-
-    

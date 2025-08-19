@@ -30,7 +30,7 @@ function SyncButton({ model }: { model: AiModel }) {
         });
     }
     
-    // Only show the sync button if the model is from Civitai and needs syncing.
+    // Only show the sync button if the model is from Civitai.
     if (!model.civitaiModelId) {
         return null;
     }

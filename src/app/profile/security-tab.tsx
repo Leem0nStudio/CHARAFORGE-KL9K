@@ -36,18 +36,15 @@ export function SecurityTab() {
 
   const [huggingFaceApiKey, setHuggingFaceApiKey] = useState(userProfile?.preferences?.huggingFaceApiKey || '');
   const [openRouterApiKey, setOpenRouterApiKey] = useState(userProfile?.preferences?.openRouterApiKey || '');
-  const [civitaiApiKey, setCivitaiApiKey] = useState(userProfile?.preferences?.civitaiApiKey || '');
 
 
   useEffect(() => {
     setHuggingFaceApiKey(userProfile?.preferences?.huggingFaceApiKey || '');
     setOpenRouterApiKey(userProfile?.preferences?.openRouterApiKey || '');
-    setCivitaiApiKey(userProfile?.preferences?.civitaiApiKey || '');
   }, [userProfile]);
 
   const hasHfKey = !!userProfile?.preferences?.huggingFaceApiKey;
   const hasOrKey = !!userProfile?.preferences?.openRouterApiKey;
-  const hasCtKey = !!userProfile?.preferences?.civitaiApiKey;
 
 
   const handleSavePreferences = () => {
@@ -57,7 +54,6 @@ export function SecurityTab() {
             ...userProfile.preferences,
             huggingFaceApiKey: huggingFaceApiKey.trim() === '' ? undefined : huggingFaceApiKey,
             openRouterApiKey: openRouterApiKey.trim() === '' ? undefined : openRouterApiKey,
-            civitaiApiKey: civitaiApiKey.trim() === '' ? undefined : civitaiApiKey,
         }
         const result = await updateUserPreferences(newPreferences);
         if (result.success) {
@@ -82,10 +78,9 @@ export function SecurityTab() {
     });
   };
   
-  const handleClearKey = (keyType: 'huggingFace' | 'openRouter' | 'civitai') => {
+  const handleClearKey = (keyType: 'huggingFace' | 'openRouter') => {
       if(keyType === 'huggingFace') setHuggingFaceApiKey('');
       if(keyType === 'openRouter') setOpenRouterApiKey('');
-      if(keyType === 'civitai') setCivitaiApiKey('');
       toast({ title: "Key Cleared", description: "Press 'Save API Keys' to confirm this change."})
   }
 
@@ -149,33 +144,6 @@ export function SecurityTab() {
                     {hasOrKey ? "An API key is configured and will be used." : "No key set. The system default key will be used."}
                 </div>
             </div>
-            
-            <Separator />
-            
-             <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                    <Label htmlFor="ct-api-key" className="flex items-center gap-2">
-                        <KeyRound /> Civitai API Key
-                    </Label>
-                     <Link href="https://civitai.com/user/account" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
-                        <Info className="h-3 w-3" /> Where do I find this?
-                    </Link>
-                </div>
-                 <div className="flex items-center gap-2">
-                    <Input 
-                        id="ct-api-key" 
-                        type="password" 
-                        placeholder={hasCtKey ? '•••••••••••••••••••••••' : 'Enter your key...'}
-                        value={civitaiApiKey}
-                        onChange={(e) => setCivitaiApiKey(e.target.value)}
-                    />
-                     {civitaiApiKey && <Button variant="ghost" type="button" onClick={() => handleClearKey('civitai')}>Clear</Button>}
-                </div>
-                <div className={cn("flex items-center text-xs gap-2", hasCtKey ? "text-green-500" : "text-amber-500")}>
-                    {hasCtKey ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4"/>}
-                    {hasCtKey ? "A Civitai API key is configured." : "No key set. Some features like model sync might be limited."}
-                </div>
-            </div>
 
             <Button onClick={handleSavePreferences} disabled={isSavingPrefs}>
                 {isSavingPrefs && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -216,5 +184,3 @@ export function SecurityTab() {
      </div>
   );
 }
-
-    

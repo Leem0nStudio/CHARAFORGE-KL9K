@@ -129,7 +129,7 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
         const userRef = adminDb.collection('users').doc(uid);
         
         // This ensures we are only trying to update the fields that exist in the UserPreferences type
-        const { theme, notifications, privacy, huggingFaceApiKey, openRouterApiKey, civitaiApiKey } = preferences;
+        const { theme, notifications, privacy, huggingFaceApiKey, openRouterApiKey } = preferences;
 
         // Use FieldValue.delete() to remove a field if the key is empty or undefined.
         // This is crucial for clearing keys.
@@ -139,7 +139,6 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
             'preferences.privacy': privacy,
             'preferences.huggingFaceApiKey': huggingFaceApiKey || FieldValue.delete(),
             'preferences.openRouterApiKey': openRouterApiKey || FieldValue.delete(),
-            'preferences.civitaiApiKey': civitaiApiKey || FieldValue.delete(),
         };
 
         await userRef.update(preferencesToUpdate);
