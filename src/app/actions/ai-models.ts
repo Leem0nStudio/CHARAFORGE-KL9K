@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -35,7 +36,27 @@ async function getCivitaiModelInfo(modelId: string): Promise<any> {
     return response.json();
 }
 
-async function getModelsLabModelInfo(modelId: string): Promise<any> {
+async function getModelsLabModelInfo(modelIdOrSlug: string): Promise<any> {
+    // If the input is numeric, assume it's an ID. Otherwise, it's a slug.
+    const isSlug = isNaN(parseInt(modelIdOrSlug, 10));
+    let modelId = modelIdOrSlug;
+
+    if (isSlug) {
+        // If it's a slug, we first need to search for it to get the numeric ID.
+        const searchUrl = `https://modelslab.com/api/v1/models/search?query=${encodeURIComponent(modelIdOrSlug)}`;
+        const searchResponse = await fetch(searchUrl, { cache: 'no-store' });
+        if (!searchResponse.ok) {
+            throw new Error(`Failed to search for model slug on ModelsLab. Status: ${searchResponse.status}`);
+        }
+        const searchResults = await searchResponse.json();
+        const foundModel = searchResults?.models?.[0];
+        
+        if (!foundModel?.id) {
+             throw new Error(`Could not find a model on ModelsLab matching the identifier: "${modelIdOrSlug}". Please check the ID or slug.`);
+        }
+        modelId = foundModel.id;
+    }
+
     const url = `https://modelslab.com/api/v1/models/${modelId}`;
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
