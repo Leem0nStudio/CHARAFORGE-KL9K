@@ -26,7 +26,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
 
     const form = useForm<UpsertAiModel>({
         resolver: zodResolver(UpsertModelSchema),
-        defaultValues: model ? { ...model, triggerWords: model.triggerWords?.join(', ') } : {
+        defaultValues: model ? { ...model, comfyWorkflow: model.comfyWorkflow ? JSON.stringify(model.comfyWorkflow, null, 2) : '', triggerWords: model.triggerWords?.join(', ') } : {
             name: '',
             type: 'lora',
             engine: 'huggingface',
@@ -36,12 +36,27 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
             baseModel: '',
             triggerWords: '',
             vertexAiAlias: '',
+            apiUrl: '',
+            comfyWorkflow: '',
         },
     });
 
     const onSubmit = (values: UpsertAiModel) => {
         startTransition(async () => {
-            const result = await upsertModel({ ...values, id: model?.id });
+             // Attempt to parse workflow if it's a string
+            let finalValues = { ...values };
+            if (values.engine === 'comfyui' && typeof values.comfyWorkflow === 'string' && values.comfyWorkflow.trim()) {
+                try {
+                    finalValues.comfyWorkflow = JSON.parse(values.comfyWorkflow);
+                } catch (e) {
+                    toast({ variant: 'destructive', title: 'Invalid JSON', description: 'The ComfyUI workflow is not valid JSON.' });
+                    return;
+                }
+            } else if (values.engine !== 'comfyui') {
+                 finalValues.comfyWorkflow = undefined;
+            }
+
+            const result = await upsertModel({ ...finalValues, id: model?.id });
             if (result.success) {
                 toast({ title: 'Success', description: result.message });
                 setIsOpen(false);
@@ -85,9 +100,23 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
 
     const watchEngine = form.watch('engine');
     const watchType = form.watch('type');
-
-    const executionIdLabel = watchEngine === 'vertexai' ? 'Vertex AI Endpoint ID' : 'Execution ID (e.g. Hugging Face ID)';
-    const executionIdPlaceholder = watchEngine === 'vertexai' ? 'e.g., 1234567890123456789' : "e.g., stabilityai/sdxl";
+    
+    const getExecutionIdLabel = () => {
+        switch(watchEngine) {
+            case 'vertexai': return 'Vertex AI Endpoint ID';
+            case 'comfyui': return 'Base Model Name (e.g., sdxl_base.safetensors)';
+            case 'huggingface': return 'Hugging Face Model ID';
+            default: return 'Execution ID';
+        }
+    }
+     const getExecutionIdPlaceholder = () => {
+        switch(watchEngine) {
+            case 'vertexai': return 'e.g., 1234567890123456789';
+            case 'comfyui': return 'sdxl_base.safetensors';
+            case 'huggingface': return 'e.g., stabilityai/sdxl';
+            default: return 'Enter ID';
+        }
+    }
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -139,6 +168,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
+                                                    <SelectItem value="comfyui">ComfyUI / A1111</SelectItem>
                                                     <SelectItem value="vertexai">Vertex AI</SelectItem>
                                                     <SelectItem value="gemini">Gemini</SelectItem>
                                                     <SelectItem value="huggingface">Hugging Face / Gradio</SelectItem>
@@ -148,10 +178,19 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                         )}
                                     />
                                 </div>
+
+                                {watchEngine === 'comfyui' && (
+                                     <div className="space-y-2 col-span-2">
+                                        <Label>ComfyUI Server URL</Label>
+                                        <Input {...form.register('apiUrl')} placeholder="http://your-server-ip:8188/prompt" />
+                                     </div>
+                                )}
+                                
                                 <div className="space-y-2 col-span-2">
-                                    <Label>{executionIdLabel}</Label>
-                                    <Input {...form.register('hf_id')} placeholder={executionIdPlaceholder} />
+                                    <Label>{getExecutionIdLabel()}</Label>
+                                    <Input {...form.register('hf_id')} placeholder={getExecutionIdPlaceholder()} />
                                 </div>
+
                                 {watchType === 'model' && (
                                     <div className="space-y-2 col-span-2">
                                         <Label>Base Model Identifier</Label>
@@ -183,6 +222,24 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                         />
                                     </div>
                                 )}
+
+                                {watchEngine === 'comfyui' && (
+                                     <div className="space-y-2 col-span-2">
+                                        <Label>ComfyUI Workflow (JSON)</Label>
+                                        <Controller
+                                            name="comfyWorkflow"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Textarea
+                                                    {...field}
+                                                    placeholder='Paste your ComfyUI API format workflow here...'
+                                                    className="min-h-32 font-mono text-xs"
+                                                />
+                                            )}
+                                        />
+                                     </div>
+                                )}
+
                                 {isEditing && (
                                     <div className="space-y-2 col-span-2">
                                         <Label>Cover Image</Label>
@@ -282,3 +339,5 @@ export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: b
         </>
     );
 }
+
+    

@@ -3,12 +3,63 @@
 
 /**
  * @fileOverview An AI agent for generating character images.
- * This flow is now fully data-driven by the engineConfig object and uses the HF Inference API.
+ * This flow is now fully data-driven by the engineConfig object and can support a centralized ComfyUI server.
  */
 import { ai } from '@/ai/genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
 import type { GenerationCommonOptions } from 'genkit/ai';
 import { GoogleAuth } from 'google-auth-library';
+
+
+/**
+ * Queries a ComfyUI server instance.
+ * @param {object} data The payload including the prompt, API URL, and workflow.
+ * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
+ */
+async function queryComfyUI(data: { apiUrl: string; prompt: string; workflow: object; }): Promise<string> {
+    // This is a placeholder for the actual ComfyUI workflow manipulation.
+    // In a real scenario, we would modify the workflow JSON with the new prompt.
+    const workflowWithPrompt = {
+        ...data.workflow,
+        // This is a simplified example. The actual implementation would need to find
+        // the correct node (e.g., a KSampler) and update its 'text' field.
+        "prompt": {
+            ...((data.workflow as any).prompt || {}),
+            "6": {
+                ...((data.workflow as any).prompt?.["6"] || {}),
+                "inputs": {
+                    ...((data.workflow as any).prompt?.["6"]?.inputs || {}),
+                    "text": data.prompt,
+                }
+            }
+        }
+    };
+
+    const response = await fetch(data.apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: workflowWithPrompt }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`ComfyUI server request failed: ${errorText}`);
+    }
+
+    const result = await response.json();
+    const images = result?.output?.images;
+
+    if (!images || images.length === 0) {
+        throw new Error("ComfyUI server did not return any images.");
+    }
+    
+    // The ComfyUI API typically returns image data that needs to be fetched from another endpoint.
+    // This is a simplified example assuming a direct data URI is somehow returned or constructed.
+    const imageData = images[0]; // Assuming first image is the one we want.
+    // This part would need to be adapted based on the actual ComfyUI API response format.
+    // For now, we assume a placeholder response.
+    return `data:image/png;base64,${imageData}`;
+}
 
 
 // Helper function to get image dimensions in pixels.
@@ -132,6 +183,16 @@ const generateCharacterImageFlow = ai.defineFlow(
             const message = error instanceof Error ? error.message : `An unknown error occurred with the Gemini engine.`;
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
+    } else if (engineId === 'comfyui') {
+        if (!engineConfig.apiUrl || !engineConfig.comfyWorkflow) {
+             throw new Error("ComfyUI engine requires an API URL and a workflow JSON.");
+        }
+        imageUrl = await queryComfyUI({
+            apiUrl: engineConfig.apiUrl,
+            prompt: finalDescription,
+            workflow: engineConfig.comfyWorkflow,
+        });
+
     } else if (engineId === 'vertexai' && modelId) {
         let projectId: string | undefined;
         let serviceAccount: any;
@@ -154,14 +215,17 @@ const generateCharacterImageFlow = ai.defineFlow(
 
         const location = 'us-central1';
         // The `modelId` in this case is the Vertex AI Endpoint ID
-        const endpointUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelId}:predict`;
+        const endpointUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/endpoints/${modelId}:predict`;
 
         const { width, height } = getDimensions(aspectRatio);
         const payload: any = {
-            instances: [{ "prompt": finalDescription }],
-            parameters: { "sample_count": 1 }
-            // Note: Vertex AI's standard SDXL endpoint does not support LoRAs in the same way as ComfyUI or HF.
-            // This would need a custom container for full LoRA support, as we discussed.
+          "instances": [
+              { "prompt": finalDescription }
+          ],
+          "parameters": {
+              "width": width,
+              "height": height
+          }
         };
         
         try {
@@ -259,3 +323,5 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
+
+    
