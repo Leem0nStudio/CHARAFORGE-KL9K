@@ -208,6 +208,119 @@ async function queryCustomEndpointAPI(data: {
     }
 }
 
+/**
+ * Queries Google Vertex AI Model Garden for image generation.
+ * This allows users to use Google Cloud's managed Stable Diffusion models.
+ * @param {object} data The payload including inputs, endpoint ID, and optional LoRA configuration.
+ * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
+ */
+async function queryVertexAIAPI(data: { 
+    inputs: string, 
+    endpointId: string, 
+    aspectRatio?: string,
+    lora?: any
+}): Promise<string> {
+    const { inputs, endpointId, aspectRatio, lora } = data;
+    
+    try {
+        // Import Vertex AI configuration
+        const { getVertexAIModelByEndpointId, getDefaultVertexAILocation } = await import('@/lib/vertex-ai-config');
+        
+        // Get project ID from service account
+        let projectId: string | undefined;
+        try {
+            if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+                const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+                projectId = serviceAccount.project_id;
+            }
+        } catch (e) {
+            throw new Error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY to get Project ID.");
+        }
+
+        if (!projectId) {
+            throw new Error("Could not determine Google Cloud Project ID from server environment.");
+        }
+
+        // Try to find a matching Vertex AI model configuration
+        const modelConfig = getVertexAIModelByEndpointId(endpointId);
+        const location = modelConfig?.location || getDefaultVertexAILocation();
+        
+        const endpointUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/endpoints/${endpointId}:predict`;
+
+        // Use configuration if available, otherwise use defaults
+        const settings = modelConfig?.defaultSettings || {
+            guidanceScale: 7.5,
+            numInferenceSteps: 20,
+            sampleCount: 1,
+        };
+
+        // Prepare the payload for Vertex AI
+        const payload: any = {
+            instances: [
+                { 
+                    "text": inputs,
+                    // Add LoRA configuration if provided
+                    ...(lora?.vertexAiAlias && { "lora": lora.vertexAiAlias })
+                }
+            ],
+            parameters: {
+                "width": aspectRatio === '16:9' ? 1344 : aspectRatio === '9:16' ? 768 : 1024,
+                "height": aspectRatio === '16:9' ? 768 : aspectRatio === '9:16' ? 1344 : 1024,
+                "sampleCount": settings.sampleCount,
+                "guidanceScale": settings.guidanceScale,
+                "numInferenceSteps": settings.numInferenceSteps,
+            }
+        };
+
+        // Import Google Auth library
+        const { GoogleAuth } = await import('google-auth-library');
+        
+        // Authenticate using service account
+        const auth = new GoogleAuth({
+            credentials: JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY!),
+            scopes: 'https://www.googleapis.com/auth/cloud-platform',
+        });
+        
+        const client = await auth.getClient();
+        
+        const response = await client.request({
+            url: endpointUrl,
+            method: 'POST',
+            data: payload,
+        });
+
+        const responseData = response.data as any;
+        const prediction = responseData?.predictions?.[0];
+        
+        if (prediction?.bytesBase64Encoded) {
+            return `data:image/png;base64,${prediction.bytesBase64Encoded}`;
+        } else if (prediction?.image) {
+            // Alternative response format
+            return `data:image/png;base64,${prediction.image}`;
+        } else {
+            console.error("Vertex AI response did not contain an image:", JSON.stringify(responseData, null, 2));
+            throw new Error("The Vertex AI model responded, but did not return a valid image.");
+        }
+
+    } catch (error: any) {
+        console.error("Vertex AI API Error:", error);
+        
+        // Provide user-friendly error messages
+        if (error.response?.status === 401) {
+            throw new Error('Authentication failed. Please check your Google Cloud service account configuration.');
+        }
+        if (error.response?.status === 404) {
+            throw new Error('Vertex AI endpoint not found. Please check the endpoint ID.');
+        }
+        if (error.response?.status === 503) {
+            throw new Error('Vertex AI endpoint is currently unavailable. Please try again later.');
+        }
+        
+        const errorMessage = error.response?.data?.error?.message || error.message || "An unknown error occurred.";
+        throw new Error(`Failed to generate image via Vertex AI. Error: ${errorMessage}`);
+    }
+}
+
 export async function generateCharacterImage(
   input: GenerateCharacterImageInput
 ): Promise<GenerateCharacterImageOutput> {
@@ -265,6 +378,30 @@ const generateCharacterImageFlow = ai.defineFlow(
 
         } catch (error) {
             console.error("Error in Hugging Face flow:", error);
+            const message = error instanceof Error ? error.message : "An unknown error occurred.";
+            throw new Error(message);
+        }
+    } else if (engineId === 'vertexai') {
+        try {
+            if (!modelId) {
+                throw new Error("Vertex AI endpoint ID is required for this engine.");
+            }
+
+            // Append LoRA trigger words to the prompt if applicable
+            let finalDescription = description;
+            if (lora?.triggerWords && lora.triggerWords.length > 0) {
+                 finalDescription = `${lora.triggerWords.join(', ')}, ${description}`;
+            }
+
+            imageUrl = await queryVertexAIAPI({ 
+                inputs: finalDescription,
+                endpointId: modelId,
+                aspectRatio: aspectRatio,
+                lora: lora,
+            });
+
+        } catch (error) {
+            console.error("Error in Vertex AI flow:", error);
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
             throw new Error(message);
         }

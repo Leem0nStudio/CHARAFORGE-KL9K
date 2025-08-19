@@ -142,34 +142,63 @@ flowchart TD
     EE --> FF[Redirigir a Galería]
 ```
 
-## 🎨 Flujo de Endpoints Personalizados (NUEVO)
+## 🎨 Flujo de Vertex AI Model Garden (NUEVO)
 
 ```mermaid
 flowchart TD
-    A[Seleccionar Modelo Custom] --> B[Configurar Endpoint]
-    B --> C{¿URL Configurada?}
-    C -->|No| D[Error: URL Requerida]
-    C -->|Sí| E[Validar Endpoint]
+    A[Seleccionar Modelo Vertex AI] --> B[Configurar Endpoint ID]
+    B --> C{¿Endpoint ID Configurado?}
+    C -->|No| D[Error: Endpoint ID Requerido]
+    C -->|Sí| E[Validar Configuración]
     
-    E --> F[Test de Conectividad]
-    F --> G{¿Endpoint Accesible?}
-    G -->|No| H[Error de Conectividad]
-    G -->|Sí| I[Preparar Payload]
+    E --> F[Obtener Project ID del Service Account]
+    F --> G[Construir URL de Vertex AI]
+    G --> H[Autenticar con Google Cloud]
     
-    I --> J[Configurar Parámetros SD]
-    J --> K[Enviar Request POST]
-    K --> L{¿Response Válido?}
-    L -->|No| M[Error de Response]
-    L -->|Sí| N[Procesar Imagen]
+    H --> I{¿Autenticación Exitosa?}
+    I -->|No| J[Error de Autenticación]
+    I -->|Sí| K[Preparar Payload]
     
-    N --> O{¿Formato de Imagen?}
-    O -->|Base64| P[Convertir a Data URI]
-    O -->|Binary| Q[Convertir Blob a Base64]
+    K --> L[Configurar Parámetros SD]
+    L --> M[Incluir LoRA si está configurado]
+    M --> N[Enviar Request a Vertex AI]
     
-    P --> R[Imagen Generada]
-    Q --> R
-    R --> S[Mostrar en UI]
-    S --> T[Guardar en Base de Datos]
+    N --> O{¿Response Válido?}
+    O -->|No| P[Error de Response]
+    O -->|Sí| Q[Procesar Imagen Base64]
+    
+    Q --> R[Convertir a Data URI]
+    R --> S[Imagen Generada]
+    S --> T[Mostrar en UI]
+    T --> U[Guardar en Base de Datos]
+```
+
+## 🔧 Flujo de Configuración de Vertex AI
+
+```mermaid
+flowchart TD
+    A[Configurar Google Cloud] --> B[Habilitar Vertex AI API]
+    B --> C[Crear Service Account]
+    C --> D[Asignar Permisos IAM]
+    
+    D --> E[Desplegar Modelo en Endpoint]
+    E --> F[Obtener Endpoint ID]
+    F --> G[Configurar en CharaForge]
+    
+    G --> H[Editar vertex-ai-config.ts]
+    H --> I[Actualizar Endpoint ID]
+    I --> J[Configurar Parámetros por Defecto]
+    J --> K[Reiniciar Aplicación]
+    
+    K --> L[Probar Generación]
+    L --> M{¿Funciona?}
+    M -->|No| N[Debug y Ajustar]
+    M -->|Sí| O[Configuración Completada]
+    
+    N --> P[Revisar Logs]
+    P --> Q[Verificar Permisos]
+    Q --> R[Probar Endpoint]
+    R --> L
 ```
 
 ## 📦 Flujo de DataPacks
