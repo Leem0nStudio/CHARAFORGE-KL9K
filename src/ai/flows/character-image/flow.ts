@@ -13,32 +13,36 @@ import { GoogleAuth } from 'google-auth-library';
 
 /**
  * Queries a ComfyUI server instance.
+ * It intelligently finds the main positive prompt node in a workflow and replaces its text.
  * @param {object} data The payload including the prompt, API URL, and workflow.
  * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
  */
 async function queryComfyUI(data: { apiUrl: string; prompt: string; workflow: object; }): Promise<string> {
-    // This is a placeholder for the actual ComfyUI workflow manipulation.
-    // In a real scenario, we would modify the workflow JSON with the new prompt.
-    const workflowWithPrompt = {
-        ...data.workflow,
-        // This is a simplified example. The actual implementation would need to find
-        // the correct node (e.g., a KSampler) and update its 'text' field.
-        "prompt": {
-            ...((data.workflow as any).prompt || {}),
-            "6": {
-                ...((data.workflow as any).prompt?.["6"] || {}),
-                "inputs": {
-                    ...((data.workflow as any).prompt?.["6"]?.inputs || {}),
-                    "text": data.prompt,
-                }
-            }
+    const workflow = JSON.parse(JSON.stringify(data.workflow)); // Deep copy to avoid mutation
+    
+    // Find the node for the positive prompt. Usually a 'CLIPTextEncode' node.
+    // This is a common pattern in ComfyUI workflows.
+    let promptNodeId: string | null = null;
+    for (const nodeId in workflow) {
+        if (workflow[nodeId].class_type === 'CLIPTextEncode' || workflow[nodeId].class_type === 'CLIP Text Encode (Prompt)') {
+            // Heuristic: assume the first one we find is the positive prompt.
+            // A more robust solution might involve naming conventions in the workflow.
+            promptNodeId = nodeId;
+            break;
         }
-    };
+    }
+
+    if (!promptNodeId) {
+        throw new Error("Could not find a 'CLIPTextEncode' node in the provided ComfyUI workflow to insert the prompt.");
+    }
+    
+    // Update the prompt text in the identified node.
+    workflow[promptNodeId].inputs.text = data.prompt;
 
     const response = await fetch(data.apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: workflowWithPrompt }),
+        body: JSON.stringify({ prompt: workflow }),
     });
 
     if (!response.ok) {
@@ -53,12 +57,20 @@ async function queryComfyUI(data: { apiUrl: string; prompt: string; workflow: ob
         throw new Error("ComfyUI server did not return any images.");
     }
     
-    // The ComfyUI API typically returns image data that needs to be fetched from another endpoint.
-    // This is a simplified example assuming a direct data URI is somehow returned or constructed.
-    const imageData = images[0]; // Assuming first image is the one we want.
-    // This part would need to be adapted based on the actual ComfyUI API response format.
-    // For now, we assume a placeholder response.
-    return `data:image/png;base64,${imageData}`;
+    // This part requires a specific ComfyUI setup. We assume the API returns
+    // image data directly or through another fetchable URL. For now, we'll
+    // assume a simplified direct data URI construction is possible.
+    const imageData = images[0]; // Assuming first image
+    const imageResponse = await fetch(`${data.apiUrl.replace('/prompt', '/view')}?filename=${imageData.filename}&subfolder=${imageData.subfolder}&type=${imageData.type}`);
+    
+    if (!imageResponse.ok) {
+        throw new Error("Failed to fetch the generated image from ComfyUI's /view endpoint.");
+    }
+
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const base64Image = Buffer.from(imageBuffer).toString('base64');
+    
+    return `data:image/png;base64,${base64Image}`;
 }
 
 
