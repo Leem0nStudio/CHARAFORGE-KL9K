@@ -18,22 +18,20 @@ import { GoogleAuth } from 'google-auth-library';
  * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
  */
 async function queryComfyUI(data: { apiUrl: string; prompt: string; workflow: object; }): Promise<string> {
-    const workflow = JSON.parse(JSON.stringify(data.workflow)); // Deep copy to avoid mutation
+    // Deep copy to avoid mutating the original workflow object from the database.
+    const workflow = JSON.parse(JSON.stringify(data.workflow)); 
     
-    // Find the node for the positive prompt. Usually a 'CLIPTextEncode' node.
-    // This is a common pattern in ComfyUI workflows.
+    // Heuristic: Find the main positive prompt node. This is a common pattern in ComfyUI workflows.
     let promptNodeId: string | null = null;
     for (const nodeId in workflow) {
         if (workflow[nodeId].class_type === 'CLIPTextEncode' || workflow[nodeId].class_type === 'CLIP Text Encode (Prompt)') {
-            // Heuristic: assume the first one we find is the positive prompt.
-            // A more robust solution might involve naming conventions in the workflow.
             promptNodeId = nodeId;
             break;
         }
     }
 
     if (!promptNodeId) {
-        throw new Error("Could not find a 'CLIPTextEncode' node in the provided ComfyUI workflow to insert the prompt.");
+        throw new Error("Could not find a 'CLIPTextEncode' node in the ComfyUI workflow. The workflow must have a standard positive prompt input node.");
     }
     
     // Update the prompt text in the identified node.
@@ -47,24 +45,28 @@ async function queryComfyUI(data: { apiUrl: string; prompt: string; workflow: ob
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`ComfyUI server request failed: ${errorText}`);
+        console.error("ComfyUI Server Error Response:", errorText);
+        throw new Error(`ComfyUI server request failed with status ${response.status}. Please check the server logs.`);
     }
 
     const result = await response.json();
     const images = result?.output?.images;
 
-    if (!images || images.length === 0) {
-        throw new Error("ComfyUI server did not return any images.");
+    if (!images || images.length === 0 || !images[0].filename) {
+        console.error("ComfyUI Server Invalid Response:", JSON.stringify(result, null, 2));
+        throw new Error("ComfyUI server did not return any valid image data in its response.");
     }
     
-    // This part requires a specific ComfyUI setup. We assume the API returns
-    // image data directly or through another fetchable URL. For now, we'll
-    // assume a simplified direct data URI construction is possible.
-    const imageData = images[0]; // Assuming first image
-    const imageResponse = await fetch(`${data.apiUrl.replace('/prompt', '/view')}?filename=${imageData.filename}&subfolder=${imageData.subfolder}&type=${imageData.type}`);
+    // The ComfyUI /view endpoint requires the server address. We extract it from the API URL.
+    const serverAddress = data.apiUrl.substring(0, data.apiUrl.lastIndexOf('/prompt'));
+    const imageUrl = `${serverAddress}/view?filename=${images[0].filename}&subfolder=${images[0].subfolder || ''}&type=${images[0].type || 'output'}`;
+    
+    const imageResponse = await fetch(imageUrl);
     
     if (!imageResponse.ok) {
-        throw new Error("Failed to fetch the generated image from ComfyUI's /view endpoint.");
+        const errorText = await imageResponse.text();
+        console.error("ComfyUI Image Fetch Error:", errorText);
+        throw new Error(`Failed to fetch the generated image from ComfyUI's /view endpoint. Status: ${imageResponse.status}`);
     }
 
     const imageBuffer = await imageResponse.arrayBuffer();
