@@ -42,7 +42,7 @@ import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/types";
 import { PromptTagInput } from "./prompt-tag-input";
 import type { DataPack, PromptTemplate } from "@/types/datapack";
-import { imageModels, textModels } from "@/lib/app-config";
+import { imageModels, textModels, geminiImagePlaceholder } from "@/lib/app-config";
 import type { User } from "firebase/auth";
 
 
@@ -146,31 +146,27 @@ export function CharacterGenerator({ authUser }: { authUser: User | null }) {
   
   useEffect(() => {
     async function loadInitialData() {
-        if (!authUser) {
-            setIsLoadingModels(false);
-            // For logged-out users, just show the static default models
-            generationForm.setValue('selectedModel', imageModels[0] || undefined);
-            setAvailableModels(imageModels);
-            return;
-        };
-
         setIsLoadingModels(true);
         try {
             const packIdFromUrl = searchParams.get('packId');
             
             const [userModels, userLoras, initialPackData] = await Promise.all([
-                getModels('model', authUser.uid),
-                getModels('lora', authUser.uid),
+                authUser ? getModels('model', authUser.uid) : Promise.resolve([]),
+                authUser ? getModels('lora', authUser.uid) : Promise.resolve([]),
                 packIdFromUrl ? getDataPackForAdmin(packIdFromUrl) : Promise.resolve(null),
             ]);
             
-            setAvailableModels(userModels);
+            // Combine user models with static system models, ensuring no duplicates.
+            const allAvailableModels = new Map<string, AiModel>();
+            [geminiImagePlaceholder, ...imageModels, ...userModels].forEach(m => allAvailableModels.set(m.id, m));
+
+            setAvailableModels(Array.from(allAvailableModels.values()));
             setAvailableLoras(userLoras);
             
             // Set a default model if one isn't already set or if the current one isn't in the new list
             const currentModel = generationForm.getValues('selectedModel');
-            if (!currentModel || !userModels.find(m => m.id === currentModel.id)) {
-                generationForm.setValue('selectedModel', userModels[0] || imageModels[0]);
+            if (!currentModel || !Array.from(allAvailableModels.values()).find(m => m.id === currentModel.id)) {
+                generationForm.setValue('selectedModel', geminiImagePlaceholder);
             }
             
             if (initialPackData) {
@@ -700,3 +696,5 @@ export function CharacterGenerator({ authUser }: { authUser: User | null }) {
     </>
   );
 }
+
+    
