@@ -22,6 +22,7 @@ const optionalServerVars = [
     'HUGGING_FACE_API_KEY', 
     'OPENROUTER_API_KEY', 
     'CIVITAI_API_KEY',
+    'MODELSLAB_API_KEY',
     'MODELS_STORAGE_BUCKET'
 ];
 

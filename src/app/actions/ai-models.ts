@@ -37,20 +37,28 @@ async function getCivitaiModelInfo(modelId: string): Promise<any> {
 }
 
 async function getModelsLabModelInfo(modelIdOrSlug: string): Promise<any> {
-    // **CORRECTED LOGIC**: Use the v6 endpoint that accepts both slugs and numeric IDs directly.
-    // This is more robust and avoids the search step which was failing.
+    const apiKey = process.env.MODELSLAB_API_KEY;
+    if (!apiKey) {
+        throw new Error("ModelsLab API key is not configured on the server. Please add MODELSLAB_API_KEY to your .env file.");
+    }
     const url = `https://modelslab.com/api/v6/model/${modelIdOrSlug}`;
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKey
+        },
+        cache: 'no-store'
+    });
     if (!response.ok) {
         let errorBody = `Status: ${response.status}`;
         try {
             const errorJson = await response.json();
-             // ModelsLab often returns a 'detail' field with the error message
             errorBody += ` ${errorJson.detail || JSON.stringify(errorJson)}`;
         } catch(e) {
              errorBody += ` ${response.statusText}`;
         }
-        throw new Error(`Could not find a model on ModelsLab matching the identifier: "${modelIdOrSlug}". Please check the ID or slug.`);
+        throw new Error(`Could not find a model on ModelsLab matching the identifier: "${modelIdOrSlug}". Please check the ID or slug. ${errorBody}`);
     }
     return response.json();
 }

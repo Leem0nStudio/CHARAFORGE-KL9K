@@ -158,10 +158,31 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
  * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
  */
 async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId?: string, loraWeight?: number }): Promise<string> {
+    const systemApiKey = process.env.MODELSLAB_API_KEY;
+    if (!systemApiKey) {
+        throw new Error("The system administrator has not configured an API key for ModelsLab. This service is unavailable.");
+    }
+    
     const apiUrl = 'https://modelslab.com/api/v6/images/text2img';
     const payload: any = {
+        key: systemApiKey,
         prompt: data.prompt,
         model_id: data.modelId,
+        negative_prompt: "ugly, bad, deformed, distorted",
+        width: "1024",
+        height: "1024",
+        samples: "1",
+        num_inference_steps: "30",
+        safety_checker: "no",
+        enhance_prompt: "yes",
+        seed: null,
+        guidance_scale: 7.5,
+        multi_lingual: "no",
+        panorama: "no",
+        self_attention: "no",
+        upscale: "no",
+        webhook: null,
+        track_id: null,
     };
     
     if (data.loraId && data.loraWeight) {
@@ -188,11 +209,29 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
         
         const result = await response.json();
         
-        if (result && result.output && result.output.length > 0) {
+        // Handle different response structures from ModelsLab
+        if (result.status === 'success' && result.output && result.output.length > 0) {
             return result.output[0];
+        } else if (result.status === 'processing') {
+            // If it's processing, we need to poll the fetch_result endpoint
+            const fetchUrl = result.fetch_result;
+            for (let i = 0; i < 10; i++) { // Poll up to 10 times
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+                const fetchResponse = await fetch(fetchUrl, { method: 'POST', body: JSON.stringify({ key: systemApiKey }), headers: { 'Content-Type': 'application/json' } });
+                const fetchResult = await fetchResponse.json();
+                if (fetchResult.status === 'success' && fetchResult.output && fetchResult.output.length > 0) {
+                    return fetchResult.output[0];
+                } else if (fetchResult.status === 'error') {
+                    throw new Error(`ModelsLab fetch failed: ${fetchResult.message}`);
+                }
+                // If still 'processing', continue loop
+            }
+            throw new Error('ModelsLab processing timed out.');
+        } else if (result.status === 'error') {
+             throw new Error(`ModelsLab API error: ${result.message}`);
         }
         
-        throw new Error('ModelsLab API did not return a valid image.');
+        throw new Error('ModelsLab API did not return a valid image or status.');
 
     } catch (error) {
         console.error("ModelsLab API Error:", error);
@@ -398,5 +437,3 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
-
-    
