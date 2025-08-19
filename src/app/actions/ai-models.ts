@@ -46,7 +46,7 @@ async function getModelsLabModelInfo(modelIdOrSlug: string): Promise<any> {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': apiKey // **CRITICAL FIX**: Added the API Key here.
+            'X-API-Key': apiKey,
         },
         cache: 'no-store'
     });
@@ -58,7 +58,7 @@ async function getModelsLabModelInfo(modelIdOrSlug: string): Promise<any> {
         } catch(e) {
              errorBody += ` ${response.statusText}`;
         }
-        throw new Error(`Could not find a model on ModelsLab matching the identifier: "${modelIdOrSlug}". Please check the ID or slug. ${errorBody}`);
+        throw new Error(`Could not find a model on ModelsLab matching the identifier: "${modelIdOrSlug}". ${errorBody}`);
     }
     return response.json();
 }

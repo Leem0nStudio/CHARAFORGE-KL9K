@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -24,6 +25,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
     const { toast } = useToast();
     const isEditing = !!model;
     const [importSource, setImportSource] = useState<'civitai' | 'modelslab'>('civitai');
+    const [sourceModelId, setSourceModelId] = useState('');
 
     const form = useForm<UpsertAiModel>({
         resolver: zodResolver(UpsertModelSchema),
@@ -82,7 +84,6 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
     };
     
     const handleSourceImport = () => {
-        const sourceModelId = form.getValues('civitaiModelId'); // Using one field for both for simplicity
         if (!sourceModelId) {
             toast({ variant: 'destructive', title: 'Error', description: `A Model ID from ${importSource} is required.`});
             return;
@@ -269,7 +270,12 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="sourceModelId">Model ID from {importSource}</Label>
-                                        <Input {...form.register('civitaiModelId')} id="sourceModelId" placeholder="e.g., 9251" />
+                                        <Input
+                                            id="sourceModelId"
+                                            placeholder="e.g., 9251 or a-text-slug"
+                                            value={sourceModelId}
+                                            onChange={(e) => setSourceModelId(e.target.value)}
+                                        />
                                     </div>
                                      <Button type="button" onClick={handleSourceImport} disabled={isProcessing} className="w-full">
                                         {isProcessing && <Loader2 className="animate-spin mr-2"/>}
