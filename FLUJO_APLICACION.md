@@ -36,30 +36,40 @@ graph TD
     U -->|No| W[Guardar Personaje]
     
     V --> X[Selector de Modelo]
-    X --> Y[AI Image Engine]
-    Y --> Z[Imagen Generada]
-    Z --> W
+    X --> Y{¿Tipo de Motor?}
+    Y -->|Hugging Face| Z[HF Inference API]
+    Y -->|Gemini| AA[Google Gemini API]
+    Y -->|OpenRouter| BB[OpenRouter API]
+    Y -->|Custom Endpoint| CC[Stable Diffusion Personalizado]
+    Y -->|Vertex AI| DD[Google Vertex AI]
     
-    W --> AA[Firestore Database]
-    AA --> BB[Galería Personal]
+    Z --> EE[Imagen Generada]
+    AA --> EE
+    BB --> EE
+    CC --> EE
+    DD --> EE
     
-    I --> CC[Ver Personajes]
-    CC --> DD[Editar/Compartir]
-    DD --> EE[Cambiar Status]
-    EE --> FF[Actualizar Base de Datos]
+    EE --> W
+    W --> FF[Firestore Database]
+    FF --> GG[Galería Personal]
     
-    J --> GG[Explorar DataPacks]
-    GG --> HH[Usar DataPack]
-    HH --> M
+    I --> HH[Ver Personajes]
+    HH --> II[Editar/Compartir]
+    II --> JJ[Cambiar Status]
+    JJ --> KK[Actualizar Base de Datos]
     
-    K --> II[Configuración de Perfil]
-    II --> JJ[API Keys Personales]
-    JJ --> KK[Preferencias]
+    J --> LL[Explorar DataPacks]
+    LL --> MM[Usar DataPack]
+    MM --> M
     
-    L --> LL[Gestión de Contenido]
-    LL --> MM[Crear/Editar DataPacks]
-    LL --> NN[Gestionar Usuarios]
-    LL --> OO[Configurar Modelos AI]
+    K --> NN[Configuración de Perfil]
+    NN --> OO[API Keys Personales]
+    OO --> PP[Preferencias]
+    
+    L --> QQ[Gestión de Contenido]
+    QQ --> RR[Crear/Editar DataPacks]
+    QQ --> SS[Gestionar Usuarios]
+    QQ --> TT[Configurar Modelos AI]
 ```
 
 ## 🔐 Flujo de Autenticación
@@ -106,13 +116,60 @@ flowchart TD
     N -->|No| O[Guardar Solo Bio]
     N -->|Sí| P[Configurar Motor de Imagen]
     
-    P --> Q[Generar Imagen]
-    Q --> R{¿Imagen Generada?}
-    R -->|No| S[Error de Imagen]
-    R -->|Sí| T[Subir a Firebase Storage]
+    P --> Q{¿Tipo de Motor?}
+    Q -->|Hugging Face| R[HF Inference API]
+    Q -->|Gemini| S[Google Gemini]
+    Q -->|OpenRouter| T[OpenRouter API]
+    Q -->|Custom| U[Endpoint Personalizado]
+    Q -->|Vertex AI| V[Google Vertex AI]
     
-    T --> U[Guardar Personaje Completo]
-    U --> V[Redirigir a Galería]
+    U --> W[Configurar URL Personalizada]
+    W --> X[Validar Endpoint]
+    X --> Y{¿Endpoint Válido?}
+    Y -->|No| Z[Error de Endpoint]
+    Y -->|Sí| AA[Generar Imagen]
+    
+    R --> AA
+    S --> AA
+    T --> AA
+    V --> AA
+    
+    AA --> BB{¿Imagen Generada?}
+    BB -->|No| CC[Error de Imagen]
+    BB -->|Sí| DD[Subir a Firebase Storage]
+    
+    DD --> EE[Guardar Personaje Completo]
+    EE --> FF[Redirigir a Galería]
+```
+
+## 🎨 Flujo de Endpoints Personalizados (NUEVO)
+
+```mermaid
+flowchart TD
+    A[Seleccionar Modelo Custom] --> B[Configurar Endpoint]
+    B --> C{¿URL Configurada?}
+    C -->|No| D[Error: URL Requerida]
+    C -->|Sí| E[Validar Endpoint]
+    
+    E --> F[Test de Conectividad]
+    F --> G{¿Endpoint Accesible?}
+    G -->|No| H[Error de Conectividad]
+    G -->|Sí| I[Preparar Payload]
+    
+    I --> J[Configurar Parámetros SD]
+    J --> K[Enviar Request POST]
+    K --> L{¿Response Válido?}
+    L -->|No| M[Error de Response]
+    L -->|Sí| N[Procesar Imagen]
+    
+    N --> O{¿Formato de Imagen?}
+    O -->|Base64| P[Convertir a Data URI]
+    O -->|Binary| Q[Convertir Blob a Base64]
+    
+    P --> R[Imagen Generada]
+    Q --> R
+    R --> S[Mostrar en UI]
+    S --> T[Guardar en Base de Datos]
 ```
 
 ## 📦 Flujo de DataPacks
@@ -225,6 +282,11 @@ flowchart TD
 - **Ubicación**: `verifyAndGetUid` en cada acción
 - **Riesgo**: Lógica duplicada y posible inconsistencia
 
+### 7. **Endpoints Personalizados (NUEVO)**
+- **Problema**: Validación de endpoints personalizados no centralizada
+- **Ubicación**: `custom-endpoints.ts` y `character-image/flow.ts`
+- **Riesgo**: Inconsistencias en configuración y manejo de errores
+
 ## 🎯 Recomendaciones para Mejorar Consistencia
 
 1. **Centralizar Gestión de Estado**: Usar un store global (Zustand/Redux)
@@ -233,3 +295,5 @@ flowchart TD
 4. **Automatizar Revalidación**: Usar middleware de revalidación
 5. **Consolidar Lógica de Archivos**: Centralizar en servicios únicos
 6. **Implementar Middleware de Auth**: Verificación automática en rutas protegidas
+7. **Centralizar Configuración de Endpoints**: Sistema unificado para gestión de endpoints personalizados
+8. **Validación Automática de Endpoints**: Health checks automáticos para endpoints personalizados

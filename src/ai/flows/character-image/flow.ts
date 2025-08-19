@@ -86,6 +86,127 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
     }
 }
 
+/**
+ * Queries a custom endpoint for image generation.
+ * This allows users to use their own Stable Diffusion instances or other custom services.
+ * @param {object} data The payload including inputs, endpoint URL, and optional API key.
+ * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
+ */
+async function queryCustomEndpointAPI(data: { 
+    inputs: string, 
+    endpointUrl: string, 
+    userApiKey?: string,
+    aspectRatio?: string 
+}): Promise<string> {
+    const { inputs, endpointUrl, userApiKey, aspectRatio } = data;
+    
+    try {
+        // Import custom endpoint configuration
+        const { getCustomEndpoint } = await import('@/lib/custom-endpoints');
+        
+        // Try to find a matching custom endpoint configuration
+        const endpointConfig = getCustomEndpoint(endpointUrl) || 
+                              Object.values(await import('@/lib/custom-endpoints')).find(
+                                  config => config.url === endpointUrl
+                              );
+        
+        // Use configuration if available, otherwise use defaults
+        const settings = endpointConfig?.defaultSettings || {
+            numInferenceSteps: 20,
+            guidanceScale: 7.5,
+            negativePrompt: "blurry, low quality, distorted, deformed, ugly, bad anatomy",
+        };
+        
+        // Prepare the payload for Stable Diffusion
+        const payload = {
+            prompt: inputs,
+            negative_prompt: settings.negativePrompt,
+            num_inference_steps: settings.numInferenceSteps,
+            guidance_scale: settings.guidanceScale,
+            width: aspectRatio === '16:9' ? 1344 : aspectRatio === '9:16' ? 768 : 1024,
+            height: aspectRatio === '16:9' ? 768 : aspectRatio === '9:16' ? 1344 : 1024,
+            // Additional Stable Diffusion parameters
+            sampler_name: "DPM++ 2M Karras", // Common sampler for good quality
+            cfg_scale: settings.guidanceScale,
+            restore_faces: true, // Better face generation
+            tiling: false, // Disable tiling for character images
+        };
+
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+
+        // Add API key if provided
+        if (userApiKey) {
+            headers['Authorization'] = `Bearer ${userApiKey}`;
+        }
+
+        const response = await fetch(endpointUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`Custom Endpoint API Error (${response.status}):`, errorBody);
+            
+            if (response.status === 401) {
+                throw new Error('Authentication failed. Please check your API key.');
+            }
+            if (response.status === 404) {
+                throw new Error('Custom endpoint not found. Please check the URL.');
+            }
+            if (response.status === 503) {
+                throw new Error('Custom endpoint is currently unavailable. Please try again later.');
+            }
+            
+            throw new Error(`Custom endpoint request failed with status ${response.status}.`);
+        }
+
+        // Handle different response formats
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+            // JSON response (common for some Stable Diffusion APIs)
+            const jsonResponse = await response.json();
+            
+            if (jsonResponse.image) {
+                // Base64 encoded image
+                return `data:image/png;base64,${jsonResponse.image}`;
+            } else if (jsonResponse.images && jsonResponse.images.length > 0) {
+                // Array of base64 images
+                return `data:image/png;base64,${jsonResponse.images[0]}`;
+            } else if (jsonResponse.data && jsonResponse.data.length > 0) {
+                // Alternative format for some APIs
+                const imageData = jsonResponse.data[0];
+                if (typeof imageData === 'string') {
+                    return `data:image/png;base64,${imageData}`;
+                }
+            } else {
+                throw new Error('Custom endpoint returned JSON but no image data found.');
+            }
+        } else {
+            // Binary image response
+            const imageBlob = await response.blob();
+            if (!imageBlob.type.startsWith('image/')) {
+                throw new Error('Custom endpoint did not return a valid image file.');
+            }
+
+            const arrayBuffer = await imageBlob.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            const base64Image = buffer.toString('base64');
+            const mimeType = imageBlob.type;
+            
+            return `data:${mimeType};base64,${base64Image}`;
+        }
+
+    } catch (error) {
+        console.error("Custom Endpoint API Error:", error);
+        const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        throw new Error(`Failed to generate image via custom endpoint. Error: ${message}`);
+    }
+}
 
 export async function generateCharacterImage(
   input: GenerateCharacterImageInput
@@ -101,7 +222,7 @@ const generateCharacterImageFlow = ai.defineFlow(
   },
   async (input) => {
     const { description, engineConfig } = input;
-    const { engineId, modelId, aspectRatio, userApiKey, lora } = engineConfig;
+    const { engineId, modelId, aspectRatio, userApiKey, lora, customEndpointUrl, customApiKey } = engineConfig;
     
     let imageUrl: string | undefined;
 
@@ -144,6 +265,30 @@ const generateCharacterImageFlow = ai.defineFlow(
 
         } catch (error) {
             console.error("Error in Hugging Face flow:", error);
+            const message = error instanceof Error ? error.message : "An unknown error occurred.";
+            throw new Error(message);
+        }
+    } else if (engineId === 'custom') {
+        try {
+            if (!customEndpointUrl) {
+                throw new Error("Custom endpoint URL is required for custom engine.");
+            }
+
+            // Append LoRA trigger words to the prompt if applicable
+            let finalDescription = description;
+            if (lora?.triggerWords && lora.triggerWords.length > 0) {
+                 finalDescription = `${lora.triggerWords.join(', ')}, ${description}`;
+            }
+
+            imageUrl = await queryCustomEndpointAPI({ 
+                inputs: finalDescription,
+                endpointUrl: customEndpointUrl,
+                userApiKey: customApiKey || userApiKey,
+                aspectRatio: aspectRatio,
+            });
+
+        } catch (error) {
+            console.error("Error in Custom Endpoint flow:", error);
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
             throw new Error(message);
         }

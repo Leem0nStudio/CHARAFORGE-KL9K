@@ -14,6 +14,17 @@ export const imageModels: AiModel[] = [
         coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
         createdAt: new Date(),
         updatedAt: new Date(),
+    },
+    {
+        id: 'custom-stable-diffusion-illustrious',
+        name: 'Stable Diffusion Illustrious (Custom)',
+        type: 'model',
+        engine: 'custom',
+        hf_id: 'stable-diffusion-illustrious',
+        customEndpointUrl: 'http://localhost:7860/api/predict', // Default local endpoint
+        coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
+        createdAt: new Date(),
+        updatedAt: new Date(),
     }
 ];
 

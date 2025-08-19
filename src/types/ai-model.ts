@@ -14,7 +14,7 @@ export interface AiModel {
   id: string;
   name: string;
   type: 'model' | 'lora';
-  engine: 'huggingface' | 'gemini' | 'openrouter' | 'vertexai';
+  engine: 'huggingface' | 'gemini' | 'openrouter' | 'vertexai' | 'custom';
   hf_id: string;
   civitaiModelId?: string;
   versionId?: string;
@@ -28,13 +28,15 @@ export interface AiModel {
   userId?: string; // If present, it's a user-specific model
   syncStatus?: SyncStatus;
   vertexAiAlias?: string; // Alias for Vertex AI LoRAs
+  customEndpointUrl?: string; // URL for custom endpoints
+  customApiKey?: string; // Optional API key for custom endpoints
 }
 
 export const UpsertModelSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, 'Name is required'),
   type: z.enum(['model', 'lora']),
-  engine: z.enum(['huggingface', 'gemini', 'openrouter', 'vertexai']),
+  engine: z.enum(['huggingface', 'gemini', 'openrouter', 'vertexai', 'custom']),
   hf_id: z.string().min(1, 'Execution ID is required'),
   civitaiModelId: z.string().optional(),
   versionId: z.string().optional(),
@@ -54,6 +56,8 @@ export const UpsertModelSchema = z.object({
   })).optional(),
   syncStatus: z.enum(['synced', 'syncing', 'notsynced']).optional(),
   vertexAiAlias: z.string().optional(),
+  customEndpointUrl: z.string().url().optional().describe('URL for custom endpoint (required when engine is "custom")'),
+  customApiKey: z.string().optional().describe('Optional API key for custom endpoint'),
 });
 
 export type UpsertAiModel = z.infer<typeof UpsertModelSchema>;
