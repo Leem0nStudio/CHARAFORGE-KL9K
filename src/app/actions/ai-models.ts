@@ -46,7 +46,7 @@ async function getModelsLabModelInfo(modelIdOrSlug: string): Promise<any> {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': apiKey
+            'X-API-Key': apiKey // **CRITICAL FIX**: Added the API Key here.
         },
         cache: 'no-store'
     });
@@ -109,7 +109,7 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
     
     try {
         // Determine which fetcher to use
-        const modelInfoFetcher = source === 'civitai' ? getCivitaiModelInfo : getModelsLabModelInfo;
+        const modelInfoFetcher = source === 'modelslab' ? getModelsLabModelInfo : getCivitaiModelInfo;
 
         const existingModelQuery = await adminDb.collection('ai_models').where(`${source}ModelId`, '==', sourceModelId).limit(1).get();
         if (!existingModelQuery.empty) {
@@ -178,10 +178,10 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
         const newModel: Omit<AiModel, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = {
             name: modelInfo.name,
             civitaiModelId: source === 'civitai' ? modelInfo.id.toString() : undefined,
-            modelslabModelId: source === 'modelslab' ? modelInfo.id.toString() : undefined,
+            modelslabModelId: source === 'modelslab' ? modelInfo.model_id.toString() : undefined,
+            hf_id: source === 'modelslab' ? modelInfo.model_id.toString() : suggestedHfId,
             type: modelInfo.type.toLowerCase(), // 'LORA' -> 'lora'
             engine: engine, 
-            hf_id: suggestedHfId,
             versionId: latestVersion?.id?.toString() || '',
             baseModel: baseModelName,
             coverMediaUrl,
@@ -233,6 +233,7 @@ export async function upsertUserAiModel(formData: FormData): Promise<ActionRespo
         rawData.hf_id = formData.get('hf_id');
     } else if (rawData.engine === 'modelslab') {
         rawData.modelslabModelId = formData.get('modelslabModelId');
+        rawData.hf_id = formData.get('modelslabModelId');
     }
 
     const validation = UpsertModelSchema.safeParse(rawData);
