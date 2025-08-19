@@ -104,6 +104,14 @@ const generateCharacterImageFlow = ai.defineFlow(
     const { engineId, modelId, aspectRatio, userApiKey, lora } = engineConfig;
     
     let imageUrl: string | undefined;
+    
+    // Centralized prompt construction
+    let finalDescription = description;
+    if (lora?.triggerWords && lora.triggerWords.length > 0) {
+        finalDescription = `${lora.triggerWords.join(', ')}, ${description}`;
+        console.log(`Using LoRA. Appended trigger words. New prompt: ${finalDescription}`);
+    }
+
 
     if (engineId === 'gemini') {
         // Standard Gemini image generation
@@ -111,7 +119,7 @@ const generateCharacterImageFlow = ai.defineFlow(
             const { width, height } = getDimensions(aspectRatio);
             const { media } = await ai.generate({
                 model: 'googleai/gemini-2.0-flash-preview-image-generation',
-                prompt: description,
+                prompt: finalDescription,
                 config: {
                     responseModalities: ['TEXT', 'IMAGE'],
                     width,
@@ -145,20 +153,16 @@ const generateCharacterImageFlow = ai.defineFlow(
         }
 
         const location = 'us-central1';
-        const endpointUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/endpoints/${modelId}:predict`;
+        // The `modelId` in this case is the Vertex AI Endpoint ID
+        const endpointUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelId}:predict`;
 
         const { width, height } = getDimensions(aspectRatio);
         const payload: any = {
-            instances: [{ "text": description }],
-            parameters: { "width": width, "height": height, "sampleCount": 1 }
+            instances: [{ "prompt": finalDescription }],
+            parameters: { "sample_count": 1 }
+            // Note: Vertex AI's standard SDXL endpoint does not support LoRAs in the same way as ComfyUI or HF.
+            // This would need a custom container for full LoRA support, as we discussed.
         };
-        
-        if (lora && lora.id) {
-            payload.parameters.lora_id = lora.id;
-            if (lora.weight) {
-                payload.parameters.lora_weight_alpha = lora.weight;
-            }
-        }
         
         try {
             const auth = new GoogleAuth({
@@ -193,12 +197,7 @@ const generateCharacterImageFlow = ai.defineFlow(
                 throw new Error("Hugging Face model ID is required for this engine.");
             }
 
-            // Append LoRA trigger words to the prompt if applicable
-            let finalDescription = description;
-            if (lora?.triggerWords && lora.triggerWords.length > 0) {
-                 finalDescription = `${lora.triggerWords.join(', ')}, ${description}`;
-            }
-
+            // The trigger words are already prepended to finalDescription
             imageUrl = await queryHuggingFaceInferenceAPI({ 
                 inputs: finalDescription,
                 modelId: modelId,
@@ -224,7 +223,7 @@ const generateCharacterImageFlow = ai.defineFlow(
 
             const { media } = await ai.generate({
                 model: modelId,
-                prompt: description,
+                prompt: finalDescription,
                 config: {
                     apiKey: apiKey,
                     provider: 'openai',
@@ -260,5 +259,3 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
-
-    
