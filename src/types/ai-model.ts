@@ -14,7 +14,7 @@ export interface AiModel {
   id: string;
   name: string;
   type: 'model' | 'lora';
-  engine: 'huggingface' | 'gemini' | 'openrouter' | 'vertexai' | 'comfyui';
+  engine: 'huggingface' | 'gemini' | 'openrouter' | 'vertexai' | 'comfyui' | 'modelslab';
   hf_id: string; // Used for various IDs: HF ID, Vertex Endpoint ID, Comfy model name
   civitaiModelId?: string;
   modelslabModelId?: string; // New field for ModelsLab
@@ -38,7 +38,7 @@ export const UpsertModelSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, 'Name is required'),
   type: z.enum(['model', 'lora']),
-  engine: z.enum(['huggingface', 'gemini', 'openrouter', 'vertexai', 'comfyui']),
+  engine: z.enum(['huggingface', 'gemini', 'openrouter', 'vertexai', 'comfyui', 'modelslab']),
   hf_id: z.string().min(1, 'Execution ID is required'),
   civitaiModelId: z.string().optional(),
   modelslabModelId: z.string().optional(), // New field for ModelsLab
@@ -65,3 +65,5 @@ export const UpsertModelSchema = z.object({
 });
 
 export type UpsertAiModel = z.infer<typeof UpsertModelSchema>;
+
+    

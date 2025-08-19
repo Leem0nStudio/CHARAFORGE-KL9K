@@ -26,7 +26,8 @@ export type UserPreferences = {
         profileVisibility: 'public' | 'private';
     };
     huggingFaceApiKey?: string;
-    openRouterApiKey?: string; 
+    openRouterApiKey?: string;
+    civitaiApiKey?: string;
 }
 
 /**
@@ -48,3 +49,5 @@ export interface UserProfile {
   preferences?: UserPreferences;
   avatarUpdatedAt?: number;
 }
+
+    

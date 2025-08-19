@@ -50,7 +50,7 @@ export type Character = {
   physicalDescription?: string | null;
   // Engine Info
   textEngine?: 'gemini' | 'openrouter';
-  imageEngine?: 'gemini' | 'openrouter' | 'huggingface' | 'vertexai';
+  imageEngine?: 'gemini' | 'openrouter' | 'huggingface' | 'vertexai' | 'comfyui' | 'modelslab';
   // Wizard Data
   wizardData?: Record<string, string> | null;
 };
@@ -79,7 +79,9 @@ export const SaveCharacterInputSchema = z.object({
   equipment: z.array(z.string()).optional(),
   physicalDescription: z.string().optional(),
   textEngine: z.enum(['gemini', 'openrouter']).optional(),
-  imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai']).optional(),
+  imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai', 'comfyui', 'modelslab']).optional(),
   wizardData: z.record(z.string()).optional().nullable(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
+
+    

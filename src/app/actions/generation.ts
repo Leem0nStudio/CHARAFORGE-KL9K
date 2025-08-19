@@ -127,6 +127,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         const imageEngineConfig: ImageEngineConfig = {
             engineId: selectedModel.engine,
             modelId: selectedModel.engine !== 'gemini' ? selectedModel.hf_id : undefined,
+            versionId: selectedModel.versionId, // Pass versionId for engines like ModelsLab
             aspectRatio,
             userApiKey: userApiKey,
         };
@@ -173,3 +174,5 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         return { success: false, message: 'Failed to generate portrait.', error: message };
     }
 }
+
+    

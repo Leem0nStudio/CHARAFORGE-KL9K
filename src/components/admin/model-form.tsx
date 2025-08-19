@@ -107,6 +107,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
             case 'vertexai': return 'Vertex AI Endpoint ID';
             case 'comfyui': return 'Base Model Name (e.g., v1-5-pruned-emaonly.safetensors)';
             case 'huggingface': return 'Hugging Face Model ID';
+            case 'modelslab': return 'ModelsLab Model ID';
             default: return 'Execution ID';
         }
     }
@@ -115,6 +116,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
             case 'vertexai': return 'e.g., 1234567890123456789';
             case 'comfyui': return 'v1-5-pruned-emaonly.safetensors';
             case 'huggingface': return 'e.g., stabilityai/sdxl';
+            case 'modelslab': return 'e.g., 12345';
             default: return 'Enter ID';
         }
     }
@@ -172,7 +174,8 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                                     <SelectItem value="comfyui">ComfyUI / A1111</SelectItem>
                                                     <SelectItem value="vertexai">Vertex AI</SelectItem>
                                                     <SelectItem value="gemini">Gemini</SelectItem>
-                                                    <SelectItem value="huggingface">Hugging Face / Gradio</SelectItem>
+                                                    <SelectItem value="huggingface">Hugging Face</SelectItem>
+                                                    <SelectItem value="modelslab">ModelsLab</SelectItem>
                                                     <SelectItem value="openrouter">OpenRouter</SelectItem>
                                                 </SelectContent>
                                             </Select>
@@ -191,6 +194,15 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                     <Label>{getExecutionIdLabel()}</Label>
                                     <Input {...form.register('hf_id')} placeholder={getExecutionIdPlaceholder()} />
                                 </div>
+                                
+                                {(watchEngine === 'modelslab' || watchEngine === 'huggingface') && (
+                                     <div className="space-y-2 col-span-2">
+                                        <Label>Model Version ID</Label>
+                                        <Input {...form.register('versionId')} placeholder="e.g., 45678 (for ModelsLab)" />
+                                        <p className="text-xs text-muted-foreground">Required for some engines like ModelsLab to specify which version to use for generation.</p>
+                                    </div>
+                                )}
+
 
                                 {watchType === 'model' && (
                                     <div className="space-y-2 col-span-2">
@@ -325,3 +337,5 @@ export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: b
         </>
     );
 }
+
+    

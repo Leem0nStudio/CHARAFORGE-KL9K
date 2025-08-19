@@ -152,6 +152,49 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
 }
 
 
+/**
+ * Queries the ModelsLab Inference API.
+ * @param {object} data The payload including the prompt and model version ID.
+ * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
+ */
+async function queryModelsLabAPI(data: { prompt: string, versionId: string }): Promise<string> {
+    const apiUrl = 'https://modelslab.com/api/v1/image/generation';
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                prompt: data.prompt,
+                model_id: data.versionId,
+            }),
+        });
+        
+        if (!response.ok) {
+             const errorBody = await response.text();
+             console.error(`ModelsLab API Error (${response.status}):`, errorBody);
+             throw new Error(`ModelsLab API request failed with status ${response.status}.`);
+        }
+        
+        const result = await response.json();
+        
+        // ModelsLab can return the image directly in the response
+        if (result && result.output && result.output.length > 0) {
+            // The result is already a Base64 encoded Data URI
+            return result.output[0];
+        }
+        
+        throw new Error('ModelsLab API did not return a valid image.');
+
+    } catch (error) {
+        console.error("ModelsLab API Error:", error);
+        const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        throw new Error(`Failed to generate image via ModelsLab. Error: ${message}`);
+    }
+}
+
+
 export async function generateCharacterImage(
   input: GenerateCharacterImageInput
 ): Promise<GenerateCharacterImageOutput> {
@@ -197,6 +240,15 @@ const generateCharacterImageFlow = ai.defineFlow(
             const message = error instanceof Error ? error.message : `An unknown error occurred with the Gemini engine.`;
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
+    } else if (engineId === 'modelslab') {
+        if (!engineConfig.versionId) {
+             throw new Error("ModelsLab engine requires a model Version ID for generation.");
+        }
+        imageUrl = await queryModelsLabAPI({
+            prompt: finalDescription,
+            versionId: engineConfig.versionId,
+        });
+
     } else if (engineId === 'comfyui') {
         if (!engineConfig.apiUrl || !engineConfig.comfyWorkflow) {
              throw new Error("ComfyUI engine requires an API URL and a workflow JSON.");
