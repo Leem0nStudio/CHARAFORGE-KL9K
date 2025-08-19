@@ -14,6 +14,39 @@ export const imageModels: AiModel[] = [
         coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
         createdAt: new Date(),
         updatedAt: new Date(),
+    },
+    {
+        id: 'vertexai-stable-diffusion-illustrious',
+        name: 'Stable Diffusion Illustrious (Vertex AI)',
+        type: 'model',
+        engine: 'vertexai',
+        hf_id: '1497098330914684928', // Vertex AI Endpoint ID for Illustrious
+        description: 'High-quality Stable Diffusion Illustrious model hosted on Google Cloud Vertex AI',
+        coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    },
+    {
+        id: 'vertexai-sdxl-1-0',
+        name: 'Stable Diffusion XL 1.0 (Vertex AI)',
+        type: 'model',
+        engine: 'vertexai',
+        hf_id: '1234567890123456789', // Replace with actual Vertex AI Endpoint ID
+        description: 'Stable Diffusion XL 1.0 hosted on Google Cloud Vertex AI',
+        coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    },
+    {
+        id: 'custom-stable-diffusion-illustrious',
+        name: 'Stable Diffusion Illustrious (Custom)',
+        type: 'model',
+        engine: 'custom',
+        hf_id: 'stable-diffusion-illustrious',
+        customEndpointUrl: 'http://localhost:7860/api/predict', // Default local endpoint
+        coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
+        createdAt: new Date(),
+        updatedAt: new Date(),
     }
 ];
 

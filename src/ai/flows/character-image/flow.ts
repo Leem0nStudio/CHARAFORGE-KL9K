@@ -86,6 +86,240 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
     }
 }
 
+/**
+ * Queries a custom endpoint for image generation.
+ * This allows users to use their own Stable Diffusion instances or other custom services.
+ * @param {object} data The payload including inputs, endpoint URL, and optional API key.
+ * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
+ */
+async function queryCustomEndpointAPI(data: { 
+    inputs: string, 
+    endpointUrl: string, 
+    userApiKey?: string,
+    aspectRatio?: string 
+}): Promise<string> {
+    const { inputs, endpointUrl, userApiKey, aspectRatio } = data;
+    
+    try {
+        // Import custom endpoint configuration
+        const { getCustomEndpoint } = await import('@/lib/custom-endpoints');
+        
+        // Try to find a matching custom endpoint configuration
+        const endpointConfig = getCustomEndpoint(endpointUrl) || 
+                              Object.values(await import('@/lib/custom-endpoints')).find(
+                                  config => config.url === endpointUrl
+                              );
+        
+        // Use configuration if available, otherwise use defaults
+        const settings = endpointConfig?.defaultSettings || {
+            numInferenceSteps: 20,
+            guidanceScale: 7.5,
+            negativePrompt: "blurry, low quality, distorted, deformed, ugly, bad anatomy",
+        };
+        
+        // Prepare the payload for Stable Diffusion
+        const payload = {
+            prompt: inputs,
+            negative_prompt: settings.negativePrompt,
+            num_inference_steps: settings.numInferenceSteps,
+            guidance_scale: settings.guidanceScale,
+            width: aspectRatio === '16:9' ? 1344 : aspectRatio === '9:16' ? 768 : 1024,
+            height: aspectRatio === '16:9' ? 768 : aspectRatio === '9:16' ? 1344 : 1024,
+            // Additional Stable Diffusion parameters
+            sampler_name: "DPM++ 2M Karras", // Common sampler for good quality
+            cfg_scale: settings.guidanceScale,
+            restore_faces: true, // Better face generation
+            tiling: false, // Disable tiling for character images
+        };
+
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+
+        // Add API key if provided
+        if (userApiKey) {
+            headers['Authorization'] = `Bearer ${userApiKey}`;
+        }
+
+        const response = await fetch(endpointUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`Custom Endpoint API Error (${response.status}):`, errorBody);
+            
+            if (response.status === 401) {
+                throw new Error('Authentication failed. Please check your API key.');
+            }
+            if (response.status === 404) {
+                throw new Error('Custom endpoint not found. Please check the URL.');
+            }
+            if (response.status === 503) {
+                throw new Error('Custom endpoint is currently unavailable. Please try again later.');
+            }
+            
+            throw new Error(`Custom endpoint request failed with status ${response.status}.`);
+        }
+
+        // Handle different response formats
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+            // JSON response (common for some Stable Diffusion APIs)
+            const jsonResponse = await response.json();
+            
+            if (jsonResponse.image) {
+                // Base64 encoded image
+                return `data:image/png;base64,${jsonResponse.image}`;
+            } else if (jsonResponse.images && jsonResponse.images.length > 0) {
+                // Array of base64 images
+                return `data:image/png;base64,${jsonResponse.images[0]}`;
+            } else if (jsonResponse.data && jsonResponse.data.length > 0) {
+                // Alternative format for some APIs
+                const imageData = jsonResponse.data[0];
+                if (typeof imageData === 'string') {
+                    return `data:image/png;base64,${imageData}`;
+                }
+            } else {
+                throw new Error('Custom endpoint returned JSON but no image data found.');
+            }
+        } else {
+            // Binary image response
+            const imageBlob = await response.blob();
+            if (!imageBlob.type.startsWith('image/')) {
+                throw new Error('Custom endpoint did not return a valid image file.');
+            }
+
+            const arrayBuffer = await imageBlob.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            const base64Image = buffer.toString('base64');
+            const mimeType = imageBlob.type;
+            
+            return `data:${mimeType};base64,${base64Image}`;
+        }
+
+    } catch (error) {
+        console.error("Custom Endpoint API Error:", error);
+        const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        throw new Error(`Failed to generate image via custom endpoint. Error: ${message}`);
+    }
+}
+
+/**
+ * Queries Google Vertex AI Model Garden for image generation.
+ * This allows users to use Google Cloud's managed Stable Diffusion models.
+ * @param {object} data The payload including inputs, endpoint ID, and optional LoRA configuration.
+ * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
+ */
+async function queryVertexAIAPI(data: { 
+    inputs: string, 
+    endpointId: string, 
+    aspectRatio?: string,
+    lora?: any
+}): Promise<string> {
+    const { inputs, endpointId, aspectRatio, lora } = data;
+    
+    try {
+        // Import Vertex AI configuration
+        const { getVertexAIModelByEndpointId, getDefaultVertexAILocation } = await import('@/lib/vertex-ai-config');
+        
+        // Get project ID from service account
+        let projectId: string | undefined;
+        try {
+            if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+                const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+                projectId = serviceAccount.project_id;
+            }
+        } catch (e) {
+            throw new Error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY to get Project ID.");
+        }
+
+        if (!projectId) {
+            throw new Error("Could not determine Google Cloud Project ID from server environment.");
+        }
+
+        // Try to find a matching Vertex AI model configuration
+        const modelConfig = getVertexAIModelByEndpointId(endpointId);
+        const location = modelConfig?.location || getDefaultVertexAILocation();
+        
+        const endpointUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/endpoints/${endpointId}:predict`;
+
+        // Use configuration if available, otherwise use defaults
+        const settings = modelConfig?.defaultSettings || {
+            guidanceScale: 7.5,
+            numInferenceSteps: 20,
+            sampleCount: 1,
+        };
+
+        // Prepare the payload for Vertex AI
+        const payload: any = {
+            instances: [
+                { 
+                    "text": inputs,
+                    // Add LoRA configuration if provided
+                    ...(lora?.vertexAiAlias && { "lora": lora.vertexAiAlias })
+                }
+            ],
+            parameters: {
+                "width": aspectRatio === '16:9' ? 1344 : aspectRatio === '9:16' ? 768 : 1024,
+                "height": aspectRatio === '16:9' ? 768 : aspectRatio === '9:16' ? 1344 : 1024,
+                "sampleCount": settings.sampleCount,
+                "guidanceScale": settings.guidanceScale,
+                "numInferenceSteps": settings.numInferenceSteps,
+            }
+        };
+
+        // Import Google Auth library
+        const { GoogleAuth } = await import('google-auth-library');
+        
+        // Authenticate using service account
+        const auth = new GoogleAuth({
+            credentials: JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY!),
+            scopes: 'https://www.googleapis.com/auth/cloud-platform',
+        });
+        
+        const client = await auth.getClient();
+        
+        const response = await client.request({
+            url: endpointUrl,
+            method: 'POST',
+            data: payload,
+        });
+
+        const responseData = response.data as any;
+        const prediction = responseData?.predictions?.[0];
+        
+        if (prediction?.bytesBase64Encoded) {
+            return `data:image/png;base64,${prediction.bytesBase64Encoded}`;
+        } else if (prediction?.image) {
+            // Alternative response format
+            return `data:image/png;base64,${prediction.image}`;
+        } else {
+            console.error("Vertex AI response did not contain an image:", JSON.stringify(responseData, null, 2));
+            throw new Error("The Vertex AI model responded, but did not return a valid image.");
+        }
+
+    } catch (error: any) {
+        console.error("Vertex AI API Error:", error);
+        
+        // Provide user-friendly error messages
+        if (error.response?.status === 401) {
+            throw new Error('Authentication failed. Please check your Google Cloud service account configuration.');
+        }
+        if (error.response?.status === 404) {
+            throw new Error('Vertex AI endpoint not found. Please check the endpoint ID.');
+        }
+        if (error.response?.status === 503) {
+            throw new Error('Vertex AI endpoint is currently unavailable. Please try again later.');
+        }
+        
+        const errorMessage = error.response?.data?.error?.message || error.message || "An unknown error occurred.";
+        throw new Error(`Failed to generate image via Vertex AI. Error: ${errorMessage}`);
+    }
+}
 
 export async function generateCharacterImage(
   input: GenerateCharacterImageInput
@@ -101,7 +335,7 @@ const generateCharacterImageFlow = ai.defineFlow(
   },
   async (input) => {
     const { description, engineConfig } = input;
-    const { engineId, modelId, aspectRatio, userApiKey, lora } = engineConfig;
+    const { engineId, modelId, aspectRatio, userApiKey, lora, customEndpointUrl, customApiKey } = engineConfig;
     
     let imageUrl: string | undefined;
 
@@ -144,6 +378,54 @@ const generateCharacterImageFlow = ai.defineFlow(
 
         } catch (error) {
             console.error("Error in Hugging Face flow:", error);
+            const message = error instanceof Error ? error.message : "An unknown error occurred.";
+            throw new Error(message);
+        }
+    } else if (engineId === 'vertexai') {
+        try {
+            if (!modelId) {
+                throw new Error("Vertex AI endpoint ID is required for this engine.");
+            }
+
+            // Append LoRA trigger words to the prompt if applicable
+            let finalDescription = description;
+            if (lora?.triggerWords && lora.triggerWords.length > 0) {
+                 finalDescription = `${lora.triggerWords.join(', ')}, ${description}`;
+            }
+
+            imageUrl = await queryVertexAIAPI({ 
+                inputs: finalDescription,
+                endpointId: modelId,
+                aspectRatio: aspectRatio,
+                lora: lora,
+            });
+
+        } catch (error) {
+            console.error("Error in Vertex AI flow:", error);
+            const message = error instanceof Error ? error.message : "An unknown error occurred.";
+            throw new Error(message);
+        }
+    } else if (engineId === 'custom') {
+        try {
+            if (!customEndpointUrl) {
+                throw new Error("Custom endpoint URL is required for custom engine.");
+            }
+
+            // Append LoRA trigger words to the prompt if applicable
+            let finalDescription = description;
+            if (lora?.triggerWords && lora.triggerWords.length > 0) {
+                 finalDescription = `${lora.triggerWords.join(', ')}, ${description}`;
+            }
+
+            imageUrl = await queryCustomEndpointAPI({ 
+                inputs: finalDescription,
+                endpointUrl: customEndpointUrl,
+                userApiKey: customApiKey || userApiKey,
+                aspectRatio: aspectRatio,
+            });
+
+        } catch (error) {
+            console.error("Error in Custom Endpoint flow:", error);
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
             throw new Error(message);
         }
