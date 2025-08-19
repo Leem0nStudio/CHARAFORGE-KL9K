@@ -37,37 +37,20 @@ async function getCivitaiModelInfo(modelId: string): Promise<any> {
 }
 
 async function getModelsLabModelInfo(modelIdOrSlug: string): Promise<any> {
-    // If the input is numeric, assume it's an ID. Otherwise, it's a slug.
-    const isSlug = isNaN(parseInt(modelIdOrSlug, 10));
-    let modelId = modelIdOrSlug;
-
-    if (isSlug) {
-        // If it's a slug, we first need to search for it to get the numeric ID.
-        const searchUrl = `https://modelslab.com/api/v1/models/search?query=${encodeURIComponent(modelIdOrSlug)}`;
-        const searchResponse = await fetch(searchUrl, { cache: 'no-store' });
-        if (!searchResponse.ok) {
-            throw new Error(`Failed to search for model slug on ModelsLab. Status: ${searchResponse.status}`);
-        }
-        const searchResults = await searchResponse.json();
-        const foundModel = searchResults?.models?.[0];
-        
-        if (!foundModel?.id) {
-             throw new Error(`Could not find a model on ModelsLab matching the identifier: "${modelIdOrSlug}". Please check the ID or slug.`);
-        }
-        modelId = foundModel.id;
-    }
-
-    const url = `https://modelslab.com/api/v1/models/${modelId}`;
+    // **CORRECTED LOGIC**: Use the v6 endpoint that accepts both slugs and numeric IDs directly.
+    // This is more robust and avoids the search step which was failing.
+    const url = `https://modelslab.com/api/v6/model/${modelIdOrSlug}`;
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
         let errorBody = `Status: ${response.status}`;
         try {
             const errorJson = await response.json();
-            errorBody += ` ${errorJson.error || JSON.stringify(errorJson)}`;
+             // ModelsLab often returns a 'detail' field with the error message
+            errorBody += ` ${errorJson.detail || JSON.stringify(errorJson)}`;
         } catch(e) {
              errorBody += ` ${response.statusText}`;
         }
-        throw new Error(`Failed to fetch model info from ModelsLab. ${errorBody}`);
+        throw new Error(`Could not find a model on ModelsLab matching the identifier: "${modelIdOrSlug}". Please check the ID or slug.`);
     }
     return response.json();
 }
