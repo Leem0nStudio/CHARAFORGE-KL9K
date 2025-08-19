@@ -135,11 +135,11 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
             coverMediaType = mediaInfo.type;
         }
 
-        let engine: AiModel['engine'] = 'huggingface';
+        let engine: AiModel['engine'] = source === 'modelslab' ? 'modelslab' : 'huggingface';
         let suggestedHfId = '';
         const baseModelName = latestVersion.baseModel;
 
-        if (baseModelName) {
+        if (baseModelName && engine === 'huggingface') {
             const baseModelQuery = await adminDb.collection('ai_models')
                 .where('type', '==', 'model')
                 .where('baseModel', '==', baseModelName)
@@ -208,14 +208,20 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
 export async function upsertUserAiModel(formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     
-    const rawData = {
+    const rawData: Record<string, any> = {
         id: formData.get('id') || undefined,
         name: formData.get('name'),
         type: formData.get('type'),
-        engine: 'huggingface', // Hardcoded as user models are currently only this type
-        hf_id: formData.get('hf_id'),
+        engine: formData.get('engine'),
         triggerWords: formData.get('triggerWords'),
     };
+    
+    // Add engine-specific IDs
+    if (rawData.engine === 'huggingface') {
+        rawData.hf_id = formData.get('hf_id');
+    } else if (rawData.engine === 'modelslab') {
+        rawData.modelslabModelId = formData.get('modelslabModelId');
+    }
 
     const validation = UpsertModelSchema.safeParse(rawData);
     if (!validation.success) {
@@ -308,35 +314,33 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
     };
 
     try {
+        // System models are always available to everyone
+        const systemModelsSnapshot = await adminDb
+          .collection('ai_models')
+          .where('type', '==', type)
+          .where('userId', '==', null)
+          .orderBy('createdAt', 'desc')
+          .get();
+        processSnapshot(systemModelsSnapshot);
+
+        // If a user is logged in, fetch their specific models
         if (uid) {
-            const userDoc = await adminDb.collection('users').doc(uid).get();
-            const installedModelIds = userDoc.data()?.stats?.installedModels || [];
-
-            const [userCreatedModels, installedSystemModels] = await Promise.all([
-                adminDb.collection('ai_models').where('userId', '==', uid).where('type', '==', type).get(),
-                installedModelIds.length > 0 
-                    ? adminDb.collection('ai_models').where('id', 'in', installedModelIds).where('type', '==', type).get()
-                    : Promise.resolve({ docs: [] } as FirebaseFirestore.QuerySnapshot), // Return empty snapshot
-            ]);
-
-            processSnapshot(userCreatedModels);
-            processSnapshot(installedSystemModels);
-
-            const staticModels = type === 'model' ? imageModels : [];
-            staticModels.forEach(model => {
-                if (!allModels.has(model.id)) {
-                    allModels.set(model.id, model);
-                }
-            });
-
-        } else {
-            const snapshot = await adminDb
-              .collection('ai_models')
-              .where('type', '==', type)
-              .orderBy('createdAt', 'desc')
-              .get();
-            processSnapshot(snapshot);
+            const userModelsSnapshot = await adminDb
+                .collection('ai_models')
+                .where('userId', '==', uid)
+                .where('type', '==', type)
+                .orderBy('createdAt', 'desc')
+                .get();
+            processSnapshot(userModelsSnapshot);
         }
+
+        // Add static (hardcoded) models
+        const staticModels = type === 'model' ? imageModels : [];
+        staticModels.forEach(model => {
+            if (!allModels.has(model.id)) {
+                allModels.set(model.id, model);
+            }
+        });
 
         return Array.from(allModels.values()).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
 

@@ -9,12 +9,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/back-button";
 import { ModelInstallButton } from "./model-install-button";
-
+import { verifyAndGetUid } from "@/lib/auth/server";
 
 export default async function AiModelsPage() {
+    let uid: string | null = null;
+    try {
+        uid = await verifyAndGetUid();
+    } catch (error) {
+        // User is not logged in, which is fine. They'll just see system models.
+    }
+
     const [allModels, allLoras] = await Promise.all([
-        getModels('model'),
-        getModels('lora')
+        getModels('model', uid || undefined),
+        getModels('lora', uid || undefined)
     ]);
 
     return (
