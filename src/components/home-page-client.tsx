@@ -8,13 +8,15 @@ import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
 import type { DataPack } from '@/types/datapack';
 import { motion } from 'framer-motion';
-import { ArrowRight, Package, Wand2, Trophy } from 'lucide-react';
+import { ArrowRight, Package, Wand2, Trophy, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { CharacterCard } from './character/character-card';
 import { DataPackCard } from './datapack/datapack-card';
 import { SectionTitle } from './section-title';
 import { RankBadge } from './rank-badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { GachaCard } from './character/gacha-card';
 
 
 type HomePageClientProps = {
@@ -75,7 +77,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, h
                              className="relative"
                         >
                             {heroCharacter ? (
-                                <Link href={`/characters/${heroCharacter.id}`}>
+                                <Link href={`/showcase/${heroCharacter.id}`}>
                                     <Image
                                         src={heroCharacter.visuals.imageUrl}
                                         alt={heroCharacter.core.name}
@@ -127,14 +129,31 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, h
                 </div>
             </section>
 
-            {/* Featured Creations */}
-            <section id="creations" className="container">
+            {/* Featured Gallery Section */}
+            <section id="gallery" className="container">
                 <SectionTitle title="Community Gallery" subtitle="Discover legendary characters forged by our community." />
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                     {featuredCreations.slice(0, 8).map((creation) => (
-                         <CharacterCard key={creation.id} character={creation} />
-                     ))}
-                </div>
+                <Tabs defaultValue="showcase" className="w-full">
+                    <div className="flex justify-center mb-6">
+                        <TabsList>
+                            <TabsTrigger value="showcase"><Sparkles className="mr-2"/>Showcase</TabsTrigger>
+                            <TabsTrigger value="creations"><ImageIcon className="mr-2"/>Creations</TabsTrigger>
+                        </TabsList>
+                    </div>
+                    <TabsContent value="showcase">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {featuredCreations.slice(0, 8).map((creation) => (
+                                <GachaCard key={creation.id} character={creation} />
+                            ))}
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="creations">
+                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {featuredCreations.slice(0, 8).map((creation) => (
+                                <CharacterCard key={creation.id} character={creation} />
+                            ))}
+                        </div>
+                    </TabsContent>
+                </Tabs>
             </section>
             
             {/* Top Creators */}
@@ -175,5 +194,3 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, h
     </div>
   );
 }
-
-    
