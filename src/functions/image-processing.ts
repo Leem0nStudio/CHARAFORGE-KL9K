@@ -12,6 +12,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import * as path from 'path';
 import sharp from 'sharp';
+import FormData from 'form-data';
 
 // Initialize Firebase Admin SDK if not already done
 if (getApps().length === 0) {
@@ -21,43 +22,69 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 /**
- * Placeholder function for an external background removal service.
+ * Removes the background from an image using the ClipDrop API.
  * @param buffer The input image buffer.
  * @returns A promise that resolves to a buffer of the image with the background removed.
  */
 async function removeBackground(buffer: Buffer): Promise<Buffer> {
-    logger.info("Placeholder: Removing background. In a real implementation, this would call an external API.");
-    // Example with a real API like remove.bg or ClipDrop:
-    // const response = await fetch('https://api.remove.bg/v1.0/removebg', {
-    //   method: 'POST',
-    //   body: new URLSearchParams({ image_file_b64: buffer.toString('base64'), size: 'auto' }),
-    //   headers: { 'X-Api-Key': 'YOUR_API_KEY_HERE' },
-    // });
-    // if (!response.ok) throw new Error('Background removal failed');
-    // const blob = await response.blob();
-    // return Buffer.from(await blob.arrayBuffer());
+    const apiKey = process.env.CLIPDROP_API_KEY;
+    if (!apiKey) {
+        logger.warn("CLIPDROP_API_KEY is not set. Skipping background removal.");
+        return buffer; // Return original buffer if API key is not configured
+    }
+
+    logger.info("Calling ClipDrop API for background removal...");
     
-    // For now, we return the original buffer as we have no real implementation.
-    return buffer;
+    const form = new FormData();
+    form.append('image_file', buffer, 'image.png');
+
+    const response = await fetch('https://api.clipdrop.co/remove-background/v1', {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey },
+      body: form as any,
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Background removal failed: ${errorText}`);
+    }
+    
+    const resultBuffer = Buffer.from(await response.arrayBuffer());
+    logger.info("Successfully removed background.");
+    return resultBuffer;
 }
 
 /**
- * Placeholder function for an external image upscaling service.
+ * Upscales an image using the ClipDrop Super Resolution API.
  * @param buffer The input image buffer.
  * @returns A promise that resolves to a buffer of the upscaled image.
  */
 async function upscaleImage(buffer: Buffer): Promise<Buffer> {
-    logger.info("Placeholder: Upscaling image. In a real implementation, this would call an external API.");
-    // Example with a real API like Replicate:
-    // const response = await fetch('https://api.replicate.com/v1/predictions', {
-    //   method: 'POST',
-    //   headers: { 'Authorization': 'Token YOUR_API_KEY_HERE', 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ version: "REPLICATE_MODEL_VERSION", input: { image: `data:image/jpeg;base64,${buffer.toString('base64')}` }})
-    // });
-    // ... polling logic for result ...
-    
-    // For now, we return the original buffer.
-    return buffer;
+    const apiKey = process.env.CLIPDROP_API_KEY;
+    if (!apiKey) {
+        logger.warn("CLIPDROP_API_KEY is not set. Skipping upscaling.");
+        return buffer;
+    }
+
+    logger.info("Calling ClipDrop API for upscaling...");
+
+    const form = new FormData();
+    form.append('image_file', buffer, 'image.png');
+
+    const response = await fetch('https://api.clipdrop.co/super-resolution/v1', {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey },
+      body: form as any,
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upscaling failed: ${errorText}`);
+    }
+
+    const resultBuffer = Buffer.from(await response.arrayBuffer());
+    logger.info("Successfully upscaled image.");
+    return resultBuffer;
 }
 
 
@@ -70,24 +97,24 @@ export const processUploadedImage = onObjectFinalized({
     memory: '1GiB',
     region: 'us-central1',
     bucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
+    timeoutSeconds: 300, // Increase timeout for external API calls
 }, async (event) => {
     const fileBucket = event.bucket;
     const filePath = event.data.name;
     const contentType = event.data.contentType;
 
-    // 1. Path and File Name validation
     if (!contentType?.startsWith('image/')) {
         logger.log(`File '${filePath}' is not an image. Ignoring.`);
         return;
     }
     if (!filePath.startsWith('raw-uploads/')) {
-        logger.log(`File '${filePath}' is not in raw-uploads/. This function only processes showcase images. Ignoring.`);
+        logger.log(`File '${filePath}' is not in raw-uploads/. Ignoring.`);
         return;
     }
     
     const pathParts = filePath.split('/');
     if (pathParts.length < 4) {
-        logger.warn(`File path '${filePath}' does not have the expected structure (raw-uploads/userId/characterId/fileName). Ignoring.`);
+        logger.warn(`File path '${filePath}' does not have the expected structure. Ignoring.`);
         return;
     }
     const userId = pathParts[1];
@@ -98,7 +125,6 @@ export const processUploadedImage = onObjectFinalized({
     
     const characterRef = db.collection('characters').doc(characterId);
     
-    // 2. Download the raw image
     const bucket = getStorage().bucket(fileBucket);
     const downloadResponse = await bucket.file(filePath).download();
     const imageBuffer = downloadResponse[0];
@@ -106,22 +132,18 @@ export const processUploadedImage = onObjectFinalized({
     logger.log(`Successfully downloaded '${fileName}'. Starting processing pipeline.`);
 
     try {
-        // --- STEP 1: Remove Background (Placeholder) ---
         const bufferWithoutBg = await removeBackground(imageBuffer);
-        logger.info("Step 1/4: Background removal placeholder complete.");
+        logger.info("Step 1/4: Background removal complete.");
 
-        // --- STEP 2: Upscale Image (Placeholder) ---
         const upscaledBuffer = await upscaleImage(bufferWithoutBg);
-        logger.info("Step 2/4: Upscaling placeholder complete.");
+        logger.info("Step 2/4: Upscaling complete.");
 
-        // --- STEP 3: Normalize & Optimize with Sharp ---
         const processedBuffer = await sharp(upscaledBuffer)
-            .resize(1024, 1024, { fit: 'contain', background: { r:0, g:0, b:0, alpha:0 } }) // Standardize size, ensure transparent bg
-            .webp({ quality: 90 }) // Convert to WebP for optimization
+            .resize(1024, 1024, { fit: 'contain', background: { r:0, g:0, b:0, alpha:0 } })
+            .webp({ quality: 90 })
             .toBuffer();
         logger.info("Step 3/4: Image successfully normalized and converted to WebP.");
             
-        // 4. Upload the processed image to its final destination
         const processedFileName = `${path.parse(fileName).name}.webp`;
         const processedPath = `showcase-images/${userId}/${characterId}/${processedFileName}`;
         const file = bucket.file(processedPath);
@@ -129,28 +151,25 @@ export const processUploadedImage = onObjectFinalized({
         await file.save(processedBuffer, {
             metadata: {
                 contentType: 'image/webp',
-                cacheControl: 'public, max-age=31536000', // Cache for 1 year
+                cacheControl: 'public, max-age=31536000',
             },
             public: true,
         });
 
         const publicUrl = file.publicUrl();
-        logger.info(`Step 4/4: Processed image uploaded to '${processedPath}'. Public URL: ${publicUrl}`);
+        logger.info(`Step 4/4: Processed image uploaded. Public URL: ${publicUrl}`);
 
-        // 5. Update Firestore document with the new showcase URL and status
         await characterRef.update({
             'visuals.showcaseImageUrl': publicUrl,
             'visuals.isShowcaseProcessed': true,
         });
         logger.log(`Successfully updated Firestore for character '${characterId}'.`);
         
-        // 6. Clean up the original raw file
         await bucket.file(filePath).delete();
         logger.log(`Successfully deleted raw file: '${filePath}'.`);
 
     } catch (error) {
         logger.error(`Failed to process showcase image for character ${characterId}.`, { error });
-        // Update Firestore to indicate a processing failure
         await characterRef.update({ 'visuals.isShowcaseProcessed': 'failed' });
     }
 });
