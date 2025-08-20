@@ -1,125 +1,129 @@
 
-# CharaForge: AI Character Forge (v3)
+# CharaForge: Forja de Personajes con IA (v3)
 
-CharaForge is a modern, full-stack web application built with Next.js and Firebase, designed for generating, managing, and sharing fictional characters using generative AI. It provides a robust platform for writers, game masters, and creatives to bring their ideas to life with detailed biographies and unique, AI-generated portraits.
+CharaForge es una aplicación web moderna y full-stack construida con Next.js y Firebase, diseñada para generar, gestionar y compartir personajes de ficción utilizando IA generativa. Proporciona una plataforma robusta para que escritores, directores de juego y creativos den vida a sus ideas con biografías detalladas y retratos únicos generados por IA.
 
-## Core Features
+## Funcionalidades Principales
 
--   **Multi-Engine AI Generation**: Utilizes a flexible AI layer powered by **Genkit** to generate content using various models and services, including **Google Gemini**, **Hugging Face**, and any **OpenRouter** compatible model (like DALL-E 3 or SDXL Turbo).
--   **DataPack System**: A powerful prompt-engineering feature that allows users to create characters using thematic wizards (e.g., "Cyberpunk," "Fantasy," "Horror Punk"), ensuring high-quality, genre-specific results.
--   **Custom Model Support**: Users can register their own models and LoRAs from Hugging Face, enabling a deeply personalized generation experience.
--   **Story Forge**: A narrative generation tool that takes a user-created cast of characters and a prompt to write compelling short stories.
--   **Community & Sharing**: Public galleries for both characters and DataPacks, allowing users to share their creations and be inspired by the community.
--   **Versioning & Branching**: Users can create new versions of their characters or "branch" from public characters created by others to build upon their work.
--   **Secure Authentication**: A complete, secure user management system built with Firebase Authentication, featuring a robust cookie-based session management for Server Actions.
--   **Admin Panel**: A dedicated, role-protected section for managing application content like DataPacks and system-wide AI models.
+-   **Generación de IA Multi-Motor**: Utiliza una capa de IA flexible impulsada por **Genkit** para generar contenido utilizando varios modelos y servicios, incluyendo **Google Gemini**, **Hugging Face**, **OpenRouter** y un servidor **ComfyUI** centralizado.
+-   **Sistema de DataPacks**: Una potente función de ingeniería de prompts que permite a los usuarios crear personajes utilizando asistentes temáticos (p. ej., "Cyberpunk", "Fantasía", "Punk de Terror"), asegurando resultados de alta calidad y específicos del género.
+-   **Soporte de Modelos Personalizados**: Los usuarios pueden registrar sus propios modelos y LoRAs desde Hugging Face, Civitai o ModelsLab, permitiendo una experiencia de generación profundamente personalizada.
+-   **Lore Forge**: Una herramienta de generación de narrativas que toma un elenco de personajes creado por el usuario y un prompt para escribir historias cortas convincentes.
+-   **Comunidad y Compartir**: Galerías públicas tanto para personajes como para DataPacks, permitiendo a los usuarios compartir sus creaciones e inspirarse en la comunidad.
+-   **Versionado y Ramificación (Branching)**: Los usuarios pueden crear nuevas versiones de sus personajes o "ramificar" personajes públicos creados por otros para construir sobre su trabajo.
+-   **Autenticación Segura**: Un sistema completo y seguro de gestión de usuarios construido con Firebase Authentication, que cuenta con una robusta gestión de sesiones basada en cookies para las Server Actions.
+-   **Panel de Administración**: Una sección dedicada y protegida por roles para gestionar el contenido de la aplicación como los DataPacks, los modelos de IA de todo el sistema y la sincronización de modelos.
 
-## Tech Stack
+## Stack Tecnológico
 
 -   **Framework**: [Next.js](https://nextjs.org/) (App Router)
--   **Language**: TypeScript
--   **Backend & Database**:
-    -   **Authentication**: Firebase Authentication
-    -   **Database**: Firestore (NoSQL)
-    -   **Storage**: Firebase Storage (for images and assets)
--   **AI Layer**: [Genkit](https://firebase.google.com/docs/genkit) with `@genkit-ai/googleai`. Supports Google Gemini, Hugging Face, and OpenRouter.
+-   **Lenguaje**: TypeScript
+-   **Backend y Base de Datos**:
+    -   **Autenticación**: Firebase Authentication
+    -   **Base de Datos**: Firestore (NoSQL)
+    -   **Almacenamiento**: Firebase Storage (para imágenes y activos) y Google Cloud Storage (para archivos de modelos pesados).
+-   **Capa de IA**: [Genkit](https://firebase.google.com/docs/genkit) con `@genkit-ai/googleai`. Soporta Google Gemini, Hugging Face, OpenRouter y ComfyUI.
 -   **UI**: [React](https://react.dev/), [ShadCN UI](https://ui.shadcn.com/), [Tailwind CSS](https://tailwindcss.com/)
--   **State Management**: React Hooks & Context API (`useAuth`).
--   **Forms**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/) for schema validation.
--   **Animations**: [Framer Motion](https://www.framer.com/motion/)
+-   **Gestión de Estado**: React Hooks y Context API (`useAuth`).
+-   **Formularios**: [React Hook Form](https://react-hook-form.com/) y [Zod](https://zod.dev/) para validación de esquemas.
+-   **Animaciones**: [Framer Motion](https://www.framer.com/motion/)
 
 ---
 
-## Getting Started
+## Cómo Empezar
 
-Follow these steps to get the project up and running on your local machine.
+Sigue estos pasos para tener el proyecto funcionando en tu máquina local.
 
-### 1. Install Dependencies
+### 1. Instalar Dependencias
 
-First, install the necessary npm packages:
+Primero, instala los paquetes npm necesarios:
 
 ```bash
 npm install
 ```
 
-### 2. Configure Environment Variables
+### 2. Configurar Variables de Entorno
 
-The project relies on environment variables to connect to Firebase and AI services.
+El proyecto depende de variables de entorno para conectarse a Firebase y a los servicios de IA.
 
-1.  **Create a `.env` file**: Copy the example file `/.env.example` to a new file named `.env` in the project's root directory.
-2.  **Set up a Firebase Project**: If you haven't already, create a new project in the [Firebase Console](https://console.firebase.google.com/).
-3.  **Get Web App Credentials**: In your Firebase project, go to **Project Settings** > **General**. Under "Your apps," click the **</>** icon to register a new web app. Copy the `firebaseConfig` object values and paste them into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env` file.
-4.  **Get a Service Account Key**: For the Admin SDK to function, a service account is required.
-    *   In your Firebase project, go to **Project Settings** > **Service accounts**.
-    *   Click **Generate new private key**. A JSON file will be downloaded.
-    *   **CRITICAL**: Copy the *entire content* of the JSON file and paste it as a **single line** into the `FIREBASE_SERVICE_ACCOUNT_KEY` variable in your `.env` file. It must start with `{` and end with `}` with no line breaks.
-5.  **Get AI API Keys (Optional but Recommended)**:
-    *   **Gemini**: Go to the [Google AI Studio](https://aistudio.google.com/app/apikey) to generate an API key. Paste this into `GEMINI_API_KEY`.
-    *   **Hugging Face**: Create an API token in your [Hugging Face settings](https://huggingface.co/settings/tokens). Paste this into `HUGGING_FACE_API_KEY`.
-    *   **OpenRouter**: Get a key from the [OpenRouter keys page](https://openrouter.ai/keys). Paste this into `OPENROUTER_API_KEY`.
-    *   *Note: These system-level keys will be used by default for all users. Users can also provide their own keys in their profile settings.*
-6.  **Validate your setup**: Run the built-in validator to check your environment variables:
+1.  **Crear un archivo `.env`**: Copia el archivo de ejemplo `/.env.example` a un nuevo archivo llamado `.env` en el directorio raíz del proyecto.
+2.  **Configurar un Proyecto de Firebase**: Si aún no lo has hecho, crea un nuevo proyecto en la [Consola de Firebase](https://console.firebase.google.com/).
+3.  **Obtener Credenciales de la Aplicación Web**: En tu proyecto de Firebase, ve a **Configuración del Proyecto** > **General**. En "Tus apps", haz clic en el icono **</>** para registrar una nueva aplicación web. Copia los valores del objeto `firebaseConfig` y pégalos en las variables `NEXT_PUBLIC_FIREBASE_*` correspondientes en tu archivo `.env`.
+4.  **Obtener una Clave de Cuenta de Servicio**: Para que el SDK de Admin funcione, se necesita una cuenta de servicio.
+    *   En tu proyecto de Firebase, ve a **Configuración del Proyecto** > **Cuentas de servicio**.
+    *   Haz clic en **Generar nueva clave privada**. Se descargará un archivo JSON.
+    *   **CRÍTICO**: Copia *todo el contenido* del archivo JSON y pégalo como una **sola línea** en la variable `FIREBASE_SERVICE_ACCOUNT_KEY` en tu archivo `.env`. Debe empezar con `{` y terminar con `}` sin saltos de línea.
+5.  **Obtener Claves de API de IA (Opcional pero Recomendado)**:
+    *   **Gemini**: Ve a [Google AI Studio](https://aistudio.google.com/app/apikey) para generar una clave de API. Pégala en `GEMINI_API_KEY`.
+    *   **Hugging Face**: Crea un token de API en tu [configuración de Hugging Face](https://huggingface.co/settings/tokens). Pégalo en `HUGGING_FACE_API_KEY`.
+    *   **OpenRouter**: Obtén una clave desde la [página de claves de OpenRouter](https://openrouter.ai/keys). Pégala en `OPENROUTER_API_KEY`.
+    *   **Civitai**: Crea una clave de API en tu [configuración de Civitai](https://civitai.com/user/account). Pégala en `CIVITAI_API_KEY`.
+    *   **ModelsLab**: Obtén una clave de tu [perfil de ModelsLab](https://modelslab.com/profile). Pégala en `MODELSLAB_API_KEY`.
+6.  **Configurar Almacenamiento de Modelos (Opcional)**:
+    *   Si deseas utilizar la función de sincronización de modelos, crea un nuevo bucket de Google Cloud Storage y pega su nombre (p. ej., `my-charaforge-models-bucket`) en la variable `MODELS_STORAGE_BUCKET`.
+7.  **Valida tu configuración**: Ejecuta el validador incorporado para comprobar tus variables de entorno:
     ```bash
     npm run firebase:setup
     ```
 
-### 3. Run the Development Server
+### 3. Ejecutar el Servidor de Desarrollo
 
-Once your environment is configured, start the Next.js development server:
+Una vez que tu entorno esté configurado, inicia el servidor de desarrollo de Next.js:
 
 ```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:9002`.
+La aplicación estará disponible en `http://localhost:3000`.
 
 ---
 
-## Architecture Overview
+## Resumen de la Arquitectura
 
-CharaForge is built using a modern, server-centric approach with the Next.js App Router. For a detailed explanation of architectural patterns, see `ARCHITECTURE_GUIDE.md`.
+CharaForge está construido utilizando un enfoque moderno y centrado en el servidor con el App Router de Next.js. Para una explicación detallada de los patrones arquitectónicos, consulta `ARCHITECTURE_GUIDE.md`.
 
-### Frontend (`/src/components` & `/src/app`)
+### Frontend (`/src/components` y `/src/app`)
 
--   The UI is built with **React Server Components (RSC)** by default, which improves performance by rendering on the server. Client-side interactivity is introduced via the `'use client'` directive where needed (e.g., forms, interactive buttons).
--   UI components are sourced from the excellent [ShadCN UI](https://ui.shadcn.com/) library (`/src/components/ui`) and supplemented with custom, reusable application components (`/src/components`).
+-   La UI está construida con **React Server Components (RSC)** por defecto, lo que mejora el rendimiento al renderizar en el servidor. La interactividad del lado del cliente se introduce mediante la directiva `'use client'` donde sea necesario (p. ej., formularios, botones interactivos).
+-   Los componentes de la UI provienen de la excelente biblioteca [ShadCN UI](https://ui.shadcn.com/) (`/src/components/ui`) y se complementan con componentes de aplicación personalizados y reutilizables (`/src/components`).
 
 ### Backend (Server Actions)
 
--   Instead of traditional API routes, CharaForge heavily relies on **Next.js Server Actions** for backend logic. These are asynchronous functions that execute on the server but can be called directly from client components.
--   All server-side logic is co-located in `/src/app/actions/`, organized by domain (e.g., `character-write.ts`, `datapacks.ts`). This simplifies the architecture by removing the need for a separate API layer.
+-   En lugar de las rutas de API tradicionales, CharaForge depende en gran medida de las **Next.js Server Actions** para la lógica de backend. Estas son funciones asíncronas que se ejecutan en el servidor pero que pueden ser llamadas directamente desde los componentes del cliente.
+-   Toda la lógica del lado del servidor está co-ubicada en `/src/app/actions/`, organizada por dominio (p. ej., `character-write.ts`, `datapacks.ts`). Esto simplifica la arquitectura al eliminar la necesidad de una capa de API separada.
 
-### Authentication Flow (HTTPOnly Cookie)
+### Flujo de Autenticación (Cookie HTTPOnly)
 
-The authentication system is designed to be robust and secure, especially for Server Actions. See `ARCHITECTURE_GUIDE.md` for a full breakdown.
+El sistema de autenticación está diseñado para ser robusto y seguro, especialmente para las Server Actions. Consulta `ARCHITECTURE_GUIDE.md` para un desglose completo.
 
-1.  **Client-Side Login**: A user signs in using the Firebase client SDK.
-2.  **Token to Server**: The `idToken` received from Firebase is sent to a dedicated API route (`/api/auth/set-cookie`).
-3.  **Set Secure Cookie**: This route creates an **HTTPOnly, secure cookie** containing the token. `HTTPOnly` means the cookie cannot be accessed by client-side JavaScript, protecting against XSS attacks.
-4.  **Server Action Verification**: Every Server Action that requires authentication calls a gatekeeper function, `verifyAndGetUid` (`/src/lib/auth/server.ts`). This function reads the cookie from the request headers, verifies the token using the Firebase Admin SDK, and returns the user's UID or throws an error.
+1.  **Login en el Lado del Cliente**: Un usuario inicia sesión utilizando el SDK cliente de Firebase.
+2.  **Token al Servidor**: El `idToken` recibido de Firebase se envía a una ruta de API dedicada (`/api/auth/set-cookie`).
+3.  **Creación de Cookie Segura**: Esta ruta crea una cookie **HTTPOnly, segura** que contiene el token. `HTTPOnly` significa que la cookie no puede ser accedida por JavaScript del lado del cliente, protegiendo contra ataques de robo de tokens XSS.
+4.  **Verificación en Server Action**: Cada Server Action que requiere autenticación llama a una función guardiana, `verifyAndGetUid` (`/src/lib/auth/server.ts`). Esta función lee la cookie de las cabeceras de la solicitud, verifica el token utilizando el SDK de Firebase Admin y devuelve el UID del usuario o lanza un error.
 
-### AI Layer (Genkit)
+### Capa de IA (Genkit)
 
--   All interactions with the generative AI models are abstracted into **Genkit Flows**, located in `/src/ai/flows/`.
--   Each flow defines its input and output schemas using **Zod**, ensuring all data passed to and from the AI is strongly typed and structured.
--   A centralized utility (`/src/ai/utils/llm-utils.ts`) acts as a switchboard to direct requests to the correct engine (Gemini, Hugging Face, OpenRouter) based on user selection and configuration.
--   This architecture allows AI logic to be decoupled from the UI and Server Actions, making it easy to manage, version, and even swap out models in the future.
+-   Todas las interacciones con los modelos de IA generativa se abstraen en **Flujos de Genkit**, ubicados en `/src/ai/flows/`.
+-   Cada flujo define sus esquemas de entrada y salida utilizando **Zod**, asegurando que todos los datos pasados hacia y desde la IA estén fuertemente tipados y estructurados.
+-   El sistema de modelos de IA es altamente adaptable y soporta múltiples motores de generación, configurados a través del Panel de Administración.
 
-### Database Schema (Firestore)
+### Esquema de la Base de Datos (Firestore)
 
--   `users`: Stores public user profiles, preferences (including personal API keys), roles, and stats.
--   `characters`: The core collection. Stores all generated character data, including the prompt, bio, image URLs, owner's ID, versioning info, and sharing status.
--   `datapacks`: Contains the DataPack definitions, including their name, description, and the crucial `schema` object which dictates how the generation wizard behaves.
--   `ai_models`: Contains definitions for system-wide and user-specific AI models and LoRAs, including their Hugging Face IDs and trigger words.
--   `storyCasts`: Stores user-created "casts" (collections of character IDs) used by the Story Forge.
+-   `users`: Almacena perfiles de usuario públicos, preferencias (incluidas claves de API personales), roles y estadísticas.
+-   `characters`: La colección principal. Almacena todos los datos de personajes generados, incluyendo el prompt, biografía, URLs de imágenes, ID del propietario, información de versionado y estado de compartición. La estructura de datos está modularizada en sub-objetos (`core`, `visuals`, `meta`, etc.).
+-   `datapacks`: Contiene las definiciones de los DataPacks, incluyendo su nombre, descripción y el objeto `schema` crucial que dicta cómo se comporta el asistente de generación.
+-   `ai_models`: Contiene definiciones para modelos de IA y LoRAs de todo el sistema y específicos del usuario.
+-   `storyCasts`: Almacena "elencos" creados por el usuario (colecciones de IDs de personajes) utilizados por el Lore Forge.
 
 ---
 
-## Key Scripts
+## Scripts Clave
 
--   `npm run dev`: Starts the development server.
--   `npm run build`: Creates a production build of the application.
--   `npm run firebase:setup`: Validates your `.env` file configuration.
--   `npm run datapacks:seed`: Seeds the Firestore database with the local DataPacks located in `/data/datapacks/`.
--   `npm run admin:grant -- <uid>`: Grants admin role to a user. (Use `--` before the UID).
--   `npm run admin:list`: Lists all users with the admin role.
+-   `npm run dev`: Inicia el servidor de desarrollo.
+-   `npm run build`: Crea una compilación de producción de la aplicación.
+-   `npm run firebase:setup`: Valida la configuración de tu archivo `.env`.
+-   `npm run datapacks:seed`: Siembra la base de datos de Firestore con los DataPacks locales ubicados en `/data/datapacks/`.
+-   `npm run admin:grant -- <uid>`: Otorga el rol de administrador a un usuario. (Usa `--` antes del UID).
+-   `npm run admin:list`: Lista todos los usuarios con el rol de administrador.
+-   `npm run tags:fetch`: Obtiene y procesa un conjunto de tags de Danbooru para usarlos en el asistente de tags.
+
