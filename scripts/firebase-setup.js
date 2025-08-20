@@ -108,3 +108,5 @@ console.log(chalk.blue.bold('--- End of Validator ---\n'));
 if (!allKeysPresent || !isServiceAccountValid) {
     process.exit(1);
 }
+
+    

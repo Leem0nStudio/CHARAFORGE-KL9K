@@ -62,7 +62,7 @@ export const UpsertModelSchema = z.object({
   apiUrl: z.string().optional(),
   comfyWorkflow: z.any().optional(),
 }).refine(data => {
-    const requiredEngines = ['huggingface', 'vertexai', 'comfyui'];
+    const requiredEngines = ['huggingface', 'vertexai', 'comfyui', 'modelslab'];
     if (requiredEngines.includes(data.engine)) {
         return !!data.hf_id;
     }
@@ -74,3 +74,5 @@ export const UpsertModelSchema = z.object({
 
 
 export type UpsertAiModel = z.infer<typeof UpsertModelSchema>;
+
+    

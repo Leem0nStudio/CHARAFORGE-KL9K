@@ -11,8 +11,8 @@ import { UpsertModelSchema, type UpsertAiModel } from '@/types/ai-model';
 import { suggestHfModel } from '@/ai/flows/hf-model-suggestion/flow';
 import { uploadToStorage } from '@/services/storage';
 import { imageModels } from '@/lib/app-config';
-import { getCivitaiModelInfo } from './source-fetchers/civitai';
-import { getModelsLabModelInfo } from './source-fetchers/modelslab';
+import { getCivitaiModelInfo, getModelsLabModelInfo } from './source-fetchers';
+
 
 type ActionResponse = {
     success: boolean;
@@ -80,8 +80,7 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
             modelInfo = await getCivitaiModelInfo(sourceModelId);
         }
         
-        // This is the crucial part: if the API returns data but no versions, it's an incompatible model for auto-import.
-        const modelVersions = modelInfo.model_versions || modelInfo.modelVersions || modelInfo.versions;
+        const modelVersions = modelInfo.modelVersions || modelInfo.versions;
         if (!modelVersions || modelVersions.length === 0) {
             return {
                 success: false,
@@ -361,3 +360,5 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
+
+    

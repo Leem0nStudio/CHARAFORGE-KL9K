@@ -93,3 +93,5 @@ export function ModelCard({ model }: { model: AiModel }) {
         </Card>
     )
 }
+
+    
