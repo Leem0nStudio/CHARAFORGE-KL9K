@@ -115,33 +115,26 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   });
 
   const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-    let promptParts: string[] = [];
-    const usedPlaceholders = new Set<string>();
+    let finalTags: string[] = [];
 
+    // Process the template tags
     if (template.tags) {
-        template.tags.forEach(tagOrPlaceholder => {
+        finalTags = template.tags.map(tagOrPlaceholder => {
             const match = tagOrPlaceholder.match(/\{(.+?)\}/);
             if (match) {
                 const slotId = match[1];
                 const selectedValue = wizardData[slotId];
-                if (selectedValue) {
-                    promptParts.push(selectedValue);
-                    usedPlaceholders.add(slotId);
-                }
-            } else {
-                promptParts.push(tagOrPlaceholder);
+                // Find the option to get its specific tags if available
+                const slot = pack.schema.slots.find(s => s.id === slotId);
+                const option = slot?.options?.find(o => o.value === selectedValue);
+                // Use the option's specific tags, or the value itself as a fallback
+                return option?.tags?.join(', ') || selectedValue || '';
             }
+            return tagOrPlaceholder;
         });
     }
 
-    // Append values from slots that were NOT in the template, to ensure all selections are included.
-    for (const slot of pack.schema.slots) {
-        if (!usedPlaceholders.has(slot.id) && wizardData[slot.id]) {
-            promptParts.push(wizardData[slot.id]);
-        }
-    }
-    
-    const finalPrompt = promptParts.join(', ');
+    const finalPrompt = finalTags.filter(Boolean).join(', ');
 
     generationForm.setValue('description', finalPrompt, { shouldValidate: true });
     generationForm.setValue('tags', finalPrompt);
@@ -725,4 +718,3 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   );
 }
 
-    
