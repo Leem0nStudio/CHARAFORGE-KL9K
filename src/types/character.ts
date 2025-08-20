@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 
 /**
@@ -29,6 +30,7 @@ export type Character = {
     equipment: string[] | null;
     timeline: TimelineEvent[];
     tags: string[];
+    rarity: 1 | 2 | 3 | 4 | 5; // New rarity field
   };
 
   // Visual assets of the character.
@@ -83,6 +85,7 @@ export const UpdateCharacterSchema = z.object({
   archetype: z.string().optional(),
   equipment: z.array(z.string()).optional(),
   physicalDescription: z.string().optional(),
+  rarity: z.number().min(1).max(5).optional(),
 });
 
 export const SaveCharacterInputSchema = z.object({
@@ -98,5 +101,6 @@ export const SaveCharacterInputSchema = z.object({
   imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai', 'comfyui', 'modelslab']).optional(),
   wizardData: z.record(z.string()).optional().nullable(),
   originalPrompt: z.string().optional(),
+  rarity: z.number().min(1).max(5).optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;

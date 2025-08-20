@@ -159,7 +159,7 @@ export async function updateCharacter(
         };
     }
     
-    const { name, biography, alignment, archetype, equipment, physicalDescription } = validatedFields.data;
+    const { name, biography, alignment, archetype, equipment, physicalDescription, rarity } = validatedFields.data;
     const characterRef = adminDb.collection('characters').doc(characterId);
     
     const characterDoc = await characterRef.get();
@@ -169,7 +169,7 @@ export async function updateCharacter(
     }
     
     // Create an object with dot notation for updating nested fields in Firestore
-    const updates = {
+    const updates: any = {
       'core.name': name,
       'core.biography': biography,
       'core.alignment': alignment,
@@ -177,6 +177,10 @@ export async function updateCharacter(
       'core.equipment': equipment || null,
       'core.physicalDescription': physicalDescription || null,
     };
+
+    if (rarity) {
+        updates['core.rarity'] = rarity;
+    }
   
     await characterRef.update(updates);
 
@@ -199,7 +203,8 @@ export async function saveCharacter(input: SaveCharacterInput) {
   }
   const { 
       name, biography, imageUrl: imageDataUri, dataPackId, tags, 
-      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt
+      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt,
+      rarity
   } = validation.data;
   
   const userId = await verifyAndGetUid();
@@ -210,7 +215,8 @@ export async function saveCharacter(input: SaveCharacterInput) {
   try {
     const characterRef = adminDb.collection('characters').doc();
     
-    const destinationPath = `usersImg/${userId}/${characterRef.id}/${uuidv4()}.png`;
+    // This is the "raw" upload path, ready for a Cloud Function to process.
+    const destinationPath = `raw-uploads/${userId}/${characterRef.id}/${uuidv4()}.png`;
     const storageUrl = await uploadToStorage(imageDataUri, destinationPath);
 
     const userRef = adminDb.collection('users').doc(userId);
@@ -237,9 +243,10 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 physicalDescription: physicalDescription || null,
                 timeline: [],
                 tags: uniqueTags,
+                rarity: (rarity as Character['core']['rarity']) || 3, // Default to 3-star
             },
             visuals: {
-                imageUrl: storageUrl,
+                imageUrl: storageUrl, // Starts with the raw image URL
                 gallery: [storageUrl],
             },
             meta: {

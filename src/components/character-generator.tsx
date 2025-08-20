@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown, Star } from "lucide-react";
 
 import { 
     Button,
@@ -44,7 +44,7 @@ import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/ty
 import { PromptTagInput } from "./prompt-tag-input";
 import type { DataPack, PromptTemplate } from "@/types/datapack";
 import { imageModels, textModels, geminiImagePlaceholder } from "@/lib/app-config";
-import type { User } from "firebase/auth";
+import type { User as FirebaseUser } from "firebase/auth";
 
 
 const generationFormSchema = z.object({
@@ -63,6 +63,7 @@ const generationFormSchema = z.object({
   }),
   selectedLora: z.custom<AiModel>().optional().nullable(),
   loraWeight: z.number().min(0).max(2).optional(),
+  rarity: z.number().min(1).max(5).default(3),
 });
 
 type GenerationResult = GenerateCharacterSheetOutput & {
@@ -72,7 +73,7 @@ type GenerationResult = GenerateCharacterSheetOutput & {
   imageEngine?: 'gemini' | 'openrouter' | 'huggingface' | 'vertexai' | 'comfyui' | 'modelslab';
 };
 
-export function CharacterGenerator({ authUser }: { authUser: User | null }) {
+export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null }) {
   const searchParams = useSearchParams();
   const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null);
   const [isGenerating, startGenerationTransition] = useTransition();
@@ -109,6 +110,7 @@ export function CharacterGenerator({ authUser }: { authUser: User | null }) {
       loraWeight: 0.75,
       selectedModel: imageModels[0] || undefined,
       selectedLora: null,
+      rarity: 3,
     },
   });
 
@@ -305,6 +307,7 @@ export function CharacterGenerator({ authUser }: { authUser: User | null }) {
           imageEngine: generationResult.imageEngine,
           wizardData: formData.wizardData,
           originalPrompt: generationResult.originalDescription,
+          rarity: formData.rarity,
         });
 
         toast({
@@ -497,6 +500,36 @@ export function CharacterGenerator({ authUser }: { authUser: User | null }) {
                             </FormItem>
                           )}
                         />
+                         <FormField
+                          control={generationForm.control}
+                          name="rarity"
+                          render={({ field }) => (
+                            <FormItem className="space-y-3">
+                              <FormLabel>Rarity</FormLabel>
+                               <FormControl>
+                                  <RadioGroup
+                                    onValueChange={(value) => field.onChange(parseInt(value))}
+                                    defaultValue={String(field.value)}
+                                    className="grid grid-cols-5 gap-2"
+                                    disabled={!canInteract}
+                                  >
+                                    {[1, 2, 3, 4, 5].map(rarity => (
+                                         <FormItem key={rarity}>
+                                            <FormControl><RadioGroupItem value={String(rarity)} id={`rarity-${rarity}`} className="sr-only" /></FormControl>
+                                            <FormLabel htmlFor={`rarity-${rarity}`} className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === rarity && "border-primary")}>
+                                                <div className="flex">
+                                                    {Array.from({length: rarity}).map((_, i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400" />)}
+                                                </div>
+                                            </FormLabel>
+                                        </FormItem>
+                                    ))}
+                                  </RadioGroup>
+                               </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
 
                         <Accordion type="single" collapsible defaultValue="engine">
                             <AccordionItem value="engine">
