@@ -3,14 +3,11 @@
 'use server';
 
 import { notFound } from 'next/navigation';
-import { CharacterPageClient } from './client';
 import { getCharacter } from '@/app/actions/character-read';
-import { getCreationsForDataPack } from '@/app/actions/datapacks';
-import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { ShowcaseViewer } from '@/components/showcase/showcase-viewer';
 
-export default async function CharacterPage({ params }: { params: { id: string } }) {
+export default async function ShowcasePage({ params }: { params: { id: string } }) {
   const character = await getCharacter(params.id);
   if (!character) {
     notFound();
@@ -28,8 +25,6 @@ export default async function CharacterPage({ params }: { params: { id: string }
       notFound();
   }
 
-  // The new showcase view is preferred.
-  // We can decide later if we want to keep the old technical view accessible.
   return (
     <ShowcaseViewer 
       character={character}

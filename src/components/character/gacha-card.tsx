@@ -38,7 +38,7 @@ export function GachaCard({ character }: GachaCardProps) {
             }}
             className="h-full"
         >
-            <Link href={`/characters/${character.id}`} className="block h-full group">
+            <Link href={`/showcase/${character.id}`} className="block h-full group">
                 <div className={cn(
                     'relative h-full overflow-hidden rounded-lg border-2 bg-gradient-to-br p-1.5 transition-all duration-300',
                     rarityStyles[rarity],
@@ -71,5 +71,3 @@ export function GachaCard({ character }: GachaCardProps) {
         </motion.div>
     );
 }
-
-    
