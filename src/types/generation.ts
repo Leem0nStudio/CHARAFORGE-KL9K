@@ -1,21 +1,22 @@
-
 /**
  * @fileoverview This file contains data types related to the AI generation process
  * that are safe to be used in Client Components. It avoids importing server-only
  * dependencies like Genkit, preventing build errors.
  */
 
+import { z } from 'zod';
 import type { AiModel } from './ai-model';
 
 /**
  * Defines the configuration for a text-generation engine.
  * Safe for client-side use.
  */
-export interface TextEngineConfig {
-  engineId: 'gemini' | 'openrouter';
-  modelId: string;
-  userApiKey?: string;
-}
+export const TextEngineConfigSchema = z.object({
+  engineId: z.enum(['gemini', 'openrouter']),
+  modelId: z.string(),
+  userApiKey: z.string().optional(),
+});
+export type TextEngineConfig = z.infer<typeof TextEngineConfigSchema>;
 
 /**
  * Defines the configuration for an image-generation engine.
@@ -52,5 +53,3 @@ export interface GenerationResult {
   textEngine?: TextEngineConfig['engineId'];
   imageEngine?: ImageEngineConfig['engineId'];
 }
-
-    

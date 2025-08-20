@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
-import { type TextEngineConfig } from '@/ai/flows/character-sheet/types';
+import { type TextEngineConfig } from '@/types/generation';
 import type { AiModel } from '@/types/ai-model';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { getUserProfile } from './user';
@@ -182,4 +182,45 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
     }
 }
 
-    
+
+/**
+ * A new server action to specifically handle regenerating character sheet data.
+ * This isolates the server-side Genkit call from any client components.
+ */
+export async function regenerateCharacterSheet(description: string, targetLanguage: GenerateSheetInput['targetLanguage']): Promise<GenerateSheetOutput> {
+    if (!description) {
+        return { success: false, message: 'A description is required to regenerate content.' };
+    }
+
+    try {
+        // For simplicity, we can hardcode a default engine here or expand later.
+        const engineConfig: TextEngineConfig = {
+            engineId: 'gemini',
+            modelId: 'gemini-1.5-flash-latest',
+        };
+
+        const result = await generateCharacterSheet({
+            description,
+            targetLanguage,
+            engineConfig
+        });
+
+        if (!result.name) {
+            throw new Error('AI regeneration failed to return a complete character sheet.');
+        }
+
+        return {
+            success: true,
+            message: 'Content regenerated successfully!',
+            data: {
+                ...result,
+                originalDescription: description,
+            }
+        };
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown error occurred during regeneration.';
+        console.error("Error in regenerateCharacterSheet action:", message);
+        return { success: false, message: 'Failed to regenerate content.', error: message };
+    }
+}

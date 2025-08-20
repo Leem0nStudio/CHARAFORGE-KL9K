@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
 import { updateCharacter } from '@/app/actions/character-write';
-import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
+import { regenerateCharacterSheet } from '@/app/actions/generation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Wand2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
-import { TextEngineConfigSchema } from '@/ai/flows/character-sheet/types';
 
 const alignmentOptions = [
     'Lawful Good', 'Neutral Good', 'Chaotic Good', 
@@ -71,21 +70,23 @@ export function EditDetailsTab({ character }: { character: Character }) {
     const handleRegenerateBio = () => {
         startRegenerateTransition(async () => {
             try {
-                // This is where we could, in the future, let the user choose a text model.
-                const textEngineConfig = {
-                    engineId: 'gemini',
-                    modelId: 'googleai/gemini-1.5-flash-latest',
-                };
-                const result = await generateCharacterSheet({ 
-                    description: character.generation.originalPrompt || '', 
-                    engineConfig: TextEngineConfigSchema.parse(textEngineConfig) 
-                });
-                form.setValue('biography', result.biography || '', { shouldDirty: true });
-                form.setValue('physicalDescription', result.physicalDescription || '', { shouldDirty: true });
-                toast({
-                    title: 'Content Regenerated!',
-                    description: 'A new biography and physical description have been generated. Don\'t forget to save your changes.',
-                });
+                const originalPrompt = character.generation.originalPrompt || '';
+                if (!originalPrompt) {
+                    toast({ variant: 'destructive', title: 'Missing Context', description: 'Cannot regenerate without an original prompt.' });
+                    return;
+                }
+                const result = await regenerateCharacterSheet(originalPrompt, 'English');
+
+                if (result.success && result.data) {
+                    form.setValue('biography', result.data.biography || '', { shouldDirty: true });
+                    form.setValue('physicalDescription', result.data.physicalDescription || '', { shouldDirty: true });
+                    toast({
+                        title: 'Content Regenerated!',
+                        description: 'A new biography and physical description have been generated. Don\'t forget to save your changes.',
+                    });
+                } else {
+                    throw new Error(result.error || 'The AI failed to return valid content.');
+                }
             } catch (error) {
                 const message = error instanceof Error ? error.message : "An unknown error occurred.";
                 toast({ variant: 'destructive', title: 'Generation Failed', description: message });

@@ -1,20 +1,19 @@
-
 /**
  * @fileOverview Data schemas and types for the character sheet generation flow.
  */
 
 import {z} from 'genkit';
-import type { TextEngineConfig } from '@/types/generation';
+import { TextEngineConfigSchema } from '@/types/generation';
 
-// This is now just a re-export for the server-side flow.
-// The client will import directly from '@/types/generation'.
-export type { TextEngineConfig };
+// This now imports the client-safe schema and uses it.
+export { TextEngineConfigSchema };
+export type { TextEngineConfig } from '@/types/generation';
 
 
 export const GenerateCharacterSheetInputSchema = z.object({
   description: z.string().describe('A simple description of the character concept.'),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).optional().describe('The target language for the output.'),
-  engineConfig: z.custom<TextEngineConfig>().describe('The configuration for the text generation engine.'),
+  engineConfig: TextEngineConfigSchema, // Use the imported client-safe schema
 });
 export type GenerateCharacterSheetInput = z.infer<typeof GenerateCharacterSheetInputSchema>;
 
@@ -26,5 +25,3 @@ export const GenerateCharacterSheetOutputSchema = z.object({
   biography: z.string().describe("The character's detailed, narrative biography.").optional(),
 });
 export type GenerateCharacterSheetOutput = z.infer<typeof GenerateCharacterSheetOutputSchema>;
-
-    
