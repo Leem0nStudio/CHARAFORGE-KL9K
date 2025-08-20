@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown, Star, Switch, CaseSensitive } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown, Star, CaseSensitive } from "lucide-react";
 
 import { 
     Button,
@@ -26,6 +26,7 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
     Label,
 } from "@/components/ui";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
@@ -121,41 +122,13 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       }
     });
 
-    let finalTags: string[] = [];
-
-    // The primary source for the prompt structure is the template's 'tags' array.
-    if (template.tags) {
-      finalTags = template.tags.map(tagOrPlaceholder => {
-        // Replace any {slot_id} placeholders with the selected option's value.
-        let resolvedTag = tagOrPlaceholder;
-        for (const key in allWizardData) {
-          resolvedTag = resolvedTag.replace(new RegExp(`{${key}}`, 'g'), allWizardData[key]);
-        }
-        return resolvedTag;
-      });
+    let finalPrompt = template.template;
+    for (const key in allWizardData) {
+        finalPrompt = finalPrompt.replace(new RegExp(`{${key}}`, 'g'), allWizardData[key]);
     }
-
-    // Add tags from the selected options themselves.
-    const optionTags: string[] = [];
-    pack.schema.slots.forEach(slot => {
-      const selectedOptionValue = allWizardData[slot.id];
-      if (selectedOptionValue) {
-        const selectedOption = slot.options?.find(opt => opt.value === selectedOptionValue);
-        if (selectedOption?.tags) {
-          optionTags.push(...selectedOption.tags);
-        }
-      }
-    });
-
-    const combinedTags = [...finalTags, ...optionTags]
-      .map(tag => tag.trim().replace(/_/g, ' ')) // Replace underscores for display
-      .filter(Boolean); // Remove any empty tags
-
-    const uniqueTags = [...new Set(combinedTags)];
-
-    const promptString = uniqueTags.join(', ');
-    generationForm.setValue('description', promptString, { shouldValidate: true });
-    generationForm.setValue('tags', promptString); // Keep tags field in sync
+    
+    generationForm.setValue('description', finalPrompt, { shouldValidate: true });
+    generationForm.setValue('tags', finalPrompt);
     generationForm.setValue('wizardData', wizardData);
     
     setActivePack(pack);
