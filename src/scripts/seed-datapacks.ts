@@ -71,7 +71,7 @@ async function seedDataPacks() {
             // Step 1: Delete all characters associated with the obsolete datapacks
             for (const packId of obsoletePackIds) {
                 console.log(`- Deleting characters created with obsolete pack: ${packId}`);
-                const charactersToDeleteQuery = db.collection('characters').where('dataPackId', '==', packId);
+                const charactersToDeleteQuery = db.collection('characters').where('meta.dataPackId', '==', packId);
                 await deleteQueryBatch(charactersToDeleteQuery);
                 console.log(`- ✅ Characters for ${packId} cleared.`);
             }
