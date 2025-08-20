@@ -108,7 +108,6 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
     await verifyAndGetUid();
     
     try {
-        // Determine which fetcher to use
         const modelInfoFetcher = source === 'modelslab' ? getModelsLabModelInfo : getCivitaiModelInfo;
 
         const existingModelQuery = await adminDb.collection('ai_models').where(`${source}ModelId`, '==', sourceModelId).limit(1).get();
@@ -117,12 +116,16 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
         }
 
         const modelInfo = await modelInfoFetcher(sourceModelId);
-        const latestVersion = modelInfo.modelVersions?.[0];
-
-        if (!latestVersion) {
-            return { success: false, message: `Could not find a valid version for this ${source} model.` };
+        
+        // **CRITICAL FIX**: Check for versions array specifically.
+        const modelVersions = modelInfo.modelVersions || modelInfo.versions;
+        if (!modelVersions || modelVersions.length === 0) {
+            // New, more informative error message.
+            return { success: false, message: `Model found, but no version data is available via API. Please add it manually.` };
         }
         
+        const latestVersion = modelVersions[0];
+
         let coverMediaUrl: string | null = null;
         let coverMediaType: 'image' | 'video' = 'image';
         
@@ -176,18 +179,18 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
         const triggerWords = [...new Set(combinedTriggerWords)];
 
         const newModel: Omit<AiModel, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = {
-            name: modelInfo.name,
+            name: modelInfo.name || modelInfo.model_name,
             civitaiModelId: source === 'civitai' ? modelInfo.id.toString() : undefined,
-            modelslabModelId: source === 'modelslab' ? modelInfo.model_id.toString() : undefined,
-            hf_id: source === 'modelslab' ? modelInfo.model_id.toString() : suggestedHfId,
-            type: modelInfo.type.toLowerCase(), // 'LORA' -> 'lora'
+            modelslabModelId: source === 'modelslab' ? (modelInfo.model_id || modelInfo.id).toString() : undefined,
+            hf_id: source === 'modelslab' ? (modelInfo.model_id || modelInfo.id).toString() : suggestedHfId,
+            type: modelInfo.type.toLowerCase(),
             engine: engine, 
             versionId: latestVersion?.id?.toString() || '',
             baseModel: baseModelName,
             coverMediaUrl,
             coverMediaType,
             triggerWords: triggerWords,
-            versions: modelInfo.modelVersions.map((v: any) => ({ 
+            versions: modelVersions.map((v: any) => ({ 
                 id: v.id.toString(), 
                 name: v.name, 
                 baseModel: v.baseModel,
@@ -402,3 +405,5 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
+
+    
