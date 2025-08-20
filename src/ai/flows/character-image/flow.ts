@@ -165,7 +165,7 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
     
     const apiUrl = 'https://modelslab.com/api/v6/images/text2img';
     const payload: any = {
-        api_key: systemApiKey, // CRITICAL FIX: The API expects 'api_key', not 'key'.
+        key: systemApiKey, // The error message says to use 'key'
         prompt: data.prompt,
         model_id: data.modelId,
         negative_prompt: "ugly, bad, deformed, distorted",
@@ -215,7 +215,7 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
         } else if (result.status === 'processing') {
             // If it's processing, we need to poll the fetch_result endpoint
             const fetchUrl = result.fetch_result;
-            const pollPayload = { api_key: systemApiKey }; // Use correct key for polling too
+            const pollPayload = { key: systemApiKey }; // Use correct key for polling too
             for (let i = 0; i < 10; i++) { // Poll up to 10 times
                 await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
                 const fetchResponse = await fetch(fetchUrl, { method: 'POST', body: JSON.stringify(pollPayload), headers: { 'Content-Type': 'application/json' } });
