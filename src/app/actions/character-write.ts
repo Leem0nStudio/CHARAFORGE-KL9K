@@ -215,7 +215,6 @@ export async function saveCharacter(input: SaveCharacterInput) {
   try {
     const characterRef = adminDb.collection('characters').doc();
     
-    // This is the "raw" upload path, ready for a Cloud Function to process.
     const destinationPath = `raw-uploads/${userId}/${characterRef.id}/${uuidv4()}.png`;
     const storageUrl = await uploadToStorage(imageDataUri, destinationPath);
 
@@ -243,11 +242,12 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 physicalDescription: physicalDescription || null,
                 timeline: [],
                 tags: uniqueTags,
-                rarity: (rarity as Character['core']['rarity']) || 3, // Default to 3-star
+                rarity: (rarity as Character['core']['rarity']) || 3,
             },
             visuals: {
                 imageUrl: storageUrl, // Starts with the raw image URL
                 gallery: [storageUrl],
+                isProcessed: false, // Set initial processing state
             },
             meta: {
                 userId,

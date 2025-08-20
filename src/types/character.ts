@@ -30,13 +30,14 @@ export type Character = {
     equipment: string[] | null;
     timeline: TimelineEvent[];
     tags: string[];
-    rarity: 1 | 2 | 3 | 4 | 5; // New rarity field
+    rarity: 1 | 2 | 3 | 4 | 5;
   };
 
   // Visual assets of the character.
   visuals: {
     imageUrl: string;
     gallery: string[];
+    isProcessed?: boolean | 'failed'; // Flag to indicate if the main image is processed
   };
 
   // Metadata about the record itself.
