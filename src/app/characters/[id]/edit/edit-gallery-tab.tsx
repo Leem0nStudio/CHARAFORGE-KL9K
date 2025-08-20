@@ -15,7 +15,7 @@ import { uploadToStorage } from '@/services/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Star, Trash2, FileUp, Wand2 } from 'lucide-react';
+import { Loader2, Star, Trash2, FileUp, Wand2, Image as ImageIcon, CheckCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { v4 as uuidv4 } from 'uuid';
@@ -23,6 +23,7 @@ import { ModelSelectorModal } from '@/components/model-selector-modal';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 import type { AiModel } from '@/types/ai-model';
 import { geminiImagePlaceholder } from '@/lib/app-config';
+import { Progress } from '@/components/ui/progress';
 
 const UpdateImagesSchema = z.object({
     primaryImageUrl: z.string().url("A primary image must be selected."),
@@ -47,12 +48,28 @@ export function EditGalleryTab({ character }: { character: Character }) {
       primaryImageUrl: character.visuals.imageUrl,
     },
   });
+  
+  // Showcase processing state
+  const [showcaseProgress, setShowcaseProgress] = useState(0);
 
   useEffect(() => {
     form.reset({
         primaryImageUrl: character.visuals.imageUrl,
     });
-  }, [character, form]);
+    
+    // Auto-refresh logic for showcase processing
+    if (character.visuals.isShowcaseProcessed === false) {
+      const interval = setInterval(() => {
+        // Simulate progress for UX
+        setShowcaseProgress(prev => (prev < 90 ? prev + 10 : 90));
+        router.refresh();
+      }, 5000); // Poll every 5 seconds
+      
+      return () => clearInterval(interval);
+    } else {
+        setShowcaseProgress(100);
+    }
+  }, [character, form, router]);
 
   useEffect(() => {
     async function loadModels() {
@@ -181,8 +198,8 @@ export function EditGalleryTab({ character }: { character: Character }) {
       />
      <Card>
         <CardHeader>
-            <CardTitle>Image Gallery</CardTitle>
-            <CardDescription>Manage your character's portraits. Upload new ones or generate them with AI.</CardDescription>
+            <CardTitle>Image Management</CardTitle>
+            <CardDescription>Manage your character's portraits, upload new ones, or generate them with AI.</CardDescription>
         </CardHeader>
         <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[200px]">
@@ -225,7 +242,23 @@ export function EditGalleryTab({ character }: { character: Character }) {
                 )}
             </div>
              <form onSubmit={form.handleSubmit(onSubmit)}>
-                 <div className="flex justify-end gap-2 pt-4 border-t mt-6">
+                 <div className="flex justify-between items-center pt-4 border-t mt-6">
+                    <div className="flex-grow pr-4">
+                        <h4 className="font-semibold text-sm mb-2 flex items-center gap-2"><ImageIcon className="text-primary"/>Showcase Image</h4>
+                        {character.visuals.isShowcaseProcessed === true ? (
+                            <div className="flex items-center gap-2 text-sm text-green-500">
+                                <CheckCircle/>
+                                <span>Processing complete. View in Showcase.</span>
+                            </div>
+                        ) : character.visuals.isShowcaseProcessed === 'failed' ? (
+                            <p className="text-sm text-destructive">Processing failed. Please try re-uploading the primary image.</p>
+                        ) : (
+                            <div>
+                                <p className="text-sm text-muted-foreground mb-2">Refining image for showcase... (bg removal & upscale)</p>
+                                <Progress value={showcaseProgress} className="w-full" />
+                            </div>
+                        )}
+                    </div>
                     <Button type="submit" disabled={isLoading || !form.formState.isDirty}>
                         {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Save Primary Image
@@ -237,3 +270,4 @@ export function EditGalleryTab({ character }: { character: Character }) {
     </>
   );
 }
+

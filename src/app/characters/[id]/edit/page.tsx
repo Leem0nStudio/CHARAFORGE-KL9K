@@ -46,7 +46,7 @@ export default async function EditCharacterPage({
 }) {
   try {
     const character = await getCharacterForEdit(params.id);
-    const defaultTab = searchParams?.tab === 'sharing' ? 'sharing' : 'details';
+    const defaultTab = searchParams?.tab === 'sharing' ? 'sharing' : 'gallery';
     
     return (
       <div className="container py-8">

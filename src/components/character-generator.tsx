@@ -301,15 +301,14 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
           rarity: formData.rarity,
         });
 
-        toast({
-          title: "Character Saved!",
-          description: `${generationResult.name} has been saved to your gallery.`,
-        });
-        
-        if (result.characterId) {
+        if (result.success && result.characterId) {
+             toast({
+              title: "Character Saved!",
+              description: `${generationResult.name} has been saved. Redirecting to the workshop...`,
+            });
             router.push(`/characters/${result.characterId}/edit`);
         } else {
-            router.push('/characters');
+            throw new Error("Failed to save character or get a valid ID back.");
         }
 
       } catch (err: unknown) {
@@ -710,5 +709,3 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     </>
   );
 }
-
-    

@@ -215,6 +215,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
   try {
     const characterRef = adminDb.collection('characters').doc();
     
+    // **CRITICAL FIX**: The destination path must match the structure expected by the Cloud Function trigger.
     const destinationPath = `raw-uploads/${userId}/${characterRef.id}/${uuidv4()}.png`;
     const storageUrl = await uploadToStorage(imageDataUri, destinationPath);
 
@@ -245,11 +246,11 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 rarity: (rarity as Character['core']['rarity']) || 3,
             },
             visuals: {
-                imageUrl: storageUrl, // Starts with the raw image URL
+                imageUrl: storageUrl, // This is now the URL to the raw, unprocessed image.
                 gallery: [storageUrl],
-                isProcessed: false, // Set initial processing state for main image
-                showcaseImageUrl: null, // Initialize showcase fields
-                isShowcaseProcessed: false,
+                isProcessed: false,
+                showcaseImageUrl: null,
+                isShowcaseProcessed: false, // Start as false, the function will update it.
             },
             meta: {
                 userId,
@@ -363,3 +364,4 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
     return { success: false, message };
   }
 }
+

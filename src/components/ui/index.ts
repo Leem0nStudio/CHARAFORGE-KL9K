@@ -1,4 +1,5 @@
 
+
 export * from './accordion';
 export * from './alert-dialog';
 export * from './alert';
@@ -13,6 +14,7 @@ export * from './dropdown-menu';
 export * from './form';
 export * from './input';
 export * from './label';
+export * from './progress';
 export * from './radio-group';
 export * from './scroll-area';
 export * from './select';
