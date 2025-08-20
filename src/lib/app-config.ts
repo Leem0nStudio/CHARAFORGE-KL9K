@@ -2,9 +2,24 @@
 import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon, Download, TestTube, Film } from 'lucide-react';
 import type { AiModel } from '@/types/ai-model';
 
-// Static AI Model Definitions are now empty by default.
-// The administrator will add all production models via the admin panel.
-export const imageModels: AiModel[] = [];
+// Static AI Model Definitions. The administrator can add more via the admin panel.
+export const imageModels: AiModel[] = [
+    {
+        id: 'gemini-2-flash-image',
+        name: 'Gemini 2.0 Flash',
+        type: 'model',
+        engine: 'gemini',
+        hf_id: 'googleai/gemini-2.0-flash-preview-image-generation', // This is the identifier Genkit uses
+        coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        baseModel: 'Gemini',
+        civitaiModelId: undefined,
+        modelslabModelId: undefined,
+        versionId: undefined,
+        userId: undefined, // System model
+    }
+];
 
 export const geminiImagePlaceholder: AiModel = {
     id: 'gemini-2-flash-image',
@@ -23,7 +38,20 @@ export const geminiImagePlaceholder: AiModel = {
 }
 
 
-export const textModels: AiModel[] = [];
+export const textModels: AiModel[] = [
+    {
+        id: 'gemini-1.5-flash',
+        name: 'Gemini 1.5 Flash',
+        type: 'model',
+        engine: 'gemini',
+        hf_id: 'googleai/gemini-1.5-flash-latest', // Genkit identifier
+        coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-summarization-email.jpg',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        baseModel: 'Gemini',
+        userId: undefined, // System model
+    }
+];
 
 
 // Navigation items for the main site and the mobile bottom bar.
