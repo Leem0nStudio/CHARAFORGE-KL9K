@@ -17,6 +17,7 @@ type ActionResponse = {
     success: boolean;
     message: string;
     error?: string;
+    data?: Partial<AiModel>; // Used to return pre-filled data
 };
 
 // Source-specific API fetchers
@@ -46,7 +47,7 @@ async function getModelsLabModelInfo(modelIdOrSlug: string): Promise<any> {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': apiKey, // Correct way to send the API Key as a header
+            'X-API-Key': apiKey,
         },
         cache: 'no-store'
     });
@@ -108,27 +109,23 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
     await verifyAndGetUid();
     
     try {
-        let modelInfoFetcher;
-        if (source === 'modelslab') {
-            modelInfoFetcher = getModelsLabModelInfo;
-        } else {
-            modelInfoFetcher = getCivitaiModelInfo;
-        }
-
-        const existingModelQuery = await adminDb.collection('ai_models').where(`${source}ModelId`, '==', sourceModelId).limit(1).get();
+        const existingModelQuery = await adminDb.collection('ai_models')
+            .where(`${source}ModelId`, '==', sourceModelId)
+            .limit(1).get();
         if (!existingModelQuery.empty) {
             return { success: false, message: `A model with this ${source} ID already exists.` };
         }
-
-        const modelInfo = await modelInfoFetcher(sourceModelId);
         
-        // **CRITICAL FIX**: Check for model_versions (from ModelsLab) or modelVersions (from Civitai).
-        const modelVersions = modelInfo.model_versions || modelInfo.modelVersions || modelInfo.versions;
-        if (!modelVersions || modelVersions.length === 0) {
-            return { success: false, message: `Model found, but no version data is available via API. Please add it manually.` };
+        let modelInfo;
+        if (source === 'modelslab') {
+            modelInfo = await getModelsLabModelInfo(sourceModelId);
+        } else {
+            modelInfo = await getCivitaiModelInfo(sourceModelId);
         }
         
-        const latestVersion = modelVersions[0];
+        const modelVersions = modelInfo.model_versions || modelInfo.modelVersions || modelInfo.versions;
+        // **NEW LOGIC**: Don't fail if versions are missing. Proceed with what we have.
+        const latestVersion = (modelVersions && modelVersions.length > 0) ? modelVersions[0] : {};
 
         let coverMediaUrl: string | null = null;
         let coverMediaType: 'image' | 'video' = 'image';
@@ -182,39 +179,32 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
         ];
         const triggerWords = [...new Set(combinedTriggerWords)];
 
-        const newModel: Omit<AiModel, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = {
+        const prefilledData: Partial<AiModel> = {
             name: modelInfo.name || modelInfo.model_name,
             civitaiModelId: source === 'civitai' ? modelInfo.id.toString() : undefined,
             modelslabModelId: source === 'modelslab' ? (modelInfo.model_id || modelInfo.id).toString() : undefined,
             hf_id: source === 'modelslab' ? (modelInfo.model_id || modelInfo.id).toString() : suggestedHfId,
-            type: modelInfo.type.toLowerCase(),
+            type: modelInfo.type.toLowerCase() === 'lora' ? 'lora' : 'model',
             engine: engine, 
             versionId: latestVersion?.id?.toString() || '',
             baseModel: baseModelName,
             coverMediaUrl,
-            coverMediaType,
             triggerWords: triggerWords,
-            versions: modelVersions.map((v: any) => ({ 
+            // We don't return versions if they are empty, let the user add manually if needed.
+            versions: modelVersions?.length > 0 ? modelVersions.map((v: any) => ({ 
                 id: v.id.toString(), 
                 name: v.name, 
                 baseModel: v.baseModel,
                 triggerWords: [...new Set([...(v.trainedWords || []), ...(modelInfo.tags || [])])]
-            })),
-            syncStatus: 'notsynced',
+            })) : [],
         };
         
-        const docRef = adminDb.collection('ai_models').doc();
-        await docRef.set({
-            ...newModel,
-            id: docRef.id,
-            createdAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
-        });
-        
-        revalidatePath('/admin/models');
-        revalidatePath('/character-generator');
-        
-        return { success: true, message: `Model "${newModel.name}" from ${source} added successfully.` };
+        // **NEW LOGIC**: Instead of saving, return the data to pre-fill the form.
+        return {
+            success: true,
+            message: "Model data fetched successfully. Please review and save manually.",
+            data: prefilledData
+        };
     
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";

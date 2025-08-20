@@ -26,6 +26,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
     const isEditing = !!model;
     const [importSource, setImportSource] = useState<'civitai' | 'modelslab'>('civitai');
     const [sourceModelId, setSourceModelId] = useState('');
+    const [activeTab, setActiveTab] = useState(isEditing ? 'manual' : 'import');
 
     const form = useForm<UpsertAiModel>({
         resolver: zodResolver(UpsertModelSchema),
@@ -91,9 +92,21 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
 
         startTransition(async () => {
             const result = await addAiModelFromSource(importSource, sourceModelId);
-            if (result.success) {
-                toast({ title: 'Success', description: result.message });
-                setIsOpen(false);
+            if (result.success && result.data) {
+                // Pre-fill the form with the fetched data
+                form.reset({
+                    name: result.data.name || '',
+                    type: result.data.type || 'lora',
+                    engine: result.data.engine || 'huggingface',
+                    hf_id: result.data.hf_id || '',
+                    civitaiModelId: result.data.civitaiModelId || '',
+                    modelslabModelId: result.data.modelslabModelId || '',
+                    versionId: result.data.versionId || '',
+                    baseModel: result.data.baseModel || '',
+                    triggerWords: result.data.triggerWords?.join(', ') || '',
+                });
+                setActiveTab('manual'); // Switch to the manual tab for review
+                toast({ title: 'Data Fetched!', description: 'Model info has been pre-filled. Please review and save manually.' });
             } else {
                 toast({ variant: 'destructive', title: 'Error', description: result.error || result.message });
             }
@@ -117,7 +130,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
             case 'vertexai': return 'e.g., 1234567890123456789';
             case 'comfyui': return 'e.g., v1-5-pruned-emaonly.safetensors';
             case 'huggingface': return 'e.g., stabilityai/sdxl';
-            case 'modelslab': return 'e.g., 12345';
+            case 'modelslab': return 'e.g., 12345 or model-slug';
             default: return 'Enter ID';
         }
     }
@@ -133,11 +146,11 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                         </DialogDescription>
                     </DialogHeader>
 
-                    <Tabs defaultValue="manual" className="w-full mt-4">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
                         {!isEditing && (
                             <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="manual">Add Manually</TabsTrigger>
                                 <TabsTrigger value="import">Import from Source</TabsTrigger>
+                                <TabsTrigger value="manual">Add Manually</TabsTrigger>
                             </TabsList>
                         )}
                         
@@ -269,7 +282,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                         </Select>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="sourceModelId">Model ID from {importSource}</Label>
+                                        <Label htmlFor="sourceModelId">Model ID or Slug from {importSource}</Label>
                                         <Input
                                             id="sourceModelId"
                                             placeholder="e.g., 9251 or a-text-slug"
@@ -279,7 +292,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                     </div>
                                      <Button type="button" onClick={handleSourceImport} disabled={isProcessing} className="w-full">
                                         {isProcessing && <Loader2 className="animate-spin mr-2"/>}
-                                        Fetch & Add Model
+                                        Fetch & Pre-fill Form
                                     </Button>
                                 </div>
                              </TabsContent>
