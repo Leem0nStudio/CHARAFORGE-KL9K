@@ -23,7 +23,7 @@ export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
     }
 
     return (
-        <Card className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full">
+        <Card className="flex flex-col overflow-hidden group hover:shadow-primary/20 transition-all duration-300 h-full bg-card-highlight border-border/50 hover:border-primary/40">
             <CardHeader className="p-0">
                 <Link href={`/datapacks/${pack.id}`} className="relative aspect-square bg-muted/20 block">
                     <Image
@@ -34,6 +34,7 @@ export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         data-ai-hint="datapack cover image"
                     />
+                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent" />
                     <div className="absolute top-2 right-2 flex gap-1">
                         {pack.isNsfw && <Badge variant="destructive">NSFW</Badge>}
                         <Badge className={cn(
@@ -43,13 +44,13 @@ export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
                             pack.type === 'temporal' && "bg-blue-500"
                         )}>{pack.type}</Badge>
                     </div>
+                     <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <CardTitle className="text-white font-bold drop-shadow-lg font-headline text-2xl">{pack.name}</CardTitle>
+                    </div>
                 </Link>
             </CardHeader>
             <CardContent className="p-4 flex-grow">
-                 <Link href={`/datapacks/${pack.id}`}>
-                    <CardTitle className="font-bold hover:text-primary transition-colors">{pack.name}</CardTitle>
-                 </Link>
-                <CardDescription className="mt-2 flex items-center gap-2">
+                <CardDescription className="flex items-center gap-2">
                     <User className="h-4 w-4" /> 
                     <span>by @{pack.author}</span>
                 </CardDescription>
@@ -76,7 +77,7 @@ export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
                 )}
             </CardContent>
             {!isCompact && (
-                 <CardFooter className="mt-auto p-4">
+                 <CardFooter className="mt-auto p-4 bg-card">
                     <Link href={`/datapacks/${pack.id}`} className="text-sm text-primary font-semibold group-hover:underline flex items-center">
                         View Details <ArrowRight className="inline-block h-4 w-4 transition-transform group-hover:translate-x-1 ml-1" />
                     </Link>
