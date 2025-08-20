@@ -273,11 +273,13 @@ const generateCharacterImageFlow = ai.defineFlow(
             const { width, height } = getDimensions(aspectRatio);
             const { media } = await ai.generate({
                 model: 'googleai/gemini-2.0-flash-preview-image-generation',
-                prompt: finalDescription,
-                config: {
-                    responseModalities: ['TEXT', 'IMAGE'],
+                prompt: {
+                    text: finalDescription,
                     width,
                     height,
+                },
+                config: {
+                    responseModalities: ['TEXT', 'IMAGE'],
                 },
             });
             imageUrl = media?.url;
