@@ -115,40 +115,33 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   });
 
   const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-    // Collect all tags from the selected options.
-    let finalTags: string[] = [];
-    
-    // Start with the base template tags
-    const templateTags = template.tags || [];
+    let promptParts: string[] = [];
+    const usedPlaceholders = new Set<string>();
 
-    // Create a map of slot options for quick lookup
-    const slotOptionsMap = new Map<string, Map<string, Option>>();
-    pack.schema.slots.forEach(slot => {
-        const optionsMap = new Map<string, Option>();
-        slot.options?.forEach(opt => optionsMap.set(opt.value, opt));
-        slotOptionsMap.set(slot.id, optionsMap);
-    });
-
-    // Process the template tags
-    templateTags.forEach(tagOrPlaceholder => {
-        const match = tagOrPlaceholder.match(/\{(.+?)\}/);
-        if (match) {
-            const slotId = match[1];
-            const selectedValue = wizardData[slotId];
-            if (selectedValue) {
-                const option = slotOptionsMap.get(slotId)?.get(selectedValue);
-                if (option?.tags) {
-                    finalTags.push(...option.tags);
-                } else if (option) {
-                    finalTags.push(option.value); // Fallback to value if no tags are defined
+    if (template.tags) {
+        template.tags.forEach(tagOrPlaceholder => {
+            const match = tagOrPlaceholder.match(/\{(.+?)\}/);
+            if (match) {
+                const slotId = match[1];
+                const selectedValue = wizardData[slotId];
+                if (selectedValue) {
+                    promptParts.push(selectedValue);
+                    usedPlaceholders.add(slotId);
                 }
+            } else {
+                promptParts.push(tagOrPlaceholder);
             }
-        } else {
-            finalTags.push(tagOrPlaceholder);
+        });
+    }
+
+    // Append values from slots that were NOT in the template, to ensure all selections are included.
+    for (const slot of pack.schema.slots) {
+        if (!usedPlaceholders.has(slot.id) && wizardData[slot.id]) {
+            promptParts.push(wizardData[slot.id]);
         }
-    });
+    }
     
-    const finalPrompt = finalTags.filter(Boolean).join(', ');
+    const finalPrompt = promptParts.join(', ');
 
     generationForm.setValue('description', finalPrompt, { shouldValidate: true });
     generationForm.setValue('tags', finalPrompt);
@@ -731,3 +724,5 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     </>
   );
 }
+
+    
