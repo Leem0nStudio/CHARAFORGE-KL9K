@@ -9,9 +9,9 @@ interface RankBadgeProps {
 
 export function RankBadge({ rank }: RankBadgeProps) {
     const colors: { [key: number]: string } = {
-        1: 'bg-blue-600/20 text-blue-400 border-blue-500',
-        2: 'bg-amber-600/20 text-amber-400 border-amber-500',
-        3: 'bg-orange-700/20 text-orange-400 border-orange-500',
+        1: 'bg-amber-400/20 text-amber-300 border-amber-400',
+        2: 'bg-slate-400/20 text-slate-300 border-slate-400',
+        3: 'bg-orange-600/20 text-orange-400 border-orange-500',
     };
     const defaultColor = 'bg-slate-600/20 text-slate-400 border-slate-500';
     const color = colors[rank] || defaultColor;
@@ -22,3 +22,5 @@ export function RankBadge({ rank }: RankBadgeProps) {
         </div>
     );
 }
+
+    
