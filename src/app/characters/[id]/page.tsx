@@ -3,10 +3,7 @@
 'use server';
 
 import { notFound } from 'next/navigation';
-import { CharacterPageClient } from './client';
 import { getCharacter } from '@/app/actions/character-read';
-import { getCreationsForDataPack } from '@/app/actions/datapacks';
-import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { ShowcaseViewer } from '@/components/showcase/showcase-viewer';
 

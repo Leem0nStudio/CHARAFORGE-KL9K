@@ -125,7 +125,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
     }
     
      try {
-        // The primary ID for execution (HF ID, Vertex Endpoint, ModelsLab Model ID)
+        // The primary ID for execution (HF ID, Vertex Endpoint ID, ModelsLab Model ID)
         const executionModelId = selectedModel.engine === 'gemini' ? undefined : selectedModel.hf_id;
 
         const imageEngineConfig: ImageEngineConfig = {
