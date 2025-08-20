@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -17,7 +18,7 @@ type ActionResponse<T = null> = {
 };
 
 // This now includes the full character sheet for a richer context.
-type CharacterDetailsForAI = Pick<Character, 'name' | 'biography' | 'alignment' | 'timeline' | 'archetype' | 'equipment' | 'physicalDescription'>;
+type CharacterDetailsForAI = Pick<Character['core'], 'name' | 'biography' | 'alignment' | 'timeline' | 'archetype' | 'equipment' | 'physicalDescription'>;
 
 
 export async function getUserCasts(): Promise<StoryCast[]> {
@@ -145,13 +146,13 @@ export async function generateStory(castId: string, storyPrompt: string): Promis
             }
             const char = doc.data() as Character;
             return {
-                name: char.name,
-                biography: char.biography,
-                alignment: char.alignment || 'True Neutral',
-                timeline: char.timeline || [],
-                archetype: char.archetype || undefined,
-                equipment: char.equipment || undefined,
-                physicalDescription: char.physicalDescription || char.description || undefined,
+                name: char.core.name,
+                biography: char.core.biography,
+                alignment: char.core.alignment || 'True Neutral',
+                timeline: char.core.timeline || [],
+                archetype: char.core.archetype || undefined,
+                equipment: char.core.equipment || undefined,
+                physicalDescription: char.core.physicalDescription || char.generation?.originalPrompt || undefined,
             };
         }).filter((c): c is CharacterDetailsForAI => c !== null);
 
@@ -187,5 +188,3 @@ export async function generateStory(castId: string, storyPrompt: string): Promis
         return { success: false, message, error: message };
     }
 }
-
-    

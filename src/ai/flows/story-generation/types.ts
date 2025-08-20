@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Data schemas and types for the story generation flow.
  * This file defines the Zod schemas for input and output validation,
@@ -5,6 +6,7 @@
  */
 
 import { z } from 'genkit';
+import type { Character } from '@/types/character';
 
 const TimelineEventSchemaForStory = z.object({
     id: z.string(),

@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -34,7 +35,7 @@ export async function generateNewCharacterImage(characterId: string, description
         
         const characterRef = adminDb.collection('characters').doc(characterId);
         await characterRef.update({
-            gallery: FieldValue.arrayUnion(publicUrl),
+            'visuals.gallery': FieldValue.arrayUnion(publicUrl),
         });
 
         revalidatePath(`/characters/${characterId}/edit`);
@@ -61,7 +62,7 @@ export async function updateCharacterImages(
      const characterRef = adminDb.collection('characters').doc(characterId);
      const characterDoc = await characterRef.get();
      
-     if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+     if (!characterDoc.exists || characterDoc.data()?.meta?.userId !== uid) {
         return { success: false, message: 'Permission denied or character not found.' };
      }
 
@@ -73,8 +74,8 @@ export async function updateCharacterImages(
      }
 
      await characterRef.update({ 
-        gallery: gallery,
-        imageUrl: primaryImageUrl,
+        'visuals.gallery': gallery,
+        'visuals.imageUrl': primaryImageUrl,
       });
 
      revalidatePath(`/characters/${characterId}/edit`);
@@ -87,5 +88,3 @@ export async function updateCharacterImages(
     return { success: false, message };
   }
 }
-
-    

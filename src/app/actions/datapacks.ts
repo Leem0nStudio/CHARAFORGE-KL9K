@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -275,9 +276,9 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
   try {
     const charactersRef = adminDb.collection('characters');
     const q = charactersRef
-        .where('dataPackId', '==', packId)
-        .where('isSharedToDataPack', '==', true) 
-        .orderBy('createdAt', 'desc')
+        .where('meta.dataPackId', '==', packId)
+        .where('settings.isSharedToDataPack', '==', true) 
+        .orderBy('meta.createdAt', 'desc')
         .limit(20);
     const snapshot = await q.get();
 
@@ -286,27 +287,30 @@ export async function getCreationsForDataPack(packId: string): Promise<Character
     }
 
     const charactersData = await Promise.all(snapshot.docs.map(async doc => {
-        const data = doc.data();
+        const data = doc.data() as Character;
         let userName = 'Anonymous';
 
-        if (data.userId) {
+        if (data.meta.userId) {
             try {
                 if (!adminDb) throw new Error('Database service is unavailable.');
-                const userDoc = await adminDb.collection('users').doc(data.userId).get();
+                const userDoc = await adminDb.collection('users').doc(data.meta.userId).get();
                 if (userDoc.exists) {
                     userName = userDoc.data()?.displayName || 'Anonymous';
                 }
             } catch (userError) {
-                console.error(`Failed to fetch user ${data.userId} for character ${doc.id}:`, userError);
+                console.error(`Failed to fetch user ${data.meta.userId} for character ${doc.id}:`, userError);
             }
         }
         
-        const createdAt = data.createdAt;
+        const createdAt = data.meta.createdAt as any;
         return {
-            id: doc.id,
             ...data,
-            createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
-            userName: userName,
+            id: doc.id,
+            meta: {
+              ...data.meta,
+              createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
+              userName: userName,
+            }
         } as Character;
     }));
     

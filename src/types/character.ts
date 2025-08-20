@@ -12,52 +12,69 @@ export interface TimelineEvent {
   relatedCharacterIds?: string[];
 }
 
-
 /**
- * Represents the structure of a Character object throughout the application.
+ * A more professional, modular structure for the Character object.
+ * Properties are grouped into logical sub-objects for clarity and maintainability.
  */
 export type Character = {
-  id: string;
-  name: string;
-  description: string;
-  biography: string;
-  imageUrl: string; 
-  gallery?: string[]; 
-  userId: string;
-  status: 'private' | 'public';
-  createdAt: Date; 
-  userName?: string;
-  dataPackId?: string | null;
-  isNsfw?: boolean; // Added for explicit NSFW content marking
-  isSharedToDataPack?: boolean; // Controls visibility in DataPack gallery
-  version: number;
-  versionName: string;
-  baseCharacterId: string | null;
-  versions: { id: string; name: string; version: number }[];
-  branchingPermissions?: 'private' | 'public';
-  // New lineage fields
-  branchedFromId?: string | null;
-  originalAuthorId?: string | null;
-  originalAuthorName?: string | null;
-  dataPackName?: string | null; // Added for display purposes
-  alignment: 'Lawful Good' | 'Neutral Good' | 'Chaotic Good' | 'Lawful Neutral', 'True Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil';
-  tags?: string[];
-  timeline?: TimelineEvent[]; // New field for the character's timeline
-  // New character sheet fields
-  archetype?: string | null;
-  equipment?: string[] | null;
-  physicalDescription?: string | null;
-  // Engine Info
-  textEngine?: 'gemini' | 'openrouter';
-  imageEngine?: 'gemini' | 'openrouter' | 'huggingface' | 'vertexai' | 'comfyui' | 'modelslab';
-  // Wizard Data
-  wizardData?: Record<string, string> | null;
+  id: string; // The document ID remains at the top level.
+
+  // Core character sheet information.
+  core: {
+    name: string;
+    archetype: string | null;
+    alignment: 'Lawful Good' | 'Neutral Good' | 'Chaotic Good' | 'Lawful Neutral' | 'True Neutral' | 'Chaotic Neutral' | 'Lawful Evil' | 'Neutral Evil' | 'Chaotic Evil';
+    biography: string;
+    physicalDescription: string | null;
+    equipment: string[] | null;
+    timeline: TimelineEvent[];
+    tags: string[];
+  };
+
+  // Visual assets of the character.
+  visuals: {
+    imageUrl: string;
+    gallery: string[];
+  };
+
+  // Metadata about the record itself.
+  meta: {
+    userId: string;
+    userName?: string; // Denormalized for display
+    status: 'private' | 'public';
+    createdAt: Date;
+    isNsfw: boolean;
+    dataPackId: string | null;
+    dataPackName?: string | null; // Denormalized for display
+  };
+
+  // Versioning and branching information.
+  lineage: {
+    version: number;
+    versionName: string;
+    baseCharacterId: string | null;
+    versions: { id: string; name: string; version: number }[];
+    branchedFromId: string | null;
+    originalAuthorId: string | null;
+    originalAuthorName?: string | null; // Denormalized for display
+  };
+
+  // Sharing and permission settings.
+  settings: {
+    isSharedToDataPack: boolean;
+    branchingPermissions: 'private' | 'public';
+  };
+  
+  // Information about the AI engines used for generation.
+  generation: {
+    textEngine?: 'gemini' | 'openrouter';
+    imageEngine?: 'gemini' | 'openrouter' | 'huggingface' | 'vertexai' | 'comfyui' | 'modelslab';
+    wizardData?: Record<string, string> | null;
+    originalPrompt?: string; // The original simple text prompt
+  }
 };
 
-// Zod validation schemas for character actions.
-// They live here, in a neutral types file, not in a 'use server' file.
-
-export const UpdateStatusSchema = z.enum(['private', 'public']);
+// Zod validation schemas updated to reflect the new structure.
 
 export const UpdateCharacterSchema = z.object({
   name: z.string().min(1, "Name is required.").max(100, "Name cannot exceed 100 characters."),
@@ -80,7 +97,6 @@ export const SaveCharacterInputSchema = z.object({
   textEngine: z.enum(['gemini', 'openrouter']).optional(),
   imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai', 'comfyui', 'modelslab']).optional(),
   wizardData: z.record(z.string()).optional().nullable(),
+  originalPrompt: z.string().optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
-
-    

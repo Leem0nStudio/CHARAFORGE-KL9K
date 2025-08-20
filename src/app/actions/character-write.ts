@@ -9,7 +9,7 @@ import type { Character, TimelineEvent } from '@/types/character';
 import { FieldValue } from 'firebase-admin/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadToStorage } from '@/services/storage';
-import { UpdateCharacterSchema, UpdateStatusSchema, SaveCharacterInputSchema, type SaveCharacterInput } from '@/types/character';
+import { UpdateCharacterSchema, SaveCharacterInputSchema, type SaveCharacterInput } from '@/types/character';
 
 
 type ActionResponse = {
@@ -31,8 +31,9 @@ export async function deleteCharacter(characterId: string) {
   
   try {
     const characterDoc = await characterRef.get();
+    const characterData = characterDoc.data();
 
-    if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+    if (!characterDoc.exists || characterData?.meta?.userId !== uid) {
       throw new Error('Permission denied or character not found.');
     }
 
@@ -54,34 +55,31 @@ export async function updateCharacterStatus(
   if (!adminDb) {
       return { success: false, message: 'Database service is unavailable.' };
   }
-  const validation = UpdateStatusSchema.safeParse(status);
-  if (!validation.success) {
-      return { success: false, message: 'Invalid status provided.' };
-  }
   
   try {
     const characterRef = adminDb.collection('characters').doc(characterId);
     const characterDoc = await characterRef.get();
     const characterData = characterDoc.data();
-    if (!characterDoc.exists || characterData?.userId !== uid) {
+
+    if (!characterDoc.exists || characterData?.meta?.userId !== uid) {
       return { success: false, message: 'Permission denied or character not found.' };
     }
     
-    const updates: { status: 'private' | 'public'; isNsfw?: boolean } = {
-        status: validation.data
+    const updates: { 'meta.status': 'private' | 'public'; 'meta.isNsfw'?: boolean } = {
+        'meta.status': status
     };
     if (typeof isNsfw === 'boolean') {
-        updates.isNsfw = isNsfw;
+        updates['meta.isNsfw'] = isNsfw;
     }
 
     await characterRef.update(updates);
     
-    if (validation.data === 'public' && characterData.dataPackId && characterData.imageUrl) {
-        const dataPackRef = adminDb.collection('datapacks').doc(characterData.dataPackId);
+    if (status === 'public' && characterData.meta.dataPackId && characterData.visuals.imageUrl) {
+        const dataPackRef = adminDb.collection('datapacks').doc(characterData.meta.dataPackId);
         await dataPackRef.update({
-            coverImageUrl: characterData.imageUrl,
+            coverImageUrl: characterData.visuals.imageUrl,
         });
-        revalidatePath(`/datapacks/${characterData.dataPackId}`);
+        revalidatePath(`/datapacks/${characterData.meta.dataPackId}`);
     }
 
     revalidatePath('/characters');
@@ -106,30 +104,30 @@ export async function updateCharacterDataPackSharing(characterId: string, isShar
     const characterDoc = await characterRef.get();
     const characterData = characterDoc.data();
 
-    if (!characterDoc.exists || characterData?.userId !== uid) {
+    if (!characterDoc.exists || characterData?.meta?.userId !== uid) {
       return { success: false, message: 'Permission denied or character not found.' };
     }
     
-    if (!characterData.dataPackId) {
+    if (!characterData.meta.dataPackId) {
         return { success: false, message: 'This character was not created with a DataPack.' };
     }
 
-    const updates: { isSharedToDataPack: boolean; status?: 'public' } = { 
-        isSharedToDataPack: isShared 
+    const updates: { 'settings.isSharedToDataPack': boolean; 'meta.status'?: 'public' } = { 
+        'settings.isSharedToDataPack': isShared 
     };
     if (isShared) {
-        updates.status = 'public';
-        if (characterData.imageUrl) {
-            const dataPackRef = adminDb.collection('datapacks').doc(characterData.dataPackId);
+        updates['meta.status'] = 'public';
+        if (characterData.visuals.imageUrl) {
+            const dataPackRef = adminDb.collection('datapacks').doc(characterData.meta.dataPackId);
             await dataPackRef.update({
-                coverImageUrl: characterData.imageUrl,
+                coverImageUrl: characterData.visuals.imageUrl,
             });
         }
     }
     await characterRef.update(updates);
     
     revalidatePath('/characters');
-    revalidatePath(`/datapacks/${characterData.dataPackId}`);
+    revalidatePath(`/datapacks/${characterData.meta.dataPackId}`);
     revalidatePath('/');
     revalidatePath(`/characters/${characterId}/edit`);
     
@@ -143,7 +141,7 @@ export async function updateCharacterDataPackSharing(characterId: string, isShar
 
 export async function updateCharacter(
     characterId: string, 
-    data: Partial<Omit<Character, 'id' | 'createdAt'>>
+    data: Partial<Character['core']>
 ): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
   if (!adminDb) {
@@ -166,11 +164,21 @@ export async function updateCharacter(
     
     const characterDoc = await characterRef.get();
 
-    if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+    if (!characterDoc.exists || characterDoc.data()?.meta?.userId !== uid) {
         return { success: false, message: 'Permission denied or character not found.' };
     }
+    
+    // Create an object with dot notation for updating nested fields in Firestore
+    const updates = {
+      'core.name': name,
+      'core.biography': biography,
+      'core.alignment': alignment,
+      'core.archetype': archetype || null,
+      'core.equipment': equipment || null,
+      'core.physicalDescription': physicalDescription || null,
+    };
   
-    await characterRef.update({ name, biography, alignment, archetype, equipment, physicalDescription });
+    await characterRef.update(updates);
 
     revalidatePath(`/characters/${characterId}/edit`);
     revalidatePath('/characters');
@@ -191,7 +199,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
   }
   const { 
       name, biography, imageUrl: imageDataUri, dataPackId, tags, 
-      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData
+      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt
   } = validation.data;
   
   const userId = await verifyAndGetUid();
@@ -219,30 +227,46 @@ export async function saveCharacter(input: SaveCharacterInput) {
         const manualTags = tags ? tags.split(',').map(tag => tag.trim().toLowerCase().replace(/ /g, '_')) : [];
         const uniqueTags = [...new Set([...wizardTags, ...manualTags].filter(Boolean))];
 
-
-        const characterData = {
-            userId,
-            name,
-            description: physicalDescription, 
-            biography,
-            imageUrl: storageUrl,
-            gallery: [storageUrl],
-            status: 'private',
-            createdAt: FieldValue.serverTimestamp(),
-            dataPackId: dataPackId || null,
-            version: version,
-            versionName: versionName,
-            baseCharacterId: characterRef.id,
-            versions: [initialVersion],
-            branchingPermissions: 'private',
-            alignment: 'True Neutral',
-            tags: uniqueTags,
-            archetype: archetype || null,
-            equipment: equipment || null,
-            physicalDescription: physicalDescription || null,
-            textEngine: textEngine || null,
-            imageEngine: imageEngine || null,
-            wizardData: wizardData || null,
+        const characterData: Omit<Character, 'id'> = {
+            core: {
+                name,
+                biography,
+                archetype: archetype || null,
+                alignment: 'True Neutral',
+                equipment: equipment || null,
+                physicalDescription: physicalDescription || null,
+                timeline: [],
+                tags: uniqueTags,
+            },
+            visuals: {
+                imageUrl: storageUrl,
+                gallery: [storageUrl],
+            },
+            meta: {
+                userId,
+                status: 'private',
+                createdAt: FieldValue.serverTimestamp() as any, // Cast for transaction
+                isNsfw: false,
+                dataPackId: dataPackId || null,
+            },
+            lineage: {
+                version: version,
+                versionName: versionName,
+                baseCharacterId: characterRef.id,
+                versions: [initialVersion],
+                branchedFromId: null,
+                originalAuthorId: null,
+            },
+            settings: {
+                isSharedToDataPack: false,
+                branchingPermissions: 'private',
+            },
+            generation: {
+                textEngine: textEngine,
+                imageEngine: imageEngine,
+                wizardData: wizardData,
+                originalPrompt: originalPrompt,
+            }
         };
 
         transaction.set(characterRef, characterData);
@@ -285,11 +309,11 @@ export async function updateCharacterTimeline(characterId: string, timeline: Tim
     try {
         const characterRef = adminDb.collection('characters').doc(characterId);
         const characterDoc = await characterRef.get();
-        if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+        if (!characterDoc.exists || characterDoc.data()?.meta?.userId !== uid) {
             return { success: false, message: 'Permission denied or character not found.' };
         }
         
-        await characterRef.update({ timeline });
+        await characterRef.update({ 'core.timeline': timeline });
         
         revalidatePath(`/characters/${characterId}/edit`);
         
@@ -310,16 +334,17 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
   try {
     const characterRef = adminDb.collection('characters').doc(characterId);
     const characterDoc = await characterRef.get();
+    const characterData = characterDoc.data();
 
-    if (!characterDoc.exists || characterDoc.data()?.userId !== uid) {
+    if (!characterDoc.exists || characterData?.meta?.userId !== uid) {
       return { success: false, message: 'Permission denied or character not found.' };
     }
 
-    if (permissions === 'public' && characterDoc.data()?.status !== 'public') {
+    if (permissions === 'public' && characterData?.meta?.status !== 'public') {
         return { success: false, message: 'Character must be public to allow branching.' };
     }
 
-    await characterRef.update({ branchingPermissions: permissions });
+    await characterRef.update({ 'settings.branchingPermissions': permissions });
 
     revalidatePath(`/characters/${characterId}/edit`);
     return { success: true, message: 'Branching permissions updated.' };
