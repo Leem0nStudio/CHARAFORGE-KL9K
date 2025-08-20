@@ -97,7 +97,7 @@ export const processUploadedImage = onObjectFinalized({
     memory: '1GiB',
     region: 'us-central1',
     bucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
-    timeoutSeconds: 300, // Increase timeout for external API calls
+    timeoutSeconds: 300,
 }, async (event) => {
     const fileBucket = event.bucket;
     const filePath = event.data.name;
