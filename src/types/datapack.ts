@@ -10,6 +10,7 @@ export interface Exclusion {
 export interface Option {
     label: string;
     value: string;
+    tags?: string[]; // Added for tag-based prompt generation
     exclusions?: Exclusion[];
 }
 
@@ -25,11 +26,12 @@ export interface Slot {
 
 export interface PromptTemplate {
     name: string;
-    template: string;
+    template: string; // The full sentence template
+    tags?: string[]; // A list of tags for tag-based generation
 }
 
 export interface DataPackSchema {
-    promptTemplates: PromptTemplate[]; // Changed from single template
+    promptTemplates: PromptTemplate[];
     slots: Slot[];
     tags?: string[];
 }
@@ -46,7 +48,7 @@ export interface DataPack {
     createdAt: number;
     updatedAt?: number | null;
     schema: DataPackSchema;
-    isNsfw?: boolean; // New field for content warning
+    isNsfw?: boolean;
 }
 
 // Zod Schemas for validation (both client and server)
@@ -59,6 +61,7 @@ export const ExclusionSchema = z.object({
 export const OptionSchema = z.object({
     label: z.string().min(1, 'Label is required.'),
     value: z.string().min(1, 'Value is required.'),
+    tags: z.array(z.string()).optional(),
     exclusions: z.array(ExclusionSchema).optional(),
 });
 
@@ -75,6 +78,7 @@ export const SlotSchema = z.object({
 export const PromptTemplateSchema = z.object({
     name: z.string().min(1, 'Template name is required.'),
     template: z.string().min(1, 'Template string is required.'),
+    tags: z.array(z.string()).optional(),
 });
 
 export const DataPackSchemaSchema = z.object({

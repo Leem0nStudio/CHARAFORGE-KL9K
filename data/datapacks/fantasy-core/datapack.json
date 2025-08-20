@@ -11,15 +11,18 @@
         "promptTemplates": [
             {
                 "name": "Epic Cinematic Portrait",
-                "template": "Epic cinematic portrait of a legendary {gender} {race} {class}, {expression}. They wear ornate {armor_torso} and {armor_legs}, wielding a powerful {weapon}. Their {hair_style} {hair_color} hair flows in the wind. The background is a breathtaking {background_setting}, with {lighting} lighting."
+                "template": "epic cinematic portrait of a legendary {gender} {race} {class}, {expression}. They wear ornate {armor_torso} and {armor_legs}, wielding a powerful {weapon}. Their {hair_style} {hair_color} hair flows in the wind. The background is a breathtaking {background_setting}, with {lighting} lighting.",
+                "tags": ["epic", "cinematic", "portrait", "legendary", "{gender}", "{race}", "{class}", "{expression}", "ornate {armor_torso}", "{armor_legs}", "wielding a powerful {weapon}", "{hair_style}", "{hair_color} hair", "flowing hair", "wind", "breathtaking {background_setting}", "{lighting} lighting"]
             },
             {
                 "name": "Grim Dark Style",
-                "template": "A grim, dark fantasy painting of a battle-hardened {gender} {race} {class}, {expression}, wearing worn {armor_torso} and {armor_legs}. They carry a menacing {weapon}, lurking in a {background_setting} under {lighting}."
+                "template": "A grim, dark fantasy painting of a battle-hardened {gender} {race} {class}, {expression}, wearing worn {armor_torso} and {armor_legs}. They carry a menacing {weapon}, lurking in a {background_setting} under {lighting}.",
+                "tags": ["grimdark", "dark fantasy", "oil painting (medium)", "battle-hardened", "{gender}", "{race}", "{class}", "{expression}", "worn {armor_torso}", "{armor_legs}", "menacing {weapon}", "lurking in {background_setting}", "{lighting}"]
             },
             {
                 "name": "Character Sheet Concept",
-                "template": "Full body character concept art of a {gender} {race} {class} on a white background, clean detailed line art. They are equipped with a {weapon}, and wearing {armor_torso} and {armor_legs}."
+                "template": "Full body character concept art of a {gender} {race} {class} on a white background, clean detailed line art. They are equipped with a {weapon}, and wearing {armor_torso} and {armor_legs}.",
+                "tags": ["full body", "character concept", "white background", "clean lineart", "detailed", "{gender}", "{race}", "{class}", "{weapon}", "{armor_torso}", "{armor_legs}"]
             }
         ],
         "slots": [
@@ -29,8 +32,8 @@
                 "type": "select",
                 "defaultOption": "female",
                 "options": [
-                    { "label": "Female", "value": "female" },
-                    { "label": "Male", "value": "male" }
+                    { "label": "Female", "value": "female", "tags": ["1girl", "female"] },
+                    { "label": "Male", "value": "male", "tags": ["1boy", "male"] }
                 ]
             },
             {
@@ -39,11 +42,11 @@
                 "type": "select",
                 "defaultOption": "dragonborn",
                 "options": [
-                    { "label": "Dragonborn", "value": "dragonborn" },
-                    { "label": "Tiefling", "value": "tiefling" },
-                    { "label": "Aasimar", "value": "aasimar (angelic being)" },
-                    { "label": "Warforged", "value": "warforged (construct)" },
-                    { "label": "Tabaxi", "value": "tabaxi (cat-like humanoid)" }
+                    { "label": "Dragonborn", "value": "dragonborn", "tags": ["dragonborn", "dragon girl", "dragon scales", "horns"] },
+                    { "label": "Tiefling", "value": "tiefling", "tags": ["tiefling", "horns", "demonic"] },
+                    { "label": "Aasimar", "value": "aasimar", "tags": ["aasimar", "angelic", "halo"] },
+                    { "label": "Warforged", "value": "warforged", "tags": ["warforged", "robot", "golem", "full armor"] },
+                    { "label": "Tabaxi", "value": "tabaxi", "tags": ["tabaxi", "cat girl", "cat ears", "animal ears"] }
                 ]
             },
             {
@@ -52,35 +55,35 @@
                 "type": "select",
                 "defaultOption": "paladin",
                 "options": [
-                    { "label": "Paladin", "value": "paladin" },
-                    { "label": "Warlock", "value": "warlock" },
-                    { "label": "Druid", "value": "druid" },
-                    { "label": "Artificer", "value": "artificer" },
-                    { "label": "Barbarian", "value": "barbarian" }
+                    { "label": "Paladin", "value": "paladin", "tags": ["paladin", "holy knight", "divine"] },
+                    { "label": "Warlock", "value": "warlock", "tags": ["warlock", "dark magic", "eldritch"] },
+                    { "label": "Druid", "value": "druid", "tags": ["druid", "nature", "antlers"] },
+                    { "label": "Artificer", "value": "artificer", "tags": ["artificer", "goggles", "inventor"] },
+                    { "label": "Barbarian", "value": "barbarian", "tags": ["barbarian", "muscular", "raging"] }
                 ]
             },
             {
                 "id": "expression",
                 "label": "Expression",
                 "type": "select",
-                "defaultOption": "a determined look",
+                "defaultOption": "determined",
                 "options": [
-                    { "label": "Determined", "value": "a determined look" },
-                    { "label": "Serene", "value": "a serene expression" },
-                    { "label": "Menacing", "value": "a menacing stare" },
-                    { "label": "Joyful", "value": "a joyful smile" }
+                    { "label": "Determined", "value": "determined", "tags": ["determined expression", "serious"] },
+                    { "label": "Serene", "value": "serene", "tags": ["serene expression", "calm"] },
+                    { "label": "Menacing", "value": "menacing", "tags": ["menacing stare", "evil smile"] },
+                    { "label": "Joyful", "value": "joyful", "tags": ["joyful smile", "laughing"] }
                 ]
             },
             {
                 "id": "hair_style",
                 "label": "Hair Style",
                 "type": "select",
-                "defaultOption": "ornate braids",
+                "defaultOption": "ornate_braids",
                 "options": [
-                    { "label": "Ornate Braids", "value": "ornate braids" },
-                    { "label": "Wild and Unkempt", "value": "wild and unkempt" },
-                    { "label": "Elegant Updo", "value": "elegant updo" },
-                    { "label": "Top Knot", "value": "top knot" }
+                    { "label": "Ornate Braids", "value": "ornate_braids", "tags": ["ornate braids", "braided hair"] },
+                    { "label": "Wild and Unkempt", "value": "wild_unkempt", "tags": ["wild hair", "messy hair"] },
+                    { "label": "Elegant Updo", "value": "elegant_updo", "tags": ["elegant updo", "hair bun"] },
+                    { "label": "Top Knot", "value": "top_knot", "tags": ["top knot"] }
                 ]
             },
             {
@@ -89,70 +92,70 @@
                 "type": "select",
                 "defaultOption": "silver",
                 "options": [
-                    { "label": "Silver", "value": "silver" },
-                    { "label": "Crimson Red", "value": "crimson red" },
-                    { "label": "Deep Blue", "value": "deep blue" },
-                    { "label": "Pure White", "value": "pure white" }
+                    { "label": "Silver", "value": "silver", "tags": ["silver hair", "white hair"] },
+                    { "label": "Crimson Red", "value": "crimson", "tags": ["crimson hair", "red hair"] },
+                    { "label": "Deep Blue", "value": "deep_blue", "tags": ["deep blue hair", "blue hair"] },
+                    { "label": "Pure White", "value": "pure_white", "tags": ["white hair"] }
                 ]
             },
             {
                 "id": "armor_torso",
                 "label": "Torso Armor",
                 "type": "select",
-                "defaultOption": "ornate adamantine breastplate",
+                "defaultOption": "adamantine_plate",
                 "options": [
-                    { "label": "Adamantine Plate", "value": "ornate adamantine breastplate" },
-                    { "label": "Dragon Scale Mail", "value": "dragon scale mail" },
-                    { "label": "Enchanted Robes", "value": "glowing enchanted robes" },
-                    { "label": "Spiked Leather", "value": "spiked leather armor" }
+                    { "label": "Adamantine Plate", "value": "adamantine_plate", "tags": ["ornate armor", "adamantine armor", "plate armor"] },
+                    { "label": "Dragon Scale Mail", "value": "dragon_scale", "tags": ["dragon scale mail", "scale mail"] },
+                    { "label": "Enchanted Robes", "value": "enchanted_robes", "tags": ["glowing robes", "enchanted clothing"] },
+                    { "label": "Spiked Leather", "value": "spiked_leather", "tags": ["spiked armor", "leather armor"] }
                 ]
             },
             {
                 "id": "armor_legs",
                 "label": "Leg Armor",
                 "type": "select",
-                "defaultOption": "plate leggings",
+                "defaultOption": "plate_leggings",
                 "options": [
-                    { "label": "Plate Leggings", "value": "plate leggings" },
-                    { "label": "Leather Trousers", "value": "leather trousers" },
-                    { "label": "Armored Kilt", "value": "armored kilt" },
-                    { "label": "Flowing Skirt", "value": "long flowing skirt" }
+                    { "label": "Plate Leggings", "value": "plate_leggings", "tags": ["greaves", "plate armor"] },
+                    { "label": "Leather Trousers", "value": "leather_trousers", "tags": ["leather pants"] },
+                    { "label": "Armored Kilt", "value": "armored_kilt", "tags": ["armored kilt"] },
+                    { "label": "Flowing Skirt", "value": "flowing_skirt", "tags": ["long skirt", "flowing skirt"] }
                 ]
             },
             {
                 "id": "weapon",
                 "label": "Weapon",
                 "type": "select",
-                "defaultOption": "flaming greatsword",
+                "defaultOption": "flaming_greatsword",
                 "options": [
-                    { "label": "Flaming Greatsword", "value": "flaming greatsword" },
-                    { "label": "Sun-forged Hammer", "value": "sun-forged warhammer" },
-                    { "label": "Crystal Staff", "value": "crystal-topped staff" },
-                    { "label": "Soul-Stealing Scythe", "value": "soul-stealing scythe" }
+                    { "label": "Flaming Greatsword", "value": "flaming_greatsword", "tags": ["flaming sword", "greatsword", "holding weapon"] },
+                    { "label": "Sun-forged Hammer", "value": "sun-forged_hammer", "tags": ["warhammer", "glowing weapon"] },
+                    { "label": "Crystal Staff", "value": "crystal_staff", "tags": ["crystal staff", "magic staff"] },
+                    { "label": "Soul-Stealing Scythe", "value": "soul-stealing_scythe", "tags": ["scythe", "demonic weapon"] }
                 ]
             },
             {
                 "id": "background_setting",
                 "label": "Background",
                 "type": "select",
-                "defaultOption": "a floating city in the clouds",
+                "defaultOption": "floating_city",
                 "options": [
-                    { "label": "Floating City", "value": "a floating city in the clouds" },
-                    { "label": "Volcanic Lair", "value": "a volcanic lair" },
-                    { "label": "Ancient Forest", "value": "an ancient, glowing forest" },
-                    { "label": "Dragon's Graveyard", "value": "a dragon's graveyard" }
+                    { "label": "Floating City", "value": "floating_city", "tags": ["floating city", "clouds", "sky"] },
+                    { "label": "Volcanic Lair", "value": "volcanic_lair", "tags": ["volcano", "lava", "lair"] },
+                    { "label": "Ancient Forest", "value": "ancient_forest", "tags": ["ancient forest", "glowing forest"] },
+                    { "label": "Dragon's Graveyard", "value": "dragon_graveyard", "tags": ["dragon graveyard", "bones", "desolate"] }
                 ]
             },
             {
                 "id": "lighting",
                 "label": "Lighting",
                 "type": "select",
-                "defaultOption": "god rays",
+                "defaultOption": "god_rays",
                 "options": [
-                    { "label": "God Rays", "value": "god rays" },
-                    { "label": "Eerie Moonlight", "value": "eerie moonlight" },
-                    { "label": "Magical Glow", "value": "magical glow" },
-                    { "label": "Sunrise", "value": "golden sunrise" }
+                    { "label": "God Rays", "value": "god_rays", "tags": ["god rays", "light rays"] },
+                    { "label": "Eerie Moonlight", "value": "eerie_moonlight", "tags": ["moonlight", "night"] },
+                    { "label": "Magical Glow", "value": "magical_glow", "tags": ["bioluminescence", "glowing"] },
+                    { "label": "Sunrise", "value": "sunrise", "tags": ["sunrise", "golden hour"] }
                 ]
             }
         ]

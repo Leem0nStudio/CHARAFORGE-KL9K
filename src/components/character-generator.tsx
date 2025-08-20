@@ -41,16 +41,16 @@ import type { AiModel } from '@/types/ai-model';
 import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/types";
 import { PromptTagInput } from "./prompt-tag-input";
-import type { DataPack, PromptTemplate } from "@/types/datapack";
+import type { DataPack, PromptTemplate, Option, Slot } from "@/types/datapack";
 import { imageModels, textModels, geminiImagePlaceholder } from "@/lib/app-config";
 import type { User as FirebaseUser } from "firebase/auth";
 
 
 const generationFormSchema = z.object({
-  description: z.string().min(20, {
-    message: "Please enter a more detailed description (at least 20 characters).",
-  }).max(2000, {
-    message: "Description must not be longer than 2000 characters."
+  description: z.string().min(10, {
+    message: "Please enter a more detailed description or use a datapack.",
+  }).max(4000, {
+    message: "Description must not be longer than 4000 characters."
   }),
   wizardData: z.record(z.string()).optional(),
   physicalDescription: z.string().optional(),
@@ -92,7 +92,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
 
   const [activePack, setActivePack] = useState<DataPack | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
-  const [promptMode, setPromptMode] = useState<'text' | 'tags'>('text');
   
   const { toast } = useToast();
   const { userProfile, loading: authLoading } = useAuth();
@@ -114,34 +113,63 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   });
 
   const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-    let prompt = template.template;
-    const allWizardData = { ...wizardData };
-    pack.schema.slots.forEach(slot => {
-        if (slot.isLocked && slot.defaultOption) {
-            allWizardData[slot.id] = slot.defaultOption;
-        }
-    });
+      
+      const allWizardData = { ...wizardData };
+      pack.schema.slots.forEach(slot => {
+          if (slot.isLocked && slot.defaultOption) {
+              allWizardData[slot.id] = slot.defaultOption;
+          }
+      });
+      
+      let finalTags: string[] = [];
 
-    const promptTags: string[] = [];
-    for (const key in allWizardData) {
-        if (allWizardData[key]) {
-           prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), allWizardData[key]);
-           promptTags.push(allWizardData[key]);
-        }
-    }
-    
-    prompt = prompt.replace(/\{[a-zA-Z0-9_.]+\}/g, '').replace(/, ,/g, ',').replace(/, /g, ' ').replace(/,$/g, '').trim();
-    
-    generationForm.setValue('description', prompt, { shouldValidate: true });
-    
-    const allTags = [...(pack.tags || []), ...Object.values(allWizardData)];
-    generationForm.setValue('tags', allTags.join(','));
-    generationForm.setValue('wizardData', wizardData);
-    
-    setActivePack(pack);
-    setSelectedTemplate(template);
-    
-    setIsPackModalOpen(false);
+      // 1. Get tags from the selected template itself
+      if (template.tags) {
+        finalTags = template.tags.map(tag => {
+            let finalTag = tag;
+            for (const key in allWizardData) {
+                finalTag = finalTag.replace(new RegExp(`{${key}}`, 'g'), allWizardData[key]);
+            }
+            return finalTag;
+        });
+      }
+      
+      // 2. Fallback to old template string if tags are not defined in the template
+      else {
+          let promptFromTemplate = template.template;
+          for (const key in allWizardData) {
+              promptFromTemplate = promptFromTemplate.replace(new RegExp(`{${key}}`, 'g'), allWizardData[key]);
+          }
+          finalTags = promptFromTemplate.split(',').map(t => t.trim()).filter(Boolean);
+      }
+      
+      // 3. Collect tags from selected options
+      const optionTags: string[] = [];
+      pack.schema.slots.forEach(slot => {
+          const selectedOptionValue = allWizardData[slot.id];
+          if (selectedOptionValue) {
+              const selectedOption = slot.options?.find(opt => opt.value === selectedOptionValue);
+              if (selectedOption?.tags) {
+                  optionTags.push(...selectedOption.tags);
+              }
+          }
+      });
+      
+      // 4. Combine and unique all tags
+      const combinedTags = [...finalTags, ...optionTags]
+        .map(tag => tag.trim().replace(/_/g, ' '))
+        .filter(Boolean);
+        
+      const uniqueTags = [...new Set(combinedTags)];
+
+      generationForm.setValue('description', uniqueTags.join(', '), { shouldValidate: true });
+      generationForm.setValue('tags', uniqueTags.join(', '));
+      generationForm.setValue('wizardData', wizardData);
+      
+      setActivePack(pack);
+      setSelectedTemplate(template);
+      
+      setIsPackModalOpen(false);
   }, [generationForm]);
   
   
@@ -157,14 +185,12 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                 packIdFromUrl ? getDataPackForAdmin(packIdFromUrl) : Promise.resolve(null),
             ]);
             
-            // Combine user models with static system models, ensuring no duplicates.
             const allAvailableModels = new Map<string, AiModel>();
             [geminiImagePlaceholder, ...imageModels, ...userModels].forEach(m => allAvailableModels.set(m.id, m));
 
             setAvailableModels(Array.from(allAvailableModels.values()));
             setAvailableLoras(userLoras);
             
-            // Set a default model if one isn't already set or if the current one isn't in the new list
             const currentModel = generationForm.getValues('selectedModel');
             if (!currentModel || !Array.from(allAvailableModels.values()).find(m => m.id === currentModel.id)) {
                 generationForm.setValue('selectedModel', geminiImagePlaceholder);
@@ -339,13 +365,12 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   const handleModelSelect = (model: AiModel) => {
     if (model.type === 'model' && modelModalType !== 'text') {
         generationForm.setValue('selectedModel', model, { shouldValidate: true });
-        // Deselect LoRA if the new base model does not support it.
         if (model.engine !== 'huggingface' && model.engine !== 'vertexai' && model.engine !== 'modelslab') {
             generationForm.setValue('selectedLora', null); 
         }
     } else if (model.type === 'lora') {
         generationForm.setValue('selectedLora', model);
-        generationForm.setValue('loraWeight', 0.75); // Reset weight
+        generationForm.setValue('loraWeight', 0.75);
     } else if (modelModalType === 'text') {
         setSelectedTextModel(model);
     }
@@ -410,15 +435,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                               <div className="flex justify-between items-center mb-2">
                                 <FormLabel>Character Concept</FormLabel>
                                 <div className="flex items-center gap-2">
-                                     <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setPromptMode(promptMode === 'text' ? 'tags' : 'text')}
-                                      >
-                                        {promptMode === 'text' ? <Tags className="mr-2"/> : <Text className="mr-2"/>}
-                                        {promptMode === 'text' ? 'Tag Mode' : 'Text Mode'}
-                                     </Button>
                                     <Button type="button" variant="outline" size="sm" onClick={() => setIsPackModalOpen(true)}>
                                         <Package className="mr-2 h-3 w-3"/> Use DataPack
                                     </Button>
@@ -445,20 +461,11 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                                     </Select>
                                 )}
                               <FormControl>
-                                {promptMode === 'text' ? (
-                                    <Textarea
-                                        placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder..."
-                                        className="min-h-[250px] resize-none"
-                                        {...field}
-                                        disabled={!canInteract}
-                                    />
-                                ) : (
                                     <PromptTagInput 
                                       value={field.value}
                                       onChange={field.onChange}
                                       disabled={!canInteract}
                                     />
-                                )}
                               </FormControl>
                                <div className="flex items-center justify-between mt-2">
                                 {activePack && (

@@ -10,11 +10,11 @@
         "promptTemplates": [
             {
                 "name": "Street Style Photo",
-                "template": "A full-body street style photograph of a {gender} person with {hair_style} {hair_color} hair. They are wearing a {topwear}, {bottomwear}, and {footwear}. The background is a {background_setting}."
+                "template": "street style photo, full body, {gender}, {hair_style}, {hair_color} hair, wearing a {topwear}, {bottomwear}, and {footwear}, in a {background_setting}"
             },
             {
                 "name": "Cozy Indoor Portrait",
-                "template": "A cozy indoor portrait of a {gender} person, wearing a comfortable {topwear} and {bottomwear}. They have {hair_style} {hair_color} hair. They are in a {background_setting}."
+                "template": "cozy indoor portrait, {gender}, wearing a comfortable {topwear} and {bottomwear}, {hair_style}, {hair_color} hair, in a {background_setting}"
             }
         ],
         "slots": [
@@ -24,81 +24,81 @@
                 "type": "select",
                 "defaultOption": "woman",
                 "options": [
-                    { "label": "Woman", "value": "woman" },
-                    { "label": "Man", "value": "man" },
-                    { "label": "Person", "value": "person" }
+                    { "label": "Woman", "value": "woman", "tags": ["1girl", "woman"] },
+                    { "label": "Man", "value": "man", "tags": ["1boy", "man"] },
+                    { "label": "Person", "value": "person", "tags": ["person"] }
                 ]
             },
             {
                 "id": "hair_style",
                 "label": "Hair Style",
                 "type": "select",
-                "defaultOption": "messy bun",
+                "defaultOption": "messy_bun",
                 "options": [
-                    { "label": "Messy Bun", "value": "messy bun" },
-                    { "label": "Short and Styled", "value": "short and styled" },
-                    { "label": "Long and Wavy", "value": "long and wavy" },
-                    { "label": "Bob Cut", "value": "bob cut" }
+                    { "label": "Messy Bun", "value": "messy_bun", "tags": ["messy bun"] },
+                    { "label": "Short and Styled", "value": "short_styled", "tags": ["short hair", "styled hair"] },
+                    { "label": "Long and Wavy", "value": "long_wavy", "tags": ["long hair", "wavy hair"] },
+                    { "label": "Bob Cut", "value": "bob_cut", "tags": ["bob cut"] }
                 ]
             },
             {
                 "id": "hair_color",
                 "label": "Hair Color",
                 "type": "select",
-                "defaultOption": "light brown",
+                "defaultOption": "light_brown",
                 "options": [
-                    { "label": "Light Brown", "value": "light brown" },
-                    { "label": "Dyed Pink", "value": "dyed pink" },
-                    { "label": "Jet Black", "value": "jet black" },
-                    { "label": "Platinum Blonde", "value": "platinum blonde" }
+                    { "label": "Light Brown", "value": "light_brown", "tags": ["light brown hair"] },
+                    { "label": "Dyed Pink", "value": "dyed_pink", "tags": ["pink hair"] },
+                    { "label": "Jet Black", "value": "jet_black", "tags": ["black hair"] },
+                    { "label": "Platinum Blonde", "value": "platinum_blonde", "tags": ["blonde hair"] }
                 ]
             },
             {
                 "id": "topwear",
                 "label": "Topwear",
                 "type": "select",
-                "defaultOption": "graphic t-shirt",
+                "defaultOption": "graphic_t-shirt",
                 "options": [
-                    { "label": "Graphic T-Shirt", "value": "graphic t-shirt" },
-                    { "label": "Oversized Hoodie", "value": "oversized hoodie" },
-                    { "label": "Button-up Shirt", "value": "button-up shirt" },
-                    { "label": "Tank Top", "value": "tank top" }
+                    { "label": "Graphic T-Shirt", "value": "graphic_t-shirt", "tags": ["graphic t-shirt", "t-shirt"] },
+                    { "label": "Oversized Hoodie", "value": "oversized_hoodie", "tags": ["hoodie", "oversized"] },
+                    { "label": "Button-up Shirt", "value": "button-up_shirt", "tags": ["button-up shirt", "shirt"] },
+                    { "label": "Tank Top", "value": "tank_top", "tags": ["tank top"] }
                 ]
             },
             {
                 "id": "bottomwear",
                 "label": "Bottomwear",
                 "type": "select",
-                "defaultOption": "ripped jeans",
+                "defaultOption": "ripped_jeans",
                 "options": [
-                    { "label": "Ripped Jeans", "value": "ripped jeans" },
-                    { "label": "Cargo Shorts", "value": "cargo shorts" },
-                    { "label": "Pleated Skirt", "value": "pleated skirt" },
-                    { "label": "Sweatpants", "value": "sweatpants" }
+                    { "label": "Ripped Jeans", "value": "ripped_jeans", "tags": ["ripped jeans", "jeans"] },
+                    { "label": "Cargo Shorts", "value": "cargo_shorts", "tags": ["cargo shorts", "shorts"] },
+                    { "label": "Pleated Skirt", "value": "pleated_skirt", "tags": ["pleated skirt", "skirt"] },
+                    { "label": "Sweatpants", "value": "sweatpants", "tags": ["sweatpants"] }
                 ]
             },
             {
                 "id": "footwear",
                 "label": "Footwear",
                 "type": "select",
-                "defaultOption": "classic sneakers",
+                "defaultOption": "classic_sneakers",
                 "options": [
-                    { "label": "Sneakers", "value": "classic sneakers" },
-                    { "label": "Combat Boots", "value": "combat boots" },
-                    { "label": "Sandals", "value": "sandals" },
-                    { "label": "High Heels", "value": "high heels" }
+                    { "label": "Sneakers", "value": "classic_sneakers", "tags": ["sneakers"] },
+                    { "label": "Combat Boots", "value": "combat_boots", "tags": ["combat boots"] },
+                    { "label": "Sandals", "value": "sandals", "tags": ["sandals"] },
+                    { "label": "High Heels", "value": "high_heels", "tags": ["high heels"] }
                 ]
             },
             {
                 "id": "background_setting",
                 "label": "Background",
                 "type": "select",
-                "defaultOption": "bustling city street",
+                "defaultOption": "city_street",
                 "options": [
-                    { "label": "City Street", "value": "bustling city street" },
-                    { "label": "Cozy Cafe", "value": "cozy cafe interior" },
-                    { "label": "Skate Park", "value": "local skate park" },
-                    { "label": "Library", "value": "quiet library aisle" }
+                    { "label": "City Street", "value": "city_street", "tags": ["cityscape", "street"] },
+                    { "label": "Cozy Cafe", "value": "cozy_cafe", "tags": ["cafe", "indoors"] },
+                    { "label": "Skate Park", "value": "skate_park", "tags": ["skate park"] },
+                    { "label": "Library", "value": "library", "tags": ["library", "indoors"] }
                 ]
             }
         ]
