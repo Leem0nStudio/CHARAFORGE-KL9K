@@ -2,25 +2,9 @@
 import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon, Download, TestTube, Film } from 'lucide-react';
 import type { AiModel } from '@/types/ai-model';
 
-// Static AI Model Definitions - these are fallbacks or system-provided defaults.
-// They now fully conform to the AiModel type for consistency.
-export const imageModels: AiModel[] = [
-    {
-        id: 'huggingface-sdxl-1-0',
-        name: 'Stable Diffusion XL 1.0',
-        type: 'model',
-        engine: 'huggingface',
-        hf_id: 'stabilityai/stable-diffusion-xl-base-1.0',
-        coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        baseModel: 'SDXL 1.0',
-        civitaiModelId: undefined,
-        modelslabModelId: undefined,
-        versionId: undefined,
-        userId: undefined,
-    }
-];
+// Static AI Model Definitions are now empty by default.
+// The administrator will add all production models via the admin panel.
+export const imageModels: AiModel[] = [];
 
 export const geminiImagePlaceholder: AiModel = {
     id: 'gemini-2-flash-image',
@@ -39,28 +23,7 @@ export const geminiImagePlaceholder: AiModel = {
 }
 
 
-export const textModels: AiModel[] = [
-    {
-        id: 'gemini-1.5-flash',
-        name: 'Gemini 1.5 Flash',
-        type: 'model',
-        engine: 'gemini',
-        hf_id: 'gemini-1.5-flash-latest', 
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        baseModel: 'Gemini',
-    },
-    {
-        id: 'gpt-4o',
-        name: 'GPT-4o',
-        type: 'model',
-        engine: 'openrouter',
-        hf_id: 'openai/gpt-4o',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        baseModel: 'GPT-4',
-    }
-];
+export const textModels: AiModel[] = [];
 
 
 // Navigation items for the main site and the mobile bottom bar.
