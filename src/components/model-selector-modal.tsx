@@ -46,7 +46,7 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models, is
                     <DialogTitle className="font-headline text-2xl">{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
-                <div className="flex-grow flex flex-col">
+                <div className="flex-grow flex flex-col min-h-0">
                     {isLoading && type !== 'text' ? renderSkeletons() : (
                          <>
                             {models.length === 0 ? (
@@ -60,7 +60,7 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models, is
                                             <Card
                                                 key={item.id}
                                                 onClick={() => onSelect(item)}
-                                                className="cursor-pointer overflow-hidden group transition-all hover:shadow-primary/20 hover:border-primary border-2 border-transparent flex flex-col"
+                                                className="cursor-pointer overflow-hidden group transition-all hover:shadow-primary/20 hover:border-primary border-2 border-transparent flex flex-col bg-card-highlight"
                                             >
                                                 <div className="relative aspect-[4/3] bg-muted/20">
                                                     <MediaDisplay 
