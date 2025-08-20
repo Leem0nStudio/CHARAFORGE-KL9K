@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { notFound } from 'next/navigation';
@@ -24,11 +25,11 @@ export default async function CharacterPage({ params }: { params: { id: string }
   }
 
   const [creationsForDataPack] = await Promise.all([
-    character.dataPackId ? getCreationsForDataPack(character.dataPackId) : Promise.resolve([]),
+    character.meta.dataPackId ? getCreationsForDataPack(character.meta.dataPackId) : Promise.resolve([]),
   ]);
 
   // If the character is not public and the viewer is not the owner, deny access.
-  if (character.status !== 'public' && currentUserId !== character.userId) {
+  if (character.meta.status !== 'public' && currentUserId !== character.meta.userId) {
       notFound();
   }
 

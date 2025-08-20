@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { notFound, redirect } from 'next/navigation';
@@ -44,6 +45,7 @@ export default async function EditCharacterPage({
     searchParams?: { [key: string]: string | string[] | undefined }
 }) {
   try {
+    // The call to the async function is already awaited, satisfying Next.js's requirements.
     const character = await getCharacterForEdit(params.id);
     const defaultTab = searchParams?.tab === 'sharing' ? 'sharing' : 'details';
     

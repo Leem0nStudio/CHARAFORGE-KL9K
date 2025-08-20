@@ -236,6 +236,7 @@ export async function getTopCreators(): Promise<UserProfile[]> {
 
 /**
  * Fetches all public characters for a specific user.
+ * This query is now simplified to avoid needing a composite index.
  * @param {string} userId - The UID of the user whose characters to fetch.
  * @returns {Promise<Character[]>} A promise that resolves to an array of character objects.
  */
@@ -246,14 +247,19 @@ export async function getPublicCharactersForUser(userId: string): Promise<Charac
   }
   try {
     const charactersRef = adminDb.collection('characters');
+    // Simplified query to avoid composite index requirement.
+    // We fetch all characters by the user and then filter for public status in the code.
     const q = charactersRef
       .where('meta.userId', '==', userId)
-      .where('meta.status', '==', 'public')
       .orderBy('meta.createdAt', 'desc')
-      .limit(50);
+      .limit(100); // Fetch a reasonable limit of total characters
+    
     const snapshot = await q.get();
+    
+    const allUserCharacters = snapshot.docs.map(doc => toCharacterObject(doc.id, doc.data()));
 
-    return snapshot.docs.map(doc => toCharacterObject(doc.id, doc.data()));
+    // Filter for public characters in the application logic.
+    return allUserCharacters.filter(char => char.meta.status === 'public');
 
   } catch (error) {
     console.error(`Error fetching public characters for user ${userId}:`, error);

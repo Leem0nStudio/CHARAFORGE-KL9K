@@ -189,7 +189,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
                 {gallery.map((url, index) => (
                     <Card key={url} className="group relative overflow-hidden">
                         <div className="relative w-full aspect-square bg-muted/20">
-                            <Image src={url} alt={`Character image ${index + 1}`} fill className="w-full object-contain" />
+                            <Image src={url} alt={`Character image ${index + 1}`} fill className="w-full object-contain" sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw" />
                         </div>
                         <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2 gap-1">
                             <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary(url)} disabled={primaryImageUrl === url}>
