@@ -1,5 +1,4 @@
 
-
 import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon, Download, TestTube, Film } from 'lucide-react';
 import type { AiModel } from '@/types/ai-model';
 
@@ -68,8 +67,6 @@ export const textModels: AiModel[] = [
 export const mainNavItems: NavItem[] = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/datapacks', label: 'DataPacks', icon: Package },
-    { href: '/models', label: 'AI Models', icon: Bot },
-    { href: '/cine-forge', label: 'Cine-Forge', icon: Film },
     { href: '/character-generator', label: 'Forge', icon: Swords, isPrimary: true },
     { href: '/lore-forge', label: 'Lore Forge', icon: ScrollText, requiresAuth: true },
     { href: '/profile', label: 'Profile', icon: UserCircle, requiresAuth: true },

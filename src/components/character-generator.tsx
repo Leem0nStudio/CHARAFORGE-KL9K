@@ -115,18 +115,41 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   });
 
   const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-    const allWizardData = { ...wizardData };
+    // Collect all tags from the selected options.
+    let finalTags: string[] = [];
+    
+    // Start with the base template tags
+    const templateTags = template.tags || [];
+
+    // Create a map of slot options for quick lookup
+    const slotOptionsMap = new Map<string, Map<string, Option>>();
     pack.schema.slots.forEach(slot => {
-      if (slot.isLocked && slot.defaultOption) {
-        allWizardData[slot.id] = slot.defaultOption;
-      }
+        const optionsMap = new Map<string, Option>();
+        slot.options?.forEach(opt => optionsMap.set(opt.value, opt));
+        slotOptionsMap.set(slot.id, optionsMap);
     });
 
-    let finalPrompt = template.template;
-    for (const key in allWizardData) {
-        finalPrompt = finalPrompt.replace(new RegExp(`{${key}}`, 'g'), allWizardData[key]);
-    }
+    // Process the template tags
+    templateTags.forEach(tagOrPlaceholder => {
+        const match = tagOrPlaceholder.match(/\{(.+?)\}/);
+        if (match) {
+            const slotId = match[1];
+            const selectedValue = wizardData[slotId];
+            if (selectedValue) {
+                const option = slotOptionsMap.get(slotId)?.get(selectedValue);
+                if (option?.tags) {
+                    finalTags.push(...option.tags);
+                } else if (option) {
+                    finalTags.push(option.value); // Fallback to value if no tags are defined
+                }
+            }
+        } else {
+            finalTags.push(tagOrPlaceholder);
+        }
+    });
     
+    const finalPrompt = finalTags.filter(Boolean).join(', ');
+
     generationForm.setValue('description', finalPrompt, { shouldValidate: true });
     generationForm.setValue('tags', finalPrompt);
     generationForm.setValue('wizardData', wizardData);
@@ -134,7 +157,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     setActivePack(pack);
     setSelectedTemplate(template);
     setIsPackModalOpen(false);
-  }, [generationForm]);
+}, [generationForm]);
   
   
   useEffect(() => {

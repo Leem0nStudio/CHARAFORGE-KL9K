@@ -26,7 +26,7 @@ export interface Slot {
 
 export interface PromptTemplate {
     name: string;
-    template: string; // The full sentence template
+    template?: string; // DEPRECATED: The full sentence template
     tags?: string[]; // A list of tags for tag-based generation
 }
 
@@ -76,10 +76,13 @@ export const SlotSchema = z.object({
 });
 
 export const PromptTemplateSchema = z.object({
-    name: z.string().min(1, 'Template name is required.'),
-    template: z.string().min(1, 'Template string is required.'),
-    tags: z.array(z.string()).optional(),
+  name: z.string().min(1, 'Template name is required.'),
+  template: z.string().optional(), // DEPRECATED
+  tags: z.array(z.string()).optional(),
+}).refine(data => data.template || (data.tags && data.tags.length > 0), {
+    message: 'A template must have either a `template` string or a `tags` array.',
 });
+
 
 export const DataPackSchemaSchema = z.object({
     promptTemplates: z.array(PromptTemplateSchema).min(1, 'At least one prompt template is required.'),
