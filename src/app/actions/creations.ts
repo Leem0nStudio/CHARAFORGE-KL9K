@@ -27,6 +27,7 @@ async function fetchDocsInBatches<T>(ids: string[], collection: string): Promise
 
 /**
  * Converts a Firestore document data object into a fully-typed, serializable Character object.
+ * This helper function ensures consistency across different read operations.
  * @param docId The ID of the document.
  * @param data The document data from Firestore.
  * @returns A Character object.

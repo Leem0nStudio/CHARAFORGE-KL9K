@@ -6,6 +6,9 @@ import { adminDb } from '@/lib/firebase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character } from '@/types/character';
 import { Timestamp, DocumentData } from 'firebase-admin/firestore';
+import type { UserProfile } from '@/types/user';
+import type { DataPack } from '@/types/datapack';
+
 
 /**
  * Converts a Firestore document data object into a fully-typed, serializable Character object.
@@ -110,21 +113,23 @@ export async function getCharacter(characterId: string): Promise<Character | nul
             return null;
         }
 
-        const data = characterDoc.data()!;
-        const character = toCharacterObject(characterDoc.id, data);
+        const character = toCharacterObject(characterDoc.id, characterDoc.data()!);
         
-        const [userProfile, dataPack] = await Promise.all([
-            character.meta.userId ? adminDb.collection('users').doc(character.meta.userId).get() : Promise.resolve(null),
-            character.meta.dataPackId ? adminDb.collection('datapacks').doc(character.meta.dataPackId).get() : Promise.resolve(null)
+        const [userProfile, dataPack, originalAuthorProfile] = await Promise.all([
+            character.meta.userId ? adminDb.collection('users').doc(character.meta.userId).get() : null,
+            character.meta.dataPackId ? adminDb.collection('datapacks').doc(character.meta.dataPackId).get() : null,
+            character.lineage.originalAuthorId ? adminDb.collection('users').doc(character.lineage.originalAuthorId).get() : null
         ]);
-
-        const originalAuthorProfile = character.lineage.originalAuthorId 
-            ? await adminDb.collection('users').doc(character.lineage.originalAuthorId).get()
-            : null;
         
-        character.meta.userName = userProfile?.data()?.displayName || 'Anonymous';
-        character.meta.dataPackName = dataPack?.data()?.name || null;
-        character.lineage.originalAuthorName = originalAuthorProfile?.data()?.displayName || 'Anonymous';
+        if (userProfile?.exists) {
+            character.meta.userName = (userProfile.data() as UserProfile).displayName || 'Anonymous';
+        }
+        if (dataPack?.exists) {
+            character.meta.dataPackName = (dataPack.data() as DataPack).name || null;
+        }
+        if (originalAuthorProfile?.exists) {
+            character.lineage.originalAuthorName = (originalAuthorProfile.data() as UserProfile).displayName || 'Anonymous';
+        }
         
         return character;
 

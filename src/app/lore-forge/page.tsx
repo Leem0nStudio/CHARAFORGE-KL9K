@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useTransition, Suspense } from 'react';
@@ -174,12 +175,12 @@ function CharacterSelector({
                                     onCheckedChange={() => handleSelect(char.id)}
                                 />
                                 <Avatar className="h-10 w-10">
-                                    <AvatarImage src={char.imageUrl} alt={char.name}/>
-                                    <AvatarFallback>{char.name.charAt(0)}</AvatarFallback>
+                                    <AvatarImage src={char.visuals.imageUrl} alt={char.core.name}/>
+                                    <AvatarFallback>{char.core.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1">
-                                    <p className="font-semibold">{char.name}</p>
-                                    <p className="text-xs text-muted-foreground">{char.archetype || char.description}</p>
+                                    <p className="font-semibold">{char.core.name}</p>
+                                    <p className="text-xs text-muted-foreground">{char.core.archetype || char.generation.originalPrompt}</p>
                                 </div>
                             </div>
                         ))}
@@ -239,7 +240,7 @@ function LoreForgeGenerator({
         if (!cast) return;
         const newCharacterIds = cast.characterIds.filter(id => id !== characterId);
         await onUpdateCast(newCharacterIds);
-    }
+    };
 
     return (
         <Card className="h-full flex flex-col">
@@ -268,10 +269,10 @@ function LoreForgeGenerator({
                                 {castCharacters.map(char => (
                                     <div key={char.id} className="relative group">
                                          <Avatar className="h-20 w-20 mx-auto">
-                                            <AvatarImage src={char.imageUrl} alt={char.name}/>
-                                            <AvatarFallback>{char.name.charAt(0)}</AvatarFallback>
+                                            <AvatarImage src={char.visuals.imageUrl} alt={char.core.name}/>
+                                            <AvatarFallback>{char.core.name.charAt(0)}</AvatarFallback>
                                         </Avatar>
-                                        <p className="text-center text-sm font-medium mt-1 truncate">{char.name}</p>
+                                        <p className="text-center text-sm font-medium mt-1 truncate">{char.core.name}</p>
                                         <Button
                                             variant="destructive"
                                             size="icon"

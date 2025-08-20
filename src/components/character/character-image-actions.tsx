@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -30,7 +31,7 @@ export function CharacterImageActions({ character, currentUserId, isOwner }: Cha
         startDeleteTransition(async () => {
             try {
                 await deleteCharacter(character.id);
-                toast({ title: 'Character Deleted', description: `${character.name} has been removed.` });
+                toast({ title: 'Character Deleted', description: `${character.core.name} has been removed.` });
                 router.push('/characters');
             } catch (error) {
                 toast({
@@ -42,7 +43,7 @@ export function CharacterImageActions({ character, currentUserId, isOwner }: Cha
         });
     };
     
-    const canBranch = currentUserId && !isOwner && character.branchingPermissions === 'public' && character.status === 'public';
+    const canBranch = currentUserId && !isOwner && character.settings.branchingPermissions === 'public' && character.meta.status === 'public';
 
 
     return (

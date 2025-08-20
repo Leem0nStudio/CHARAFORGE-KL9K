@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback, useTransition, use } from "react";
@@ -302,7 +303,8 @@ export function CharacterGenerator({ authUser }: { authUser: User | null }) {
           physicalDescription: formData.physicalDescription || generationResult.physicalDescription,
           textEngine: generationResult.textEngine,
           imageEngine: generationResult.imageEngine,
-          wizardData: formData.wizardData
+          wizardData: formData.wizardData,
+          originalPrompt: generationResult.originalDescription,
         });
 
         toast({
@@ -405,9 +407,20 @@ export function CharacterGenerator({ authUser }: { authUser: User | null }) {
                             <FormItem>
                               <div className="flex justify-between items-center mb-2">
                                 <FormLabel>Character Concept</FormLabel>
-                                <Button type="button" variant="outline" size="sm" onClick={() => setIsPackModalOpen(true)}>
-                                    <Package className="mr-2 h-3 w-3"/> Use DataPack
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                     <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setPromptMode(promptMode === 'text' ? 'tags' : 'text')}
+                                      >
+                                        {promptMode === 'text' ? <Tags className="mr-2"/> : <Text className="mr-2"/>}
+                                        {promptMode === 'text' ? 'Tag Mode' : 'Text Mode'}
+                                     </Button>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsPackModalOpen(true)}>
+                                        <Package className="mr-2 h-3 w-3"/> Use DataPack
+                                    </Button>
+                                </div>
                               </div>
                                {activePack && selectedTemplate && (
                                     <Select 
@@ -430,12 +443,20 @@ export function CharacterGenerator({ authUser }: { authUser: User | null }) {
                                     </Select>
                                 )}
                               <FormControl>
-                                  <Textarea
-                                      placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder..."
-                                      className="min-h-[250px] resize-none"
-                                      {...field}
+                                {promptMode === 'text' ? (
+                                    <Textarea
+                                        placeholder="e.g., A grizzled space pirate with a cybernetic eye, a long trench coat, and a sarcastic parrot on their shoulder..."
+                                        className="min-h-[250px] resize-none"
+                                        {...field}
+                                        disabled={!canInteract}
+                                    />
+                                ) : (
+                                    <PromptTagInput 
+                                      value={field.value}
+                                      onChange={field.onChange}
                                       disabled={!canInteract}
-                                  />
+                                    />
+                                )}
                               </FormControl>
                                <div className="flex items-center justify-between mt-2">
                                 {activePack && (
@@ -666,5 +687,3 @@ export function CharacterGenerator({ authUser }: { authUser: User | null }) {
     </>
   );
 }
-
-    

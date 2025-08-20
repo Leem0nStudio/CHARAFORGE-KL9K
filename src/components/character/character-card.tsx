@@ -18,8 +18,8 @@ interface CharacterCardProps {
 }
 
 export function CharacterCard({ character }: CharacterCardProps) {
-    const isBranch = !!character.branchedFromId;
-    const hasVersions = character.versions && character.versions.length > 1;
+    const isBranch = !!character.lineage.branchedFromId;
+    const hasVersions = character.lineage.versions && character.lineage.versions.length > 1;
 
     return (
         <motion.div
@@ -33,8 +33,8 @@ export function CharacterCard({ character }: CharacterCardProps) {
             <Card className="overflow-hidden group relative h-full flex flex-col border-2 border-transparent hover:border-primary transition-colors duration-300">
                 <Link href={`/characters/${character.id}`} className="relative aspect-[3/4] w-full bg-muted/20 block">
                         <Image
-                            src={character.imageUrl}
-                            alt={character.name}
+                            src={character.visuals.imageUrl}
+                            alt={character.core.name}
                             fill
                             className="object-cover w-full transition-transform duration-300 group-hover:scale-105"
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -46,11 +46,11 @@ export function CharacterCard({ character }: CharacterCardProps) {
                                     <Tooltip>
                                         <TooltipTrigger>
                                             <Badge variant="secondary" className="flex items-center gap-1">
-                                                <Layers className="h-3 w-3" /> {character.versions.length}
+                                                <Layers className="h-3 w-3" /> {character.lineage.versions.length}
                                             </Badge>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            <p>{character.versions.length} versions</p>
+                                            <p>{character.lineage.versions.length} versions</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
@@ -71,13 +71,13 @@ export function CharacterCard({ character }: CharacterCardProps) {
                              )}
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                             <h3 className="font-bold text-lg leading-tight drop-shadow-md truncate font-headline">{character.name}</h3>
+                             <h3 className="font-bold text-lg leading-tight drop-shadow-md truncate font-headline">{character.core.name}</h3>
                         </div>
                 </Link>
                  <CardContent className="p-3 bg-card flex-col items-start flex-grow">
-                     {character.tags && character.tags.length > 0 ? (
+                     {character.core.tags && character.core.tags.length > 0 ? (
                         <div className="flex flex-wrap items-center gap-1 mb-2">
-                            {character.tags.slice(0, 3).map((tag) => (
+                            {character.core.tags.slice(0, 3).map((tag) => (
                                 <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
                                     <Badge
                                         variant="outline"
@@ -88,44 +88,44 @@ export function CharacterCard({ character }: CharacterCardProps) {
                                     </Badge>
                                 </Link>
                             ))}
-                            {character.tags.length > 3 && <Badge variant="outline" className="text-xs">...</Badge>}
+                            {character.core.tags.length > 3 && <Badge variant="outline" className="text-xs">...</Badge>}
                         </div>
                      ) : (
-                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-grow">{character.description}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-grow">{character.generation.originalPrompt}</p>
                      )}
                      <div className="flex flex-wrap gap-1">
-                        {character.textEngine && (
+                        {character.generation.textEngine && (
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
-                                        <Badge variant="secondary" className="capitalize"><Pilcrow className="mr-1" /> {character.textEngine}</Badge>
+                                        <Badge variant="secondary" className="capitalize"><Pilcrow className="mr-1" /> {character.generation.textEngine}</Badge>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Text generated with {character.textEngine}</p></TooltipContent>
+                                    <TooltipContent><p>Text generated with {character.generation.textEngine}</p></TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
                         )}
-                        {character.imageEngine && (
+                        {character.generation.imageEngine && (
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
-                                        <Badge variant="secondary" className="capitalize"><ImageIcon className="mr-1" /> {character.imageEngine}</Badge>
+                                        <Badge variant="secondary" className="capitalize"><ImageIcon className="mr-1" /> {character.generation.imageEngine}</Badge>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Image generated with {character.imageEngine}</p></TooltipContent>
+                                    <TooltipContent><p>Image generated with {character.generation.imageEngine}</p></TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
                         )}
-                         {character.dataPackName && (
+                         {character.meta.dataPackName && (
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger>
-                                        <Link href={`/datapacks/${character.dataPackId}`}>
+                                        <Link href={`/datapacks/${character.meta.dataPackId}`}>
                                             <Badge variant="secondary" className="cursor-pointer hover:border-primary/50">
                                                 <Package className="mr-1.5" />
-                                                {character.dataPackName}
+                                                {character.meta.dataPackName}
                                             </Badge>
                                         </Link>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Created with DataPack: {character.dataPackName}</p></TooltipContent>
+                                    <TooltipContent><p>Created with DataPack: {character.meta.dataPackName}</p></TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
                        )}
@@ -133,14 +133,14 @@ export function CharacterCard({ character }: CharacterCardProps) {
                 </CardContent>
                 <CardFooter className="p-3 bg-card/50 mt-auto">
                     <div className="w-full">
-                        <Link href={`/users/${character.userId}`} className="text-xs text-muted-foreground flex items-center gap-1.5 hover:text-primary">
+                        <Link href={`/users/${character.meta.userId}`} className="text-xs text-muted-foreground flex items-center gap-1.5 hover:text-primary">
                             <User className="h-3 w-3" />
-                            <span>by {character.userName}</span>
+                            <span>by {character.meta.userName}</span>
                         </Link>
-                        {isBranch && character.originalAuthorName && (
+                        {isBranch && character.lineage.originalAuthorName && (
                             <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
                                 <GitBranch className="h-3 w-3" />
-                                <span>from {character.originalAuthorName}</span>
+                                <span>from {character.lineage.originalAuthorName}</span>
                             </div>
                         )}
                     </div>

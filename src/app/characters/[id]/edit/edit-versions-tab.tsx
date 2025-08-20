@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useTransition } from 'react';
@@ -47,7 +48,7 @@ export function EditVersionsTab({ character }: { character: Character }) {
         handleUpdate(() => createCharacterVersion(character.id));
     };
 
-    const canEnableBranching = character.status === 'public';
+    const canEnableBranching = character.meta.status === 'public';
 
     return (
         <Card>
@@ -62,7 +63,7 @@ export function EditVersionsTab({ character }: { character: Character }) {
                         <Button variant="outline" size="sm" onClick={handleCreateVersion} disabled={isUpdating}>
                             {isUpdating ? <Loader2 className="animate-spin w-4 h-4" /> : <Plus className="w-4 h-4" />} New Version
                         </Button>
-                        {character.versions?.sort((a,b) => b.version - a.version).map(v => (
+                        {character.lineage.versions?.sort((a,b) => b.version - a.version).map(v => (
                             <Button key={v.id} asChild variant={v.id === character.id ? 'default' : 'secondary'} size="sm">
                                 <Link href={`/characters/${v.id}/edit`}>
                                     {v.name}
@@ -85,7 +86,7 @@ export function EditVersionsTab({ character }: { character: Character }) {
                                  <div className="flex items-center">
                                       <Switch
                                         id="branching-switch"
-                                        checked={character.branchingPermissions === 'public'}
+                                        checked={character.settings.branchingPermissions === 'public'}
                                         onCheckedChange={handleToggleBranching}
                                         disabled={isUpdating || !canEnableBranching}
                                     />

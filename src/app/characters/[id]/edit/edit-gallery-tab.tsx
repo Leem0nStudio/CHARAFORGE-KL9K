@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useTransition, useEffect, useState } from 'react';
@@ -43,13 +44,13 @@ export function EditGalleryTab({ character }: { character: Character }) {
   const form = useForm<UpdateImagesFormValues>({
     resolver: zodResolver(UpdateImagesSchema),
     defaultValues: {
-      primaryImageUrl: character.imageUrl,
+      primaryImageUrl: character.visuals.imageUrl,
     },
   });
 
   useEffect(() => {
     form.reset({
-        primaryImageUrl: character.imageUrl,
+        primaryImageUrl: character.visuals.imageUrl,
     });
   }, [character, form]);
 
@@ -73,7 +74,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if ((character.gallery?.length ?? 0) >= 10) {
+    if ((character.visuals.gallery?.length ?? 0) >= 10) {
         toast({ variant: 'destructive', title: 'Gallery Full', description: 'You cannot add more than 10 images.' });
         return;
     }
@@ -81,11 +82,11 @@ export function EditGalleryTab({ character }: { character: Character }) {
     startUploadTransition(async () => {
         try {
             const fileName = `${uuidv4()}-${file.name}`;
-            const destinationPath = `usersImg/${character.userId}/${character.id}/${fileName}`;
+            const destinationPath = `usersImg/${character.meta.userId}/${character.id}/${fileName}`;
             const newImageUrl = await uploadToStorage(file, destinationPath);
             
-            const newGallery = [...(character.gallery || []), newImageUrl];
-            await updateCharacterImages(character.id, newGallery, character.imageUrl);
+            const newGallery = [...(character.visuals.gallery || []), newImageUrl];
+            await updateCharacterImages(character.id, newGallery, character.visuals.imageUrl);
 
             toast({ title: "Image Uploaded!", description: "The new image has been added to your gallery."});
             router.refresh(); 
@@ -98,7 +99,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
 
   const handleImageGeneration = (selectedModel: AiModel) => {
     setIsModelModalOpen(false);
-    if ((character.gallery?.length ?? 0) >= 10) {
+    if ((character.visuals.gallery?.length ?? 0) >= 10) {
         toast({ variant: 'destructive', title: 'Gallery Full', description: 'You cannot add more than 10 images.' });
         return;
     }
@@ -111,7 +112,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
             // In the future, we could also allow selecting a LoRA here
         };
 
-        const result = await generateNewCharacterImage(character.id, character.description, engineConfig);
+        const result = await generateNewCharacterImage(character.id, character.core.physicalDescription || '', engineConfig);
         
         if (result.success && result.newImageUrl) {
             toast({ title: "Image Generated!", description: result.message});
@@ -127,7 +128,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
   };
   
   const handleRemoveImage = (urlToRemove: string) => {
-    const newGallery = character.gallery?.filter(url => url !== urlToRemove) || [];
+    const newGallery = character.visuals.gallery?.filter(url => url !== urlToRemove) || [];
     if (newGallery.length === 0) {
         toast({ variant: 'destructive', title: 'Action not allowed', description: 'You cannot remove the last image.' });
         return;
@@ -151,7 +152,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
 
   const onSubmit = (data: UpdateImagesFormValues) => {
     startUpdateTransition(async () => {
-      const result = await updateCharacterImages(character.id, character.gallery || [], data.primaryImageUrl);
+      const result = await updateCharacterImages(character.id, character.visuals.gallery || [], data.primaryImageUrl);
       toast({
             title: result.success ? 'Success!' : 'Update Failed',
             description: result.message,
@@ -165,7 +166,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
   };
 
   const isLoading = isUpdating || isUploading || isGenerating;
-  const gallery = character.gallery || [character.imageUrl];
+  const gallery = character.visuals.gallery || [character.visuals.imageUrl];
   const primaryImageUrl = form.watch('primaryImageUrl');
 
   return (

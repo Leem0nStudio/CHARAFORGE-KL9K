@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useTransition } from 'react';
@@ -44,12 +45,12 @@ export function EditDetailsTab({ character }: { character: Character }) {
     const form = useForm<FormValues>({
         resolver: zodResolver(FormSchema),
         defaultValues: {
-            name: character.name,
-            archetype: character.archetype || '',
-            equipment: character.equipment || [],
-            biography: character.biography,
-            alignment: character.alignment || 'True Neutral',
-            physicalDescription: character.physicalDescription || character.description,
+            name: character.core.name,
+            archetype: character.core.archetype || '',
+            equipment: character.core.equipment || [],
+            biography: character.core.biography,
+            alignment: character.core.alignment || 'True Neutral',
+            physicalDescription: character.core.physicalDescription || character.generation?.originalPrompt,
         },
     });
 
@@ -76,7 +77,7 @@ export function EditDetailsTab({ character }: { character: Character }) {
                     modelId: 'googleai/gemini-1.5-flash-latest',
                 };
                 const result = await generateCharacterSheet({ 
-                    description: character.description, 
+                    description: character.generation.originalPrompt || '', 
                     engineConfig: TextEngineConfigSchema.parse(textEngineConfig) 
                 });
                 form.setValue('biography', result.biography || '', { shouldDirty: true });

@@ -8,7 +8,7 @@ import { verifyAndGetUid } from '@/lib/auth/server';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { StoryCast } from '@/types/story';
 import { generateStory as generateStoryFlow } from '@/ai/flows/story-generation/flow';
-import type { Character, TimelineEvent } from '@/types/character';
+import type { Character } from '@/types/character';
 
 type ActionResponse<T = null> = {
     success: boolean;

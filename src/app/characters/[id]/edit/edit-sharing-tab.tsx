@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useTransition } from 'react';
@@ -55,13 +56,13 @@ export function EditSharingTab({ character }: { character: Character }) {
                     </div>
                     <Switch
                         id="public-switch"
-                        checked={character.status === 'public'}
+                        checked={character.meta.status === 'public'}
                         onCheckedChange={handleTogglePublicStatus}
                         disabled={isUpdating}
                     />
                 </div>
 
-                {character.dataPackId && (
+                {character.meta.dataPackId && (
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
                             <Label htmlFor="datapack-sharing-switch" className="flex items-center gap-2 font-semibold">
@@ -71,13 +72,13 @@ export function EditSharingTab({ character }: { character: Character }) {
                         </div>
                         <Switch
                             id="datapack-sharing-switch"
-                            checked={!!character.isSharedToDataPack}
+                            checked={!!character.settings.isSharedToDataPack}
                             onCheckedChange={handleToggleDataPackSharing}
-                            disabled={isUpdating || character.status !== 'public'}
+                            disabled={isUpdating || character.meta.status !== 'public'}
                         />
                     </div>
                 )}
-                 {character.dataPackId && character.status !== 'public' && (
+                 {character.meta.dataPackId && character.meta.status !== 'public' && (
                     <p className="text-xs text-muted-foreground text-center">Character must be public to be shared in a DataPack gallery.</p>
                  )}
             </CardContent>

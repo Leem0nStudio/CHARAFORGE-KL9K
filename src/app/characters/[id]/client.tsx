@@ -1,15 +1,14 @@
 
+
 "use client";
 
 import Link from 'next/link';
 import Image from 'next/image';
 import { User, ImagePlus } from "lucide-react";
 import type { Character } from "@/types/character";
-import type { UserProfile } from "@/types/user";
 import { SectionTitle } from "@/components/section-title";
 import { CharacterCard } from "@/components/character/character-card";
 import { BackButton } from "@/components/back-button";
-import { SiteFooter } from "@/components/site-footer";
 import { CharacterImageActions } from "@/components/character/character-image-actions";
 
 interface CharacterPageClientProps {
@@ -23,7 +22,7 @@ export function CharacterPageClient({
   currentUserId,
   creationsForDataPack,
 }: CharacterPageClientProps) {
-  const isOwner = currentUserId === character.userId;
+  const isOwner = currentUserId === character.meta.userId;
   const showRelatedCreations = creationsForDataPack.length > 0;
 
   return (
@@ -36,10 +35,10 @@ export function CharacterPageClient({
         {/* Image Column */}
         <div className="md:col-span-2">
           <div className="relative w-full aspect-square rounded-lg overflow-hidden shadow-lg border-2 border-primary/50 bg-muted/20">
-            {character.imageUrl ? (
+            {character.visuals.imageUrl ? (
               <Image
-                src={character.imageUrl}
-                alt={character.name || "Character image"}
+                src={character.visuals.imageUrl}
+                alt={character.core.name || "Character image"}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -64,7 +63,7 @@ export function CharacterPageClient({
         <div className="md:col-span-3">
           <div className="flex items-baseline mb-2">
             <h1 className="font-headline text-4xl sm:text-5xl font-bold text-primary mr-3">
-              {character.name}
+              {character.core.name}
             </h1>
             {isOwner && (
               <span className="text-sm text-muted-foreground">(Your creation)</span>
@@ -72,14 +71,14 @@ export function CharacterPageClient({
           </div>
 
           <div className="mb-6 text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
-            <Link href={`/users/${character.userId}`} className="flex items-center gap-1 hover:text-primary">
-                <User className="w-4 h-4"/> <span>by {character.userName || "Unknown User"}</span>
+            <Link href={`/users/${character.meta.userId}`} className="flex items-center gap-1 hover:text-primary">
+                <User className="w-4 h-4"/> <span>by {character.meta.userName || "Unknown User"}</span>
             </Link>
-            {character.dataPackName && (
+            {character.meta.dataPackName && (
               <>
                 <span className="mx-1">•</span>
-                 <Link href={`/datapacks/${character.dataPackId}`} className="hover:text-primary">
-                    <span>From DataPack: {character.dataPackName}</span>
+                 <Link href={`/datapacks/${character.meta.dataPackId}`} className="hover:text-primary">
+                    <span>From DataPack: {character.meta.dataPackName}</span>
                  </Link>
               </>
             )}
@@ -87,7 +86,7 @@ export function CharacterPageClient({
 
           <SectionTitle title="Biography" subtitle="The character's story and background."/>
           <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-            {character.biography.split('\n').filter(p => p.trim() !== '').map((paragraph, index) => (
+            {character.core.biography.split('\n').filter(p => p.trim() !== '').map((paragraph, index) => (
               <p key={index}>{paragraph}</p>
             ))}
           </div>
@@ -104,7 +103,6 @@ export function CharacterPageClient({
           </div>
         </div>
       )}
-      <SiteFooter />
     </div>
   );
 }

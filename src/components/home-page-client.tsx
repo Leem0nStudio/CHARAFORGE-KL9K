@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Image from 'next/image';
@@ -74,8 +75,8 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, h
                              className="relative"
                         >
                             <Image
-                                src={heroCharacter?.imageUrl || "https://placehold.co/600x600.png"}
-                                alt={heroCharacter?.name || "Hero Character"}
+                                src={heroCharacter?.visuals.imageUrl || "https://placehold.co/600x600.png"}
+                                alt={heroCharacter?.core.name || "Hero Character"}
                                 width={600}
                                 height={600}
                                 className="mx-auto aspect-square overflow-hidden rounded-xl object-contain sm:w-full lg:order-last"
