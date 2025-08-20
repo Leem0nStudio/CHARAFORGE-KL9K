@@ -4,6 +4,7 @@ import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot,
 import type { AiModel } from '@/types/ai-model';
 
 // Static AI Model Definitions - these are fallbacks or system-provided defaults.
+// They now fully conform to the AiModel type for consistency.
 export const imageModels: AiModel[] = [
     {
         id: 'huggingface-sdxl-1-0',
@@ -14,6 +15,11 @@ export const imageModels: AiModel[] = [
         coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
         createdAt: new Date(),
         updatedAt: new Date(),
+        baseModel: 'SDXL 1.0',
+        civitaiModelId: undefined,
+        modelslabModelId: undefined,
+        versionId: undefined,
+        userId: undefined,
     }
 ];
 
@@ -26,6 +32,11 @@ export const geminiImagePlaceholder: AiModel = {
     coverMediaUrl: 'https://storage.googleapis.com/gweb-aistudio-assets/meet-gemini/gallery-illustrious-vibrant.jpg',
     createdAt: new Date(),
     updatedAt: new Date(),
+    baseModel: 'Gemini',
+    civitaiModelId: undefined,
+    modelslabModelId: undefined,
+    versionId: undefined,
+    userId: undefined,
 }
 
 
@@ -35,9 +46,10 @@ export const textModels: AiModel[] = [
         name: 'Gemini 1.5 Flash',
         type: 'model',
         engine: 'gemini',
-        hf_id: 'gemini-1.5-flash-latest', // Corrected ID for Genkit googleAI() plugin
+        hf_id: 'gemini-1.5-flash-latest', 
         createdAt: new Date(),
         updatedAt: new Date(),
+        baseModel: 'Gemini',
     },
     {
         id: 'gpt-4o',
@@ -47,10 +59,12 @@ export const textModels: AiModel[] = [
         hf_id: 'openai/gpt-4o',
         createdAt: new Date(),
         updatedAt: new Date(),
+        baseModel: 'GPT-4',
     }
 ];
 
 
+// Navigation items for the main site and the mobile bottom bar.
 export const mainNavItems: NavItem[] = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/datapacks', label: 'DataPacks', icon: Package },
@@ -61,6 +75,7 @@ export const mainNavItems: NavItem[] = [
     { href: '/profile', label: 'Profile', icon: UserCircle, requiresAuth: true },
 ];
 
+// Navigation items for the admin dashboard sidebar.
 export const adminNavItems: NavItem[] = [
     { href: '/admin', label: 'Dashboard', icon: BarChart },
     { href: '/admin/datapacks', label: 'DataPacks', icon: Package },
@@ -68,68 +83,79 @@ export const adminNavItems: NavItem[] = [
     { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
+// Definition for a navigation item.
+interface NavItem {
+    href: string;
+    label: string;
+    icon: LucideIcon;
+    isPrimary?: boolean;
+    requiresAuth?: boolean;
+}
+
 type SlotCategory = 'appearance' | 'equipment' | 'style' | 'setting' | 'class' | 'misc';
 
+// A more robust mapping of slot IDs and keywords to categories for UI styling.
 const slotIdToCategoryMap: Record<string, SlotCategory> = {
     // Appearance
     gender: 'appearance',
     race: 'appearance',
+    hair: 'appearance',
     hair_style: 'appearance',
     hair_color: 'appearance',
     eye_style: 'appearance',
     facial_detail: 'appearance',
     body_type: 'appearance',
-    breast_shape: 'appearance',
-    face: 'appearance',
     expression: 'appearance',
     // Equipment
+    armor: 'equipment',
     armor_torso: 'equipment',
     armor_legs: 'equipment',
     weapon: 'equipment',
     headwear: 'equipment',
-    upper_torso: 'equipment',
-    arms: 'equipment',
-    hands: 'equipment',
-    waist: 'equipment',
-    legs: 'equipment',
-    feet: 'equipment',
-    back: 'equipment',
-    neck: 'equipment',
+    footwear: 'equipment',
+    topwear: 'equipment',
+    bottomwear: 'equipment',
     shoulders: 'equipment',
-    headgear: 'equipment',
+    hands: 'equipment',
     // Style
     style: 'style',
     art_style: 'style',
+    lighting: 'style',
     // Setting
     background_setting: 'setting',
     background: 'setting',
-    lighting: 'setting',
-    specialEffects: 'setting',
-    lighting_style: 'setting',
+    location: 'setting',
     // Class/Role
     class: 'class',
     role: 'class',
-    baseType: 'class',
     // Misc
     name: 'misc',
-    cyber_mods: 'misc',
 };
 
 /**
- * Gets the category for a given slot ID or tag.
+ * Gets a visual category for a given slot ID or tag.
+ * Used to apply consistent colors to badges across the UI.
  * @param id The ID of the slot or the tag string (e.g., 'hair_color', 'weapon', 'fantasy').
  * @returns A string representing the category.
  */
 export function getSlotCategory(id: string): SlotCategory {
-  // First, check if the ID matches a known slot ID
-  const category = slotIdToCategoryMap[id];
-  if (category) return category;
+  const cleanedId = id.toLowerCase();
+  
+  // First, check for an exact match in our map.
+  if (slotIdToCategoryMap[cleanedId]) {
+    return slotIdToCategoryMap[cleanedId];
+  }
+  
+  // If no exact match, check for keywords.
+  for (const key in slotIdToCategoryMap) {
+      if (cleanedId.includes(key)) {
+          return slotIdToCategoryMap[key];
+      }
+  }
 
   // Add keyword-based matching for general tags
-  if (['fantasy', 'sci-fi', 'cyberpunk', 'horror'].some(t => id.includes(t))) return 'class';
-  if (['illustration', 'painting', 'photorealistic', 'sketch'].some(t => id.includes(t))) return 'style';
+  if (['fantasy', 'sci-fi', 'cyberpunk', 'horror', 'steampunk', 'post-apocalyptic'].some(t => cleanedId.includes(t))) return 'class';
+  if (['illustration', 'painting', 'photorealistic', 'sketch', 'anime', 'manga'].some(t => cleanedId.includes(t))) return 'style';
 
   return 'misc';
 }
-
-    
