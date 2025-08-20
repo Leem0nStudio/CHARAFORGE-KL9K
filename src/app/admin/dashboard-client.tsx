@@ -1,7 +1,8 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Swords, BarChart } from 'lucide-react';
+import { Users, Swords, BarChart, Bot } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Define the type for the stats object for props validation
@@ -10,6 +11,8 @@ type DashboardStats = {
   totalCharacters: number;
   publicCharacters: number;
   privateCharacters: number;
+  totalModels: number;
+  totalLoras: number;
 };
 
 type DashboardClientProps = {
@@ -39,7 +42,7 @@ export function DashboardClient({ stats }: DashboardClientProps) {
   return (
     <div className="space-y-8">
       <motion.div 
-        className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -67,6 +70,18 @@ export function DashboardClient({ stats }: DashboardClientProps) {
                <p className="text-xs text-muted-foreground">
                   {stats.publicCharacters} public / {stats.privateCharacters} private
               </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+         <motion.div variants={itemVariants}>
+           <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">AI Models</CardTitle>
+              <Bot className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalModels + stats.totalLoras}</div>
+               <p className="text-xs text-muted-foreground">{stats.totalModels} base / {stats.totalLoras} LoRAs</p>
             </CardContent>
           </Card>
         </motion.div>

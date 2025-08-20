@@ -1,7 +1,9 @@
 
+
 'use server';
 
 import { adminDb } from '@/lib/firebase/server';
+import type { AiModel } from '@/types/ai-model';
 
 // Define a type for the stats object for better type safety.
 type DashboardStats = {
@@ -9,6 +11,8 @@ type DashboardStats = {
   totalCharacters: number;
   publicCharacters: number;
   privateCharacters: number;
+  totalModels: number;
+  totalLoras: number;
 };
 
 // Return a consistent, zeroed-out object shape on initialization failure or error.
@@ -17,6 +21,8 @@ const zeroStats: DashboardStats = {
   totalCharacters: 0,
   publicCharacters: 0,
   privateCharacters: 0,
+  totalModels: 0,
+  totalLoras: 0,
 };
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -27,22 +33,34 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
   try {
     // Use Promise.all for concurrent data fetching.
-    const [usersSnapshot, charactersSnapshot, publicCharactersSnapshot] = await Promise.all([
+    const [
+        usersSnapshot, 
+        charactersSnapshot, 
+        publicCharactersSnapshot,
+        modelsSnapshot,
+        lorasSnapshot,
+    ] = await Promise.all([
       adminDb.collection('users').count().get(),
       adminDb.collection('characters').count().get(),
-      adminDb.collection('characters').where('status', '==', 'public').count().get()
+      adminDb.collection('characters').where('meta.status', '==', 'public').count().get(),
+      adminDb.collection('ai_models').where('type', '==', 'model').count().get(),
+      adminDb.collection('ai_models').where('type', '==', 'lora').count().get(),
     ]);
     
     const totalUsers = usersSnapshot.data().count;
     const totalCharacters = charactersSnapshot.data().count;
     const publicCharacters = publicCharactersSnapshot.data().count;
     const privateCharacters = totalCharacters - publicCharacters;
+    const totalModels = modelsSnapshot.data().count;
+    const totalLoras = lorasSnapshot.data().count;
 
     return {
       totalUsers,
       totalCharacters,
       publicCharacters,
       privateCharacters,
+      totalModels,
+      totalLoras,
     };
   } catch (error) {
     // Avoid logging errors in production environments for security.

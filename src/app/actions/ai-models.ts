@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -153,6 +154,7 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
             versionId: latestVersion?.id?.toString() || '',
             baseModel: baseModelName,
             coverMediaUrl,
+            coverMediaType,
             triggerWords: triggerWords,
             versions: modelVersions?.map((v: any) => ({ 
                 id: v.id.toString(), 

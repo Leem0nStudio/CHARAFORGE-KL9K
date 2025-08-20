@@ -10,7 +10,7 @@ export interface UserStats {
   totalLikes: number;
   collectionsCreated: number;
   installedPacks: string[];
-  installedModels?: string[]; // Added to track installed models
+  installedModels: string[]; // Updated to track installed models
   subscriptionTier: string;
   memberSince: number; // Stored as milliseconds since epoch
   points?: number; // Total gamification points
