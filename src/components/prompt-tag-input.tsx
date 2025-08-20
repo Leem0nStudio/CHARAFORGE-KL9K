@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { X, Plus, Minus } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface PromptTagInputProps {
     value: string;
@@ -12,27 +13,19 @@ interface PromptTagInputProps {
     disabled?: boolean;
 }
 
-// Regex to split by comma, but not inside parentheses.
 const tagSplitRegex = /,\s*(?![^()]*\))/;
 
 const parseTag = (tagStr: string): { tag: string; weight: number } => {
-    // Matches (tag:1.2) or (tag)
     const weightMatch = tagStr.match(/^\(([^:]+)(?::([\d.]+))?\)$/);
     if (weightMatch) {
-        return { tag: weightMatch[1], weight: weightMatch[2] ? parseFloat(weightMatch[2]) : 1.0 };
+        return { tag: weightMatch[1].trim(), weight: weightMatch[2] ? parseFloat(weightMatch[2]) : 1.0 };
     }
-    // Matches tag:1.2 (without parentheses)
-     const colonWeightMatch = tagStr.match(/([^:]+):([\d.]+)$/);
-    if (colonWeightMatch) {
-        return { tag: colonWeightMatch[1], weight: parseFloat(colonWeightMatch[2]) };
-    }
-    return { tag: tagStr.replace(/[()]/g, ''), weight: 1.0 };
+    return { tag: tagStr.trim(), weight: 1.0 };
 };
 
 const formatTag = ({ tag, weight }: { tag: string; weight: number }): string => {
     if (Math.abs(weight - 1.0) < 0.01) {
-        // If weight is 1.0, don't show it unless the original had parentheses
-        return tag.includes('(') ? `(${tag})` : tag;
+        return tag;
     }
     return `(${tag}:${weight.toFixed(1)})`;
 };
@@ -48,7 +41,15 @@ export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProp
         const newTags = tags.map((tagStr, index) => {
             if (index === indexToChange) {
                 const parsed = parseTag(tagStr);
-                const newWeight = Math.max(0.1, parsed.weight + delta);
+                
+                let finalDelta = delta;
+                // **IMPROVEMENT**: If weight is 1.0, the first adjustment is a bigger jump (0.5).
+                // This allows for quicker significant changes from the default.
+                if (Math.abs(parsed.weight - 1.0) < 0.01) {
+                    finalDelta = delta > 0 ? 0.5 : -0.5;
+                }
+                
+                const newWeight = Math.max(0.1, parsed.weight + finalDelta);
                 return formatTag({ tag: parsed.tag, weight: newWeight });
             }
             return tagStr;
@@ -66,8 +67,8 @@ export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProp
 
     return (
         <div 
-            className="flex min-h-[250px] w-full flex-wrap gap-2 rounded-md border border-input bg-background p-3 text-base ring-offset-background placeholder:text-muted-foreground focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-            onClick={() => setSelectedTagIndex(null)} // Deselect when clicking the container
+            className="flex min-h-[250px] w-full flex-wrap content-start gap-2 rounded-md border border-input bg-background p-3 text-base ring-offset-background placeholder:text-muted-foreground focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+            onClick={() => setSelectedTagIndex(null)}
         >
             {tags.map((tagStr, index) => {
                 const { tag, weight } = parseTag(tagStr);
@@ -76,22 +77,19 @@ export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProp
                 return (
                     <div
                         key={`${tagStr}-${index}`}
-                        className={cn(
-                            `relative group flex items-center h-fit transition-all duration-200`,
-                            isSelected && 'z-10'
-                        )}
+                        className="relative group flex items-center h-fit"
                         onClick={(e) => {
-                            e.stopPropagation(); // Prevent container click from firing
+                            e.stopPropagation();
                             setSelectedTagIndex(isSelected ? null : index);
                         }}
                     >
                         <Badge
-                            variant="secondary"
-                            className="cursor-pointer h-fit py-1 pl-3 pr-1 text-sm select-none"
+                            variant={isSelected ? 'default' : 'secondary'}
+                            className="cursor-pointer h-fit py-1 pl-3 pr-1 text-sm select-none transition-all duration-200"
                         >
                             {tag}
-                            {weight !== 1.0 && <span className="ml-1.5 text-xs text-muted-foreground font-bold">({weight.toFixed(1)})</span>}
-                            <button
+                            {weight !== 1.0 && <span className="ml-1.5 text-xs text-muted-foreground font-bold group-hover:text-primary-foreground">{`(${weight.toFixed(1)})`}</span>}
+                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleRemoveTag(index); }}
                                 disabled={disabled}
@@ -100,13 +98,21 @@ export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProp
                                 <X className="h-3 w-3" />
                             </button>
                         </Badge>
+                        <AnimatePresence>
                         {isSelected && (
-                            <div className="absolute -top-5 left-1/2 -translate-x-1/2 flex items-center bg-background border rounded-full p-0.5 shadow-lg">
-                                <button type="button" onClick={(e) => { e.stopPropagation(); handleWeightChange(index, -0.1); }} className="p-1 rounded-l-full hover:bg-muted"><Minus className="h-3 w-3"/></button>
+                             <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                className="absolute -bottom-9 left-1/2 -translate-x-1/2 flex items-center bg-card border rounded-full p-0.5 shadow-lg z-10"
+                             >
+                                <button type="button" onClick={(e) => { e.stopPropagation(); handleWeightChange(index, -0.1); }} className="p-1.5 rounded-l-full hover:bg-muted"><Minus className="h-3 w-3"/></button>
                                 <div className="w-px h-4 bg-border" />
-                                <button type="button" onClick={(e) => { e.stopPropagation(); handleWeightChange(index, 0.1); }} className="p-1 rounded-r-full hover:bg-muted"><Plus className="h-3 w-3"/></button>
-                            </div>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); handleWeightChange(index, 0.1); }} className="p-1.5 rounded-r-full hover:bg-muted"><Plus className="h-3 w-3"/></button>
+                             </motion.div>
                         )}
+                        </AnimatePresence>
                     </div>
                 );
             })}
