@@ -165,7 +165,7 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
     
     const apiUrl = 'https://modelslab.com/api/v6/images/text2img';
     const payload: any = {
-        key: systemApiKey,
+        api_key: systemApiKey, // CRITICAL FIX: The API expects 'api_key', not 'key'.
         prompt: data.prompt,
         model_id: data.modelId,
         negative_prompt: "ugly, bad, deformed, distorted",
@@ -201,13 +201,13 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
             body: JSON.stringify(payload),
         });
         
-        if (!response.ok) {
-             const errorBody = await response.text();
-             console.error(`ModelsLab API Error (${response.status}):`, errorBody);
-             throw new Error(`ModelsLab API request failed with status ${response.status}.`);
-        }
-        
         const result = await response.json();
+
+        if (!response.ok) {
+             console.error(`ModelsLab API Error (${response.status}):`, result);
+             const errorMessage = result.message || result.detail || JSON.stringify(result);
+             throw new Error(`ModelsLab API request failed with status ${response.status}. Error: ${errorMessage}`);
+        }
         
         // Handle different response structures from ModelsLab
         if (result.status === 'success' && result.output && result.output.length > 0) {
@@ -215,22 +215,26 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
         } else if (result.status === 'processing') {
             // If it's processing, we need to poll the fetch_result endpoint
             const fetchUrl = result.fetch_result;
+            const pollPayload = { api_key: systemApiKey }; // Use correct key for polling too
             for (let i = 0; i < 10; i++) { // Poll up to 10 times
                 await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-                const fetchResponse = await fetch(fetchUrl, { method: 'POST', body: JSON.stringify({ key: systemApiKey }), headers: { 'Content-Type': 'application/json' } });
+                const fetchResponse = await fetch(fetchUrl, { method: 'POST', body: JSON.stringify(pollPayload), headers: { 'Content-Type': 'application/json' } });
                 const fetchResult = await fetchResponse.json();
                 if (fetchResult.status === 'success' && fetchResult.output && fetchResult.output.length > 0) {
                     return fetchResult.output[0];
                 } else if (fetchResult.status === 'error') {
-                    throw new Error(`ModelsLab fetch failed: ${fetchResult.message}`);
+                    const errorMessage = fetchResult.message || JSON.stringify(fetchResult);
+                    throw new Error(`ModelsLab fetch failed: ${errorMessage}`);
                 }
                 // If still 'processing', continue loop
             }
             throw new Error('ModelsLab processing timed out.');
         } else if (result.status === 'error') {
-             throw new Error(`ModelsLab API error: ${result.message}`);
+             const errorMessage = result.message || JSON.stringify(result);
+             throw new Error(`ModelsLab API error: ${errorMessage}`);
         }
         
+        // Final fallback error if the structure is unexpected
         throw new Error('ModelsLab API did not return a valid image or status.');
 
     } catch (error) {
