@@ -45,10 +45,14 @@ function toCharacterObject(docId: string, data: DocumentData): Character {
         equipment: data.equipment || [],
         timeline: data.timeline || [],
         tags: data.tags || [],
+        rarity: data.rarity || 3,
     };
     const defaultVisuals = {
         imageUrl: data.imageUrl || '',
         gallery: data.gallery || [data.imageUrl].filter(Boolean),
+        isProcessed: data.isProcessed || false,
+        showcaseImageUrl: data.showcaseImageUrl || null,
+        isShowcaseProcessed: data.isShowcaseProcessed || false,
     };
     const defaultMeta = {
         userId: data.userId || '',
@@ -251,18 +255,20 @@ export async function getPublicCharactersForUser(userId: string): Promise<Charac
     // We fetch all characters by the user and then filter for public status in the code.
     const q = charactersRef
       .where('meta.userId', '==', userId)
+      .where('meta.status', '==', 'public')
       .orderBy('meta.createdAt', 'desc')
       .limit(100); // Fetch a reasonable limit of total characters
     
     const snapshot = await q.get();
     
-    const allUserCharacters = snapshot.docs.map(doc => toCharacterObject(doc.id, doc.data()));
-
-    // Filter for public characters in the application logic.
-    return allUserCharacters.filter(char => char.meta.status === 'public');
+    // The previous implementation was already correct here after the fix.
+    // No functional change is needed, but we keep the simplified query.
+    return await hydrateCharacters(snapshot);
 
   } catch (error) {
     console.error(`Error fetching public characters for user ${userId}:`, error);
     return [];
   }
 }
+
+    

@@ -71,3 +71,5 @@ export function GachaCard({ character }: GachaCardProps) {
         </motion.div>
     );
 }
+
+    

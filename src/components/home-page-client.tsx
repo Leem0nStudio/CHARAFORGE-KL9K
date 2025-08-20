@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Image from 'next/image';
@@ -194,3 +195,5 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, h
     </div>
   );
 }
+
+    

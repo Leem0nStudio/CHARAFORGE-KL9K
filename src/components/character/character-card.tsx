@@ -31,7 +31,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
             className="h-full"
         >
             <Card className="overflow-hidden group relative h-full flex flex-col border-2 border-transparent hover:border-primary transition-colors duration-300">
-                <Link href={`/characters/${character.id}`} className="relative aspect-[3/4] w-full bg-muted/20 block">
+                <Link href={`/characters/${character.id}/edit`} className="relative aspect-[3/4] w-full bg-muted/20 block">
                         <Image
                             src={character.visuals.imageUrl}
                             alt={character.core.name}
@@ -149,3 +149,5 @@ export function CharacterCard({ character }: CharacterCardProps) {
         </motion.div>
     );
 }
+
+    

@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Swords, Heart } from 'lucide-react';
 import { CharacterCard } from '@/components/character/character-card';
+import { GachaCard } from '@/components/character/gacha-card';
 
 
 export default async function UserProfilePage({ params }: { params: { uid: string } }) {
@@ -58,7 +59,7 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
                 {userCreations.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {userCreations.map(creation => (
-                            <CharacterCard key={creation.id} character={creation} />
+                            <GachaCard key={creation.id} character={creation} />
                         ))}
                     </div>
                 ) : (
@@ -70,3 +71,5 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
         </div>
     );
 }
+
+    

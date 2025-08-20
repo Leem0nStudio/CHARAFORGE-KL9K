@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback, useTransition, use } from "react";
@@ -101,7 +102,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       targetLanguage: 'English',
       aspectRatio: '1:1',
       loraWeight: 0.75,
-      selectedModel: imageModels[0] || undefined,
+      selectedModel: geminiImagePlaceholder,
       selectedLora: null,
       rarity: 3,
     },
@@ -151,7 +152,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             ]);
             
             const allAvailableModels = new Map<string, AiModel>();
-            [geminiImagePlaceholder, ...imageModels, ...userModels].forEach(m => allAvailableModels.set(m.id, m));
+            [geminiImagePlaceholder, ...userModels].forEach(m => allAvailableModels.set(m.id, m));
 
             setAvailableModels(Array.from(allAvailableModels.values()));
             setAvailableLoras(userLoras);
@@ -629,8 +630,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                                   src={generationResult.imageUrl}
                                   alt="Generated character portrait"
                                   fill
-                                  className="object-contain"
                                   sizes="100vw"
+                                  className="object-contain"
                                 />
                                 <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-green-600 text-white text-xs font-bold py-1 px-2 rounded-full shadow">
                                   <Check className="w-3 h-3"/>
@@ -709,3 +710,5 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     </>
   );
 }
+
+    

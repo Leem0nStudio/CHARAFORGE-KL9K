@@ -34,3 +34,5 @@ export default async function CharacterPage({ params }: { params: { id: string }
     />
   );
 }
+
+    
