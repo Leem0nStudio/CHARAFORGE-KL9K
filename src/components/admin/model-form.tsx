@@ -175,7 +175,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Execution Engine</Label>
+                                    <Label>Motor de Orquestación</Label>
                                     <Controller
                                         control={form.control}
                                         name="engine"

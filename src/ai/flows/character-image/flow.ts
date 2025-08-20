@@ -271,11 +271,11 @@ const generateCharacterImageFlow = ai.defineFlow(
                 model: 'googleai/gemini-2.0-flash-preview-image-generation',
                 prompt: {
                     text: finalDescription,
+                    width,
+                    height,
                 },
                 config: {
                     responseModalities: ['TEXT', 'IMAGE'],
-                    width,
-                    height,
                 },
             });
             imageUrl = media?.url;
