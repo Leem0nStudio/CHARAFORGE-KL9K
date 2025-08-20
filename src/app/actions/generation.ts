@@ -15,7 +15,7 @@ import type { GenerateCharacterSheetOutput } from '@/ai/flows/character-sheet/ty
 
 // Schema for the first step: generating the character sheet
 const GenerateSheetInputSchema = z.object({
-  description: z.string().min(20).max(1000),
+  description: z.string().min(10).max(4000),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   engineConfig: z.custom<TextEngineConfig>(),
 });
@@ -31,7 +31,8 @@ export type GenerateSheetOutput = {
 
 // Schema for the second step: generating the portrait
 const GeneratePortraitInputSchema = z.object({
-    physicalDescription: z.string().min(20, { message: "A detailed physical description is required." }).max(2000),
+    physicalDescription: z.string().min(10, { message: "A detailed physical description is required." }).max(4000),
+    negativePrompt: z.string().optional(),
     aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
     selectedModel: z.custom<AiModel>().refine(data => !!data, { message: 'A base model must be selected.' }),
     selectedLora: z.custom<AiModel>().optional().nullable(),
@@ -111,6 +112,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
 
     const {
         physicalDescription,
+        negativePrompt,
         aspectRatio,
         selectedModel,
         selectedLora,
@@ -157,7 +159,11 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
             };
         }
         
-        const imageResult = await generateCharacterImage({ description: finalDescription, engineConfig: imageEngineConfig });
+        const imageResult = await generateCharacterImage({ 
+            description: finalDescription,
+            negativePrompt: negativePrompt,
+            engineConfig: imageEngineConfig 
+        });
         
         if (!imageResult.imageUrl) {
             throw new Error('AI generation failed to return an image.');
@@ -175,3 +181,5 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         return { success: false, message: 'Failed to generate portrait.', error: message };
     }
 }
+
+    

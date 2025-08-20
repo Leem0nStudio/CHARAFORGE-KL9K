@@ -93,7 +93,7 @@
                 "id": "background_setting",
                 "label": "Background",
                 "type": "select",
-                "defaultOption": "city street",
+                "defaultOption": "on a city street",
                 "options": [
                     { "label": "City Street", "value": "on a city street", "tags": ["cityscape", "street"] },
                     { "label": "Cozy Cafe", "value": "in a cozy cafe", "tags": ["cafe", "indoors"] },

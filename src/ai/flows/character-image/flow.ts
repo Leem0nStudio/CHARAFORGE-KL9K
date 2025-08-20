@@ -154,11 +154,11 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
 
 /**
  * Queries the ModelsLab API.
- * This now correctly sends the API key in the payload body as 'key'.
+ * This now correctly sends the API key in the payload body as 'key' and includes negative prompts.
  * @param {object} data The payload including the prompt and model/LoRA configurations.
  * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
  */
-async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId?: string, loraWeight?: number }): Promise<string> {
+async function queryModelsLabAPI(data: { prompt: string, negativePrompt?: string, modelId: string, loraId?: string, loraWeight?: number }): Promise<string> {
     const systemApiKey = process.env.MODELSLAB_API_KEY;
     if (!systemApiKey) {
         throw new Error("The system administrator has not configured an API key for ModelsLab. This service is unavailable.");
@@ -166,10 +166,10 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
     
     const apiUrl = 'https://modelslab.com/api/v6/images/text2img';
     const payload: any = {
-        key: systemApiKey, // **FIX**: The API expects the key to be named 'key' in the payload.
+        key: systemApiKey,
         prompt: data.prompt,
+        negative_prompt: data.negativePrompt || "ugly, bad, deformed, distorted",
         model_id: data.modelId,
-        negative_prompt: "ugly, bad, deformed, distorted",
         width: "1024",
         height: "1024",
         samples: "1",
@@ -188,7 +188,7 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
     
     if (data.loraId && data.loraWeight) {
         payload.lora = {
-            model: data.loraId, // The docs specify 'model' for the lora ID inside the lora object
+            model: data.loraId,
             strength: data.loraWeight,
         };
     }
@@ -210,12 +210,10 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
              throw new Error(`ModelsLab API error: ${errorMessage}`);
         }
         
-        // Handle different response structures from ModelsLab
         if (result.status === 'success' && result.output && result.output.length > 0) {
             return result.output[0];
         } else if (result.status === 'processing') {
             const fetchUrl = result.fetch_result;
-            // The poll payload also needs the key.
             const pollPayload = { key: systemApiKey };
             for (let i = 0; i < 10; i++) { // Poll up to 10 times
                 await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
@@ -254,7 +252,7 @@ const generateCharacterImageFlow = ai.defineFlow(
     outputSchema: GenerateCharacterImageOutputSchema,
   },
   async (input) => {
-    const { description, engineConfig } = input;
+    const { description, negativePrompt, engineConfig } = input;
     const { engineId, modelId, aspectRatio, userApiKey, lora } = engineConfig;
     
     let imageUrl: string | undefined;
@@ -294,6 +292,7 @@ const generateCharacterImageFlow = ai.defineFlow(
         }
         imageUrl = await queryModelsLabAPI({
             prompt: finalDescription,
+            negativePrompt: negativePrompt,
             modelId: engineConfig.modelId,
             loraId: lora?.id,
             loraWeight: lora?.weight
@@ -340,7 +339,8 @@ const generateCharacterImageFlow = ai.defineFlow(
           ],
           "parameters": {
               "width": width,
-              "height": height
+              "height": height,
+              "negativePrompt": negativePrompt,
           }
         };
         

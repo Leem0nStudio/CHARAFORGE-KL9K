@@ -105,8 +105,8 @@
                 "defaultOption": "misty forest",
                 "options": [
                     { "label": "Misty Forest", "value": "misty forest", "tags": ["forest", "mist"] },
-                    { "label": "Castle Wall", "value": "castle wall", "tags": ["castle", "parapet"] },
-                    { "label": "Tavern", "value": "tavern", "tags": ["tavern", "inn", "indoors"] }
+                    { "label": "Castle Wall", "value": "on a castle wall", "tags": ["castle", "parapet"] },
+                    { "label": "Tavern", "value": "in a tavern", "tags": ["tavern", "inn", "indoors"] }
                 ]
             }
         ]

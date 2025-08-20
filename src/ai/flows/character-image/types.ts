@@ -30,7 +30,8 @@ export type ImageEngineConfig = z.infer<typeof ImageEngineConfigSchema>;
 
 // The input to the main flow is now much simpler.
 export const GenerateCharacterImageInputSchema = z.object({
-  description: z.string().describe('The description of the character.'),
+  description: z.string().describe('The positive description of the character.'),
+  negativePrompt: z.string().optional().describe('A description of elements to avoid in the image.'),
   engineConfig: ImageEngineConfigSchema.describe('The complete configuration for the image generation engine.'),
 });
 export type GenerateCharacterImageInput = z.infer<typeof GenerateCharacterImageInputSchema>;
