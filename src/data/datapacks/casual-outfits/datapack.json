@@ -1,0 +1,110 @@
+
+{
+    "name": "Casual Outfits",
+    "author": "CharaForge",
+    "description": "Create characters with modern, everyday clothing. Perfect for contemporary, slice-of-life, or urban fantasy settings.",
+    "type": "free",
+    "price": 0,
+    "tags": ["modern", "casual", "fashion", "urban", "free"],
+    "schema": {
+        "promptTemplates": [
+            {
+                "name": "Street Style Photo",
+                "tags": [
+                    "street style photo", "full body", "{gender}", "{hair_style}", "{hair_color} hair", "wearing a {topwear}", "{bottomwear}", "and {footwear}", "in a {background_setting}"
+                ]
+            },
+            {
+                "name": "Cozy Indoor Portrait",
+                "tags": [
+                    "cozy indoor portrait", "{gender}", "wearing a comfortable {topwear}", "and {bottomwear}", "{hair_style}", "{hair_color} hair", "in a {background_setting}"
+                ]
+            }
+        ],
+        "slots": [
+            {
+                "id": "gender",
+                "label": "Gender",
+                "type": "select",
+                "defaultOption": "woman",
+                "options": [
+                    { "label": "Woman", "value": "woman", "tags": ["1girl", "solo", "woman"] },
+                    { "label": "Man", "value": "man", "tags": ["1boy", "solo", "man"] },
+                    { "label": "Person", "value": "person", "tags": ["1other", "solo", "person"] }
+                ]
+            },
+            {
+                "id": "hair_style",
+                "label": "Hair Style",
+                "type": "select",
+                "defaultOption": "messy_bun",
+                "options": [
+                    { "label": "Messy Bun", "value": "messy bun", "tags": ["messy bun"] },
+                    { "label": "Short and Styled", "value": "short styled hair", "tags": ["short hair", "styled hair"] },
+                    { "label": "Long and Wavy", "value": "long wavy hair", "tags": ["long hair", "wavy hair"] },
+                    { "label": "Bob Cut", "value": "bob cut", "tags": ["bob cut"] }
+                ]
+            },
+            {
+                "id": "hair_color",
+                "label": "Hair Color",
+                "type": "select",
+                "defaultOption": "light_brown",
+                "options": [
+                    { "label": "Light Brown", "value": "light brown", "tags": ["light brown hair"] },
+                    { "label": "Dyed Pink", "value": "pink", "tags": ["pink hair"] },
+                    { "label": "Jet Black", "value": "jet black", "tags": ["black hair"] },
+                    { "label": "Platinum Blonde", "value": "platinum blonde", "tags": ["blonde hair"] }
+                ]
+            },
+            {
+                "id": "topwear",
+                "label": "Topwear",
+                "type": "select",
+                "defaultOption": "graphic t-shirt",
+                "options": [
+                    { "label": "Graphic T-Shirt", "value": "graphic t-shirt", "tags": ["graphic t-shirt"] },
+                    { "label": "Oversized Hoodie", "value": "oversized hoodie", "tags": ["hoodie", "oversized clothes"] },
+                    { "label": "Button-up Shirt", "value": "button-up shirt", "tags": ["button-up shirt"] },
+                    { "label": "Tank Top", "value": "tank top", "tags": ["tank top"] }
+                ]
+            },
+            {
+                "id": "bottomwear",
+                "label": "Bottomwear",
+                "type": "select",
+                "defaultOption": "ripped_jeans",
+                "options": [
+                    { "label": "Ripped Jeans", "value": "ripped jeans", "tags": ["ripped jeans"] },
+                    { "label": "Cargo Shorts", "value": "cargo shorts", "tags": ["cargo shorts"] },
+                    { "label": "Pleated Skirt", "value": "pleated skirt", "tags": ["pleated skirt"] },
+                    { "label": "Sweatpants", "value": "sweatpants", "tags": ["sweatpants"] }
+                ]
+            },
+            {
+                "id": "footwear",
+                "label": "Footwear",
+                "type": "select",
+                "defaultOption": "classic_sneakers",
+                "options": [
+                    { "label": "Sneakers", "value": "sneakers", "tags": ["sneakers"] },
+                    { "label": "Combat Boots", "value": "combat boots", "tags": ["combat boots"] },
+                    { "label": "Sandals", "value": "sandals", "tags": ["sandals"] },
+                    { "label": "High Heels", "value": "high heels", "tags": ["high heels"] }
+                ]
+            },
+            {
+                "id": "background_setting",
+                "label": "Background",
+                "type": "select",
+                "defaultOption": "city_street",
+                "options": [
+                    { "label": "City Street", "value": "city street", "tags": ["cityscape", "street"] },
+                    { "label": "Cozy Cafe", "value": "cozy cafe", "tags": ["cafe", "indoors"] },
+                    { "label": "Skate Park", "value": "skate park", "tags": ["skate park"] },
+                    { "label": "Library", "value": "library", "tags": ["library", "indoors"] }
+                ]
+            }
+        ]
+    }
+}

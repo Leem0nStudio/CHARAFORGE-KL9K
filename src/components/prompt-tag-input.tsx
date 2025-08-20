@@ -12,20 +12,27 @@ interface PromptTagInputProps {
     disabled?: boolean;
 }
 
-// Regex to parse tags, including those with weights like (tag:1.2)
-const tagRegex = /,\s*(?![^()]*\))/;
+// Regex to split by comma, but not inside parentheses.
+const tagSplitRegex = /,\s*(?![^()]*\))/;
 
 const parseTag = (tagStr: string): { tag: string; weight: number } => {
-    const weightMatch = tagStr.match(/^\(([^:]+):([\d.]+)\)$/);
+    // Matches (tag:1.2) or (tag)
+    const weightMatch = tagStr.match(/^\(([^:]+)(?::([\d.]+))?\)$/);
     if (weightMatch) {
-        return { tag: weightMatch[1], weight: parseFloat(weightMatch[2]) };
+        return { tag: weightMatch[1], weight: weightMatch[2] ? parseFloat(weightMatch[2]) : 1.0 };
+    }
+    // Matches tag:1.2 (without parentheses)
+     const colonWeightMatch = tagStr.match(/([^:]+):([\d.]+)$/);
+    if (colonWeightMatch) {
+        return { tag: colonWeightMatch[1], weight: parseFloat(colonWeightMatch[2]) };
     }
     return { tag: tagStr.replace(/[()]/g, ''), weight: 1.0 };
 };
 
 const formatTag = ({ tag, weight }: { tag: string; weight: number }): string => {
     if (Math.abs(weight - 1.0) < 0.01) {
-        return tag;
+        // If weight is 1.0, don't show it unless the original had parentheses
+        return tag.includes('(') ? `(${tag})` : tag;
     }
     return `(${tag}:${weight.toFixed(1)})`;
 };
@@ -33,7 +40,7 @@ const formatTag = ({ tag, weight }: { tag: string; weight: number }): string => 
 export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProps) {
     const [selectedTagIndex, setSelectedTagIndex] = useState<number | null>(null);
 
-    const tags = value ? value.split(tagRegex).filter(Boolean) : [];
+    const tags = value ? value.split(tagSplitRegex).filter(Boolean) : [];
 
     const handleWeightChange = (indexToChange: number, delta: number) => {
         if (disabled) return;

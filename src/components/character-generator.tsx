@@ -114,63 +114,53 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   });
 
   const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-      
-      const allWizardData = { ...wizardData };
-      pack.schema.slots.forEach(slot => {
-          if (slot.isLocked && slot.defaultOption) {
-              allWizardData[slot.id] = slot.defaultOption;
-          }
-      });
-      
-      let finalTags: string[] = [];
-
-      // 1. Get tags from the selected template itself
-      if (template.tags) {
-        finalTags = template.tags.map(tag => {
-            let finalTag = tag;
-            for (const key in allWizardData) {
-                finalTag = finalTag.replace(new RegExp(`{${key}}`, 'g'), allWizardData[key]);
-            }
-            return finalTag;
-        });
+    const allWizardData = { ...wizardData };
+    pack.schema.slots.forEach(slot => {
+      if (slot.isLocked && slot.defaultOption) {
+        allWizardData[slot.id] = slot.defaultOption;
       }
-      
-      // 2. Fallback to old template string if tags are not defined in the template
-      else {
-          let promptFromTemplate = template.template;
-          for (const key in allWizardData) {
-              promptFromTemplate = promptFromTemplate.replace(new RegExp(`{${key}}`, 'g'), allWizardData[key]);
-          }
-          finalTags = promptFromTemplate.split(',').map(t => t.trim()).filter(Boolean);
-      }
-      
-      // 3. Collect tags from selected options
-      const optionTags: string[] = [];
-      pack.schema.slots.forEach(slot => {
-          const selectedOptionValue = allWizardData[slot.id];
-          if (selectedOptionValue) {
-              const selectedOption = slot.options?.find(opt => opt.value === selectedOptionValue);
-              if (selectedOption?.tags) {
-                  optionTags.push(...selectedOption.tags);
-              }
-          }
-      });
-      
-      // 4. Combine and unique all tags
-      const combinedTags = [...finalTags, ...optionTags]
-        .map(tag => tag.trim().replace(/_/g, ' '))
-        .filter(Boolean);
-        
-      const uniqueTags = [...new Set(combinedTags)];
+    });
 
-      generationForm.setValue('description', uniqueTags.join(', '), { shouldValidate: true });
-      generationForm.setValue('tags', uniqueTags.join(', '));
-      generationForm.setValue('wizardData', wizardData);
-      
-      setActivePack(pack);
-      setSelectedTemplate(template);
-      
-      setIsPackModalOpen(false);
+    let finalTags: string[] = [];
+
+    // The primary source for the prompt structure is the template's 'tags' array.
+    if (template.tags) {
+      finalTags = template.tags.map(tagOrPlaceholder => {
+        // Replace any {slot_id} placeholders with the selected option's value.
+        let resolvedTag = tagOrPlaceholder;
+        for (const key in allWizardData) {
+          resolvedTag = resolvedTag.replace(new RegExp(`{${key}}`, 'g'), allWizardData[key]);
+        }
+        return resolvedTag;
+      });
+    }
+
+    // Add tags from the selected options themselves.
+    const optionTags: string[] = [];
+    pack.schema.slots.forEach(slot => {
+      const selectedOptionValue = allWizardData[slot.id];
+      if (selectedOptionValue) {
+        const selectedOption = slot.options?.find(opt => opt.value === selectedOptionValue);
+        if (selectedOption?.tags) {
+          optionTags.push(...selectedOption.tags);
+        }
+      }
+    });
+
+    const combinedTags = [...finalTags, ...optionTags]
+      .map(tag => tag.trim().replace(/_/g, ' ')) // Replace underscores for display
+      .filter(Boolean); // Remove any empty tags
+
+    const uniqueTags = [...new Set(combinedTags)];
+
+    const promptString = uniqueTags.join(', ');
+    generationForm.setValue('description', promptString, { shouldValidate: true });
+    generationForm.setValue('tags', promptString); // Keep tags field in sync
+    generationForm.setValue('wizardData', wizardData);
+    
+    setActivePack(pack);
+    setSelectedTemplate(template);
+    setIsPackModalOpen(false);
   }, [generationForm]);
   
   
