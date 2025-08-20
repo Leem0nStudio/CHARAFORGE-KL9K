@@ -187,10 +187,8 @@ async function queryModelsLabAPI(data: { prompt: string, negativePrompt?: string
     };
     
     if (data.loraId && data.loraWeight) {
-        payload.lora = {
-            model: data.loraId,
-            strength: data.loraWeight,
-        };
+        payload.lora_model = data.loraId;
+        payload.lora_strength = data.loraWeight;
     }
     
     try {
@@ -273,11 +271,11 @@ const generateCharacterImageFlow = ai.defineFlow(
                 model: 'googleai/gemini-2.0-flash-preview-image-generation',
                 prompt: {
                     text: finalDescription,
-                    width,
-                    height,
                 },
                 config: {
                     responseModalities: ['TEXT', 'IMAGE'],
+                    width,
+                    height,
                 },
             });
             imageUrl = media?.url;
@@ -439,5 +437,6 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
+    
 
     
