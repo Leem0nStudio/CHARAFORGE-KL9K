@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -11,7 +10,9 @@ import type { AiModel } from '@/types/ai-model';
 import { UpsertModelSchema, type UpsertAiModel } from '@/types/ai-model';
 import { suggestHfModel } from '@/ai/flows/hf-model-suggestion/flow';
 import { uploadToStorage } from '@/services/storage';
-import { imageModels, textModels } from '@/lib/app-config';
+import { imageModels } from '@/lib/app-config';
+import { getCivitaiModelInfo } from './source-fetchers/civitai';
+import { getModelsLabModelInfo } from './source-fetchers/modelslab';
 
 type ActionResponse = {
     success: boolean;
@@ -19,50 +20,6 @@ type ActionResponse = {
     error?: string;
     data?: Partial<AiModel>; // Used to return pre-filled data
 };
-
-// Source-specific API fetchers
-async function getCivitaiModelInfo(modelId: string): Promise<any> {
-    const url = `https://civitai.com/api/v1/models/${modelId}`;
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) {
-        let errorBody = `Status: ${response.status}`;
-        try {
-            const errorJson = await response.json();
-            errorBody += ` ${errorJson.error || JSON.stringify(errorJson)}`;
-        } catch(e) {
-             errorBody += ` ${response.statusText}`;
-        }
-        throw new Error(`Failed to fetch model info from Civitai. ${errorBody}`);
-    }
-    return response.json();
-}
-
-async function getModelsLabModelInfo(modelIdOrSlug: string): Promise<any> {
-    const apiKey = process.env.MODELSLAB_API_KEY;
-    if (!apiKey) {
-        throw new Error("ModelsLab API key is not configured on the server. Please add MODELSLAB_API_KEY to your .env file.");
-    }
-    const url = `https://modelslab.com/api/v6/model/${modelIdOrSlug}`;
-    const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': apiKey,
-        },
-        cache: 'no-store'
-    });
-    if (!response.ok) {
-        let errorBody = `Status: ${response.status}`;
-        try {
-            const errorJson = await response.json();
-            errorBody += ` ${errorJson.detail || JSON.stringify(errorJson)}`;
-        } catch(e) {
-             errorBody += ` ${response.statusText}`;
-        }
-        throw new Error(`Could not find a model on ModelsLab matching the identifier: "${modelIdOrSlug}". ${errorBody}`);
-    }
-    return response.json();
-}
 
 
 export async function upsertModel(data: UpsertAiModel): Promise<ActionResponse> {
@@ -123,9 +80,17 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
             modelInfo = await getCivitaiModelInfo(sourceModelId);
         }
         
+        // This is the crucial part: if the API returns data but no versions, it's an incompatible model for auto-import.
         const modelVersions = modelInfo.model_versions || modelInfo.modelVersions || modelInfo.versions;
-        // **NEW LOGIC**: Don't fail if versions are missing. Proceed with what we have.
-        const latestVersion = (modelVersions && modelVersions.length > 0) ? modelVersions[0] : {};
+        if (!modelVersions || modelVersions.length === 0) {
+            return {
+                success: false,
+                message: "Model found, but no version data is available via API. Please add it manually.",
+                error: `The API for model "${modelInfo.name || sourceModelId}" did not return any usable version information.`
+            };
+        }
+        
+        const latestVersion = modelVersions[0];
 
         let coverMediaUrl: string | null = null;
         let coverMediaType: 'image' | 'video' = 'image';
@@ -182,24 +147,22 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
         const prefilledData: Partial<AiModel> = {
             name: modelInfo.name || modelInfo.model_name,
             civitaiModelId: source === 'civitai' ? modelInfo.id.toString() : undefined,
-            modelslabModelId: source === 'modelslab' ? (modelInfo.model_id || modelInfo.id).toString() : undefined,
-            hf_id: source === 'modelslab' ? (modelInfo.model_id || modelInfo.id).toString() : suggestedHfId,
+            modelslabModelId: source === 'modelslab' ? (modelInfo.model_id || sourceModelId).toString() : undefined,
+            hf_id: source === 'modelslab' ? (modelInfo.model_id || sourceModelId).toString() : suggestedHfId,
             type: modelInfo.type.toLowerCase() === 'lora' ? 'lora' : 'model',
             engine: engine, 
             versionId: latestVersion?.id?.toString() || '',
             baseModel: baseModelName,
             coverMediaUrl,
             triggerWords: triggerWords,
-            // We don't return versions if they are empty, let the user add manually if needed.
-            versions: modelVersions?.length > 0 ? modelVersions.map((v: any) => ({ 
+            versions: modelVersions?.map((v: any) => ({ 
                 id: v.id.toString(), 
                 name: v.name, 
                 baseModel: v.baseModel,
                 triggerWords: [...new Set([...(v.trainedWords || []), ...(modelInfo.tags || [])])]
-            })) : [],
+            })) || [],
         };
         
-        // **NEW LOGIC**: Instead of saving, return the data to pre-fill the form.
         return {
             success: true,
             message: "Model data fetched successfully. Please review and save manually.",
@@ -225,7 +188,6 @@ export async function upsertUserAiModel(formData: FormData): Promise<ActionRespo
         triggerWords: formData.get('triggerWords'),
     };
     
-    // Add engine-specific IDs
     if (rawData.engine === 'huggingface') {
         rawData.hf_id = formData.get('hf_id');
     } else if (rawData.engine === 'modelslab') {
@@ -399,4 +361,3 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
-    

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -93,7 +92,6 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
         startTransition(async () => {
             const result = await addAiModelFromSource(importSource, sourceModelId);
             if (result.success && result.data) {
-                // Pre-fill the form with the fetched data
                 form.reset({
                     name: result.data.name || '',
                     type: result.data.type || 'lora',
@@ -105,10 +103,10 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                     baseModel: result.data.baseModel || '',
                     triggerWords: result.data.triggerWords?.join(', ') || '',
                 });
-                setActiveTab('manual'); // Switch to the manual tab for review
+                setActiveTab('manual'); 
                 toast({ title: 'Data Fetched!', description: 'Model info has been pre-filled. Please review and save manually.' });
             } else {
-                toast({ variant: 'destructive', title: 'Error', description: result.error || result.message });
+                toast({ variant: 'destructive', title: 'Import Error', description: result.error || result.message });
             }
         });
     }

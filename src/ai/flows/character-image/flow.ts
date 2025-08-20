@@ -154,6 +154,7 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
 
 /**
  * Queries the ModelsLab API.
+ * This now correctly sends the API key in the payload body as 'key'.
  * @param {object} data The payload including the prompt and model/LoRA configurations.
  * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
  */
@@ -165,7 +166,7 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
     
     const apiUrl = 'https://modelslab.com/api/v6/images/text2img';
     const payload: any = {
-        key: systemApiKey, // The error message says to use 'key'
+        key: systemApiKey, // **FIX**: The API expects the key to be named 'key' in the payload.
         prompt: data.prompt,
         model_id: data.modelId,
         negative_prompt: "ugly, bad, deformed, distorted",
@@ -187,7 +188,7 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
     
     if (data.loraId && data.loraWeight) {
         payload.lora = {
-            model_id: data.loraId,
+            model: data.loraId, // The docs specify 'model' for the lora ID inside the lora object
             strength: data.loraWeight,
         };
     }
@@ -203,19 +204,19 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
         
         const result = await response.json();
 
-        if (!response.ok) {
-             console.error(`ModelsLab API Error (${response.status}):`, result);
-             const errorMessage = result.message || result.detail || JSON.stringify(result);
-             throw new Error(`ModelsLab API request failed with status ${response.status}. Error: ${errorMessage}`);
+        if (result.status === 'error') {
+             const errorMessage = result.message || JSON.stringify(result);
+             console.error(`ModelsLab API Error:`, result);
+             throw new Error(`ModelsLab API error: ${errorMessage}`);
         }
         
         // Handle different response structures from ModelsLab
         if (result.status === 'success' && result.output && result.output.length > 0) {
             return result.output[0];
         } else if (result.status === 'processing') {
-            // If it's processing, we need to poll the fetch_result endpoint
             const fetchUrl = result.fetch_result;
-            const pollPayload = { key: systemApiKey }; // Use correct key for polling too
+            // The poll payload also needs the key.
+            const pollPayload = { key: systemApiKey };
             for (let i = 0; i < 10; i++) { // Poll up to 10 times
                 await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
                 const fetchResponse = await fetch(fetchUrl, { method: 'POST', body: JSON.stringify(pollPayload), headers: { 'Content-Type': 'application/json' } });
@@ -226,15 +227,10 @@ async function queryModelsLabAPI(data: { prompt: string, modelId: string, loraId
                     const errorMessage = fetchResult.message || JSON.stringify(fetchResult);
                     throw new Error(`ModelsLab fetch failed: ${errorMessage}`);
                 }
-                // If still 'processing', continue loop
             }
             throw new Error('ModelsLab processing timed out.');
-        } else if (result.status === 'error') {
-             const errorMessage = result.message || JSON.stringify(result);
-             throw new Error(`ModelsLab API error: ${errorMessage}`);
         }
         
-        // Final fallback error if the structure is unexpected
         throw new Error('ModelsLab API did not return a valid image or status.');
 
     } catch (error) {
@@ -265,7 +261,7 @@ const generateCharacterImageFlow = ai.defineFlow(
     
     // Centralized prompt construction
     let finalDescription = description;
-    if (lora?.triggerWords && lora.triggerWords.length > 0 && engineId !== 'modelslab') {
+    if (lora?.triggerWords && lora.triggerWords.length > 0) {
         finalDescription = `${lora.triggerWords.join(', ')}, ${description}`;
         console.log(`Using LoRA. Appended trigger words. New prompt: ${finalDescription}`);
     }
