@@ -23,8 +23,8 @@ const bebasNeue = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
-  title: 'CharaForge - AI Character Forge',
-  description: 'AI-powered character generation for writers, artists, and game masters. Create unique characters with detailed biographies and portraits.',
+  title: 'CharaForge - AI Character Generation Platform',
+  description: 'A SaaS platform for writers, artists, and game masters to generate, manage, and share characters using generative AI. Create unique portraits and detailed biographies for your creative projects.',
 };
 
 export default function RootLayout({
