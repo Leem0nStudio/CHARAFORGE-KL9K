@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Minus } from 'lucide-react';
 import { Badge } from './ui/badge';
+import { cn } from '@/lib/utils';
 
 interface PromptTagInputProps {
     value: string;
@@ -12,18 +13,18 @@ interface PromptTagInputProps {
 }
 
 // Regex to parse tags, including those with weights like (tag:1.2)
-const tagRegex = /((?:\([^)]+\)|[^\s,()]+)+)/g;
+const tagRegex = /,\s*(?![^()]*\))/;
 
 const parseTag = (tagStr: string): { tag: string; weight: number } => {
-    const weightMatch = tagStr.match(/\(([^:]+):([\d.]+)\)/);
+    const weightMatch = tagStr.match(/^\(([^:]+):([\d.]+)\)$/);
     if (weightMatch) {
         return { tag: weightMatch[1], weight: parseFloat(weightMatch[2]) };
     }
-    return { tag: tagStr, weight: 1.0 };
+    return { tag: tagStr.replace(/[()]/g, ''), weight: 1.0 };
 };
 
 const formatTag = ({ tag, weight }: { tag: string; weight: number }): string => {
-    if (weight === 1.0) {
+    if (Math.abs(weight - 1.0) < 0.01) {
         return tag;
     }
     return `(${tag}:${weight.toFixed(1)})`;
@@ -32,7 +33,7 @@ const formatTag = ({ tag, weight }: { tag: string; weight: number }): string => 
 export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProps) {
     const [selectedTagIndex, setSelectedTagIndex] = useState<number | null>(null);
 
-    const tags = value.match(tagRegex) || [];
+    const tags = value ? value.split(tagRegex).filter(Boolean) : [];
 
     const handleWeightChange = (indexToChange: number, delta: number) => {
         if (disabled) return;
@@ -57,7 +58,10 @@ export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProp
     };
 
     return (
-        <div className="flex min-h-[250px] w-full flex-wrap gap-2 rounded-md border border-input bg-background p-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm">
+        <div 
+            className="flex min-h-[250px] w-full flex-wrap gap-2 rounded-md border border-input bg-background p-3 text-base ring-offset-background placeholder:text-muted-foreground focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+            onClick={() => setSelectedTagIndex(null)} // Deselect when clicking the container
+        >
             {tags.map((tagStr, index) => {
                 const { tag, weight } = parseTag(tagStr);
                 const isSelected = selectedTagIndex === index;
@@ -65,8 +69,14 @@ export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProp
                 return (
                     <div
                         key={`${tagStr}-${index}`}
-                        className={`relative group flex items-center h-fit transition-all duration-200 ${isSelected ? 'z-10' : ''}`}
-                        onClick={() => setSelectedTagIndex(isSelected ? null : index)}
+                        className={cn(
+                            `relative group flex items-center h-fit transition-all duration-200`,
+                            isSelected && 'z-10'
+                        )}
+                        onClick={(e) => {
+                            e.stopPropagation(); // Prevent container click from firing
+                            setSelectedTagIndex(isSelected ? null : index);
+                        }}
                     >
                         <Badge
                             variant="secondary"
@@ -84,16 +94,17 @@ export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProp
                             </button>
                         </Badge>
                         {isSelected && (
-                            <div className="absolute -top-4 flex items-center bg-background border rounded-full p-0.5 shadow-lg">
-                                <button type="button" onClick={(e) => { e.stopPropagation(); handleWeightChange(index, -0.1); }} className="p-1 rounded-full hover:bg-muted"><Minus className="h-3 w-3"/></button>
-                                <button type="button" onClick={(e) => { e.stopPropagation(); handleWeightChange(index, 0.1); }} className="p-1 rounded-full hover:bg-muted"><Plus className="h-3 w-3"/></button>
+                            <div className="absolute -top-5 left-1/2 -translate-x-1/2 flex items-center bg-background border rounded-full p-0.5 shadow-lg">
+                                <button type="button" onClick={(e) => { e.stopPropagation(); handleWeightChange(index, -0.1); }} className="p-1 rounded-l-full hover:bg-muted"><Minus className="h-3 w-3"/></button>
+                                <div className="w-px h-4 bg-border" />
+                                <button type="button" onClick={(e) => { e.stopPropagation(); handleWeightChange(index, 0.1); }} className="p-1 rounded-r-full hover:bg-muted"><Plus className="h-3 w-3"/></button>
                             </div>
                         )}
                     </div>
                 );
             })}
             {tags.length === 0 && (
-                <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                <div className="flex h-full w-full items-center justify-center text-muted-foreground pointer-events-none">
                     <p>Tags will appear here.</p>
                 </div>
             )}

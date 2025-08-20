@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown, Star } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown, Star, Switch, CaseSensitive } from "lucide-react";
 
 import { 
     Button,
@@ -89,6 +89,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [selectedTextModel, setSelectedTextModel] = useState<AiModel>(textModels[0]);
+  const [promptMode, setPromptMode] = useState<'tags' | 'text'>('tags');
 
   const [activePack, setActivePack] = useState<DataPack | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
@@ -461,22 +462,40 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                                     </Select>
                                 )}
                               <FormControl>
+                                  {promptMode === 'tags' ? (
                                     <PromptTagInput 
                                       value={field.value}
                                       onChange={field.onChange}
                                       disabled={!canInteract}
                                     />
+                                  ) : (
+                                    <Textarea 
+                                      {...field}
+                                      className="min-h-[250px]"
+                                      disabled={!canInteract}
+                                    />
+                                  )}
                               </FormControl>
                                <div className="flex items-center justify-between mt-2">
-                                {activePack && (
+                                {activePack ? (
                                   <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
                                     <Package className="h-3 w-3" />
                                     Using: {activePack.name}
                                   </Badge>
-                                )}
-                                 <Button type="button" variant="link" size="sm" onClick={() => setIsTagModalOpen(true)} className="ml-auto">
-                                    <Tags className="mr-2 h-3 w-3"/> Tag Assistant
-                                 </Button>
+                                ) : <div />}
+                                <div className="flex items-center gap-4">
+                                     <Button type="button" variant="link" size="sm" onClick={() => setIsTagModalOpen(true)} className="px-1">
+                                        <Tags className="mr-2 h-3 w-3"/> Tag Assistant
+                                     </Button>
+                                     <div className="flex items-center space-x-2">
+                                        <Label htmlFor="prompt-mode" className="text-xs text-muted-foreground flex items-center gap-1.5"><CaseSensitive/> Text Mode</Label>
+                                        <Switch
+                                            id="prompt-mode"
+                                            checked={promptMode === 'text'}
+                                            onCheckedChange={(checked) => setPromptMode(checked ? 'text' : 'tags')}
+                                        />
+                                    </div>
+                                </div>
                                </div>
                               <FormMessage />
                             </FormItem>
