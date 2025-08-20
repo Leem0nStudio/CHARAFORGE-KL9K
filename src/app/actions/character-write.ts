@@ -247,7 +247,9 @@ export async function saveCharacter(input: SaveCharacterInput) {
             visuals: {
                 imageUrl: storageUrl, // Starts with the raw image URL
                 gallery: [storageUrl],
-                isProcessed: false, // Set initial processing state
+                isProcessed: false, // Set initial processing state for main image
+                showcaseImageUrl: null, // Initialize showcase fields
+                isShowcaseProcessed: false,
             },
             meta: {
                 userId,

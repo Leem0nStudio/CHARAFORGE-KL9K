@@ -38,6 +38,8 @@ export type Character = {
     imageUrl: string;
     gallery: string[];
     isProcessed?: boolean | 'failed'; // Flag to indicate if the main image is processed
+    showcaseImageUrl?: string | null; // URL for the high-quality, background-removed showcase image
+    isShowcaseProcessed?: boolean | 'failed'; // Flag for the showcase image processing status
   };
 
   // Metadata about the record itself.
