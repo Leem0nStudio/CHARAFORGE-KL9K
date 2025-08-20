@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -71,6 +72,7 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
           totalLikes: 0,
           collectionsCreated: 0,
           installedPacks: [],
+          installedModels: [],
           subscriptionTier: 'free',
           memberSince: serverTimestamp(),
           points: 0, // Initialize gamification points
@@ -177,3 +179,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+    

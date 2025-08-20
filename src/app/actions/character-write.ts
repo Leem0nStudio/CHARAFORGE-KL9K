@@ -169,7 +169,7 @@ export async function updateCharacter(
     }
     
     // Create an object with dot notation for updating nested fields in Firestore
-    const updates: any = {
+    const updates: { [key: string]: any } = {
       'core.name': name,
       'core.biography': biography,
       'core.alignment': alignment,
@@ -361,3 +361,5 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
     return { success: false, message };
   }
 }
+
+    

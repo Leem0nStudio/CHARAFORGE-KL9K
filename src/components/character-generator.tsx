@@ -115,29 +115,28 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   });
 
   const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-    let finalTags: string[] = [];
-
-    // Process the template tags
-    if (template.tags) {
-        finalTags = template.tags.map(tagOrPlaceholder => {
-            const match = tagOrPlaceholder.match(/\{(.+?)\}/);
-            if (match) {
-                const slotId = match[1];
-                const selectedValue = wizardData[slotId];
-                // Find the option to get its specific tags if available
-                const slot = pack.schema.slots.find(s => s.id === slotId);
-                const option = slot?.options?.find(o => o.value === selectedValue);
-                // Use the option's specific tags, or the value itself as a fallback
-                return option?.tags?.join(', ') || selectedValue || '';
-            }
-            return tagOrPlaceholder;
-        });
+    let finalPrompt = template.template || '';
+    
+    // Replace placeholders in the template string
+    for (const slotId in wizardData) {
+        const selectedValue = wizardData[slotId];
+        const slot = pack.schema.slots.find(s => s.id === slotId);
+        const option = slot?.options?.find(o => o.value === selectedValue);
+        
+        // Use the option's value, which should be a descriptive phrase
+        const replacementValue = option?.value || selectedValue || '';
+        finalPrompt = finalPrompt.replace(`{${slotId}}`, replacementValue);
     }
 
-    const finalPrompt = finalTags.filter(Boolean).join(', ');
+    // Generate tags from the wizard data for the tag input
+    const finalTags = Object.values(wizardData)
+      .map(value => pack.schema.slots.flatMap(s => s.options ?? []).find(o => o.value === value)?.tags ?? [value])
+      .flat()
+      .filter(Boolean)
+      .join(', ');
 
     generationForm.setValue('description', finalPrompt, { shouldValidate: true });
-    generationForm.setValue('tags', finalPrompt);
+    generationForm.setValue('tags', finalTags);
     generationForm.setValue('wizardData', wizardData);
     
     setActivePack(pack);
@@ -326,6 +325,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
           title: "Save Failed",
           description: errorMessage,
         });
+      } finally {
+         // This block was missing, causing the button to stay in a loading state.
       }
     });
   }
@@ -718,3 +719,4 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   );
 }
 
+    

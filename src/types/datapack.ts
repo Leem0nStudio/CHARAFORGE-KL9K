@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 
 // Base Interfaces for type-checking in TS
@@ -10,7 +11,7 @@ export interface Exclusion {
 export interface Option {
     label: string;
     value: string;
-    tags?: string[]; // Added for tag-based prompt generation
+    tags?: string[]; // Used for simple tag-based generation
     exclusions?: Exclusion[];
 }
 
@@ -26,8 +27,8 @@ export interface Slot {
 
 export interface PromptTemplate {
     name: string;
-    template?: string; // DEPRECATED: The full sentence template
-    tags?: string[]; // A list of tags for tag-based generation
+    template: string; // A full sentence template with {slot_id} placeholders
+    tags?: string[]; // DEPRECATED: This will no longer be the primary method
 }
 
 export interface DataPackSchema {
@@ -77,10 +78,8 @@ export const SlotSchema = z.object({
 
 export const PromptTemplateSchema = z.object({
   name: z.string().min(1, 'Template name is required.'),
-  template: z.string().optional(), // DEPRECATED
-  tags: z.array(z.string()).optional(),
-}).refine(data => data.template || (data.tags && data.tags.length > 0), {
-    message: 'A template must have either a `template` string or a `tags` array.',
+  template: z.string().min(1, 'Template string is required.'),
+  tags: z.array(z.string()).optional(), // Keep for potential future use, but template is primary
 });
 
 
@@ -110,3 +109,5 @@ export const UpsertDataPackSchema = DataPackFormSchema.extend({
 // TypeScript types inferred from Zod schemas
 export type DataPackFormValues = z.infer<typeof DataPackFormSchema>;
 export type UpsertDataPack = z.infer<typeof UpsertDataPackSchema>;
+
+    

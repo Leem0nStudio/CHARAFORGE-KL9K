@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Image from 'next/image';
@@ -12,17 +13,17 @@ interface GachaCardProps {
     character: Character;
 }
 
-const rarityStyles = {
-    1: 'from-gray-500/10 to-gray-800/20 border-gray-600/50',
-    2: 'from-green-600/10 to-green-900/20 border-green-600/50',
-    3: 'from-blue-500/10 to-blue-800/20 border-blue-600/50',
-    4: 'from-purple-500/10 to-purple-800/20 border-purple-500/60',
-    5: 'from-yellow-500/10 to-yellow-800/20 border-yellow-500/60',
+const rarityStyles: Record<number, string> = {
+    1: 'from-gray-500/10 to-gray-800/20 border-gray-600/50', // Common
+    2: 'from-green-600/10 to-green-900/20 border-green-600/50', // Uncommon
+    3: 'from-blue-500/10 to-blue-800/20 border-blue-600/50', // Rare
+    4: 'from-purple-500/10 to-purple-800/20 border-purple-500/60', // Epic
+    5: 'from-yellow-500/10 to-yellow-800/20 border-yellow-500/60', // Legendary
 };
 
-const rarityGlow = {
-    4: 'shadow-[0_0_15px_3px] shadow-purple-500/40',
-    5: 'shadow-[0_0_20px_5px] shadow-yellow-500/40 animate-pulse-glow',
+const rarityGlow: Record<number, string> = {
+    4: 'shadow-[0_0_15px_3px] shadow-purple-500/40', // Epic
+    5: 'shadow-[0_0_20px_5px] shadow-yellow-500/40 animate-pulse-glow', // Legendary
 }
 
 export function GachaCard({ character }: GachaCardProps) {
@@ -41,7 +42,7 @@ export function GachaCard({ character }: GachaCardProps) {
                 <div className={cn(
                     'relative h-full overflow-hidden rounded-lg border-2 bg-gradient-to-br p-1.5 transition-all duration-300',
                     rarityStyles[rarity],
-                    rarityGlow[rarity as keyof typeof rarityGlow],
+                    rarityGlow[rarity],
                 )}>
                     <div className="relative aspect-[3/4] w-full bg-card-highlight rounded-md overflow-hidden">
                         <Image
@@ -70,3 +71,5 @@ export function GachaCard({ character }: GachaCardProps) {
         </motion.div>
     );
 }
+
+    

@@ -10,11 +10,11 @@
         "promptTemplates": [
             {
                 "name": "Detailed Portrait",
-                "tags": ["detailed portrait", "fantasy illustration", "{gender}", "{race}", "{class}", "{hair_style} {hair_color} hair", "wearing", "{armor_torso}", "wielding a", "{weapon}", "in", "{background_setting}"]
+                "template": "detailed portrait, fantasy illustration of a {gender} {race} {class} with {hair_style} {hair_color} hair, wearing {armor_torso} and wielding a {weapon}, in a {background_setting}"
             },
             {
                 "name": "Oil Painting Style",
-                "tags": ["oil painting", "{gender}", "{race}", "{class}", "{hair_style} {hair_color} hair", "wearing", "{armor_torso}", "carrying a", "{weapon}", "in", "{background_setting}", "dramatic lighting"]
+                "template": "oil painting of a {gender} {race} {class} with {hair_style} {hair_color} hair, wearing {armor_torso} and carrying a {weapon}, in a {background_setting}, dramatic lighting"
             }
         ],
         "slots": [
@@ -78,11 +78,11 @@
                 "id": "armor_torso",
                 "label": "Torso Armor",
                 "type": "select",
-                "defaultOption": "leather_tunic",
+                "defaultOption": "leather tunic",
                 "options": [
                     { "label": "Leather Tunic", "value": "leather tunic", "tags": ["leather armor", "tunic"] },
                     { "label": "Chainmail", "value": "chainmail", "tags": ["chainmail", "metal armor"] },
-                    { "label": "Steel Plate", "value": "steel plate", "tags": ["plate armor", "cuirass"] },
+                    { "label": "Steel Plate", "value": "steel plate armor", "tags": ["plate armor", "cuirass"] },
                     { "label": "Simple Robe", "value": "simple robe", "tags": ["robe", "mage clothes"] }
                 ]
             },
@@ -102,7 +102,7 @@
                 "id": "background_setting",
                 "label": "Background",
                 "type": "select",
-                "defaultOption": "misty_forest",
+                "defaultOption": "misty forest",
                 "options": [
                     { "label": "Misty Forest", "value": "misty forest", "tags": ["forest", "mist"] },
                     { "label": "Castle Wall", "value": "castle wall", "tags": ["castle", "parapet"] },
@@ -112,3 +112,5 @@
         ]
     }
 }
+
+    
