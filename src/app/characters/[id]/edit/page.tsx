@@ -28,7 +28,7 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
     notFound();
   }
   
-  if (character.userId !== uid) {
+  if (character.meta.userId !== uid) {
      // Optional: Check for admin role here if admins should be able to edit
      notFound();
   }
