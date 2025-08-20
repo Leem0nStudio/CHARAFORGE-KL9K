@@ -46,7 +46,7 @@ async function getModelsLabModelInfo(modelIdOrSlug: string): Promise<any> {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': apiKey,
+            'X-API-Key': apiKey, // Correct way to send the API Key as a header
         },
         cache: 'no-store'
     });
@@ -108,7 +108,12 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
     await verifyAndGetUid();
     
     try {
-        const modelInfoFetcher = source === 'modelslab' ? getModelsLabModelInfo : getCivitaiModelInfo;
+        let modelInfoFetcher;
+        if (source === 'modelslab') {
+            modelInfoFetcher = getModelsLabModelInfo;
+        } else {
+            modelInfoFetcher = getCivitaiModelInfo;
+        }
 
         const existingModelQuery = await adminDb.collection('ai_models').where(`${source}ModelId`, '==', sourceModelId).limit(1).get();
         if (!existingModelQuery.empty) {
@@ -117,10 +122,9 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
 
         const modelInfo = await modelInfoFetcher(sourceModelId);
         
-        // **CRITICAL FIX**: Check for versions array specifically.
-        const modelVersions = modelInfo.modelVersions || modelInfo.versions;
+        // **CRITICAL FIX**: Check for model_versions (from ModelsLab) or modelVersions (from Civitai).
+        const modelVersions = modelInfo.model_versions || modelInfo.modelVersions || modelInfo.versions;
         if (!modelVersions || modelVersions.length === 0) {
-            // New, more informative error message.
             return { success: false, message: `Model found, but no version data is available via API. Please add it manually.` };
         }
         
@@ -405,5 +409,4 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
-
     
