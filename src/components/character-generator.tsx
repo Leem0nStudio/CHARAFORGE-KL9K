@@ -25,6 +25,7 @@ import {
     ScrollArea,
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
     Label,
+    Switch,
 } from "@/components/ui";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -708,5 +709,3 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     </>
   );
 }
-
-    
