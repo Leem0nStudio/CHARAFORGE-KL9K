@@ -26,7 +26,6 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
     Label,
 } from "@/components/ui";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
@@ -40,9 +39,9 @@ import { TagAssistantModal } from "./tag-assistant-modal";
 import { ModelSelectorModal } from './model-selector-modal';
 import type { AiModel } from '@/types/ai-model';
 import { VisualModelSelector } from "./visual-model-selector";
-import type { GenerateCharacterSheetOutput } from "@/ai/flows/character-sheet/types";
+import type { GenerationResult } from "@/types/generation";
 import { PromptTagInput } from "./prompt-tag-input";
-import type { DataPack, PromptTemplate, Option, Slot } from "@/types/datapack";
+import type { DataPack, PromptTemplate, Option, Slot } from '@/types/datapack';
 import { imageModels, textModels, geminiImagePlaceholder } from "@/lib/app-config";
 import type { User as FirebaseUser } from "firebase/auth";
 
@@ -65,13 +64,6 @@ const generationFormSchema = z.object({
   loraWeight: z.number().min(0).max(2).optional(),
   rarity: z.number().min(1).max(5).default(3),
 });
-
-type GenerationResult = GenerateCharacterSheetOutput & {
-  imageUrl?: string | null;
-  dataPackId?: string | null;
-  textEngine?: 'gemini' | 'openrouter';
-  imageEngine?: 'gemini' | 'openrouter' | 'huggingface' | 'vertexai' | 'comfyui' | 'modelslab';
-};
 
 export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null }) {
   const searchParams = useSearchParams();
@@ -325,8 +317,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
           title: "Save Failed",
           description: errorMessage,
         });
-      } finally {
-         // This block was missing, causing the button to stay in a loading state.
       }
     });
   }
