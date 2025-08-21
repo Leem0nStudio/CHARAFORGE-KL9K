@@ -136,7 +136,7 @@ function CharacterSelector({
         if (isOpen) {
             setSelectedIds(new Set(currentCast.characterIds));
         }
-    }, [currentCast, isOpen]);
+    }, [currentCast.characterIds, isOpen]);
     
     const handleSelect = (charId: string) => {
         const newIds = new Set(selectedIds);
@@ -173,13 +173,14 @@ function CharacterSelector({
                                 <Checkbox
                                     checked={selectedIds.has(char.id)}
                                     onCheckedChange={() => handleSelect(char.id)}
+                                    id={`char-select-${char.id}`}
                                 />
                                 <Avatar className="h-10 w-10">
                                     <AvatarImage src={char.visuals.imageUrl} alt={char.core.name}/>
                                     <AvatarFallback>{char.core.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1">
-                                    <p className="font-semibold">{char.core.name}</p>
+                                    <Label htmlFor={`char-select-${char.id}`} className="font-semibold cursor-pointer">{char.core.name}</Label>
                                     <p className="text-xs text-muted-foreground">{char.core.archetype || char.generation.originalPrompt}</p>
                                 </div>
                             </div>
@@ -333,15 +334,18 @@ function LoreForgeContent() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const userCasts = await getUserCasts();
+            const [userCasts, userCharacters] = await Promise.all([
+                getUserCasts(),
+                getCharacters()
+            ]);
+            
             setCasts(userCasts);
-
-            const userCharacters = await getCharacters();
             setCharacters(userCharacters);
             
-            if (userCasts.length > 0 && !selectedCast) {
-                setSelectedCast(userCasts[0]);
-            } else if (userCasts.length === 0) {
+            if (userCasts.length > 0) {
+                // If a cast is already selected, find its updated version, otherwise select the first one.
+                setSelectedCast(prev => userCasts.find(c => c.id === prev?.id) || userCasts[0]);
+            } else {
                 setSelectedCast(null);
             }
         } catch (error) {
@@ -349,7 +353,7 @@ function LoreForgeContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [toast, selectedCast]);
+    }, [toast]);
 
     useEffect(() => {
         if (!authLoading && !authUser) {
@@ -365,17 +369,29 @@ function LoreForgeContent() {
         setCasts(newCasts);
         setSelectedCast(newCast);
     };
-
-    const handleUpdateCast = async (characterIds: string[]) => {
+    
+    const handleUpdateCast = useCallback(async (characterIds: string[]) => {
         if (!selectedCast) return;
+
+        // Optimistic UI update
+        const originalCasts = casts;
+        const updatedCasts = casts.map(cast => 
+            cast.id === selectedCast.id ? { ...cast, characterIds } : cast
+        );
+        setCasts(updatedCasts);
+        setSelectedCast(updatedCasts.find(c => c.id === selectedCast.id) || null);
+
         const result = await updateStoryCastCharacters(selectedCast.id, characterIds);
         if (result.success) {
             toast({ title: "Cast Updated" });
-            await fetchData(); // Refetch all data to ensure UI is in sync
+            // The UI is already updated, no need to refetch immediately unless there's a failure.
         } else {
              toast({ variant: 'destructive', title: "Update Failed", description: result.message });
+             // Revert to original state on failure
+             setCasts(originalCasts);
+             setSelectedCast(originalCasts.find(c => c.id === selectedCast.id) || null);
         }
-    };
+    }, [casts, selectedCast, toast]);
     
     if (authLoading || (isLoading && !casts.length && !characters.length)) {
          return (
