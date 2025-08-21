@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useTransition, Suspense } from 'react
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ScrollText, Users, Wand2, FileText, Plus, X, Check } from 'lucide-react';
+import { Loader2, ScrollText, Users, Wand2, FileText, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import type { StoryCast } from '@/types/story';
@@ -124,7 +124,7 @@ function CharacterSelector({
 }: { 
     allCharacters: Character[],
     currentCast: StoryCast,
-    onCastUpdated: (updatedCast: StoryCast) => void,
+    onCastUpdated: () => void,
     isOpen: boolean,
     onClose: () => void,
 }) {
@@ -156,7 +156,7 @@ function CharacterSelector({
             const result = await updateStoryCastCharacters(currentCast.id, updatedIds);
             if (result.success) {
                 toast({ title: "Cast Updated" });
-                onCastUpdated({ ...currentCast, characterIds: updatedIds });
+                onCastUpdated();
                 onClose();
             } else {
                 toast({ variant: 'destructive', title: 'Update Failed', description: result.message });
@@ -218,7 +218,7 @@ function LoreForgeGenerator({
 }: { 
     cast: StoryCast, 
     characters: Character[],
-    onCastUpdated: (updatedCast: StoryCast) => void;
+    onCastUpdated: () => void;
 }) {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
     const [prompt, setPrompt] = useState('');
@@ -254,7 +254,7 @@ function LoreForgeGenerator({
         startProcessingTransition(async () => {
             const newCharacterIds = cast.characterIds.filter(id => id !== characterId);
             await updateStoryCastCharacters(cast.id, newCharacterIds);
-            onCastUpdated({ ...cast, characterIds: newCharacterIds });
+            onCastUpdated();
             toast({title: "Character Removed"});
         });
     };
@@ -389,12 +389,6 @@ function LoreForgeContent() {
         setCasts(newCasts);
         setSelectedCast(newCast);
     };
-
-    const handleUpdateCastInList = (updatedCast: StoryCast) => {
-        const newCasts = casts.map(c => c.id === updatedCast.id ? updatedCast : c);
-        setCasts(newCasts);
-        setSelectedCast(updatedCast);
-    }
     
     if (authLoading || isLoading) {
          return (
@@ -429,7 +423,7 @@ function LoreForgeContent() {
                                 <LoreForgeGenerator 
                                     cast={selectedCast} 
                                     characters={characters}
-                                    onCastUpdated={handleUpdateCastInList}
+                                    onCastUpdated={fetchData}
                                 />
                             </motion.div>
                         ) : (
