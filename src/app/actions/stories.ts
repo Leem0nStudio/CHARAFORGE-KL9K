@@ -22,28 +22,37 @@ type CharacterDetailsForAI = Pick<Character['core'], 'name' | 'biography' | 'ali
 
 export async function getUserCasts(): Promise<StoryCast[]> {
     const uid = await verifyAndGetUid();
-     if (!adminDb) {
+    if (!adminDb) {
+        console.error("Database service is unavailable in getUserCasts.");
+        // Return empty array instead of throwing, as the UI can handle this state.
         return [];
     }
-    const castsRef = adminDb.collection('storyCasts');
-    const q = castsRef.where('userId', '==', uid).orderBy('updatedAt', 'desc');
-    const snapshot = await q.get();
 
-    if (snapshot.empty) {
+    try {
+        const castsRef = adminDb.collection('storyCasts');
+        const q = castsRef.where('userId', '==', uid).orderBy('updatedAt', 'desc');
+        const snapshot = await q.get();
+
+        if (snapshot.empty) {
+            return []; // Correctly return an empty array if no casts are found.
+        }
+        
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            const createdAt = data.createdAt as any;
+            const updatedAt = data.updatedAt as any;
+            return {
+                ...data,
+                id: doc.id,
+                createdAt: createdAt?.toMillis ? createdAt.toMillis() : new Date(createdAt).getTime(),
+                updatedAt: updatedAt?.toMillis ? updatedAt.toMillis() : new Date(updatedAt).getTime(),
+            } as StoryCast;
+        });
+    } catch (error) {
+        console.error("Error fetching user casts:", error);
+        // In case of a database error, return an empty array to prevent UI crash.
         return [];
     }
-    
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        const createdAt = data.createdAt as any;
-        const updatedAt = data.updatedAt as any;
-        return {
-            ...data,
-            id: doc.id,
-            createdAt: createdAt?.toMillis ? createdAt.toMillis() : new Date(createdAt).getTime(),
-            updatedAt: updatedAt?.toMillis ? updatedAt.toMillis() : new Date(updatedAt).getTime(),
-        } as StoryCast;
-    });
 }
 
 

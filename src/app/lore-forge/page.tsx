@@ -354,36 +354,31 @@ function LoreForgeContent() {
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
-        let userCasts: StoryCast[] = [];
-        let userCharacters: Character[] = [];
-        
         try {
-            userCasts = await getUserCasts();
+            const [userCasts, userCharacters] = await Promise.all([
+                getUserCasts(),
+                getCharacters(),
+            ]);
+
             setCasts(userCasts);
-        } catch (error) {
-             toast({ variant: 'destructive', title: 'Failed to load casts', description: 'Could not fetch your story casts.' });
-        }
-
-        try {
-            userCharacters = await getCharacters();
             setCharacters(userCharacters);
-        } catch (error) {
-             toast({ variant: 'destructive', title: 'Failed to load characters', description: 'Could not fetch your characters.' });
-        }
 
-        if (userCasts.length > 0) {
-            // If there's a selected cast, find its latest version in the newly fetched data
-            if (selectedCast) {
-                const updatedSelectedCast = userCasts.find(c => c.id === selectedCast.id);
-                setSelectedCast(updatedSelectedCast || userCasts[0]);
+            if (userCasts.length > 0) {
+                // If there's a selected cast, find its latest version in the newly fetched data
+                if (selectedCast) {
+                    const updatedSelectedCast = userCasts.find(c => c.id === selectedCast.id);
+                    setSelectedCast(updatedSelectedCast || userCasts[0]);
+                } else {
+                    setSelectedCast(userCasts[0]);
+                }
             } else {
-                setSelectedCast(userCasts[0]);
+                setSelectedCast(null);
             }
-        } else {
-             setSelectedCast(null);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Failed to load data', description: 'Could not fetch your casts and characters.' });
+        } finally {
+            setIsLoading(false);
         }
-        
-        setIsLoading(false);
     }, [toast, selectedCast]);
 
     useEffect(() => {
