@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -43,7 +43,10 @@ const formatPromptText = (text: string): string => {
   }).join('\n');
 };
 
-export function PromptEditor({ value, onChange, disabled }: PromptEditorProps) {
+export const PromptEditor = forwardRef<
+    { format: () => void }, 
+    PromptEditorProps
+>(({ value, onChange, disabled }, ref) => {
   const [isAutoFormat, setIsAutoFormat] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -52,9 +55,19 @@ export function PromptEditor({ value, onChange, disabled }: PromptEditorProps) {
     onChange(formatted);
   }, [value, onChange]);
   
+  // Expose the format function via the ref for the parent component
+  useImperativeHandle(ref, () => ({
+    format: () => {
+        if (isAutoFormat) {
+            handleFormat();
+        }
+    }
+  }), [isAutoFormat, handleFormat]);
+
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.altKey && event.shiftKey && event.key.toLowerCase() === 'f') {
+      if (event.altKey && event.shiftKey && (event.key === 'F' || event.key === 'f')) {
         event.preventDefault();
         handleFormat();
       }
@@ -96,14 +109,6 @@ export function PromptEditor({ value, onChange, disabled }: PromptEditorProps) {
     }, 0);
   };
   
-  // Expose a formatting method for auto-mode on generate
-  useEffect(() => {
-      if (isAutoFormat && textareaRef.current) {
-        // A way to attach the function to the element for the parent to call
-        (textareaRef.current as any).format = handleFormat;
-      }
-  }, [isAutoFormat, handleFormat]);
-
   return (
     <div className="space-y-2">
       <Textarea
@@ -142,4 +147,6 @@ export function PromptEditor({ value, onChange, disabled }: PromptEditorProps) {
       </div>
     </div>
   );
-}
+});
+
+PromptEditor.displayName = 'PromptEditor';

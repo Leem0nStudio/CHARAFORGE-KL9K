@@ -92,6 +92,9 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   const { userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   
+  // Ref for the new PromptEditor
+  const promptEditorRef = useRef<{ format: () => void }>(null);
+
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
     resolver: zodResolver(generationFormSchema),
     defaultValues: {
@@ -196,6 +199,9 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       return;
     }
     
+    // Trigger auto-formatting if enabled
+    promptEditorRef.current?.format();
+
     setGenerationResult(null);
     setGenerationError(null);
 
@@ -420,6 +426,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                                 )}
                               <FormControl>
                                 <PromptEditor 
+                                  ref={promptEditorRef}
                                   value={field.value}
                                   onChange={field.onChange}
                                   disabled={!canInteract}
@@ -684,4 +691,3 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     </>
   );
 }
-
