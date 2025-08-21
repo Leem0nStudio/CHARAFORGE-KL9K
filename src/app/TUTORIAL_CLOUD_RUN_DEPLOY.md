@@ -14,6 +14,18 @@
 
 ---
 
+### **Paso 0: Cómo Encontrar tu Project ID y Project Number**
+
+Los comandos de despliegue te pedirán tu `[YOUR_PROJECT_ID]` y `[YOUR_PROJECT_NUMBER]`. Aquí te explicamos cómo encontrarlos:
+
+1.  **Ve a la Google Cloud Console:** [https://console.cloud.google.com/](https://console.cloud.google.com/)
+2.  **Asegúrate de que tu proyecto esté seleccionado** en la barra superior.
+3.  En el **Dashboard** (Panel principal), busca la tarjeta de **"Project info"** (Información del proyecto).
+    *   Tu **Project ID** es el identificador único (ej: `my-awesome-app-12345`).
+    *   Tu **Project number** es el número largo que aparece debajo del ID (ej: `123456789012`).
+
+---
+
 ### Paso 1: Configurar los Secretos en Google Secret Manager
 
 Tu worker necesita una clave para acceder a Firebase. La forma más segura de proporcionársela es a través de Secret Manager.
