@@ -124,15 +124,14 @@ function CharacterSelector({
 }: { 
     allCharacters: Character[],
     currentCast: StoryCast,
-    onCastUpdated: () => void,
+    onCastUpdated: (updatedCast: StoryCast) => void,
     isOpen: boolean,
     onClose: () => void,
 }) {
-    const [selectedIds, setSelectedIds] = useState(new Set(currentCast.characterIds));
+    const [selectedIds, setSelectedIds] = useState(new Set<string>());
     const [isSaving, startSaveTransition] = useTransition();
     const { toast } = useToast();
 
-    // Sync state if the dialog is reopened for the same cast or a different one
     useEffect(() => {
         if (isOpen) {
             setSelectedIds(new Set(currentCast.characterIds));
@@ -140,21 +139,24 @@ function CharacterSelector({
     }, [currentCast, isOpen]);
     
     const handleSelect = (charId: string) => {
-        const newIds = new Set(selectedIds);
-        if (newIds.has(charId)) {
-            newIds.delete(charId);
-        } else {
-            newIds.add(charId);
-        }
-        setSelectedIds(newIds);
+        setSelectedIds(prev => {
+            const newIds = new Set(prev);
+            if (newIds.has(charId)) {
+                newIds.delete(charId);
+            } else {
+                newIds.add(charId);
+            }
+            return newIds;
+        });
     };
 
     const handleSave = () => {
         startSaveTransition(async () => {
-            const result = await updateStoryCastCharacters(currentCast.id, Array.from(selectedIds));
+            const updatedIds = Array.from(selectedIds);
+            const result = await updateStoryCastCharacters(currentCast.id, updatedIds);
             if (result.success) {
                 toast({ title: "Cast Updated" });
-                onCastUpdated(); // Signal parent to refetch data
+                onCastUpdated({ ...currentCast, characterIds: updatedIds });
                 onClose();
             } else {
                 toast({ variant: 'destructive', title: 'Update Failed', description: result.message });
@@ -216,12 +218,12 @@ function LoreForgeGenerator({
 }: { 
     cast: StoryCast, 
     characters: Character[],
-    onCastUpdated: () => void;
+    onCastUpdated: (updatedCast: StoryCast) => void;
 }) {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
     const [prompt, setPrompt] = useState('');
     const [generatedStory, setGeneratedStory] = useState<{title: string; content: string} | null>(null);
-    const [isGenerating, startGenerationTransition] = useTransition();
+    const [isProcessing, startProcessingTransition] = useTransition();
     const { toast } = useToast();
 
     const castCharacters = characters.filter(c => cast.characterIds.includes(c.id));
@@ -236,7 +238,7 @@ function LoreForgeGenerator({
             return;
         }
 
-        startGenerationTransition(async () => {
+        startProcessingTransition(async () => {
             const result = await generateStory(cast.id, prompt);
             if (result.success && result.data) {
                 setGeneratedStory(result.data);
@@ -249,10 +251,10 @@ function LoreForgeGenerator({
     
     const handleRemoveCharacterFromCast = (characterId: string) => {
         if (!cast) return;
-        const newCharacterIds = cast.characterIds.filter(id => id !== characterId);
-        startGenerationTransition(async () => {
+        startProcessingTransition(async () => {
+            const newCharacterIds = cast.characterIds.filter(id => id !== characterId);
             await updateStoryCastCharacters(cast.id, newCharacterIds);
-            onCastUpdated();
+            onCastUpdated({ ...cast, characterIds: newCharacterIds });
             toast({title: "Character Removed"});
         });
     };
@@ -293,6 +295,7 @@ function LoreForgeGenerator({
                                             size="icon"
                                             className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                             onClick={() => handleRemoveCharacterFromCast(char.id)}
+                                            disabled={isProcessing}
                                         >
                                             <X className="h-4 w-4"/>
                                         </Button>
@@ -318,8 +321,8 @@ function LoreForgeGenerator({
                 </div>
             </CardContent>
             <CardFooter className="flex-col items-stretch gap-4">
-                 <Button onClick={handleGenerateStory} disabled={isGenerating} size="lg" className="w-full font-headline text-lg">
-                    {isGenerating ? <Loader2 className="mr-2 animate-spin"/> : <Wand2 className="mr-2"/>}
+                 <Button onClick={handleGenerateStory} disabled={isProcessing} size="lg" className="w-full font-headline text-lg">
+                    {isProcessing ? <Loader2 className="mr-2 animate-spin"/> : <Wand2 className="mr-2"/>}
                     Generate Lore
                 </Button>
                  {generatedStory && (
@@ -356,9 +359,12 @@ function LoreForgeContent() {
             setCasts(userCasts);
             setCharacters(userCharacters);
             
-            if (userCasts.length > 0) {
-                const currentSelected = selectedCast ? userCasts.find(c => c.id === selectedCast.id) : null;
-                setSelectedCast(currentSelected || userCasts[0]);
+            // If there's a selected cast, find its latest version in the newly fetched data
+            if (selectedCast) {
+                const updatedSelectedCast = userCasts.find(c => c.id === selectedCast.id);
+                setSelectedCast(updatedSelectedCast || userCasts[0] || null);
+            } else if (userCasts.length > 0) {
+                setSelectedCast(userCasts[0]);
             } else {
                 setSelectedCast(null);
             }
@@ -383,8 +389,14 @@ function LoreForgeContent() {
         setCasts(newCasts);
         setSelectedCast(newCast);
     };
+
+    const handleUpdateCastInList = (updatedCast: StoryCast) => {
+        const newCasts = casts.map(c => c.id === updatedCast.id ? updatedCast : c);
+        setCasts(newCasts);
+        setSelectedCast(updatedCast);
+    }
     
-    if (authLoading || (isLoading && !casts.length && !characters.length)) {
+    if (authLoading || isLoading) {
          return (
             <div className="flex items-center justify-center h-screen w-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -417,7 +429,7 @@ function LoreForgeContent() {
                                 <LoreForgeGenerator 
                                     cast={selectedCast} 
                                     characters={characters}
-                                    onCastUpdated={fetchData}
+                                    onCastUpdated={handleUpdateCastInList}
                                 />
                             </motion.div>
                         ) : (
@@ -447,5 +459,3 @@ export default function LoreForgePage() {
         </Suspense>
     );
 }
-
-    
