@@ -332,17 +332,17 @@ function LoreForgeContent() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [userCasts, userCharacters] = await Promise.all([
-                getUserCasts(),
-                getCharacters(),
-            ]);
+            // Fetch casts and characters sequentially to avoid race conditions.
+            const userCasts = await getUserCasts();
             setCasts(userCasts);
+
+            const userCharacters = await getCharacters();
             setCharacters(userCharacters);
-            // Select first cast by default if none is selected
+            
+            // Logic to select a cast after data is fetched
             if (!selectedCast && userCasts.length > 0) {
                 setSelectedCast(userCasts[0]);
             } else if (selectedCast && !userCasts.some(c => c.id === selectedCast.id)) {
-                // If selected cast was deleted, select first one
                 setSelectedCast(userCasts[0] || null);
             } else if (userCasts.length === 0) {
                 setSelectedCast(null);
