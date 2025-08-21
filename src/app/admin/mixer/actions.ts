@@ -8,15 +8,11 @@ import { verifyAndGetUid } from '@/lib/auth/server';
 import type { AiModel } from '@/types/ai-model';
 import { revalidatePath } from 'next/cache';
 
-const ModelToMixSchema = z.object({
-  modelId: z.string().min(1),
-  weight: z.number().min(0).max(1),
-});
 
 const MixerFormSchema = z.object({
   name: z.string().min(3),
-  baseModel: z.string().min(1),
-  modelsToMix: z.array(ModelToMixSchema).min(2),
+  mergeScript: z.string().min(10),
+  hfRepo: z.string().optional(),
 });
 
 type MixerFormValues = z.infer<typeof MixerFormSchema>;
@@ -35,11 +31,11 @@ export async function createMixedModel(data: MixerFormValues): Promise<ActionRes
         return { success: false, message: 'Invalid data provided.', error: validation.error.message };
     }
     
-    const { name, baseModel, modelsToMix } = validation.data;
+    const { name, mergeScript, hfRepo } = validation.data;
     
     // In a real scenario, this action would trigger a long-running backend process.
-    // For this prototype, we will create a new AiModel document with a 'pending' status
-    // and the recipe for the mix.
+    // For this prototype, we will create a new AiModel document with a 'notsynced' status
+    // and the full recipe for the mix. A backend worker would then pick this up.
     
     try {
         if (!adminDb) {
@@ -51,16 +47,19 @@ export async function createMixedModel(data: MixerFormValues): Promise<ActionRes
         const newModelData: Partial<AiModel> = {
             id: newModelRef.id,
             name,
-            baseModel,
+            baseModel: 'Mixed', // Base model is the result of the mix.
             type: 'model', // All mixes result in a base model
-            engine: 'comfyui', // Assuming a ComfyUI or similar backend would perform the mix
-            hf_id: `mixed/${newModelRef.id}.safetensors`, // A predictable future path
+            engine: 'comfyui', // Assume a ComfyUI or similar backend will perform the mix
+            hf_id: hfRepo ? `${hfRepo}` : `mixed/${name}.safetensors`,
             syncStatus: 'notsynced',
             userId: undefined, // System model
             createdAt: FieldValue.serverTimestamp() as any,
             updatedAt: FieldValue.serverTimestamp() as any,
-            // Store the recipe for the backend worker
-            mixRecipe: modelsToMix, 
+            // Store the full merge plan for the backend worker
+            mixRecipe: {
+                script: mergeScript,
+                hfRepo: hfRepo,
+            }, 
         };
         
         await newModelRef.set(newModelData);
