@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useTransition } from 'react';
@@ -12,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { syncModelToStorage } from '@/app/admin/models/actions';
-import { User, SlidersHorizontal } from 'lucide-react';
+import { User, SlidersHorizontal, Download } from 'lucide-react';
 
 // This component is defined and used only within this file.
 
@@ -39,9 +38,9 @@ function SyncButton({ model }: { model: AiModel }) {
     const syncStatus = model.syncStatus || 'notsynced';
     
     const statusMap = {
-        notsynced: { text: 'Sync Now', color: 'bg-blue-600 hover:bg-blue-700', disabled: false, animate: false },
-        syncing: { text: 'Queued...', color: 'bg-amber-500', disabled: true, animate: true },
-        synced: { text: 'Synced', color: 'bg-green-600', disabled: true, animate: false },
+        notsynced: { text: 'Sync Now', icon: <Download />, color: 'bg-blue-600 hover:bg-blue-700', disabled: false, animate: false },
+        syncing: { text: 'Queued...', icon: <Download />, color: 'bg-amber-500', disabled: true, animate: true },
+        synced: { text: 'Synced', icon: <Download />, color: 'bg-green-600', disabled: true, animate: false },
     }
     const currentStatus = statusMap[syncStatus];
 
@@ -52,6 +51,7 @@ function SyncButton({ model }: { model: AiModel }) {
             disabled={currentStatus.disabled || isSyncing}
             onClick={handleSync}
         >
+            {currentStatus.icon}
             {isSyncing ? "Please Wait..." : currentStatus.text}
         </Button>
     )
