@@ -24,6 +24,7 @@ import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 import type { AiModel } from '@/types/ai-model';
 import { geminiImagePlaceholder } from '@/lib/app-config';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 const UpdateImagesSchema = z.object({
     primaryImageUrl: z.string().url("A primary image must be selected."),
@@ -68,7 +69,6 @@ export function EditGalleryTab({ character }: { character: Character }) {
     
     if (isShowcaseProcessing) {
       const interval = setInterval(() => {
-        // Only refresh if the component is still tracking a processing state
         if (character.visuals.isShowcaseProcessed === false) {
            router.refresh();
         } else {
@@ -255,11 +255,28 @@ export function EditGalleryTab({ character }: { character: Character }) {
                 {gallery.map((url, index) => {
                     const isPrimary = primaryImageUrl === url;
                     return (
-                        <Card key={url} className="group relative overflow-hidden">
+                        <Card key={url} className={cn("group relative overflow-hidden flex flex-col", isPrimary && "border-primary")}>
                             <div className="relative w-full aspect-square bg-muted/20">
                                 <Image src={url} alt={`Character image ${index + 1}`} fill className="w-full object-contain" sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw" />
                             </div>
-                             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2 gap-1">
+                            {/* Actions for mobile, always visible */}
+                            <div className="md:hidden p-2 flex flex-col gap-1.5 border-t">
+                                <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary(url)} disabled={isPrimary}>
+                                    <Star className="mr-2" /> {isPrimary ? 'Primary' : 'Set Primary'}
+                                </Button>
+                                {isPrimary && (
+                                    <Button type="button" variant="secondary" size="sm" className="w-full" onClick={handleReprocessWithConfirmation} disabled={isReprocessing}>
+                                        {isReprocessing ? <Loader2 className="animate-spin" /> : <ImageIcon className="mr-2" />}
+                                        {character.visuals.showcaseImageUrl ? 'Reprocess' : 'Process'}
+                                    </Button>
+                                )}
+                                <Button type="button" variant="destructive" size="sm" className="w-full" onClick={() => handleRemoveImage(url)} disabled={gallery.length <= 1 || isLoading}>
+                                    {isLoading && gallery.length > 1 ? <Loader2 className="animate-spin" /> : <><Trash2 className="mr-2" /> Remove</>}
+                                </Button>
+                            </div>
+                            
+                            {/* Overlay actions for desktop */}
+                             <div className="absolute inset-0 bg-black/60 md:flex flex-col items-center justify-center hidden opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2 gap-1">
                                 <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary(url)} disabled={isPrimary}>
                                     <Star className="mr-2" /> {isPrimary ? 'Primary' : 'Set Primary'}
                                 </Button>
@@ -273,6 +290,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                     { isLoading && gallery.length > 1 ? <Loader2 className="animate-spin" /> : <><Trash2 className="mr-2" /> Remove</>}
                                 </Button>
                             </div>
+
                             {isPrimary && (
                                 <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1.5 text-xs shadow-lg">
                                     <Star className="w-3 h-3 fill-current" />
