@@ -55,7 +55,6 @@ export const PromptEditor = forwardRef<
     onChange(formatted);
   }, [value, onChange]);
   
-  // Expose the format function via the ref for the parent component
   useImperativeHandle(ref, () => ({
     format: () => {
         if (isAutoFormat) {
@@ -98,8 +97,6 @@ export const PromptEditor = forwardRef<
     const newValue = value.substring(0, start) + formattedText + value.substring(end);
     onChange(newValue);
     
-    // Move cursor to the end of pasted content
-    // Use a timeout to ensure the DOM has updated
     setTimeout(() => {
         if (textareaRef.current) {
              const newCursorPos = start + formattedText.length;

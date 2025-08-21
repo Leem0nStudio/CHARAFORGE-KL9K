@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback, useTransition, useRef } from "react";
@@ -9,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown, Star, CaseSensitive } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown, Star, CaseSensitive, Pencil, Braces } from "lucide-react";
 
 import { 
     Button,
@@ -28,7 +27,7 @@ import {
     Label,
     Switch,
 } from "@/components/ui";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-auth";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/actions/generation";
@@ -43,6 +42,7 @@ import type { AiModel } from '@/types/ai-model';
 import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerationResult } from "@/types/generation";
 import { PromptEditor } from "./prompt-editor";
+import { PromptTagInput } from './prompt-tag-input';
 import type { DataPack, PromptTemplate, Option, Slot } from '@/types/datapack';
 import { imageModels, textModels, geminiImagePlaceholder } from "@/lib/app-config";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -92,7 +92,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   const { userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   
-  // Ref for the new PromptEditor
   const promptEditorRef = useRef<{ format: () => void }>(null);
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
@@ -113,18 +112,15 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
     let finalPrompt = template.template || '';
     
-    // Replace placeholders in the template string
     for (const slotId in wizardData) {
         const selectedValue = wizardData[slotId];
         const slot = pack.schema.slots.find(s => s.id === slotId);
         const option = slot?.options?.find(o => o.value === selectedValue);
         
-        // Use the option's value, which should be a descriptive phrase
         const replacementValue = option?.value || selectedValue || '';
         finalPrompt = finalPrompt.replace(`{${slotId}}`, replacementValue);
     }
 
-    // Generate tags from the wizard data for the tag input
     const finalTags = Object.values(wizardData)
       .map(value => pack.schema.slots.flatMap(s => s.options ?? []).find(o => o.value === value)?.tags ?? [value])
       .flat()
@@ -189,7 +185,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     const currentDesc = generationForm.getValues('description');
     const newTags = tags.filter(t => !currentDesc.includes(t));
     if (newTags.length > 0) {
-        generationForm.setValue('description', `${currentDesc}, ${newTags.join(', ')}`.trim());
+        const newDescription = [currentDesc.trim(), ...newTags].filter(Boolean).join(', ');
+        generationForm.setValue('description', newDescription);
     }
   };
 
@@ -199,7 +196,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       return;
     }
     
-    // Trigger auto-formatting if enabled
     promptEditorRef.current?.format();
 
     setGenerationResult(null);
@@ -425,12 +421,27 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                                     </Select>
                                 )}
                               <FormControl>
-                                <PromptEditor 
-                                  ref={promptEditorRef}
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                  disabled={!canInteract}
-                                />
+                                  <Tabs defaultValue="visual" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual Editor</TabsTrigger>
+                                        <TabsTrigger value="text"><Braces className="mr-2"/>Text Editor</TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent value="visual" className="mt-2">
+                                         <PromptTagInput
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            disabled={!canInteract}
+                                        />
+                                    </TabsContent>
+                                     <TabsContent value="text" className="mt-2">
+                                        <PromptEditor 
+                                          ref={promptEditorRef}
+                                          value={field.value}
+                                          onChange={field.onChange}
+                                          disabled={!canInteract}
+                                        />
+                                    </TabsContent>
+                                </Tabs>
                               </FormControl>
                                <div className="flex items-center justify-between mt-2">
                                 {activePack ? (

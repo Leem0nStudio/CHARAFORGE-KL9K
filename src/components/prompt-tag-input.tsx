@@ -43,8 +43,6 @@ export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProp
                 const parsed = parseTag(tagStr);
                 
                 let finalDelta = delta;
-                // **IMPROVEMENT**: If weight is 1.0, the first adjustment is a bigger jump (0.5).
-                // This allows for quicker significant changes from the default.
                 if (Math.abs(parsed.weight - 1.0) < 0.01) {
                     finalDelta = delta > 0 ? 0.5 : -0.5;
                 }
@@ -70,13 +68,19 @@ export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProp
             className="flex min-h-[250px] w-full flex-wrap content-start gap-2 rounded-md border border-input bg-background p-3 text-base ring-offset-background placeholder:text-muted-foreground focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
             onClick={() => setSelectedTagIndex(null)}
         >
+            <AnimatePresence>
             {tags.map((tagStr, index) => {
                 const { tag, weight } = parseTag(tagStr);
                 const isSelected = selectedTagIndex === index;
 
                 return (
-                    <div
+                    <motion.div
                         key={`${tagStr}-${index}`}
+                        layout
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         className="relative group flex items-center h-fit"
                         onClick={(e) => {
                             e.stopPropagation();
@@ -113,10 +117,11 @@ export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProp
                              </motion.div>
                         )}
                         </AnimatePresence>
-                    </div>
+                    </motion.div>
                 );
             })}
-            {tags.length === 0 && (
+            </AnimatePresence>
+            {tags.length === 0 && !disabled && (
                 <div className="flex h-full w-full items-center justify-center text-muted-foreground pointer-events-none">
                     <p>Tags will appear here.</p>
                 </div>
