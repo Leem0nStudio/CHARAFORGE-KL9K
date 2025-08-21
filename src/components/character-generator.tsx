@@ -27,7 +27,7 @@ import {
     Label,
     Switch,
 } from "@/components/ui";
-import { useToast } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/actions/generation";
