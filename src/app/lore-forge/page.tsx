@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useTransition, Suspense } from 'react';
@@ -332,18 +333,14 @@ function LoreForgeContent() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            // Fetch casts and characters sequentially to avoid race conditions.
             const userCasts = await getUserCasts();
             setCasts(userCasts);
 
             const userCharacters = await getCharacters();
             setCharacters(userCharacters);
             
-            // Logic to select a cast after data is fetched
-            if (!selectedCast && userCasts.length > 0) {
+            if (userCasts.length > 0 && !selectedCast) {
                 setSelectedCast(userCasts[0]);
-            } else if (selectedCast && !userCasts.some(c => c.id === selectedCast.id)) {
-                setSelectedCast(userCasts[0] || null);
             } else if (userCasts.length === 0) {
                 setSelectedCast(null);
             }
