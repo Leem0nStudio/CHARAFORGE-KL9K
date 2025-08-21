@@ -2,8 +2,9 @@ import os
 import json
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
-import requests
 from flask import Flask, request
+import base64
+from rembg import remove
 
 # --- Initialization ---
 app = Flask(__name__)
@@ -13,11 +14,10 @@ app = Flask(__name__)
 try:
     print("🔧 Initializing Firebase Admin SDK...")
     service_account_json_str = os.environ.get("FIREBASE_SERVICE_ACCOUNT_KEY")
-    CLIPDROP_API_KEY = os.environ.get("CLIPDROP_API_KEY")
     STORAGE_BUCKET = os.environ.get("STORAGE_BUCKET")
 
-    if not all([service_account_json_str, CLIPDROP_API_KEY, STORAGE_BUCKET]):
-        raise ValueError("One or more required environment variables are missing.")
+    if not all([service_account_json_str, STORAGE_BUCKET]):
+        raise ValueError("One or more required environment variables are missing (FIREBASE_SERVICE_ACCOUNT_KEY, STORAGE_BUCKET).")
 
     service_account_info = json.loads(service_account_json_str)
     cred = credentials.Certificate(service_account_info)
@@ -42,27 +42,17 @@ def update_status(doc_ref, status: str):
     print(f"  -> Updating status to: {status}")
     doc_ref.update({'visuals.showcaseProcessingStatus': status})
 
-def remove_background(image_bytes: bytes) -> bytes:
-    """Calls the ClipDrop API to remove the background."""
-    print("  -> Initiating background removal with ClipDrop...")
-    response = requests.post('https://api.clipdrop.co/remove-background/v1',
-      files={'image_file': ('image.png', image_bytes, 'image/png')},
-      headers={'x-api-key': CLIPDROP_API_KEY}
-    )
-    response.raise_for_status() # Will raise an exception for non-2xx status codes
-    print("  ✅ Background removed successfully.")
-    return response.content
-
-def upscale_image(image_bytes: bytes) -> bytes:
-    """Calls the ClipDrop API for upscaling."""
-    print("  -> Initiating upscaling with ClipDrop...")
-    response = requests.post('https://api.clipdrop.co/super-resolution/v1',
-      files={'image_file': ('image.png', image_bytes, 'image/png')},
-      headers={'x-api-key': CLIPDROP_API_KEY}
-    )
-    response.raise_for_status()
-    print("  ✅ Image upscaled successfully.")
-    return response.content
+def remove_background_local(image_bytes: bytes) -> bytes:
+    """Removes the background from an image using the rembg library."""
+    print("  -> Initiating local background removal with rembg...")
+    try:
+        output_bytes = remove(image_bytes)
+        print("  ✅ Background removed successfully.")
+        return output_bytes
+    except Exception as e:
+        print(f"  ❌ Error during local background removal: {e}")
+        # Re-raise the exception to be caught by the main handler
+        raise e
 
 # --- Main Worker Logic ---
 
@@ -76,19 +66,22 @@ def process_image_handler():
 
     # Decode the Pub/Sub message
     pubsub_message = envelope['message']
-    if 'data' in pubsub_message:
-        # This is for Pub/Sub push subscriptions
-        event_data = json.loads(base64.b64decode(pubsub_message['data']).decode('utf-8'))
-        file_name = event_data['name']
-        bucket_name = event_data['bucket']
-    elif 'attributes' in pubsub_message:
-         # This is for Eventarc triggers
-        file_name = pubsub_message['attributes']['objectId']
-        bucket_name = pubsub_message['attributes']['bucketId']
-    else:
-        print(f"❌ Bad Request: Unrecognized message format: {pubsub_message}")
-        return "Bad Request: Unrecognized message format", 400
-        
+    
+    # Unified logic to handle both direct Pub/Sub and Eventarc messages
+    try:
+        if 'data' in pubsub_message: # Standard Pub/Sub
+            event_data = json.loads(base64.b64decode(pubsub_message['data']).decode('utf-8'))
+            file_name = event_data['name']
+            bucket_name = event_data['bucket']
+        elif 'attributes' in pubsub_message and pubsub_message['attributes'] is not None: # Eventarc
+            file_name = pubsub_message['attributes']['objectId']
+            bucket_name = pubsub_message['attributes']['bucketId']
+        else:
+             raise ValueError(f"Unrecognized message format: {pubsub_message}")
+    except (json.JSONDecodeError, KeyError, ValueError) as e:
+        print(f"❌ Bad Request: Could not parse message. Error: {e}. Message: {pubsub_message}")
+        return f"Bad Request: Could not parse message. Error: {e}", 400
+
     print(f"🔥 Received job for file: {file_name} in bucket: {bucket_name}")
 
     if not file_name.startswith('raw-uploads/'):
@@ -114,14 +107,13 @@ def process_image_handler():
 
         # --- Processing Pipeline ---
         update_status(char_ref, 'removing-background')
-        no_bg_bytes = remove_background(image_bytes)
+        # Use our new local function
+        no_bg_bytes = remove_background_local(image_bytes)
         
-        update_status(char_ref, 'upscaling')
-        upscaled_bytes = upscale_image(no_bg_bytes)
-        
+        # Upscaling step is removed as it was tied to ClipDrop.
+        # This can be re-added later with a different Python library if needed.
         update_status(char_ref, 'finalizing')
-        # Here you could add more processing with Pillow if needed
-        final_bytes = upscaled_bytes
+        final_bytes = no_bg_bytes
         
         # Upload the final image
         final_filename = f"showcase_{character_id}.png"

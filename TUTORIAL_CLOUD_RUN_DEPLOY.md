@@ -16,19 +16,13 @@
 
 ### Paso 1: Configurar los Secretos en Google Secret Manager
 
-Tu worker necesita claves de API para funcionar. La forma más segura de proporcionárselas es a través de Secret Manager.
+Tu worker necesita una clave para acceder a Firebase. La forma más segura de proporcionársela es a través de Secret Manager.
 
 1.  **FIREBASE_SERVICE_ACCOUNT_KEY:**
     *   Ve a la [página de Secret Manager](https://console.cloud.google.com/security/secret-manager).
     *   Haz clic en **"Crear Secreto"**.
     *   **Nombre del secreto:** `FIREBASE_SERVICE_ACCOUNT_KEY`
     *   **Valor del secreto:** Pega aquí el contenido **completo** de tu archivo JSON de clave de servicio de Firebase. Debe ser una sola línea.
-    *   Haz clic en **"Crear secreto"**.
-
-2.  **CLIPDROP_API_KEY:**
-    *   Repite el proceso: haz clic en **"Crear Secreto"**.
-    *   **Nombre del secreto:** `CLIPDROP_API_KEY`
-    *   **Valor del secreto:** Pega aquí tu clave de API de ClipDrop.
     *   Haz clic en **"Crear secreto"**.
 
 ---
@@ -47,7 +41,7 @@ Ahora vamos a desplegar el código del worker. Abre una terminal y navega hasta 
       --region us-central1 \
       --allow-unauthenticated \
       --set-env-vars="STORAGE_BUCKET=[YOUR_PROJECT_ID].appspot.com" \
-      --set-secrets="FIREBASE_SERVICE_ACCOUNT_KEY=FIREBASE_SERVICE_ACCOUNT_KEY:latest,CLIPDROP_API_KEY=CLIPDROP_API_KEY:latest" \
+      --set-secrets="FIREBASE_SERVICE_ACCOUNT_KEY=FIREBASE_SERVICE_ACCOUNT_KEY:latest" \
       --project [YOUR_PROJECT_ID]
     ```
 
@@ -58,7 +52,7 @@ Ahora vamos a desplegar el código del worker. Abre una terminal y navega hasta 
     *   `--region us-central1`: Elige la región donde se desplegará el servicio (puedes cambiarla si lo necesitas).
     *   `--allow-unauthenticated`: Esto es necesario para que el disparador de Storage pueda invocar el servicio.
     *   `--set-env-vars`: Configura la variable de entorno para el nombre de tu bucket de Storage.
-    *   `--set-secrets`: Conecta de forma segura los secretos que creamos en el Paso 1 a las variables de entorno que el script de Python espera.
+    *   `--set-secrets`: Conecta de forma segura el secreto que creamos en el Paso 1 a la variable de entorno que el script de Python espera.
     *   `--project`: Especifica el ID de tu proyecto.
 
 2.  **Espera a que termine el despliegue.** La primera vez puede tardar unos minutos, ya que Google Cloud Build tiene que construir la imagen del contenedor.
