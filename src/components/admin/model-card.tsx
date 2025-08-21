@@ -24,7 +24,7 @@ function SyncButton({ model }: { model: AiModel }) {
         startSyncTransition(async () => {
             const result = await syncModelToStorage(model.id);
             if (result.success) {
-                toast({ title: 'Sync Started', description: result.message });
+                toast({ title: 'Sync Queued', description: result.message });
             } else {
                 toast({ variant: 'destructive', title: 'Sync Failed', description: result.error || result.message });
             }
@@ -40,7 +40,7 @@ function SyncButton({ model }: { model: AiModel }) {
     
     const statusMap = {
         notsynced: { text: 'Sync Now', color: 'bg-blue-600 hover:bg-blue-700', disabled: false, animate: false },
-        syncing: { text: 'Syncing...', color: 'bg-amber-500', disabled: true, animate: true },
+        syncing: { text: 'Queued...', color: 'bg-amber-500', disabled: true, animate: true },
         synced: { text: 'Synced', color: 'bg-green-600', disabled: true, animate: false },
     }
     const currentStatus = statusMap[syncStatus];
