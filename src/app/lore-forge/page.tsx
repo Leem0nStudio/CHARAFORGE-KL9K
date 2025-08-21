@@ -124,7 +124,7 @@ function CharacterSelector({
 }: { 
     allCharacters: Character[],
     currentCast: StoryCast,
-    onCastUpdated: () => void,
+    onCastUpdated: (updatedCast: StoryCast) => void,
     isOpen: boolean,
     onClose: () => void,
 }) {
@@ -156,7 +156,7 @@ function CharacterSelector({
             const result = await updateStoryCastCharacters(currentCast.id, updatedIds);
             if (result.success) {
                 toast({ title: "Cast Updated" });
-                onCastUpdated();
+                onCastUpdated({ ...currentCast, characterIds: updatedIds });
                 onClose();
             } else {
                 toast({ variant: 'destructive', title: 'Update Failed', description: result.message });
@@ -218,7 +218,7 @@ function LoreForgeGenerator({
 }: { 
     cast: StoryCast, 
     characters: Character[],
-    onCastUpdated: () => void;
+    onCastUpdated: (updatedCast: StoryCast) => void;
 }) {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
     const [prompt, setPrompt] = useState('');
@@ -253,9 +253,13 @@ function LoreForgeGenerator({
         if (!cast) return;
         startProcessingTransition(async () => {
             const newCharacterIds = cast.characterIds.filter(id => id !== characterId);
-            await updateStoryCastCharacters(cast.id, newCharacterIds);
-            onCastUpdated();
-            toast({title: "Character Removed"});
+            const result = await updateStoryCastCharacters(cast.id, newCharacterIds);
+            if(result.success) {
+                onCastUpdated({ ...cast, characterIds: newCharacterIds });
+                toast({title: "Character Removed"});
+            } else {
+                toast({ variant: 'destructive', title: 'Update Failed', description: result.message });
+            }
         });
     };
 
@@ -350,29 +354,36 @@ function LoreForgeContent() {
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
+        let userCasts: StoryCast[] = [];
+        let userCharacters: Character[] = [];
+        
         try {
-            const [userCasts, userCharacters] = await Promise.all([
-                getUserCasts(),
-                getCharacters()
-            ]);
-            
+            userCasts = await getUserCasts();
             setCasts(userCasts);
+        } catch (error) {
+             toast({ variant: 'destructive', title: 'Failed to load casts', description: 'Could not fetch your story casts.' });
+        }
+
+        try {
+            userCharacters = await getCharacters();
             setCharacters(userCharacters);
-            
+        } catch (error) {
+             toast({ variant: 'destructive', title: 'Failed to load characters', description: 'Could not fetch your characters.' });
+        }
+
+        if (userCasts.length > 0) {
             // If there's a selected cast, find its latest version in the newly fetched data
             if (selectedCast) {
                 const updatedSelectedCast = userCasts.find(c => c.id === selectedCast.id);
-                setSelectedCast(updatedSelectedCast || userCasts[0] || null);
-            } else if (userCasts.length > 0) {
-                setSelectedCast(userCasts[0]);
+                setSelectedCast(updatedSelectedCast || userCasts[0]);
             } else {
-                setSelectedCast(null);
+                setSelectedCast(userCasts[0]);
             }
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Failed to load data', description: 'Could not fetch your casts and characters.' });
-        } finally {
-            setIsLoading(false);
+        } else {
+             setSelectedCast(null);
         }
+        
+        setIsLoading(false);
     }, [toast, selectedCast]);
 
     useEffect(() => {
@@ -389,6 +400,12 @@ function LoreForgeContent() {
         setCasts(newCasts);
         setSelectedCast(newCast);
     };
+
+    const handleUpdateCast = (updatedCast: StoryCast) => {
+        const newCasts = casts.map(c => c.id === updatedCast.id ? updatedCast : c);
+        setCasts(newCasts);
+        setSelectedCast(updatedCast);
+    }
     
     if (authLoading || isLoading) {
          return (
@@ -423,7 +440,7 @@ function LoreForgeContent() {
                                 <LoreForgeGenerator 
                                     cast={selectedCast} 
                                     characters={characters}
-                                    onCastUpdated={fetchData}
+                                    onCastUpdated={handleUpdateCast}
                                 />
                             </motion.div>
                         ) : (
