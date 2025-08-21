@@ -372,4 +372,3 @@ export function EditGalleryTab({ character }: { character: Character }) {
     </>
   );
 }
-
