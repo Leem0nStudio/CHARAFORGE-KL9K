@@ -72,11 +72,20 @@ export async function updateCharacterImages(
      if (gallery.length > 10) {
         return { success: false, message: 'You can add a maximum of 10 images.'}
      }
-
+     
+     const oldPrimaryUrl = characterDoc.data()?.visuals?.imageUrl;
+     
      await characterRef.update({ 
         'visuals.gallery': gallery,
         'visuals.imageUrl': primaryImageUrl,
       });
+
+    // If the primary image has changed, trigger reprocessing for the showcase view
+    if (primaryImageUrl !== oldPrimaryUrl) {
+      console.log('Primary image changed. Triggering re-processing for showcase.');
+      await reprocessCharacterImage(characterId);
+    }
+
 
      revalidatePath(`/characters/${characterId}/edit`);
      revalidatePath('/characters');
@@ -87,4 +96,53 @@ export async function updateCharacterImages(
     const message = error instanceof Error ? error.message : 'Could not update image gallery due to a server error.';
     return { success: false, message };
   }
+}
+
+
+export async function reprocessCharacterImage(characterId: string): Promise<ActionResponse> {
+    const uid = await verifyAndGetUid();
+    if (!adminDb) {
+        return { success: false, message: 'Database service is unavailable.' };
+    }
+    
+    const characterRef = adminDb.collection('characters').doc(characterId);
+    
+    try {
+        const characterDoc = await characterRef.get();
+        if (!characterDoc.exists || characterDoc.data()?.meta.userId !== uid) {
+            return { success: false, message: 'Permission denied or character not found.' };
+        }
+        
+        const imageUrl = characterDoc.data()?.visuals.imageUrl;
+        if (!imageUrl) {
+            return { success: false, message: 'Character has no primary image to reprocess.' };
+        }
+
+        // Fetch the existing image from its public URL
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch existing image: ${response.statusText}`);
+        }
+        const imageBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(imageBuffer);
+
+        // Upload the buffer to the raw-uploads path to trigger the Cloud Function
+        const destinationPath = `raw-uploads/${uid}/${characterId}/${uuidv4()}.png`;
+        await uploadToStorage(buffer, destinationPath, response.headers.get('content-type') || 'image/png');
+
+        // Reset the showcase processing status in Firestore
+        await characterRef.update({
+            'visuals.isShowcaseProcessed': false,
+            'visuals.showcaseImageUrl': null,
+        });
+
+        revalidatePath(`/characters/${characterId}/edit`);
+        return { success: true, message: 'Image reprocessing initiated.' };
+        
+    } catch(error) {
+        const message = error instanceof Error ? error.message : 'Failed to reprocess image.';
+        console.error("Reprocess Error:", message);
+        await characterRef.update({ 'visuals.isShowcaseProcessed': 'failed' }).catch(() => {});
+        return { success: false, message };
+    }
 }

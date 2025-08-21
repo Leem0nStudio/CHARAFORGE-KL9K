@@ -9,13 +9,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
-import { generateNewCharacterImage, updateCharacterImages } from '@/app/actions/character-image';
+import { generateNewCharacterImage, updateCharacterImages, reprocessCharacterImage } from '@/app/actions/character-image';
 import { getModels } from '@/app/actions/ai-models';
 import { uploadToStorage } from '@/services/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Star, Trash2, FileUp, Wand2, Image as ImageIcon, CheckCircle } from 'lucide-react';
+import { Loader2, Star, Trash2, FileUp, Wand2, Image as ImageIcon, CheckCircle, RefreshCw } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { v4 as uuidv4 } from 'uuid';
@@ -36,6 +36,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
   const [isUpdating, startUpdateTransition] = useTransition();
   const [isUploading, startUploadTransition] = useTransition();
   const [isGenerating, startGenerateTransition] = useTransition();
+  const [isReprocessing, startReprocessTransition] = useTransition();
   
   // State for AI model selection
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
@@ -166,6 +167,20 @@ export function EditGalleryTab({ character }: { character: Character }) {
         }
     });
   }
+  
+  const handleReprocess = () => {
+    startReprocessTransition(async () => {
+        const result = await reprocessCharacterImage(character.id);
+        toast({
+            title: result.success ? 'Success!' : 'Reprocessing Failed',
+            description: result.message,
+            variant: result.success ? 'default' : 'destructive',
+        });
+        if (result.success) {
+            router.refresh();
+        }
+    });
+  }
 
   const onSubmit = (data: UpdateImagesFormValues) => {
     startUpdateTransition(async () => {
@@ -182,7 +197,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
     });
   };
 
-  const isLoading = isUpdating || isUploading || isGenerating;
+  const isLoading = isUpdating || isUploading || isGenerating || isReprocessing;
   const gallery = character.visuals.gallery || [character.visuals.imageUrl];
   const primaryImageUrl = form.watch('primaryImageUrl');
 
@@ -251,7 +266,9 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                 <span>Processing complete. View in Showcase.</span>
                             </div>
                         ) : character.visuals.isShowcaseProcessed === 'failed' ? (
-                            <p className="text-sm text-destructive">Processing failed. Please try re-uploading the primary image.</p>
+                             <div className="flex items-center gap-2 text-sm text-destructive">
+                                <p>Processing failed. You can try again.</p>
+                             </div>
                         ) : (
                             <div>
                                 <p className="text-sm text-muted-foreground mb-2">Refining image for showcase... (bg removal & upscale)</p>
@@ -259,10 +276,17 @@ export function EditGalleryTab({ character }: { character: Character }) {
                             </div>
                         )}
                     </div>
-                    <Button type="submit" disabled={isLoading || !form.formState.isDirty}>
-                        {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Primary Image
-                    </Button>
+                     <div className="flex items-center gap-2">
+                         {(character.visuals.isShowcaseProcessed === true || character.visuals.isShowcaseProcessed === 'failed') && (
+                              <Button type="button" variant="secondary" onClick={handleReprocess} disabled={isLoading}>
+                                 {isReprocessing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                             </Button>
+                         )}
+                        <Button type="submit" disabled={isLoading || !form.formState.isDirty}>
+                            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Primary Image
+                        </Button>
+                    </div>
                 </div>
              </form>
         </CardContent>
@@ -270,4 +294,3 @@ export function EditGalleryTab({ character }: { character: Character }) {
     </>
   );
 }
-
