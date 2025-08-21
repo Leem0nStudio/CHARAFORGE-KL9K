@@ -63,17 +63,29 @@ export function EditGalleryTab({ character }: { character: Character }) {
   const isShowcaseProcessing = character.visuals.isShowcaseProcessed === false;
 
   useEffect(() => {
+    // Reset the form whenever the character data changes from the server
     form.reset({
         primaryImageUrl: character.visuals.imageUrl,
     });
     
+    // This effect handles polling for the processing status.
+    // It will only run if `isShowcaseProcessing` is true.
     if (isShowcaseProcessing) {
       const interval = setInterval(() => {
-        router.refresh();
-      }, 5000); 
+        // Stop polling if the component state shows processing is no longer active
+        if (character.visuals.isShowcaseProcessed !== false) {
+          clearInterval(interval);
+        } else {
+          router.refresh();
+        }
+      }, 5000); // Poll every 5 seconds
+      
+      // Cleanup function to clear the interval when the component unmounts
+      // or when the dependencies of the effect change.
       return () => clearInterval(interval);
     }
-  }, [character, form, router, isShowcaseProcessing]);
+  }, [character.visuals.imageUrl, character.visuals.isShowcaseProcessed, form, router]);
+
 
   useEffect(() => {
     async function loadModels() {
