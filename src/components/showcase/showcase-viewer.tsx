@@ -33,8 +33,8 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
     };
 
     const itemVariants = {
-        hidden: { opacity: 0, x: 20 },
-        visible: { opacity: 1, x: 0 },
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 },
     };
 
     return (
@@ -48,7 +48,7 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                 quality={50}
             />
             <div className="absolute inset-0 bg-background/70 backdrop-blur-xl" />
-            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/50 to-transparent md:bg-gradient-to-r" />
             
             {/* Back Button */}
             <div className="absolute top-4 left-4 z-20">
@@ -57,16 +57,16 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                 </Button>
             </div>
 
-            {/* Main Content */}
+            {/* Main Content - Mobile First (Flex Column) then Grid for larger screens */}
             <motion.div 
-                className="relative z-10 grid md:grid-cols-2 lg:grid-cols-3 gap-8 min-h-screen items-center container"
+                className="relative z-10 flex flex-col md:grid md:grid-cols-2 lg:grid-cols-3 gap-8 min-h-screen items-center container py-16 md:py-0"
                 initial="hidden"
                 animate="visible"
                 variants={containerVariants}
             >
                 {/* Character Image */}
                 <motion.div 
-                    className="lg:col-span-2 flex items-center justify-center md:h-screen pt-16 md:pt-0"
+                    className="lg:col-span-2 flex items-center justify-center w-full"
                     variants={itemVariants}
                 >
                     <Image
@@ -74,7 +74,7 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                         alt={character.core.name}
                         width={1024}
                         height={1024}
-                        className="object-contain max-h-[80vh] w-auto drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)]"
+                        className="object-contain max-h-[60vh] md:max-h-[80vh] w-auto drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)]"
                         priority
                     />
                 </motion.div>
@@ -85,7 +85,7 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                         <CardContent className="p-6 space-y-4">
                             <div>
                                 <h1 className="text-3xl font-headline tracking-wider">{character.core.name}</h1>
-                                <StarRating rating={character.core.rarity} />
+                                <StarRating rating={character.core.rarity || 3} />
                             </div>
 
                             <Separator />
@@ -101,7 +101,7 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                             
                              <div>
                                 <h3 className="font-semibold text-muted-foreground mb-2">Lore</h3>
-                                <ScrollArea className="h-48 pr-4">
+                                <ScrollArea className="h-40 md:h-48 pr-4">
                                     <p className="text-sm text-card-foreground/90 whitespace-pre-wrap">{character.core.biography}</p>
                                 </ScrollArea>
                             </div>
