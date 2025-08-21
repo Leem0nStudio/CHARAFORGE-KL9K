@@ -25,8 +25,6 @@ export default async function CharacterPage({ params }: { params: { id: string }
       notFound();
   }
 
-  // The new showcase view is preferred.
-  // We can decide later if we want to keep the old technical view accessible.
   return (
     <ShowcaseViewer 
       character={character}
@@ -34,5 +32,4 @@ export default async function CharacterPage({ params }: { params: { id: string }
     />
   );
 }
-
     

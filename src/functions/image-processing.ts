@@ -30,7 +30,7 @@ async function removeBackground(buffer: Buffer): Promise<Buffer> {
     const apiKey = process.env.CLIPDROP_API_KEY;
     if (!apiKey) {
         logger.warn("CLIPDROP_API_KEY is not set. Skipping background removal.");
-        return buffer; // Return original buffer if API key is not configured
+        return buffer;
     }
 
     logger.info("Calling ClipDrop API for background removal...");
@@ -175,7 +175,7 @@ export const processUploadedImage = onObjectFinalized({
     } catch (error) {
         logger.error(`Failed to process showcase image for character ${characterId}.`, { error });
         await characterRef.update({ 
-            'visuals.isShowcaseProcessed': 'failed',
+            'visuals.isShowcaseProcessed': false,
             'visuals.showcaseProcessingStatus': 'failed',
          });
     }

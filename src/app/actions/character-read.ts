@@ -78,14 +78,10 @@ export async function getCharacters(): Promise<Character[]> {
       throw new Error('The database service is currently unavailable. Please try again later.');
   }
   
-  // This action now explicitly throws an error on authentication failure,
-  // allowing the client to handle it gracefully instead of showing an empty list.
   const uid = await verifyAndGetUid();
   
   try {
     const charactersRef = adminDb.collection('characters');
-    // **STRUCTURAL FIX**: Query only on one field to avoid needing a composite index.
-    // Order the results in the code after fetching.
     const q = charactersRef.where('meta.userId', '==', uid);
     const snapshot = await q.get();
 
@@ -95,14 +91,12 @@ export async function getCharacters(): Promise<Character[]> {
     
     const characters = snapshot.docs.map(doc => toCharacterObject(doc.id, doc.data()));
 
-    // Sort by creation date descending in code. This is efficient for a user's own characters.
     characters.sort((a, b) => b.meta.createdAt.getTime() - a.meta.createdAt.getTime());
 
     return characters;
 
   } catch (error) {
     console.error("Error fetching characters:", error);
-    // Re-throw database-related errors so the client knows something went wrong.
     throw new Error("Could not fetch characters from the database.");
   }
 }

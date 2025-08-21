@@ -39,9 +39,8 @@ export type Character = {
   visuals: {
     imageUrl: string;
     gallery: string[];
-    isProcessed: boolean; // Flag to indicate if the main image is processed
     showcaseImageUrl: string | null; // URL for the high-quality, background-removed showcase image
-    isShowcaseProcessed: boolean | 'failed'; // Flag for the showcase image processing status
+    isShowcaseProcessed: boolean; // Flag for the showcase image processing status
     showcaseProcessingStatus?: ShowcaseProcessingStatus; // Detailed status of the pipeline
   };
 

@@ -122,7 +122,14 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
             return { success: false, message: 'Character has no primary image to reprocess.' };
         }
 
-        // Fetching the image using a server-side-safe fetch
+        const destinationPath = `raw-uploads/${uid}/${characterId}/${uuidv4()}.png`;
+
+        await characterRef.update({
+            'visuals.isShowcaseProcessed': false,
+            'visuals.showcaseImageUrl': null,
+            'visuals.showcaseProcessingStatus': 'removing-background',
+        });
+
         const fetch = (await import('node-fetch')).default;
         const response = await fetch(imageUrl);
 
@@ -130,19 +137,9 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
             throw new Error(`Failed to fetch existing image: ${response.statusText}`);
         }
         const imageBuffer = await response.buffer();
-
-        const destinationPath = `raw-uploads/${uid}/${characterId}/${uuidv4()}.png`;
+        
         await uploadToStorage(imageBuffer, destinationPath, response.headers.get('content-type') || 'image/png');
-
-        // **STRUCTURAL FIX**: Immediately set the status to the first step of processing
-        // before returning. This ensures the UI can reflect the "in-progress" state
-        // as soon as the action completes.
-        await characterRef.update({
-            'visuals.isShowcaseProcessed': false,
-            'visuals.showcaseImageUrl': null,
-            'visuals.showcaseProcessingStatus': 'removing-background',
-        });
-
+        
         revalidatePath(`/characters/${characterId}/edit`);
         return { success: true, message: 'Image reprocessing initiated.' };
         

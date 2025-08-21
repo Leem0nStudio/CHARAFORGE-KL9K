@@ -19,9 +19,9 @@ import { AnvilIcon } from '@/components/app-logo';
 
 
 export interface AuthContextType {
-  authUser: User | null; // The original Firebase Auth User object
-  userProfile: UserProfile | null; // The Firestore user profile data
-  setUserProfile: Dispatch<SetStateAction<UserProfile | null>>; // Allow updating the profile from components
+  authUser: User | null;
+  userProfile: UserProfile | null; 
+  setUserProfile: Dispatch<SetStateAction<UserProfile | null>>; 
   loading: boolean;
 }
 
@@ -32,15 +32,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
 });
 
-
-/**
- * Posts the token to a server-side API route to set an HTTPOnly cookie.
- * This is a critical step for server-side rendering and actions.
- * @param token The Firebase ID token, or null to clear the cookie.
- */
 async function setCookie(token: string | null): Promise<void> {
-  // The fetch request returns a promise. By awaiting it, we ensure this operation
-  // completes before we proceed, solving the race condition.
   await fetch('/api/auth/set-cookie', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -58,7 +50,6 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
   try {
     const userDoc = await getDoc(userDocRef);
     if (!userDoc.exists()) {
-      // Use serverTimestamp() only for the initial creation.
       await setDoc(userDocRef, {
         uid: user.uid,
         email: user.email,
@@ -75,18 +66,16 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
           installedModels: [],
           subscriptionTier: 'free',
           memberSince: serverTimestamp(),
-          points: 0, // Initialize gamification points
-          unlockedAchievements: [], // Initialize empty achievements list
+          points: 0,
+          unlockedAchievements: [],
         }
       });
     } else {
-        // **CRITICAL FIX**: Use a standard JavaScript Date for client-side updates.
         const updateData: { displayName: string | null; photoURL: string | null; email?: string | null, lastLogin: Date } = {
           displayName: user.displayName,
           photoURL: user.photoURL,
           lastLogin: new Date(),
         };
-        // Only update email if it has changed
         if (user.email !== userDoc.data()?.email) {
             updateData.email = user.email;
         }
@@ -96,7 +85,6 @@ const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
     const updatedUserDoc = await getDoc(userDocRef);
     const data = updatedUserDoc.data();
 
-    // Ensure all Timestamps from Firestore are converted to numbers (milliseconds) for serialization.
     if (data) {
         if (data.createdAt && data.createdAt instanceof Timestamp) {
             data.createdAt = data.createdAt.toMillis();
@@ -127,14 +115,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       if (newAuthUser) {
         const token = await newAuthUser.getIdToken();
-        // Await the cookie setting before proceeding
         await setCookie(token);
 
         const firestoreData = await ensureUserDocument(newAuthUser);
         
-        // **CRITICAL FIX**: Set the authUser and userProfile state *after* the async
-        // operations (setCookie, ensureUserDocument) are complete. This ensures the
-        // client-side state is in sync with the server-side cookie.
         setAuthUser(newAuthUser);
         setUserProfile({
             uid: newAuthUser.uid,

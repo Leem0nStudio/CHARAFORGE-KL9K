@@ -20,12 +20,9 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
   try {
       uid = await verifyAndGetUid();
   } catch (error) {
-      // If verification fails (e.g., token expired), redirect to login.
-      // This is a robust way to handle session desynchronization.
       if (error instanceof Error && (error.message.includes('expired') || error.message.includes('User session not found'))) {
-          redirect('/login');
+          redirect('/login?reason=session-expired');
       }
-      // For other unexpected errors, re-throw to be caught by the page's error boundary.
       throw error;
   }
 
@@ -36,7 +33,6 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
   }
   
   if (character.meta.userId !== uid) {
-     // Optional: Check for admin role here if admins should be able to edit
      notFound();
   }
   
@@ -90,17 +86,13 @@ export default async function EditCharacterPage({
       </div>
     );
   } catch (error: any) {
-     // This handles the case where `getCharacterForEdit` throws an error that isn't a redirect,
-     // or if Next.js's notFound() is called.
      if (error?.digest?.includes('NEXT_NOT_FOUND')) {
         notFound();
      }
-     // If it was a redirect, Next.js handles it, otherwise, we log and re-throw.
      if (!error?.digest?.includes('NEXT_REDIRECT')) {
         console.error("Failed to render edit page:", error);
         throw error;
      }
   }
 }
-
     

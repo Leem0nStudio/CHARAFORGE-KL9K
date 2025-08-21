@@ -65,12 +65,10 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                 character.visuals.showcaseProcessingStatus === 'upscaling' || 
                                 character.visuals.showcaseProcessingStatus === 'finalizing';
 
-  // This effect resets the form's default value only when the character's primary image actually changes.
   useEffect(() => {
     form.reset({ primaryImageUrl: character.visuals.imageUrl });
   }, [character.visuals.imageUrl, form]);
   
-  // This effect manages the polling interval for refreshing the processing status.
   useEffect(() => {
     if (isShowcaseProcessing && !pollingIntervalRef.current) {
         pollingIntervalRef.current = setInterval(() => {
@@ -81,7 +79,6 @@ export function EditGalleryTab({ character }: { character: Character }) {
         pollingIntervalRef.current = null;
     }
     
-    // Cleanup function to clear the interval when the component unmounts
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
@@ -343,7 +340,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                 <span>Processing complete. Ready for showcase.</span>
                             </div>
                         )}
-                         {character.visuals.isShowcaseProcessed === 'failed' && (
+                         {character.visuals.showcaseProcessingStatus === 'failed' && (
                              <div className="flex items-center gap-2 text-sm text-destructive">
                                 <AlertTriangle/>
                                 <p>Processing failed. You can try again.</p>

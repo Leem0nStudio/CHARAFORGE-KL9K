@@ -269,7 +269,6 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
 export async function getModels(type: 'model' | 'lora', uid?: string): Promise<AiModel[]> {
     if (!adminDb) return [];
     
-    // Use a Map to ensure models are unique by ID, preventing duplicates.
     const allModels = new Map<string, AiModel>();
 
     const processSnapshot = (snapshot: FirebaseFirestore.QuerySnapshot) => {
@@ -281,7 +280,6 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
                 createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
                 updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
             } as AiModel;
-            // Only add if the model doesn't already exist in the map.
             if (!allModels.has(model.id)) {
                 allModels.set(model.id, model);
             }
@@ -289,7 +287,6 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
     };
 
     try {
-        // Add static (hardcoded) models first, like Gemini.
         const staticModels = type === 'model' ? imageModels : [];
         staticModels.forEach(model => {
             if (!allModels.has(model.id)) {
@@ -297,7 +294,6 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
             }
         });
 
-        // Then fetch system models from the database.
         const systemModelsSnapshot = await adminDb
           .collection('ai_models')
           .where('type', '==', type)
@@ -306,7 +302,6 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
           .get();
         processSnapshot(systemModelsSnapshot);
 
-        // Finally, if a user is logged in, fetch their specific models.
         if (uid) {
             const userModelsSnapshot = await adminDb
                 .collection('ai_models')
@@ -321,7 +316,7 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
 
     } catch (error) {
         console.error(`Error fetching ${type}s:`, error);
-        return []; // Return empty on error to avoid breaking UI.
+        return [];
     }
 }
 
