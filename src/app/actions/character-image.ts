@@ -122,8 +122,10 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
             return { success: false, message: 'Character has no primary image to reprocess.' };
         }
 
-        const destinationPath = `raw-uploads/${uid}/${characterId}/${uuidv4()}.png`;
+        // The destination path is now a "queue" for the external worker.
+        const destinationPath = `raw-uploads/${userId}/${characterId}/${uuidv4()}.png`;
 
+        // Update the status immediately so the UI can react.
         await characterRef.update({
             'visuals.isShowcaseProcessed': false,
             'visuals.showcaseImageUrl': null,
@@ -138,18 +140,20 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
         }
         const imageBuffer = await response.buffer();
         
+        // This upload now acts as the trigger for the external worker.
         await uploadToStorage(imageBuffer, destinationPath, response.headers.get('content-type') || 'image/png');
         
         revalidatePath(`/characters/${characterId}/edit`);
-        return { success: true, message: 'Image reprocessing initiated.' };
+        return { success: true, message: 'Image reprocessing job has been successfully queued.' };
         
     } catch(error) {
-        const message = error instanceof Error ? error.message : 'Failed to reprocess image.';
+        const message = error instanceof Error ? error.message : 'Failed to queue image for reprocessing.';
         console.error("Reprocess Error:", message);
         await characterRef.update({ 
-            'visuals.isShowcaseProcessed': 'failed',
             'visuals.showcaseProcessingStatus': 'failed',
          }).catch(() => {});
         return { success: false, message };
     }
 }
+
+    
