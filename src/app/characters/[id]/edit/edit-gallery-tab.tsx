@@ -52,6 +52,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
   const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [isConfirmReprocessOpen, setIsConfirmReprocessOpen] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
 
   const form = useForm<UpdateImagesFormValues>({
     resolver: zodResolver(UpdateImagesSchema),
@@ -67,18 +68,20 @@ export function EditGalleryTab({ character }: { character: Character }) {
         primaryImageUrl: character.visuals.imageUrl,
     });
     
-    if (isShowcaseProcessing) {
+    if (isShowcaseProcessing && !isPolling) {
+      setIsPolling(true);
       const interval = setInterval(() => {
-        if (character.visuals.isShowcaseProcessed === false) {
-           router.refresh();
-        } else {
-           clearInterval(interval);
-        }
+        router.refresh();
       }, 5000); 
       
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        setIsPolling(false);
+      }
+    } else if (!isShowcaseProcessing && isPolling) {
+        setIsPolling(false);
     }
-  }, [character.visuals.imageUrl, character.visuals.isShowcaseProcessed, form, isShowcaseProcessing, router]);
+  }, [character.visuals.imageUrl, isShowcaseProcessing, form, router, isPolling]);
 
 
   useEffect(() => {
@@ -362,3 +365,5 @@ export function EditGalleryTab({ character }: { character: Character }) {
     </>
   );
 }
+
+    
