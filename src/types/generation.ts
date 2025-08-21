@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview This file contains data types related to the AI generation process
  * that are safe to be used in Client Components. It avoids importing server-only

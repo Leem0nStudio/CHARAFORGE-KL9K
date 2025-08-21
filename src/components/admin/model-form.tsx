@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -176,7 +175,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Motor de Orquestación</Label>
+                                    <Label>Orchestration Engine</Label>
                                     <Controller
                                         control={form.control}
                                         name="engine"
@@ -355,5 +354,3 @@ export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: b
         </>
     );
 }
-
-    

@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { z } from 'zod';
@@ -133,6 +132,9 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
             modelId: executionModelId,
             aspectRatio,
             userApiKey: userApiKey,
+            // ComfyUI specific fields
+            apiUrl: selectedModel.apiUrl,
+            comfyWorkflow: selectedModel.comfyWorkflow,
         };
         
         let finalDescription = physicalDescription;
