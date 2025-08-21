@@ -32,6 +32,8 @@ export interface AiModel {
   // ComfyUI specific fields
   apiUrl?: string;
   comfyWorkflow?: object;
+  // Model Mixer specific field
+  mixRecipe?: { modelId: string; weight: number }[];
 }
 
 export const UpsertModelSchema = z.object({

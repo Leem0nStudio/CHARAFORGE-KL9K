@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { syncModelToStorage } from '@/app/admin/models/actions';
-import { User } from 'lucide-react';
+import { User, SlidersHorizontal } from 'lucide-react';
 
 // This component is defined and used only within this file.
 
@@ -58,6 +58,8 @@ function SyncButton({ model }: { model: AiModel }) {
 
 
 export function ModelCard({ model }: { model: AiModel }) {
+    const isMixedModel = !!model.mixRecipe;
+
     return (
         <Card className="overflow-hidden flex flex-col">
             <CardHeader className="p-0">
@@ -67,6 +69,13 @@ export function ModelCard({ model }: { model: AiModel }) {
                         type={model.coverMediaType}
                         alt={model.name}
                      />
+                     {isMixedModel && (
+                         <div className="absolute top-2 left-2">
+                             <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/50">
+                                <SlidersHorizontal className="mr-1.5"/> Mixed
+                             </Badge>
+                         </div>
+                     )}
                  </div>
             </CardHeader>
             <CardContent className="p-4 flex-grow">
@@ -93,5 +102,3 @@ export function ModelCard({ model }: { model: AiModel }) {
         </Card>
     )
 }
-
-    

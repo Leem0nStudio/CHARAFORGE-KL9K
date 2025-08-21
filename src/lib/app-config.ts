@@ -1,5 +1,5 @@
 
-import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon, Download, TestTube, Film } from 'lucide-react';
+import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon, Download, TestTube, Film, SlidersHorizontal } from 'lucide-react';
 import type { AiModel } from '@/types/ai-model';
 
 // Static AI Model Definitions. The administrator can add more via the admin panel.
@@ -68,6 +68,7 @@ export const adminNavItems: NavItem[] = [
     { href: '/admin', label: 'Dashboard', icon: BarChart },
     { href: '/admin/datapacks', label: 'DataPacks', icon: Package },
     { href: '/admin/models', label: 'AI Models', icon: Bot },
+    { href: '/admin/mixer', label: 'Model Mixer', icon: SlidersHorizontal },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
