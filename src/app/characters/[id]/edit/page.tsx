@@ -20,7 +20,13 @@ async function getCharacterForEdit(characterId: string): Promise<Character> {
   try {
       uid = await verifyAndGetUid();
   } catch (error) {
-      redirect('/login');
+      // If verification fails (e.g., token expired), redirect to login.
+      // This is a robust way to handle session desynchronization.
+      if (error instanceof Error && (error.message.includes('expired') || error.message.includes('User session not found'))) {
+          redirect('/login');
+      }
+      // For other unexpected errors, re-throw to be caught by the page's error boundary.
+      throw error;
   }
 
   const character = await getCharacter(characterId);
@@ -46,7 +52,7 @@ export default async function EditCharacterPage({
 }) {
   try {
     const character = await getCharacterForEdit(params.id);
-    const defaultTab = searchParams?.tab === 'sharing' ? 'sharing' : 'gallery';
+    const defaultTab = searchParams?.tab === 'sharing' ? 'sharing' : 'details';
     
     return (
       <div className="container py-8">
@@ -83,12 +89,17 @@ export default async function EditCharacterPage({
           </div>
       </div>
     );
-  } catch (error) {
-     if ((error as any)?.digest?.includes('NEXT_NOT_FOUND')) {
+  } catch (error: any) {
+     // This handles the case where `getCharacterForEdit` throws an error that isn't a redirect,
+     // or if Next.js's notFound() is called.
+     if (error?.digest?.includes('NEXT_NOT_FOUND')) {
         notFound();
      }
-     console.error("Failed to render edit page:", error);
-     throw error;
+     // If it was a redirect, Next.js handles it, otherwise, we log and re-throw.
+     if (!error?.digest?.includes('NEXT_REDIRECT')) {
+        console.error("Failed to render edit page:", error);
+        throw error;
+     }
   }
 }
 

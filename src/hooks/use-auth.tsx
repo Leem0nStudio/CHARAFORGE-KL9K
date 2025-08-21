@@ -130,9 +130,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Await the cookie setting before proceeding
         await setCookie(token);
 
-        setAuthUser(newAuthUser);
         const firestoreData = await ensureUserDocument(newAuthUser);
         
+        // **CRITICAL FIX**: Set the authUser and userProfile state *after* the async
+        // operations (setCookie, ensureUserDocument) are complete. This ensures the
+        // client-side state is in sync with the server-side cookie.
+        setAuthUser(newAuthUser);
         setUserProfile({
             uid: newAuthUser.uid,
             email: newAuthUser.email,
