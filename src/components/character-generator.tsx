@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useTransition, use } from "react";
+import { useState, useEffect, useCallback, useTransition, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -42,7 +42,7 @@ import { ModelSelectorModal } from './model-selector-modal';
 import type { AiModel } from '@/types/ai-model';
 import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerationResult } from "@/types/generation";
-import { PromptTagInput } from "./prompt-tag-input";
+import { PromptEditor } from "./prompt-editor";
 import type { DataPack, PromptTemplate, Option, Slot } from '@/types/datapack';
 import { imageModels, textModels, geminiImagePlaceholder } from "@/lib/app-config";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -84,8 +84,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [selectedTextModel, setSelectedTextModel] = useState<AiModel>(textModels[0]);
-  const [promptMode, setPromptMode] = useState<'tags' | 'text'>('tags');
-
+  
   const [activePack, setActivePack] = useState<DataPack | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
   
@@ -185,15 +184,10 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
 
   const handleAppendTags = (tags: string[]) => {
     const currentDesc = generationForm.getValues('description');
-    const currentTags = generationForm.getValues('tags') || '';
-    
     const newTags = tags.filter(t => !currentDesc.includes(t));
     if (newTags.length > 0) {
         generationForm.setValue('description', `${currentDesc}, ${newTags.join(', ')}`.trim());
     }
-    
-    const allTags = new Set([...currentTags.split(',').filter(Boolean), ...tags]);
-    generationForm.setValue('tags', Array.from(allTags).join(','));
   };
 
   const onGenerateSheet = useCallback(async (data: z.infer<typeof generationFormSchema>) => {
@@ -344,7 +338,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
 
   const isUiLoading = isGenerating || isSaving || authLoading || isLoadingModels;
   const canInteract = !isUiLoading && !!authUser;
-  const watchDescription = generationForm.watch('description');
   const watchPhysicalDescription = generationForm.watch('physicalDescription');
   const selectedModel = generationForm.watch('selectedModel');
   const selectedLora = generationForm.watch('selectedLora');
@@ -363,7 +356,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
         isOpen={isTagModalOpen}
         onClose={() => setIsTagModalOpen(false)}
         onAppendTags={handleAppendTags}
-        currentDescription={watchDescription}
+        currentDescription={generationForm.watch('description')}
     />
     <ModelSelectorModal
         isOpen={isModelModalOpen}
@@ -426,19 +419,11 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                                     </Select>
                                 )}
                               <FormControl>
-                                  {promptMode === 'tags' ? (
-                                    <PromptTagInput 
-                                      value={field.value}
-                                      onChange={field.onChange}
-                                      disabled={!canInteract}
-                                    />
-                                  ) : (
-                                    <Textarea 
-                                      {...field}
-                                      className="min-h-[250px]"
-                                      disabled={!canInteract}
-                                    />
-                                  )}
+                                <PromptEditor 
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  disabled={!canInteract}
+                                />
                               </FormControl>
                                <div className="flex items-center justify-between mt-2">
                                 {activePack ? (
@@ -447,19 +432,9 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                                     Using: {activePack.name}
                                   </Badge>
                                 ) : <div />}
-                                <div className="flex items-center gap-4">
-                                     <Button type="button" variant="link" size="sm" onClick={() => setIsTagModalOpen(true)} className="px-1">
-                                        <Tags className="mr-2 h-3 w-3"/> Tag Assistant
-                                     </Button>
-                                     <div className="flex items-center space-x-2">
-                                        <Label htmlFor="prompt-mode" className="text-xs text-muted-foreground flex items-center gap-1.5"><CaseSensitive/> Text Mode</Label>
-                                        <Switch
-                                            id="prompt-mode"
-                                            checked={promptMode === 'text'}
-                                            onCheckedChange={(checked) => setPromptMode(checked ? 'text' : 'tags')}
-                                        />
-                                    </div>
-                                </div>
+                                <Button type="button" variant="link" size="sm" onClick={() => setIsTagModalOpen(true)} className="px-1">
+                                    <Tags className="mr-2 h-3 w-3"/> Tag Assistant
+                                </Button>
                                </div>
                               <FormMessage />
                             </FormItem>
@@ -709,3 +684,4 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     </>
   );
 }
+
