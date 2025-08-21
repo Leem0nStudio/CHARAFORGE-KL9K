@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useTransition, useEffect, useState } from 'react';
+import { useTransition, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
@@ -52,7 +51,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
   const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [isConfirmReprocessOpen, setIsConfirmReprocessOpen] = useState(false);
-  const [isPolling, setIsPolling] = useState(false);
+  const isPolling = useRef(false);
 
   const form = useForm<UpdateImagesFormValues>({
     resolver: zodResolver(UpdateImagesSchema),
@@ -60,28 +59,32 @@ export function EditGalleryTab({ character }: { character: Character }) {
       primaryImageUrl: character.visuals.imageUrl,
     },
   });
-
+  
   const isShowcaseProcessing = character.visuals.isShowcaseProcessed === false;
 
+  // This effect resets the form's default value only when the character's primary image actually changes.
   useEffect(() => {
-    form.reset({
-        primaryImageUrl: character.visuals.imageUrl,
-    });
-    
-    if (isShowcaseProcessing && !isPolling) {
-      setIsPolling(true);
-      const interval = setInterval(() => {
-        router.refresh();
-      }, 5000); 
-      
-      return () => {
-        clearInterval(interval);
-        setIsPolling(false);
-      }
-    } else if (!isShowcaseProcessing && isPolling) {
-        setIsPolling(false);
+    form.reset({ primaryImageUrl: character.visuals.imageUrl });
+  }, [character.visuals.imageUrl, form]);
+
+  // This effect manages the polling interval.
+  useEffect(() => {
+    if (isShowcaseProcessing && !isPolling.current) {
+        isPolling.current = true;
+        const interval = setInterval(() => {
+            router.refresh();
+        }, 5000);
+
+        return () => {
+            clearInterval(interval);
+            isPolling.current = false;
+        };
+    } else if (!isShowcaseProcessing && isPolling.current) {
+        // This case is handled by the cleanup function of the effect,
+        // but we keep the logic clear.
+        isPolling.current = false;
     }
-  }, [character.visuals.imageUrl, isShowcaseProcessing, form, router, isPolling]);
+  }, [isShowcaseProcessing, router]);
 
 
   useEffect(() => {
