@@ -72,7 +72,7 @@ export default function CharactersPage() {
         <div className="col-span-full w-full flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-destructive/10">
             <AlertCircle className="h-16 w-16 mb-4 text-destructive" />
             <h2 className="text-2xl font-medium font-headline tracking-wider mb-2 text-destructive">Could Not Load Gallery</h2>
-            <p className="max-w-xs mx-auto mb-6">There was a problem verifying your session or fetching your data.</p>
+            <p className="max-w-xs mx-auto mb-6">There was a problem fetching your data, which can sometimes be due to a temporary session issue. Please try again.</p>
             <Button onClick={fetchCharacters}>
                 <RefreshCw className="mr-2 h-5 w-5" />
                 Try Again

@@ -84,14 +84,21 @@ export async function getCharacters(): Promise<Character[]> {
   
   try {
     const charactersRef = adminDb.collection('characters');
-    const q = charactersRef.where('meta.userId', '==', uid).orderBy('meta.createdAt', 'desc');
+    // **STRUCTURAL FIX**: Query only on one field to avoid needing a composite index.
+    // Order the results in the code after fetching.
+    const q = charactersRef.where('meta.userId', '==', uid);
     const snapshot = await q.get();
 
     if (snapshot.empty) {
       return [];
     }
+    
+    const characters = snapshot.docs.map(doc => toCharacterObject(doc.id, doc.data()));
 
-    return snapshot.docs.map(doc => toCharacterObject(doc.id, doc.data()));
+    // Sort by creation date descending in code. This is efficient for a user's own characters.
+    characters.sort((a, b) => b.meta.createdAt.getTime() - a.meta.createdAt.getTime());
+
+    return characters;
 
   } catch (error) {
     console.error("Error fetching characters:", error);
