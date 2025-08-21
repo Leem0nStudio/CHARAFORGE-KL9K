@@ -15,7 +15,7 @@ import { uploadToStorage } from '@/services/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Star, Trash2, FileUp, Wand2, Image as ImageIcon, CheckCircle, RefreshCw } from 'lucide-react';
+import { Loader2, Star, Trash2, FileUp, Wand2, Image as ImageIcon, CheckCircle, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { v4 as uuidv4 } from 'uuid';
@@ -38,7 +38,6 @@ export function EditGalleryTab({ character }: { character: Character }) {
   const [isGenerating, startGenerateTransition] = useTransition();
   const [isReprocessing, startReprocessTransition] = useTransition();
   
-  // State for AI model selection
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(true);
@@ -50,7 +49,6 @@ export function EditGalleryTab({ character }: { character: Character }) {
     },
   });
   
-  // Showcase processing state
   const [showcaseProgress, setShowcaseProgress] = useState(0);
 
   useEffect(() => {
@@ -58,13 +56,11 @@ export function EditGalleryTab({ character }: { character: Character }) {
         primaryImageUrl: character.visuals.imageUrl,
     });
     
-    // Auto-refresh logic for showcase processing
     if (character.visuals.isShowcaseProcessed === false) {
       const interval = setInterval(() => {
-        // Simulate progress for UX
         setShowcaseProgress(prev => (prev < 90 ? prev + 10 : 90));
         router.refresh();
-      }, 5000); // Poll every 5 seconds
+      }, 5000); 
       
       return () => clearInterval(interval);
     } else {
@@ -127,7 +123,6 @@ export function EditGalleryTab({ character }: { character: Character }) {
             engineId: selectedModel.engine,
             modelId: selectedModel.engine !== 'gemini' ? selectedModel.hf_id : undefined,
             aspectRatio: '1:1',
-            // In the future, we could also allow selecting a LoRA here
         };
 
         const result = await generateNewCharacterImage(character.id, character.core.physicalDescription || '', engineConfig);
@@ -177,6 +172,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
             variant: result.success ? 'default' : 'destructive',
         });
         if (result.success) {
+            setShowcaseProgress(0); // Reset progress on re-initiation
             router.refresh();
         }
     });
@@ -260,16 +256,19 @@ export function EditGalleryTab({ character }: { character: Character }) {
                  <div className="flex justify-between items-center pt-4 border-t mt-6">
                     <div className="flex-grow pr-4">
                         <h4 className="font-semibold text-sm mb-2 flex items-center gap-2"><ImageIcon className="text-primary"/>Showcase Image</h4>
-                        {character.visuals.isShowcaseProcessed === true ? (
+                        {character.visuals.isShowcaseProcessed === true && (
                             <div className="flex items-center gap-2 text-sm text-green-500">
                                 <CheckCircle/>
-                                <span>Processing complete. View in Showcase.</span>
+                                <span>Processing complete. Ready for showcase.</span>
                             </div>
-                        ) : character.visuals.isShowcaseProcessed === 'failed' ? (
+                        )}
+                         {character.visuals.isShowcaseProcessed === 'failed' && (
                              <div className="flex items-center gap-2 text-sm text-destructive">
+                                <AlertTriangle/>
                                 <p>Processing failed. You can try again.</p>
                              </div>
-                        ) : (
+                        )}
+                        {character.visuals.isShowcaseProcessed === false && (
                             <div>
                                 <p className="text-sm text-muted-foreground mb-2">Refining image for showcase... (bg removal & upscale)</p>
                                 <Progress value={showcaseProgress} className="w-full" />
@@ -277,15 +276,15 @@ export function EditGalleryTab({ character }: { character: Character }) {
                         )}
                     </div>
                      <div className="flex items-center gap-2">
+                        <Button type="submit" disabled={isLoading || !form.formState.isDirty}>
+                            {isUpdating ? <Loader2 className="animate-spin" /> : <Star />}
+                            Set Primary
+                        </Button>
                          {(character.visuals.isShowcaseProcessed === true || character.visuals.isShowcaseProcessed === 'failed') && (
                               <Button type="button" variant="secondary" onClick={handleReprocess} disabled={isLoading}>
                                  {isReprocessing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
                              </Button>
                          )}
-                        <Button type="submit" disabled={isLoading || !form.formState.isDirty}>
-                            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Primary Image
-                        </Button>
                     </div>
                 </div>
              </form>

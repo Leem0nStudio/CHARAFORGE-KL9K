@@ -80,12 +80,10 @@ export async function updateCharacterImages(
         'visuals.imageUrl': primaryImageUrl,
       });
 
-    // If the primary image has changed, trigger reprocessing for the showcase view
     if (primaryImageUrl !== oldPrimaryUrl) {
       console.log('Primary image changed. Triggering re-processing for showcase.');
       await reprocessCharacterImage(characterId);
     }
-
 
      revalidatePath(`/characters/${characterId}/edit`);
      revalidatePath('/characters');
@@ -118,7 +116,6 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
             return { success: false, message: 'Character has no primary image to reprocess.' };
         }
 
-        // Fetch the existing image from its public URL
         const response = await fetch(imageUrl);
         if (!response.ok) {
             throw new Error(`Failed to fetch existing image: ${response.statusText}`);
@@ -126,11 +123,9 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
         const imageBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(imageBuffer);
 
-        // Upload the buffer to the raw-uploads path to trigger the Cloud Function
         const destinationPath = `raw-uploads/${uid}/${characterId}/${uuidv4()}.png`;
         await uploadToStorage(buffer, destinationPath, response.headers.get('content-type') || 'image/png');
 
-        // Reset the showcase processing status in Firestore
         await characterRef.update({
             'visuals.isShowcaseProcessed': false,
             'visuals.showcaseImageUrl': null,
