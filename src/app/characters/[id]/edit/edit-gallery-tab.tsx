@@ -68,10 +68,11 @@ export function EditGalleryTab({ character }: { character: Character }) {
     
     if (isShowcaseProcessing) {
       const interval = setInterval(() => {
-        if (character.visuals.isShowcaseProcessed !== false) {
-          clearInterval(interval);
+        // Only refresh if the component is still tracking a processing state
+        if (character.visuals.isShowcaseProcessed === false) {
+           router.refresh();
         } else {
-          router.refresh();
+           clearInterval(interval);
         }
       }, 5000); 
       
@@ -262,15 +263,15 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                 <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary(url)} disabled={isPrimary}>
                                     <Star className="mr-2" /> {isPrimary ? 'Primary' : 'Set Primary'}
                                 </Button>
-                                <Button type="button" variant="destructive" size="sm" className="w-full" onClick={() => handleRemoveImage(url)} disabled={gallery.length <= 1 || isLoading}>
-                                    { isLoading && gallery.length > 1 ? <Loader2 className="animate-spin" /> : <><Trash2 className="mr-2" /> Remove</>}
-                                </Button>
                                 {isPrimary && (
                                     <Button type="button" variant="secondary" size="sm" className="w-full" onClick={handleReprocessWithConfirmation} disabled={isReprocessing}>
                                         {isReprocessing ? <Loader2 className="animate-spin" /> : <ImageIcon className="mr-2" />}
                                         {character.visuals.showcaseImageUrl ? 'Reprocess' : 'Process'}
                                     </Button>
                                 )}
+                                <Button type="button" variant="destructive" size="sm" className="w-full" onClick={() => handleRemoveImage(url)} disabled={gallery.length <= 1 || isLoading}>
+                                    { isLoading && gallery.length > 1 ? <Loader2 className="animate-spin" /> : <><Trash2 className="mr-2" /> Remove</>}
+                                </Button>
                             </div>
                             {isPrimary && (
                                 <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1.5 text-xs shadow-lg">
