@@ -24,6 +24,7 @@ import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 import type { AiModel } from '@/types/ai-model';
 import { geminiImagePlaceholder } from '@/lib/app-config';
 import { Progress } from '@/components/ui/progress';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const UpdateImagesSchema = z.object({
     primaryImageUrl: z.string().url("A primary image must be selected."),
@@ -41,15 +42,18 @@ export function EditGalleryTab({ character }: { character: Character }) {
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(true);
-  
+  const [isConfirmReprocessOpen, setIsConfirmReprocessOpen] = useState(false);
+
+  const [showcaseProgress, setShowcaseProgress] = useState(0);
+
   const form = useForm<UpdateImagesFormValues>({
     resolver: zodResolver(UpdateImagesSchema),
     defaultValues: {
       primaryImageUrl: character.visuals.imageUrl,
     },
   });
-  
-  const [showcaseProgress, setShowcaseProgress] = useState(0);
+
+  const originalPrimaryUrl = character.visuals.imageUrl;
 
   useEffect(() => {
     form.reset({
@@ -177,6 +181,15 @@ export function EditGalleryTab({ character }: { character: Character }) {
         }
     });
   }
+  
+  const handleReprocessWithConfirmation = () => {
+      if (character.visuals.showcaseImageUrl) {
+        setIsConfirmReprocessOpen(true);
+      } else {
+        handleReprocess();
+      }
+  }
+
 
   const onSubmit = (data: UpdateImagesFormValues) => {
     startUpdateTransition(async () => {
@@ -188,7 +201,13 @@ export function EditGalleryTab({ character }: { character: Character }) {
       });
       if (result.success) {
         form.reset({ primaryImageUrl: data.primaryImageUrl });
-        router.refresh();
+        
+        // If primary image changed, ask user if they want to reprocess for showcase.
+        if (data.primaryImageUrl !== originalPrimaryUrl) {
+           setIsConfirmReprocessOpen(true);
+        } else {
+           router.refresh();
+        }
       }
     });
   };
@@ -207,6 +226,27 @@ export function EditGalleryTab({ character }: { character: Character }) {
           models={availableModels}
           isLoading={isLoadingModels}
       />
+       <AlertDialog open={isConfirmReprocessOpen} onOpenChange={setIsConfirmReprocessOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Process Showcase Image?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        {character.visuals.showcaseImageUrl ? 
+                          'A showcase image already exists. Do you want to replace it by processing the new primary image?' :
+                          'Do you want to process the new primary image for the showcase view?'
+                        }
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>No, just save</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => {
+                        handleReprocess();
+                        setIsConfirmReprocessOpen(false);
+                    }}>Yes, process</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
      <Card>
         <CardHeader>
             <CardTitle>Image Management</CardTitle>
@@ -214,26 +254,35 @@ export function EditGalleryTab({ character }: { character: Character }) {
         </CardHeader>
         <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[200px]">
-                {gallery.map((url, index) => (
-                    <Card key={url} className="group relative overflow-hidden">
-                        <div className="relative w-full aspect-square bg-muted/20">
-                            <Image src={url} alt={`Character image ${index + 1}`} fill className="w-full object-contain" sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw" />
-                        </div>
-                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2 gap-1">
-                            <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary(url)} disabled={primaryImageUrl === url}>
-                                <Star className="mr-2" /> {primaryImageUrl === url ? 'Primary' : 'Set Primary'}
-                            </Button>
-                            <Button type="button" variant="destructive" size="sm" className="w-full" onClick={() => handleRemoveImage(url)} disabled={gallery.length <= 1 || isLoading}>
-                                { isLoading && gallery.length > 1 ? <Loader2 className="animate-spin" /> : <><Trash2 className="mr-2" /> Remove</>}
-                            </Button>
-                        </div>
-                        {primaryImageUrl === url && (
-                            <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1.5 text-xs shadow-lg">
-                                <Star className="w-3 h-3 fill-current" />
+                {gallery.map((url, index) => {
+                    const isPrimary = primaryImageUrl === url;
+                    return (
+                        <Card key={url} className="group relative overflow-hidden">
+                            <div className="relative w-full aspect-square bg-muted/20">
+                                <Image src={url} alt={`Character image ${index + 1}`} fill className="w-full object-contain" sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw" />
                             </div>
-                        )}
-                    </Card>
-                ))}
+                             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2 gap-1">
+                                <Button type="button" size="sm" className="w-full" onClick={() => handleSetPrimary(url)} disabled={isPrimary}>
+                                    <Star className="mr-2" /> {isPrimary ? 'Primary' : 'Set Primary'}
+                                </Button>
+                                <Button type="button" variant="destructive" size="sm" className="w-full" onClick={() => handleRemoveImage(url)} disabled={gallery.length <= 1 || isLoading}>
+                                    { isLoading && gallery.length > 1 ? <Loader2 className="animate-spin" /> : <><Trash2 className="mr-2" /> Remove</>}
+                                </Button>
+                                {isPrimary && (
+                                    <Button type="button" variant="secondary" size="sm" className="w-full" onClick={handleReprocessWithConfirmation} disabled={isReprocessing}>
+                                        {isReprocessing ? <Loader2 className="animate-spin" /> : <ImageIcon className="mr-2" />}
+                                        {character.visuals.showcaseImageUrl ? 'Reprocess' : 'Showcase'}
+                                    </Button>
+                                )}
+                            </div>
+                            {isPrimary && (
+                                <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1.5 text-xs shadow-lg">
+                                    <Star className="w-3 h-3 fill-current" />
+                                </div>
+                            )}
+                        </Card>
+                    )
+                })}
                 {gallery.length < 10 && (
                     <Card className="flex items-center justify-center border-2 border-dashed bg-muted/50 hover:border-primary transition-colors">
                         <div className="p-4 text-center">
@@ -255,7 +304,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
              <form onSubmit={form.handleSubmit(onSubmit)}>
                  <div className="flex justify-between items-center pt-4 border-t mt-6">
                     <div className="flex-grow pr-4">
-                        <h4 className="font-semibold text-sm mb-2 flex items-center gap-2"><ImageIcon className="text-primary"/>Showcase Image</h4>
+                        <h4 className="font-semibold text-sm mb-2 flex items-center gap-2"><ImageIcon className="text-primary"/>Showcase Image Status</h4>
                         {character.visuals.isShowcaseProcessed === true && (
                             <div className="flex items-center gap-2 text-sm text-green-500">
                                 <CheckCircle/>
@@ -274,17 +323,15 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                 <Progress value={showcaseProgress} className="w-full" />
                             </div>
                         )}
+                         {!character.visuals.isShowcaseProcessed && character.visuals.isShowcaseProcessed !== false && (
+                            <p className="text-sm text-muted-foreground">Not processed yet. Select the primary image and click "Showcase".</p>
+                        )}
                     </div>
                      <div className="flex items-center gap-2">
                         <Button type="submit" disabled={isLoading || !form.formState.isDirty}>
                             {isUpdating ? <Loader2 className="animate-spin" /> : <Star />}
-                            Set Primary
+                            Save Primary
                         </Button>
-                         {(character.visuals.isShowcaseProcessed === true || character.visuals.isShowcaseProcessed === 'failed') && (
-                              <Button type="button" variant="secondary" onClick={handleReprocess} disabled={isLoading}>
-                                 {isReprocessing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-                             </Button>
-                         )}
                     </div>
                 </div>
              </form>
