@@ -5,3 +5,7 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+# This new section makes environment variables, including secrets, available to your app.
+secretEnvironmentVariables:
+  - key: CLIPDROP_API_KEY
+    secret: CLIPDROP_API_KEY
