@@ -60,15 +60,20 @@ export async function uploadToStorage(
         throw new Error("Could not determine content type for upload.");
     }
 
-    await fileRef.save(buffer, {
-        metadata: {
-            contentType: finalContentType,
-            cacheControl: 'public, max-age=31536000', // Cache aggressively for 1 year
-        },
-        public: true,
-    });
+    try {
+        await fileRef.save(buffer, {
+            metadata: {
+                contentType: finalContentType,
+                cacheControl: 'public, max-age=31536000', // Cache aggressively for 1 year
+            },
+            public: true,
+        });
 
-    return fileRef.publicUrl();
+        return fileRef.publicUrl();
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown storage error occurred.';
+        console.error(`Storage Upload Error to path ${destinationPath}:`, message);
+        // Re-throw a more specific error to be caught by server actions
+        throw new Error(`Failed to upload file to Firebase Storage: ${message}`);
+    }
 }
-
-    
