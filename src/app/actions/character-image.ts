@@ -80,9 +80,15 @@ export async function updateCharacterImages(
         'visuals.imageUrl': primaryImageUrl,
       });
 
+    // If the primary image has changed, the old showcase image is no longer valid.
+    // Reset the showcase state to prompt the user to reprocess.
     if (primaryImageUrl !== oldPrimaryUrl) {
-      console.log('Primary image changed. Triggering re-processing for showcase.');
-      await reprocessCharacterImage(characterId);
+      console.log('Primary image changed. Resetting showcase state.');
+      await characterRef.update({
+            'visuals.isShowcaseProcessed': false,
+            'visuals.showcaseImageUrl': null,
+            'visuals.showcaseProcessingStatus': 'idle',
+      });
     }
 
      revalidatePath(`/characters/${characterId}/edit`);
@@ -128,10 +134,13 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
         const destinationPath = `raw-uploads/${uid}/${characterId}/${uuidv4()}.png`;
         await uploadToStorage(imageBuffer, destinationPath, response.headers.get('content-type') || 'image/png');
 
+        // **STRUCTURAL FIX**: Immediately set the status to the first step of processing
+        // before returning. This ensures the UI can reflect the "in-progress" state
+        // as soon as the action completes.
         await characterRef.update({
             'visuals.isShowcaseProcessed': false,
             'visuals.showcaseImageUrl': null,
-            'visuals.showcaseProcessingStatus': 'idle',
+            'visuals.showcaseProcessingStatus': 'removing-background',
         });
 
         revalidatePath(`/characters/${characterId}/edit`);
