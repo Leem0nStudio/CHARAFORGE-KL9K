@@ -250,6 +250,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 isProcessed: false,
                 showcaseImageUrl: null,
                 isShowcaseProcessed: false,
+                showcaseProcessingStatus: 'idle',
             },
             meta: {
                 userId,
@@ -364,5 +365,3 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
     return { success: false, message };
   }
 }
-
-

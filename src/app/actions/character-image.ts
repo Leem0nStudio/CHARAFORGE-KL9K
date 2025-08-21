@@ -116,19 +116,22 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
             return { success: false, message: 'Character has no primary image to reprocess.' };
         }
 
+        // Fetching the image using a server-side-safe fetch
+        const fetch = (await import('node-fetch')).default;
         const response = await fetch(imageUrl);
+
         if (!response.ok) {
             throw new Error(`Failed to fetch existing image: ${response.statusText}`);
         }
-        const imageBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(imageBuffer);
+        const imageBuffer = await response.buffer();
 
         const destinationPath = `raw-uploads/${uid}/${characterId}/${uuidv4()}.png`;
-        await uploadToStorage(buffer, destinationPath, response.headers.get('content-type') || 'image/png');
+        await uploadToStorage(imageBuffer, destinationPath, response.headers.get('content-type') || 'image/png');
 
         await characterRef.update({
             'visuals.isShowcaseProcessed': false,
             'visuals.showcaseImageUrl': null,
+            'visuals.showcaseProcessingStatus': 'idle',
         });
 
         revalidatePath(`/characters/${characterId}/edit`);
@@ -137,7 +140,10 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
     } catch(error) {
         const message = error instanceof Error ? error.message : 'Failed to reprocess image.';
         console.error("Reprocess Error:", message);
-        await characterRef.update({ 'visuals.isShowcaseProcessed': 'failed' }).catch(() => {});
+        await characterRef.update({ 
+            'visuals.isShowcaseProcessed': 'failed',
+            'visuals.showcaseProcessingStatus': 'failed',
+         }).catch(() => {});
         return { success: false, message };
     }
 }

@@ -13,6 +13,8 @@ export interface TimelineEvent {
   relatedCharacterIds?: string[];
 }
 
+export type ShowcaseProcessingStatus = 'idle' | 'removing-background' | 'upscaling' | 'finalizing' | 'complete' | 'failed';
+
 /**
  * A more professional, modular structure for the Character object.
  * Properties are grouped into logical sub-objects for clarity and maintainability.
@@ -40,6 +42,7 @@ export type Character = {
     isProcessed: boolean; // Flag to indicate if the main image is processed
     showcaseImageUrl: string | null; // URL for the high-quality, background-removed showcase image
     isShowcaseProcessed: boolean | 'failed'; // Flag for the showcase image processing status
+    showcaseProcessingStatus?: ShowcaseProcessingStatus; // Detailed status of the pipeline
   };
 
   // Metadata about the record itself.
@@ -107,4 +110,3 @@ export const SaveCharacterInputSchema = z.object({
   rarity: z.number().min(1).max(5).optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
-

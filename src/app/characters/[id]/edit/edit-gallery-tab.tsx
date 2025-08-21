@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { Character } from '@/types/character';
+import type { Character, ShowcaseProcessingStatus } from '@/types/character';
 import { generateNewCharacterImage, updateCharacterImages, reprocessCharacterImage } from '@/app/actions/character-image';
 import { getModels } from '@/app/actions/ai-models';
 import { uploadToStorage } from '@/services/storage';
@@ -23,13 +23,21 @@ import { ModelSelectorModal } from '@/components/model-selector-modal';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 import type { AiModel } from '@/types/ai-model';
 import { geminiImagePlaceholder } from '@/lib/app-config';
-import { Progress } from '@/components/ui/progress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const UpdateImagesSchema = z.object({
     primaryImageUrl: z.string().url("A primary image must be selected."),
 });
 type UpdateImagesFormValues = z.infer<typeof UpdateImagesSchema>;
+
+const processingStatusMap: Record<ShowcaseProcessingStatus, string> = {
+    idle: 'Not processed yet.',
+    'removing-background': 'Removing background...',
+    upscaling: 'Upscaling image...',
+    finalizing: 'Finalizing...',
+    complete: 'Processing complete!',
+    failed: 'Processing failed.',
+}
 
 export function EditGalleryTab({ character }: { character: Character }) {
   const { toast } = useToast();
@@ -44,8 +52,6 @@ export function EditGalleryTab({ character }: { character: Character }) {
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [isConfirmReprocessOpen, setIsConfirmReprocessOpen] = useState(false);
 
-  const [showcaseProgress, setShowcaseProgress] = useState(0);
-
   const form = useForm<UpdateImagesFormValues>({
     resolver: zodResolver(UpdateImagesSchema),
     defaultValues: {
@@ -54,23 +60,20 @@ export function EditGalleryTab({ character }: { character: Character }) {
   });
 
   const originalPrimaryUrl = character.visuals.imageUrl;
+  const isShowcaseProcessing = character.visuals.isShowcaseProcessed === false;
 
   useEffect(() => {
     form.reset({
         primaryImageUrl: character.visuals.imageUrl,
     });
     
-    if (character.visuals.isShowcaseProcessed === false) {
+    if (isShowcaseProcessing) {
       const interval = setInterval(() => {
-        setShowcaseProgress(prev => (prev < 90 ? prev + 10 : 90));
         router.refresh();
       }, 5000); 
-      
       return () => clearInterval(interval);
-    } else {
-        setShowcaseProgress(100);
     }
-  }, [character, form, router]);
+  }, [character, form, router, isShowcaseProcessing]);
 
   useEffect(() => {
     async function loadModels() {
@@ -176,7 +179,6 @@ export function EditGalleryTab({ character }: { character: Character }) {
             variant: result.success ? 'default' : 'destructive',
         });
         if (result.success) {
-            setShowcaseProgress(0); // Reset progress on re-initiation
             router.refresh();
         }
     });
@@ -202,7 +204,6 @@ export function EditGalleryTab({ character }: { character: Character }) {
       if (result.success) {
         form.reset({ primaryImageUrl: data.primaryImageUrl });
         
-        // If primary image changed, ask user if they want to reprocess for showcase.
         if (data.primaryImageUrl !== originalPrimaryUrl) {
            setIsConfirmReprocessOpen(true);
         } else {
@@ -271,13 +272,19 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                 {isPrimary && (
                                     <Button type="button" variant="secondary" size="sm" className="w-full" onClick={handleReprocessWithConfirmation} disabled={isReprocessing}>
                                         {isReprocessing ? <Loader2 className="animate-spin" /> : <ImageIcon className="mr-2" />}
-                                        {character.visuals.showcaseImageUrl ? 'Reprocess' : 'Showcase'}
+                                        {character.visuals.showcaseImageUrl ? 'Reprocess' : 'Process'}
                                     </Button>
                                 )}
                             </div>
                             {isPrimary && (
                                 <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1.5 text-xs shadow-lg">
                                     <Star className="w-3 h-3 fill-current" />
+                                </div>
+                            )}
+                            {isPrimary && isShowcaseProcessing && (
+                                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center text-foreground p-2 text-center">
+                                    <Loader2 className="w-8 h-8 animate-spin mb-2 text-primary" />
+                                    <p className="font-semibold text-sm">{processingStatusMap[character.visuals.showcaseProcessingStatus || 'idle']}</p>
                                 </div>
                             )}
                         </Card>
@@ -318,13 +325,13 @@ export function EditGalleryTab({ character }: { character: Character }) {
                              </div>
                         )}
                         {character.visuals.isShowcaseProcessed === false && (
-                            <div>
-                                <p className="text-sm text-muted-foreground mb-2">Refining image for showcase... (bg removal & upscale)</p>
-                                <Progress value={showcaseProgress} className="w-full" />
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Loader2 className="animate-spin" />
+                                <span>{processingStatusMap[character.visuals.showcaseProcessingStatus || 'idle']}</span>
                             </div>
                         )}
                          {!character.visuals.isShowcaseProcessed && character.visuals.isShowcaseProcessed !== false && (
-                            <p className="text-sm text-muted-foreground">Not processed yet. Select the primary image and click "Showcase".</p>
+                            <p className="text-sm text-muted-foreground">Not processed yet. Select the primary image and click "Process".</p>
                         )}
                     </div>
                      <div className="flex items-center gap-2">

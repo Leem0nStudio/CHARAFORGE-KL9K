@@ -90,7 +90,7 @@ async function upscaleImage(buffer: Buffer): Promise<Buffer> {
 
 /**
  * Cloud Function that triggers on new file uploads to the 'raw-uploads/' path.
- * This function now handles the full Showcase processing pipeline.
+ * This function now handles the full Showcase processing pipeline and reports status.
  */
 export const processUploadedImage = onObjectFinalized({
     cpu: 2,
@@ -132,12 +132,15 @@ export const processUploadedImage = onObjectFinalized({
     logger.log(`Successfully downloaded '${fileName}'. Starting processing pipeline.`);
 
     try {
+        await characterRef.update({ 'visuals.showcaseProcessingStatus': 'removing-background' });
         const bufferWithoutBg = await removeBackground(imageBuffer);
         logger.info("Step 1/4: Background removal complete.");
 
+        await characterRef.update({ 'visuals.showcaseProcessingStatus': 'upscaling' });
         const upscaledBuffer = await upscaleImage(bufferWithoutBg);
         logger.info("Step 2/4: Upscaling complete.");
 
+        await characterRef.update({ 'visuals.showcaseProcessingStatus': 'finalizing' });
         const processedBuffer = await sharp(upscaledBuffer)
             .resize(1024, 1024, { fit: 'contain', background: { r:0, g:0, b:0, alpha:0 } })
             .webp({ quality: 90 })
@@ -162,6 +165,7 @@ export const processUploadedImage = onObjectFinalized({
         await characterRef.update({
             'visuals.showcaseImageUrl': publicUrl,
             'visuals.isShowcaseProcessed': true,
+            'visuals.showcaseProcessingStatus': 'complete',
         });
         logger.log(`Successfully updated Firestore for character '${characterId}'.`);
         
@@ -170,6 +174,9 @@ export const processUploadedImage = onObjectFinalized({
 
     } catch (error) {
         logger.error(`Failed to process showcase image for character ${characterId}.`, { error });
-        await characterRef.update({ 'visuals.isShowcaseProcessed': 'failed' });
+        await characterRef.update({ 
+            'visuals.isShowcaseProcessed': 'failed',
+            'visuals.showcaseProcessingStatus': 'failed',
+         });
     }
 });
