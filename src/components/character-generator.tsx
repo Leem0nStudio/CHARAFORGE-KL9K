@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback, useTransition, useRef } from "react";
@@ -44,7 +45,7 @@ import type { GenerationResult } from "@/types/generation";
 import { PromptEditor } from "./prompt-editor";
 import { PromptTagInput } from './prompt-tag-input';
 import type { DataPack, PromptTemplate, Option, Slot } from '@/types/datapack';
-import { imageModels, textModels, geminiImagePlaceholder } from "@/lib/app-config";
+import { textModels } from "@/lib/app-config";
 import type { User as FirebaseUser } from "firebase/auth";
 
 
@@ -103,7 +104,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       targetLanguage: 'English',
       aspectRatio: '1:1',
       loraWeight: 0.75,
-      selectedModel: geminiImagePlaceholder,
+      selectedModel: undefined,
       selectedLora: null,
       rarity: 3,
     },
@@ -144,20 +145,18 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             const packIdFromUrl = searchParams.get('packId');
             
             const [userModels, userLoras, initialPackData] = await Promise.all([
-                authUser ? getModels('model', authUser.uid) : Promise.resolve([]),
-                authUser ? getModels('lora', authUser.uid) : Promise.resolve([]),
+                authUser ? getModels('model', authUser.uid) : getModels('model'),
+                authUser ? getModels('lora', authUser.uid) : getModels('lora'),
                 packIdFromUrl ? getDataPackForAdmin(packIdFromUrl) : Promise.resolve(null),
             ]);
             
-            const allAvailableModels = new Map<string, AiModel>();
-            [geminiImagePlaceholder, ...userModels].forEach(m => allAvailableModels.set(m.id, m));
-
-            setAvailableModels(Array.from(allAvailableModels.values()));
+            setAvailableModels(userModels);
             setAvailableLoras(userLoras);
             
+            // Set a default model if none is selected or the selected one isn't in the available list
             const currentModel = generationForm.getValues('selectedModel');
-            if (!currentModel || !Array.from(allAvailableModels.values()).find(m => m.id === currentModel.id)) {
-                generationForm.setValue('selectedModel', geminiImagePlaceholder);
+            if ((!currentModel || !userModels.find(m => m.id === currentModel.id)) && userModels.length > 0) {
+                generationForm.setValue('selectedModel', userModels[0]);
             }
             
             if (initialPackData) {

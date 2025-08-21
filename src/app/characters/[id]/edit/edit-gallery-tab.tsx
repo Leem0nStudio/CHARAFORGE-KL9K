@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useTransition, useEffect, useState, useRef } from 'react';
@@ -21,7 +22,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { ModelSelectorModal } from '@/components/model-selector-modal';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 import type { AiModel } from '@/types/ai-model';
-import { geminiImagePlaceholder } from '@/lib/app-config';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +30,7 @@ const UpdateImagesSchema = z.object({
 });
 type UpdateImagesFormValues = z.infer<typeof UpdateImagesSchema>;
 
+// Map of processing statuses to user-friendly messages
 const processingStatusMap: Record<ShowcaseProcessingStatus, string> = {
     idle: 'Not processed yet.',
     'removing-background': 'Removing background...',
@@ -51,7 +52,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
   const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [isConfirmReprocessOpen, setIsConfirmReprocessOpen] = useState(false);
-  const isPolling = useRef(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const form = useForm<UpdateImagesFormValues>({
     resolver: zodResolver(UpdateImagesSchema),
@@ -60,30 +61,33 @@ export function EditGalleryTab({ character }: { character: Character }) {
     },
   });
   
-  const isShowcaseProcessing = character.visuals.isShowcaseProcessed === false;
+  const isShowcaseProcessing = character.visuals.showcaseProcessingStatus === 'removing-background' || 
+                                character.visuals.showcaseProcessingStatus === 'upscaling' || 
+                                character.visuals.showcaseProcessingStatus === 'finalizing';
 
   // This effect resets the form's default value only when the character's primary image actually changes.
   useEffect(() => {
     form.reset({ primaryImageUrl: character.visuals.imageUrl });
   }, [character.visuals.imageUrl, form]);
-
-  // This effect manages the polling interval.
+  
+  // This effect manages the polling interval for refreshing the processing status.
   useEffect(() => {
-    if (isShowcaseProcessing && !isPolling.current) {
-        isPolling.current = true;
-        const interval = setInterval(() => {
+    if (isShowcaseProcessing && !pollingIntervalRef.current) {
+        pollingIntervalRef.current = setInterval(() => {
             router.refresh();
         }, 5000);
-
-        return () => {
-            clearInterval(interval);
-            isPolling.current = false;
-        };
-    } else if (!isShowcaseProcessing && isPolling.current) {
-        // This case is handled by the cleanup function of the effect,
-        // but we keep the logic clear.
-        isPolling.current = false;
+    } else if (!isShowcaseProcessing && pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
     }
+    
+    // Cleanup function to clear the interval when the component unmounts
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
   }, [isShowcaseProcessing, router]);
 
 
@@ -92,7 +96,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
       setIsLoadingModels(true);
       try {
         const models = await getModels('model');
-        setAvailableModels([geminiImagePlaceholder, ...models]);
+        setAvailableModels(models);
       } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not load AI models.' });
       } finally {
@@ -271,8 +275,8 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                     <Star className="mr-2" /> {isPrimary ? 'Primary' : 'Set Primary'}
                                 </Button>
                                 {isPrimary && (
-                                    <Button type="button" variant="secondary" size="sm" className="w-full" onClick={handleReprocessWithConfirmation} disabled={isReprocessing}>
-                                        {isReprocessing ? <Loader2 className="animate-spin" /> : <ImageIcon className="mr-2" />}
+                                    <Button type="button" variant="secondary" size="sm" className="w-full" onClick={handleReprocessWithConfirmation} disabled={isReprocessing || isShowcaseProcessing}>
+                                        {isReprocessing || isShowcaseProcessing ? <Loader2 className="animate-spin" /> : <ImageIcon className="mr-2" />}
                                         {character.visuals.showcaseImageUrl ? 'Reprocess' : 'Process'}
                                     </Button>
                                 )}
@@ -287,8 +291,8 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                     <Star className="mr-2" /> {isPrimary ? 'Primary' : 'Set Primary'}
                                 </Button>
                                 {isPrimary && (
-                                    <Button type="button" variant="secondary" size="sm" className="w-full" onClick={handleReprocessWithConfirmation} disabled={isReprocessing}>
-                                        {isReprocessing ? <Loader2 className="animate-spin" /> : <ImageIcon className="mr-2" />}
+                                    <Button type="button" variant="secondary" size="sm" className="w-full" onClick={handleReprocessWithConfirmation} disabled={isReprocessing || isShowcaseProcessing}>
+                                        {isReprocessing || isShowcaseProcessing ? <Loader2 className="animate-spin" /> : <ImageIcon className="mr-2" />}
                                         {character.visuals.showcaseImageUrl ? 'Reprocess' : 'Process'}
                                     </Button>
                                 )}
@@ -345,13 +349,13 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                 <p>Processing failed. You can try again.</p>
                              </div>
                         )}
-                        {character.visuals.isShowcaseProcessed === false && (
+                        {isShowcaseProcessing && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Loader2 className="animate-spin" />
                                 <span>{processingStatusMap[character.visuals.showcaseProcessingStatus || 'idle']}</span>
                             </div>
                         )}
-                         {!character.visuals.isShowcaseProcessed && character.visuals.isShowcaseProcessed !== false && (
+                         {!character.visuals.isShowcaseProcessed && !isShowcaseProcessing && (
                             <p className="text-sm text-muted-foreground">Not processed yet. Select the primary image and click "Process".</p>
                         )}
                     </div>
@@ -369,4 +373,3 @@ export function EditGalleryTab({ character }: { character: Character }) {
   );
 }
 
-    
