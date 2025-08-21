@@ -59,32 +59,25 @@ export function EditGalleryTab({ character }: { character: Character }) {
     },
   });
 
-  const originalPrimaryUrl = character.visuals.imageUrl;
   const isShowcaseProcessing = character.visuals.isShowcaseProcessed === false;
 
   useEffect(() => {
-    // Reset the form whenever the character data changes from the server
     form.reset({
         primaryImageUrl: character.visuals.imageUrl,
     });
     
-    // This effect handles polling for the processing status.
-    // It will only run if `isShowcaseProcessing` is true.
     if (isShowcaseProcessing) {
       const interval = setInterval(() => {
-        // Stop polling if the component state shows processing is no longer active
         if (character.visuals.isShowcaseProcessed !== false) {
           clearInterval(interval);
         } else {
           router.refresh();
         }
-      }, 5000); // Poll every 5 seconds
+      }, 5000); 
       
-      // Cleanup function to clear the interval when the component unmounts
-      // or when the dependencies of the effect change.
       return () => clearInterval(interval);
     }
-  }, [character.visuals.imageUrl, character.visuals.isShowcaseProcessed, form, router]);
+  }, [character.visuals.imageUrl, character.visuals.isShowcaseProcessed, form, isShowcaseProcessing, router]);
 
 
   useEffect(() => {
@@ -204,7 +197,6 @@ export function EditGalleryTab({ character }: { character: Character }) {
       }
   }
 
-
   const onSubmit = (data: UpdateImagesFormValues) => {
     startUpdateTransition(async () => {
       const result = await updateCharacterImages(character.id, character.visuals.gallery || [], data.primaryImageUrl);
@@ -215,12 +207,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
       });
       if (result.success) {
         form.reset({ primaryImageUrl: data.primaryImageUrl });
-        
-        if (data.primaryImageUrl !== originalPrimaryUrl) {
-           setIsConfirmReprocessOpen(true);
-        } else {
-           router.refresh();
-        }
+        router.refresh();
       }
     });
   };
@@ -242,20 +229,17 @@ export function EditGalleryTab({ character }: { character: Character }) {
        <AlertDialog open={isConfirmReprocessOpen} onOpenChange={setIsConfirmReprocessOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Process Showcase Image?</AlertDialogTitle>
+                    <AlertDialogTitle>Reprocess Showcase Image?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        {character.visuals.showcaseImageUrl ? 
-                          'A showcase image already exists. Do you want to replace it by processing the new primary image?' :
-                          'Do you want to process the new primary image for the showcase view?'
-                        }
+                        A showcase image already exists. Are you sure you want to replace it by processing the current primary image again?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>No, just save</AlertDialogCancel>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={() => {
                         handleReprocess();
                         setIsConfirmReprocessOpen(false);
-                    }}>Yes, process</AlertDialogAction>
+                    }}>Yes, Reprocess</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
