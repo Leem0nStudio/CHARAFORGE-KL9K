@@ -19,24 +19,50 @@ const formatPromptText = (text: string): string => {
   if (!text) return '';
 
   const lines = text.split('\n');
-  const formattedLines = lines.map(line => {
-    // 1. Remove extra spaces and fix comma placements
+  const aliasMap = new Map<string, RegExp[]>();
+  const promptLines: string[] = [];
+
+  // First pass: extract alias definitions
+  for (const line of lines) {
+    if (line.includes(':')) {
+      const [mainTag, aliasStr] = line.split(/:(.*)/s);
+      if (mainTag && aliasStr) {
+        const aliases = aliasStr.split(',').map(a => a.trim()).filter(Boolean);
+        if (aliases.length > 0) {
+            aliasMap.set(mainTag.trim(), aliases.map(a => new RegExp(`\\b${a}\\b`, 'g')));
+        }
+        // Alias definition lines are not added to promptLines
+      } else {
+        promptLines.push(line);
+      }
+    } else {
+      promptLines.push(line);
+    }
+  }
+
+  let promptText = promptLines.join('\n');
+
+  // Second pass: apply aliases
+  for (const [mainTag, aliasRegexes] of aliasMap.entries()) {
+    for (const regex of aliasRegexes) {
+      promptText = promptText.replace(regex, mainTag);
+    }
+  }
+  
+  // Third pass: format the processed prompt
+  const formattedLines = promptText.split('\n').map(line => {
     let cleanedLine = line.replace(/\s*,\s*/g, ', ').replace(/,+/g, ',').trim();
     cleanedLine = cleanedLine.replace(/^,/, '').replace(/,$/, '').trim();
-    
-    // 2. Replace underscores with spaces
     cleanedLine = cleanedLine.replace(/_/g, ' ');
 
-    // 3. Remove duplicate tags within the line
     const tags = cleanedLine.split(',').map(tag => tag.trim()).filter(Boolean);
     const uniqueTags = [...new Set(tags)];
     
     return uniqueTags.join(', ');
   });
 
-  // 4. Append comma to line breaks (respecting last line)
-  return formattedLines.map((line, index) => {
-    if (index < formattedLines.length - 1 && line.length > 0) {
+  return formattedLines.filter(Boolean).map((line, index, arr) => {
+    if (index < arr.length - 1 && line.length > 0) {
       return line.endsWith(',') ? line : `${line},`;
     }
     return line;
@@ -115,7 +141,7 @@ export const PromptEditor = forwardRef<
         onPaste={handlePaste}
         disabled={disabled}
         className="min-h-[250px] font-mono text-xs"
-        placeholder="1girl, solo, masterpiece, best quality, looking at viewer, detailed background, ..."
+        placeholder="1girl: girl, woman, lady\nmasterpiece, best quality, 1girl, solo, ..."
       />
       <Separator />
       <div className="flex items-center justify-between gap-4">
