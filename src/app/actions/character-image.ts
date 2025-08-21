@@ -123,7 +123,7 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
         }
 
         // The destination path is now a "queue" for the external worker.
-        const destinationPath = `raw-uploads/${userId}/${characterId}/${uuidv4()}.png`;
+        const destinationPath = `raw-uploads/${uid}/${characterId}/${uuidv4()}.png`;
 
         // Update the status immediately so the UI can react.
         await characterRef.update({
@@ -155,5 +155,3 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
         return { success: false, message };
     }
 }
-
-    
