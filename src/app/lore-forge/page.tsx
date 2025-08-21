@@ -1,12 +1,11 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useTransition, Suspense } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ScrollText, Users, Wand2, FileText, Plus, X } from 'lucide-react';
+import { Loader2, ScrollText, Users, Wand2, FileText, Plus, X, Check } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import type { StoryCast } from '@/types/story';
@@ -119,24 +118,26 @@ function CastsList({
 function CharacterSelector({ 
     allCharacters, 
     currentCast, 
-    onUpdateCast, 
+    onCastUpdated, 
     isOpen, 
     onClose 
 }: { 
     allCharacters: Character[],
     currentCast: StoryCast,
-    onUpdateCast: (characterIds: string[]) => Promise<void>,
+    onCastUpdated: () => void,
     isOpen: boolean,
     onClose: () => void,
 }) {
     const [selectedIds, setSelectedIds] = useState(new Set(currentCast.characterIds));
     const [isSaving, startSaveTransition] = useTransition();
+    const { toast } = useToast();
 
+    // Sync state if the dialog is reopened for the same cast or a different one
     useEffect(() => {
         if (isOpen) {
             setSelectedIds(new Set(currentCast.characterIds));
         }
-    }, [currentCast.characterIds, isOpen]);
+    }, [currentCast, isOpen]);
     
     const handleSelect = (charId: string) => {
         const newIds = new Set(selectedIds);
@@ -150,8 +151,14 @@ function CharacterSelector({
 
     const handleSave = () => {
         startSaveTransition(async () => {
-            await onUpdateCast(Array.from(selectedIds));
-            onClose();
+            const result = await updateStoryCastCharacters(currentCast.id, Array.from(selectedIds));
+            if (result.success) {
+                toast({ title: "Cast Updated" });
+                onCastUpdated(); // Signal parent to refetch data
+                onClose();
+            } else {
+                toast({ variant: 'destructive', title: 'Update Failed', description: result.message });
+            }
         });
     };
     
@@ -164,27 +171,30 @@ function CharacterSelector({
                 </DialogHeader>
                  <ScrollArea className="max-h-[60vh] -mx-6 px-6 py-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {allCharacters.map(char => (
-                            <div
-                                key={char.id}
-                                onClick={() => handleSelect(char.id)}
-                                className="flex items-center space-x-3 border p-3 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                            >
-                                <Checkbox
-                                    checked={selectedIds.has(char.id)}
-                                    onCheckedChange={() => handleSelect(char.id)}
-                                    id={`char-select-${char.id}`}
-                                />
-                                <Avatar className="h-10 w-10">
-                                    <AvatarImage src={char.visuals.imageUrl} alt={char.core.name}/>
-                                    <AvatarFallback>{char.core.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                    <Label htmlFor={`char-select-${char.id}`} className="font-semibold cursor-pointer">{char.core.name}</Label>
-                                    <p className="text-xs text-muted-foreground">{char.core.archetype || char.generation.originalPrompt}</p>
+                        {allCharacters.map(char => {
+                            const isSelected = selectedIds.has(char.id);
+                            return (
+                                <div
+                                    key={char.id}
+                                    onClick={() => handleSelect(char.id)}
+                                    className="flex items-center space-x-3 border p-3 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                                >
+                                    <Checkbox
+                                        checked={isSelected}
+                                        onCheckedChange={() => handleSelect(char.id)}
+                                        id={`char-select-${char.id}`}
+                                    />
+                                    <Avatar className="h-10 w-10">
+                                        <AvatarImage src={char.visuals.imageUrl} alt={char.core.name}/>
+                                        <AvatarFallback>{char.core.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                        <label htmlFor={`char-select-${char.id}`} className="font-semibold cursor-pointer">{char.core.name}</label>
+                                        <p className="text-xs text-muted-foreground line-clamp-1">{char.core.archetype || char.generation.originalPrompt}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 </ScrollArea>
                 <DialogFooter>
@@ -202,15 +212,15 @@ function CharacterSelector({
 function LoreForgeGenerator({ 
     cast, 
     characters,
-    onUpdateCast,
+    onCastUpdated,
 }: { 
     cast: StoryCast, 
     characters: Character[],
-    onUpdateCast: (characterIds: string[]) => Promise<void>;
+    onCastUpdated: () => void;
 }) {
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
     const [prompt, setPrompt] = useState('');
-    const [generatedStory, setGeneratedStory] = useState<{title: string, content: string} | null>(null);
+    const [generatedStory, setGeneratedStory] = useState<{title: string; content: string} | null>(null);
     const [isGenerating, startGenerationTransition] = useTransition();
     const { toast } = useToast();
 
@@ -237,10 +247,14 @@ function LoreForgeGenerator({
         })
     }
     
-    const handleRemoveCharacterFromCast = async (characterId: string) => {
+    const handleRemoveCharacterFromCast = (characterId: string) => {
         if (!cast) return;
         const newCharacterIds = cast.characterIds.filter(id => id !== characterId);
-        await onUpdateCast(newCharacterIds);
+        startGenerationTransition(async () => {
+            await updateStoryCastCharacters(cast.id, newCharacterIds);
+            onCastUpdated();
+            toast({title: "Character Removed"});
+        });
     };
 
     return (
@@ -250,7 +264,7 @@ function LoreForgeGenerator({
                 onClose={() => setIsSelectorOpen(false)}
                 allCharacters={characters}
                 currentCast={cast}
-                onUpdateCast={onUpdateCast}
+                onCastUpdated={onCastUpdated}
             />
             <CardHeader>
                 <CardTitle>{cast.name}</CardTitle>
@@ -343,8 +357,8 @@ function LoreForgeContent() {
             setCharacters(userCharacters);
             
             if (userCasts.length > 0) {
-                // If a cast is already selected, find its updated version, otherwise select the first one.
-                setSelectedCast(prev => userCasts.find(c => c.id === prev?.id) || userCasts[0]);
+                const currentSelected = selectedCast ? userCasts.find(c => c.id === selectedCast.id) : null;
+                setSelectedCast(currentSelected || userCasts[0]);
             } else {
                 setSelectedCast(null);
             }
@@ -353,7 +367,7 @@ function LoreForgeContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [toast]);
+    }, [toast, selectedCast]);
 
     useEffect(() => {
         if (!authLoading && !authUser) {
@@ -369,29 +383,6 @@ function LoreForgeContent() {
         setCasts(newCasts);
         setSelectedCast(newCast);
     };
-    
-    const handleUpdateCast = useCallback(async (characterIds: string[]) => {
-        if (!selectedCast) return;
-
-        // Optimistic UI update
-        const originalCasts = casts;
-        const updatedCasts = casts.map(cast => 
-            cast.id === selectedCast.id ? { ...cast, characterIds } : cast
-        );
-        setCasts(updatedCasts);
-        setSelectedCast(updatedCasts.find(c => c.id === selectedCast.id) || null);
-
-        const result = await updateStoryCastCharacters(selectedCast.id, characterIds);
-        if (result.success) {
-            toast({ title: "Cast Updated" });
-            // The UI is already updated, no need to refetch immediately unless there's a failure.
-        } else {
-             toast({ variant: 'destructive', title: "Update Failed", description: result.message });
-             // Revert to original state on failure
-             setCasts(originalCasts);
-             setSelectedCast(originalCasts.find(c => c.id === selectedCast.id) || null);
-        }
-    }, [casts, selectedCast, toast]);
     
     if (authLoading || (isLoading && !casts.length && !characters.length)) {
          return (
@@ -426,7 +417,7 @@ function LoreForgeContent() {
                                 <LoreForgeGenerator 
                                     cast={selectedCast} 
                                     characters={characters}
-                                    onUpdateCast={handleUpdateCast}
+                                    onCastUpdated={fetchData}
                                 />
                             </motion.div>
                         ) : (
@@ -456,3 +447,5 @@ export default function LoreForgePage() {
         </Suspense>
     );
 }
+
+    
