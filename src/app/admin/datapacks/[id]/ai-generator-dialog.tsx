@@ -39,8 +39,9 @@ export function AiGeneratorDialog({ onSchemaGenerated }: AiGeneratorDialogProps)
             try {
                 const result = await generateDataPackSchema({ concept });
                 
-                // Parse the YAML content string into a JavaScript object
-                const parsedSchema = yaml.load(result.yamlContent) as any;
+                // Robust YAML parsing: remove document separators '---' to handle cases where the AI includes them.
+                const cleanedYaml = result.yamlContent.replace(/---\s*/g, '');
+                const parsedSchema = yaml.load(cleanedYaml) as any;
                 
                 if (!parsedSchema || (!parsedSchema.promptTemplates && !parsedSchema.characterProfileSchema)) {
                     throw new Error("The AI returned invalid or empty YAML content.");
