@@ -37,6 +37,7 @@ export async function verifyAndGetUid(): Promise<string> {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     return decodedToken.uid;
   } catch (error) {
+    // Log the actual error on the server for debugging, but return a generic message.
     console.error('Error verifying auth token:', error);
     // This error is caught and re-thrown to give a clearer message to the client.
     throw new Error('Invalid or expired user session. Please log in again.');

@@ -115,6 +115,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       if (newAuthUser) {
         const token = await newAuthUser.getIdToken();
+        // **CRITICAL FIX**: Await the cookie setting to complete before updating client state
+        // This prevents race conditions where a Server Action is called before the session is known.
         await setCookie(token);
 
         const firestoreData = await ensureUserDocument(newAuthUser);
@@ -166,5 +168,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-    
