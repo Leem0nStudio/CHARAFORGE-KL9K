@@ -9,11 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Wand2 } from 'lucide-react';
 
-interface PromptEditorProps {
-  value: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
-}
+// Helper function to escape special characters for use in a RegExp
+const escapeRegExp = (string: string) => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+};
+
 
 const formatPromptText = (text: string): string => {
   if (!text) return '';
@@ -24,12 +24,15 @@ const formatPromptText = (text: string): string => {
 
   // First pass: extract alias definitions
   for (const line of lines) {
-    if (line.includes(':')) {
+    // A line is an alias definition if it contains ":" and does NOT contain weighted prompts like (word:1.2)
+    if (line.includes(':') && !/^\s*\(/.test(line)) {
       const [mainTag, aliasStr] = line.split(/:(.*)/s);
       if (mainTag && aliasStr) {
         const aliases = aliasStr.split(',').map(a => a.trim()).filter(Boolean);
         if (aliases.length > 0) {
-            aliasMap.set(mainTag.trim(), aliases.map(a => new RegExp(`\\b${a}\\b`, 'g')));
+            // CRITICAL FIX: Escape aliases before creating RegExp to prevent invalid expressions
+            const escapedAliases = aliases.map(escapeRegExp);
+            aliasMap.set(mainTag.trim(), escapedAliases.map(a => new RegExp(`\\b${a}\\b`, 'g')));
         }
         // Alias definition lines are not added to promptLines
       } else {
@@ -55,7 +58,8 @@ const formatPromptText = (text: string): string => {
     cleanedLine = cleanedLine.replace(/^,/, '').replace(/,$/, '').trim();
     cleanedLine = cleanedLine.replace(/_/g, ' ');
 
-    const tags = cleanedLine.split(',').map(tag => tag.trim()).filter(Boolean);
+    // Avoid splitting inside parentheses for weighted prompts like (word:1.2)
+    const tags = cleanedLine.match(/(\([^)]+\)|[^,]+)/g)?.map(tag => tag.trim()).filter(Boolean) || [];
     const uniqueTags = [...new Set(tags)];
     
     return uniqueTags.join(', ');
