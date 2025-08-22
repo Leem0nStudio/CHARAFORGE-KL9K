@@ -6,7 +6,7 @@
 // Import and export the image processing function.
 export { processUploadedImage } from './image-processing';
 
-// Import and export the RPG generation HTTP-callable functions
+// Import and export the RPG generation function, which is now a Task Queue handler.
 export { triggerRpgGeneration } from './rpg';
 
 
