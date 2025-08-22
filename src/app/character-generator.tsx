@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback, useTransition, useRef } from "react";
@@ -65,6 +64,7 @@ const generationFormSchema = z.object({
   }),
   selectedLora: z.custom<AiModel>().optional().nullable(),
   loraWeight: z.number().min(0).max(2).optional(),
+  rarity: z.number().min(1).max(5).default(1),
 });
 
 export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null }) {
@@ -105,6 +105,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       loraWeight: 0.75,
       selectedModel: undefined,
       selectedLora: null,
+      rarity: 1,
     },
   });
 
@@ -290,8 +291,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
           imageEngine: generationResult.imageEngine,
           wizardData: formData.wizardData,
           originalPrompt: generationResult.originalDescription,
-          stats: generationResult.stats,
-          rarity: generationResult.rarity,
+          rarity: formData.rarity,
         });
 
         if (result.success && result.characterId) {
@@ -479,7 +479,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                             </FormItem>
                           )}
                         />
-                        
+                         
                         <Accordion type="single" collapsible defaultValue="engine">
                             <AccordionItem value="engine">
                                 <AccordionTrigger>AI Settings</AccordionTrigger>

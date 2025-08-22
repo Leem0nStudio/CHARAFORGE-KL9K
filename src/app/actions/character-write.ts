@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -11,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { uploadToStorage } from '@/services/storage';
 import { UpdateCharacterSchema, SaveCharacterInputSchema, type SaveCharacterInput } from '@/types/character';
 import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
+import { generateCharacterSkills } from '@/ai/flows/rpg-skills/flow';
 
 // #region Helper Functions for Stat Generation
 // This logic is now part of the server action to be used when a character's archetype changes.
@@ -284,8 +284,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
   }
   const { 
       name, biography, imageUrl: imageDataUri, dataPackId, tags, 
-      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt,
-      stats, rarity
+      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt, rarity
   } = validation.data;
   
   const userId = await verifyAndGetUid();
@@ -302,7 +301,14 @@ export async function saveCharacter(input: SaveCharacterInput) {
     const userRef = adminDb.collection('users').doc(userId);
     
     const isPlayable = !!archetype;
+    let finalStats: RpgAttributes['stats'] = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
+    let finalRarity: Character['core']['rarity'] = rarity || 1;
 
+    if (archetype) {
+        finalStats = generateBalancedStats(archetype);
+        finalRarity = calculateRarity(finalStats);
+    }
+    
     await adminDb.runTransaction(async (transaction) => {
         const userDoc = await transaction.get(userRef);
         const userData = userDoc.data();
@@ -325,7 +331,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 physicalDescription: physicalDescription || null,
                 timeline: [],
                 tags: uniqueTags,
-                rarity: rarity || 1,
+                rarity: finalRarity,
             },
             visuals: {
                 imageUrl: storageUrl,
@@ -364,9 +370,9 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 level: 1,
                 experience: 0,
                 skills: [],
-                statsStatus: stats ? 'complete' : 'pending', 
+                statsStatus: isPlayable ? 'complete' : 'pending',
                 skillsStatus: 'pending',
-                stats: stats || { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 },
+                stats: finalStats,
             }
         };
 
@@ -457,7 +463,8 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
   }
 }
 
-export async function regenerateCharacterAttributes(characterId: string): Promise<ActionResponse> {
+
+export async function generateCharacterSkillsAction(characterId: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     if (!adminDb) {
         return { success: false, message: 'Database service is unavailable.' };
@@ -466,7 +473,7 @@ export async function regenerateCharacterAttributes(characterId: string): Promis
     const charRef = adminDb.collection('characters').doc(characterId);
 
     try {
-        await charRef.update({ 'rpg.skillsStatus': 'pending', 'rpg.statsStatus': 'pending' });
+        await charRef.update({ 'rpg.skillsStatus': 'pending' });
         revalidatePath(`/characters/${characterId}/edit`);
 
         const charDoc = await charRef.get();
@@ -481,31 +488,22 @@ export async function regenerateCharacterAttributes(characterId: string): Promis
             throw new Error('Character must have an Archetype to generate skills.');
         }
         
-        // The generateCharacterSheet flow is now used to regenerate attributes.
-        // We pass the existing character description to get a full, consistent output.
-        const result = await generateCharacterSheet({
-            description: character.generation.originalPrompt || character.core.name,
-            targetLanguage: 'English', // Or detect language from character data
-            engineConfig: { // Use a default engine for regeneration
-                engineId: 'gemini',
-                modelId: 'gemini-1.5-flash-latest'
-            }
+        const result = await generateCharacterSkills({
+            archetype: character.core.archetype,
+            biography: character.core.biography,
+            equipment: character.core.equipment || [],
         });
 
         await charRef.update({
-            'rpg.stats': result.stats,
-            'core.rarity': result.rarity,
-            'rpg.skills': result.skills?.map(skill => ({...skill, id: uuidv4() })) || [],
+            'rpg.skills': result.skills,
             'rpg.skillsStatus': 'complete',
-            'rpg.statsStatus': 'complete',
-            'rpg.isPlayable': true,
         });
         
         revalidatePath(`/characters/${characterId}/edit`);
 
         return {
             success: true,
-            message: 'Character attributes regenerated successfully!',
+            message: 'Character skills generated successfully!',
             skills: result.skills || [],
         };
 
@@ -513,9 +511,8 @@ export async function regenerateCharacterAttributes(characterId: string): Promis
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
         await charRef.update({ 
             'rpg.skillsStatus': 'failed',
-            'rpg.statsStatus': 'failed',
         }).catch(() => {});
         revalidatePath(`/characters/${characterId}/edit`);
-        return { success: false, message: 'Failed to generate attributes.', error: message };
+        return { success: false, message: 'Failed to generate skills.', error: message };
     }
 }

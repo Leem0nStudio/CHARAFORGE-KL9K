@@ -3,79 +3,19 @@
 
 /**
  * @fileOverview Character sheet generation AI agent.
- * This flow generates a structured character sheet from a simple description,
- * including RPG stats and rarity calculated based on the generated archetype.
- * It will also generate a set of skills if an archetype is present.
+ * This flow generates a structured character sheet from a simple description.
+ * It's now the single point of entry for creating the core text attributes of a character.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
 import { 
   GenerateCharacterSheetInputSchema, 
   GenerateCharacterSheetOutputSchema, 
   type GenerateCharacterSheetInput, 
   type GenerateCharacterSheetOutput,
-  SkillSchema
 } from './types';
-import type { RpgAttributes, Character } from '@/types/character';
+import type { Character } from '@/types/character';
 
-// #region "Intelligent Dice Roll" Stat Generation Logic
-type Stat = keyof RpgAttributes['stats'];
-const STAT_KEYS: Stat[] = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
-
-const archetypeStatPriorities: Record<string, [Stat, Stat] | [Stat]> = {
-    Artificer: ['intelligence', 'constitution'],
-    Barbarian: ['strength', 'constitution'],
-    Bard: ['charisma', 'dexterity'],
-    Cleric: ['wisdom', 'constitution'],
-    Druid: ['wisdom', 'constitution'],
-    Fighter: ['strength', 'dexterity'],
-    Monk: ['dexterity', 'wisdom'],
-    Paladin: ['strength', 'charisma'],
-    Ranger: ['dexterity', 'wisdom'],
-    Rogue: ['dexterity', 'charisma'],
-    Sorcerer: ['charisma', 'constitution'],
-    Warlock: ['charisma', 'constitution'],
-    Wizard: ['intelligence', 'constitution'],
-};
-
-function roll4d6DropLowest(): number {
-    const rolls = Array(4).fill(0).map(() => Math.floor(Math.random() * 6) + 1);
-    rolls.sort((a, b) => a - b);
-    rolls.shift();
-    return rolls.reduce((sum, roll) => sum + roll, 0);
-}
-
-function generateStats(archetype: string): RpgAttributes['stats'] {
-    const statPool = Array(6).fill(0).map(() => roll4d6DropLowest());
-    statPool.sort((a, b) => b - a);
-
-    const priorities = archetypeStatPriorities[archetype as keyof typeof archetypeStatPriorities] || [];
-    const remainingStats = STAT_KEYS.filter(stat => !priorities.includes(stat));
-
-    const finalStats: Partial<RpgAttributes['stats']> = {};
-
-    priorities.forEach((priorityStat) => {
-        finalStats[priorityStat] = statPool.shift();
-    });
-
-    remainingStats.forEach(stat => {
-        finalStats[stat] = statPool.shift();
-    });
-
-    return finalStats as RpgAttributes['stats'];
-}
-
-function calculateRarity(stats: RpgAttributes['stats']): Character['core']['rarity'] {
-    const totalScore = Object.values(stats).reduce((sum, value) => sum + value, 0);
-
-    if (totalScore >= 90) return 5;
-    if (totalScore >= 80) return 4;
-    if (totalScore >= 65) return 3;
-    if (totalScore >= 50) return 2;
-    return 1;
-}
-// #endregion
 
 export async function generateCharacterSheet(input: GenerateCharacterSheetInput): Promise<GenerateCharacterSheetOutput> {
   return generateCharacterSheetFlow(input);
@@ -88,11 +28,11 @@ const generateCharacterSheetFlow = ai.defineFlow(
     outputSchema: GenerateCharacterSheetOutputSchema,
   },
   async (input) => {
-    const { description, targetLanguage, engineConfig, existingCharacter } = input;
+    const { description, targetLanguage, engineConfig } = input;
     const { engineId, modelId, userApiKey } = engineConfig;
     
-    // This prompt now asks the AI to determine the archetype from the description.
-    let prompt = `You are a professional writer and game master specializing in creating rich character details. Your task is to generate a complete character sheet from a user's description.
+    // This prompt asks the AI to determine the archetype from the description.
+    const prompt = `You are a professional writer and game master specializing in creating rich character details. Your task is to generate a complete character sheet from a user's description.
 
     Based on the provided description, generate all the required fields.
     
@@ -110,18 +50,7 @@ const generateCharacterSheetFlow = ai.defineFlow(
     - biography: A detailed, multi-paragraph biography exploring the character's backstory, personality, and motivations. Make it engaging and narrative-driven.
     `;
     
-    // Conditionally add the skill generation part to the prompt if an archetype exists
-    const archetype = existingCharacter?.core?.archetype;
-    if (archetype) {
-      prompt += `
-      - skills: The character's archetype is '${archetype}'. Based on this and their biography, generate a set of 3-4 thematic and balanced skills. Each skill must have a name, a description of what it does, a power level (1-10), and a type (attack, defense, utility).
-      `;
-    }
-
-    // This schema is for the AI output, which does NOT include stats/rarity yet.
-    const AiOutputSchema = GenerateCharacterSheetOutputSchema.omit({ stats: true, rarity: true });
-
-    let aiOutput: z.infer<typeof AiOutputSchema>;
+    let aiOutput: z.infer<typeof GenerateCharacterSheetOutputSchema>;
 
     if (engineId === 'openrouter') {
         const systemApiKey = process.env.OPENROUTER_API_KEY;
@@ -135,7 +64,7 @@ const generateCharacterSheetFlow = ai.defineFlow(
             model: modelId,
             prompt: prompt,
             output: {
-                schema: AiOutputSchema,
+                schema: GenerateCharacterSheetOutputSchema,
                 format: 'json',
             },
             config: {
@@ -160,7 +89,7 @@ const generateCharacterSheetFlow = ai.defineFlow(
             model: finalModelId,
             prompt: prompt,
             output: {
-                schema: AiOutputSchema,
+                schema: GenerateCharacterSheetOutputSchema,
             },
         });
         if (!output) {
@@ -169,17 +98,6 @@ const generateCharacterSheetFlow = ai.defineFlow(
         aiOutput = output;
     }
     
-    // Now that the AI has determined the archetype, generate stats and rarity.
-    const finalArchetype = aiOutput.archetype || archetype || 'Fighter'; // Use AI, existing, or default
-    const stats = generateStats(finalArchetype);
-    const rarity = calculateRarity(stats);
-    
-    // Return the combined result, fulfilling the full output schema.
-    return {
-      ...aiOutput,
-      stats,
-      rarity,
-      skills: aiOutput.skills?.map(skill => ({...skill, id: uuidv4() })),
-    };
+    return aiOutput;
   }
 );

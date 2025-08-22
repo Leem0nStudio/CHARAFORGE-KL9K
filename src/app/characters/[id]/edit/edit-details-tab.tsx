@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useTransition, useEffect, useState } from 'react';
@@ -7,8 +6,8 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
-import { updateCharacter, regenerateCharacterAttributes } from '@/app/actions/character-write';
-import { regenerateCharacterSheet } from '@/app/actions/generation';
+import { updateCharacter, generateCharacterSkillsAction } from '@/app/actions/character-write';
+import { generateCharacterSheetData } from '@/app/actions/generation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +21,7 @@ import { StarRating } from '@/components/showcase/star-rating';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { rpgArchetypes } from '@/lib/app-config';
+import { textModels } from '@/lib/app-config';
 
 
 const alignmentOptions = [
@@ -121,7 +121,14 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                     toast({ variant: 'destructive', title: 'Missing Context', description: 'Cannot regenerate without an original prompt.' });
                     return;
                 }
-                const result = await regenerateCharacterSheet(originalPrompt, 'English');
+                const result = await generateCharacterSheetData({ 
+                    description: originalPrompt, 
+                    targetLanguage: 'English',
+                    engineConfig: {
+                        engineId: 'gemini',
+                        modelId: 'gemini-1.5-flash-latest'
+                    }
+                });
 
                 if (result.success && result.data) {
                     form.setValue('biography', result.data.biography || '', { shouldDirty: true });
@@ -142,7 +149,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
     
     const handleGenerateSkills = () => {
         startSkillGenerateTransition(async () => {
-            const result = await regenerateCharacterAttributes(character.id);
+            const result = await generateCharacterSkillsAction(character.id);
              if (result.success && result.skills) {
                  toast({ title: 'Skills Generated!', description: result.message });
                  router.refresh();

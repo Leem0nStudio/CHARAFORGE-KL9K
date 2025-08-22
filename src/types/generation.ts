@@ -1,5 +1,4 @@
 
-
 /**
  * @fileoverview This file contains data types related to the AI generation process
  * that are safe to be used in Client Components. It avoids importing server-only
@@ -9,6 +8,7 @@
 import { z } from 'zod';
 import type { AiModel } from './ai-model';
 import type { Character } from './character';
+import type { GenerateCharacterSheetOutput } from '@/ai/flows/character-sheet/types';
 
 /**
  * Defines the configuration for a text-generation engine.
@@ -45,18 +45,10 @@ export interface ImageEngineConfig {
  * Now includes stats and rarity.
  * Safe for client-side use.
  */
-export interface GenerationResult {
-  name: string;
-  archetype?: string | null;
-  equipment?: string[] | null;
-  physicalDescription?: string | null;
-  biography?: string | null;
+export type GenerationResult = GenerateCharacterSheetOutput & {
   originalDescription?: string;
   imageUrl?: string | null;
   dataPackId?: string | null;
   textEngine?: TextEngineConfig['engineId'];
   imageEngine?: ImageEngineConfig['engineId'];
-  stats?: Character['rpg']['stats'];
-  skills?: Character['rpg']['skills'];
-  rarity?: Character['core']['rarity'];
-}
+};
