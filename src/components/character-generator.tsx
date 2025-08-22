@@ -30,7 +30,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
-import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/actions/generation";
+import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/character-generator/actions";
 import { getModels } from "@/app/actions/ai-models";
 import { getDataPackForAdmin } from "@/app/actions/datapacks";
 import { Skeleton } from "./ui/skeleton";
@@ -634,3 +634,5 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     </>
   );
 }
+
+    
