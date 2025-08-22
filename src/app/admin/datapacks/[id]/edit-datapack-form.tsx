@@ -161,7 +161,7 @@ export function EditDataPackForm({ packId }: { packId: string }) {
                      </AlertDialogContent>
                  </AlertDialog>
              )}
-            <Button type="submit" disabled={isPending || !form.formState.isDirty}>
+            <Button type="submit" disabled={isPending || (!form.formState.isDirty && !!initialData)}>
                 {isPending && <Loader2 className="animate-spin mr-2" />}
                 {initialData ? 'Save Changes' : 'Create DataPack'}
             </Button>
@@ -208,9 +208,9 @@ export function EditDataPackForm({ packId }: { packId: string }) {
                     </AlertDialogContent>
                 </AlertDialog>
             )}
-            <Button type="submit" className="flex-1" disabled={isPending || !form.formState.isDirty}>
+            <Button type="submit" className="flex-1" disabled={isPending || (!form.formState.isDirty && !!initialData)}>
                 {isPending ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2"/>}
-                {initialData ? 'Save Changes' : 'Create'}
+                {initialData ? 'Save' : 'Create'}
             </Button>
           </div>
       </div>
