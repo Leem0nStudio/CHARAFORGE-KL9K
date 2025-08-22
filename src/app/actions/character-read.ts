@@ -61,6 +61,17 @@ function toCharacterObject(docId: string, data: DocumentData): Character {
         wizardData: data.wizardData,
         originalPrompt: data.originalPrompt || data.description,
     };
+     const defaultRpg = {
+        isPlayable: data.rpg?.isPlayable ?? !!(data.core?.archetype || data.archetype),
+        level: data.rpg?.level || 1,
+        experience: data.rpg?.experience || 0,
+        skills: data.rpg?.skills || [],
+        statsStatus: data.rpg?.statsStatus || 'pending',
+        skillsStatus: data.rpg?.skillsStatus || 'pending',
+        stats: data.rpg?.stats || {
+            strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0,
+        },
+    };
 
     return {
         id: docId,
@@ -69,7 +80,8 @@ function toCharacterObject(docId: string, data: DocumentData): Character {
         meta: { ...defaultMeta, ...data.meta, createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date() },
         lineage: { ...defaultLineage, ...data.lineage },
         settings: { ...defaultSettings, ...data.settings },
-        generation: { ...defaultGeneration, ...data.generation }
+        generation: { ...defaultGeneration, ...data.generation },
+        rpg: { ...defaultRpg, ...data.rpg }
     } as Character;
 }
 
