@@ -265,7 +265,10 @@ export function MyModelsTab() {
     };
     
     useEffect(() => {
-        fetchModels();
+        // Fetch models only once when the user profile is available.
+        if (userProfile) {
+            fetchModels();
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userProfile]);
     
