@@ -6,8 +6,8 @@ import { useTransition, useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { Character, RpgAttributes } from '@/types/character';
-import { updateCharacter, generateCharacterAttributes } from '@/app/actions/character-write';
+import type { Character } from '@/types/character';
+import { updateCharacter, generateCharacterSkills } from '@/app/actions/character-write';
 import { regenerateCharacterSheet } from '@/app/actions/generation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -76,7 +76,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
     const [character, setCharacter] = useState(initialCharacter);
     const [isUpdating, startUpdateTransition] = useTransition();
     const [isRegenerating, startRegenerateTransition] = useTransition();
-    const [isRpgGenerating, startRpgGenerateTransition] = useTransition();
+    const [isSkillGenerating, startSkillGenerateTransition] = useTransition();
     
     useEffect(() => {
         setCharacter(initialCharacter);
@@ -140,29 +140,24 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
         });
     };
     
-    const handleGenerateRpgAttributes = () => {
-        if (!character.core.archetype) {
-            toast({ variant: 'destructive', title: 'Archetype Required', description: 'Please assign a class/archetype to the character before generating attributes.'});
-            return;
-        }
-        startRpgGenerateTransition(async () => {
-            const result = await generateCharacterAttributes(character.id);
-            if (result.success && result.attributes) {
-                 toast({ title: 'Attributes Generated!', description: result.message });
-                 // Manually update the local state to reflect the changes immediately
-                 setCharacter(prev => ({...prev, rpg: result.attributes!, core: {...prev.core, rarity: result.attributes!.rarity}}));
-                 router.refresh(); // Still refresh to ensure full consistency
-            } else {
+    const handleGenerateSkills = () => {
+        startSkillGenerateTransition(async () => {
+            const result = await generateCharacterSkills(character.id);
+             if (result.success && result.skills) {
+                 toast({ title: 'Skills Generated!', description: result.message });
+                 router.refresh();
+             } else {
                  toast({ variant: 'destructive', title: 'Generation Failed', description: result.error || result.message });
-            }
+                 router.refresh();
+             }
         });
     };
 
     const rpg = character.rpg;
     const isPlayable = rpg?.isPlayable;
-    const isGenerationNeeded = rpg?.statsStatus === 'pending' || rpg?.skillsStatus === 'pending';
-    const attributesComplete = rpg?.statsStatus === 'complete';
-    const generationFailed = rpg?.statsStatus === 'failed' || rpg?.skillsStatus === 'failed';
+    const statsAreSet = rpg?.stats.strength > 0;
+    const skillsAreSet = rpg?.skills.length > 0;
+    const generationFailed = rpg?.skillsStatus === 'failed';
 
     return (
         <Card>
@@ -270,40 +265,38 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                     </CardHeader>
                      {isPlayable ? (
                         <div className="grid lg:grid-cols-3 gap-8">
-                            <div className="space-y-6">
-                                <div className="p-4 rounded-lg border bg-muted/30">
-                                    <h3 className="font-semibold mb-3 flex items-center gap-2"><Dna className="text-primary"/> Base Stats</h3>
-                                    {attributesComplete ? (
-                                        <div className="grid grid-cols-3 gap-2">
-                                            <StatDisplay label="STR" value={rpg.stats.strength} />
-                                            <StatDisplay label="DEX" value={rpg.stats.dexterity} />
-                                            <StatDisplay label="CON" value={rpg.stats.constitution} />
-                                            <StatDisplay label="INT" value={rpg.stats.intelligence} />
-                                            <StatDisplay label="WIS" value={rpg.stats.wisdom} />
-                                            <StatDisplay label="CHA" value={rpg.stats.charisma} />
-                                        </div>
-                                    ) : (
-                                         <p className="text-sm text-muted-foreground">Stats are ready to be generated.</p>
-                                    )}
-                                </div>
-                                <Button onClick={handleGenerateRpgAttributes} disabled={isRpgGenerating}>
-                                    {isRpgGenerating ? <Loader2 className="animate-spin mr-2"/> : <RefreshCw className="mr-2"/>}
-                                    {attributesComplete ? 'Regenerate Attributes' : 'Generate Attributes'}
-                                </Button>
+                            <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
+                                <h3 className="font-semibold flex items-center gap-2"><Dna className="text-primary"/> Base Stats</h3>
+                                {statsAreSet ? (
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <StatDisplay label="STR" value={rpg.stats.strength} />
+                                        <StatDisplay label="DEX" value={rpg.stats.dexterity} />
+                                        <StatDisplay label="CON" value={rpg.stats.constitution} />
+                                        <StatDisplay label="INT" value={rpg.stats.intelligence} />
+                                        <StatDisplay label="WIS" value={rpg.stats.wisdom} />
+                                        <StatDisplay label="CHA" value={rpg.stats.charisma} />
+                                    </div>
+                                ) : (
+                                     <p className="text-sm text-muted-foreground">Stats are generated automatically when you save the character with an Archetype.</p>
+                                )}
                              </div>
-                             <div className="lg:col-span-2 p-4 rounded-lg border bg-muted/30">
-                                <h3 className="font-semibold mb-3 flex items-center gap-2"><Swords className="text-primary"/> Combat Skills</h3>
-                                <div className="space-y-2">
-                                    {isRpgGenerating ? (
-                                        <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="animate-spin" /> Generating skills...</div>
-                                    ) : rpg.skills.length > 0 ? (
-                                        rpg.skills.map(skill => <SkillDisplay key={skill.id} skill={skill} />)
-                                    ) : generationFailed ? (
-                                        <p className="text-sm text-destructive">Skill generation failed.</p>
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground">No skills generated yet. Click "Generate" to create them.</p>
-                                    )}
-                                </div>
+                             <div className="lg:col-span-2 space-y-4 p-4 rounded-lg border bg-muted/30">
+                                <h3 className="font-semibold flex items-center gap-2"><Swords className="text-primary"/> Combat Skills</h3>
+                                {isSkillGenerating ? (
+                                    <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="animate-spin" /> Generating skills...</div>
+                                ) : skillsAreSet ? (
+                                     <div className="space-y-2">
+                                        {rpg.skills.map(skill => <SkillDisplay key={skill.id} skill={skill} />)}
+                                     </div>
+                                ) : generationFailed ? (
+                                    <p className="text-sm text-destructive">Skill generation failed. You can try again.</p>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No skills generated yet. Click "Generate" to create them.</p>
+                                )}
+                                <Button onClick={handleGenerateSkills} disabled={isSkillGenerating}>
+                                    {isSkillGenerating ? <Loader2 className="animate-spin mr-2"/> : <RefreshCw className="mr-2"/>}
+                                    {skillsAreSet ? 'Regenerate Skills' : 'Generate Skills'}
+                                </Button>
                             </div>
                         </div>
                      ) : (

@@ -10,14 +10,75 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadToStorage } from '@/services/storage';
 import { UpdateCharacterSchema, SaveCharacterInputSchema, type SaveCharacterInput } from '@/types/character';
-import { generateAllRpgAttributesFlow } from '@/ai/flows/rpg-attributes/flow';
+import { generateCharacterSkills } from '@/ai/flows/rpg-skills/flow';
+
+// #region Helper Functions for Stat Generation
+// This logic is now part of the server action to be used when a character's archetype changes.
+type Stat = keyof RpgAttributes['stats'];
+const STAT_KEYS: Stat[] = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+
+const archetypeStatPriorities: Record<string, [Stat, Stat] | [Stat]> = {
+    Artificer: ['intelligence', 'constitution'],
+    Barbarian: ['strength', 'constitution'],
+    Bard: ['charisma', 'dexterity'],
+    Cleric: ['wisdom', 'constitution'],
+    Druid: ['wisdom', 'constitution'],
+    Fighter: ['strength', 'dexterity'],
+    Monk: ['dexterity', 'wisdom'],
+    Paladin: ['strength', 'charisma'],
+    Ranger: ['dexterity', 'wisdom'],
+    Rogue: ['dexterity', 'charisma'],
+    Sorcerer: ['charisma', 'constitution'],
+    Warlock: ['charisma', 'constitution'],
+    Wizard: ['intelligence', 'constitution'],
+};
+
+function roll4d6DropLowest(): number {
+    const rolls = Array(4).fill(0).map(() => Math.floor(Math.random() * 6) + 1);
+    rolls.sort((a, b) => a - b);
+    rolls.shift();
+    return rolls.reduce((sum, roll) => sum + roll, 0);
+}
+
+function generateBalancedStats(archetype: string): RpgAttributes['stats'] {
+    const statPool = Array(6).fill(0).map(() => roll4d6DropLowest());
+    statPool.sort((a, b) => b - a);
+
+    const priorities = archetypeStatPriorities[archetype as keyof typeof archetypeStatPriorities] || [];
+    const remainingStats = STAT_KEYS.filter(stat => !priorities.includes(stat));
+
+    const finalStats: Partial<RpgAttributes['stats']> = {};
+
+    priorities.forEach((priorityStat) => {
+        const value = statPool.shift();
+        if (value !== undefined) finalStats[priorityStat] = value;
+    });
+
+    remainingStats.forEach(stat => {
+        const value = statPool.shift();
+        if (value !== undefined) finalStats[stat] = value;
+    });
+
+    return finalStats as RpgAttributes['stats'];
+}
+
+function calculateRarity(stats: RpgAttributes['stats']): Character['core']['rarity'] {
+    const totalScore = Object.values(stats).reduce((sum, value) => sum + value, 0);
+    if (totalScore >= 90) return 5;
+    if (totalScore >= 80) return 4;
+    if (totalScore >= 65) return 3;
+    if (totalScore >= 50) return 2;
+    return 1;
+}
+// #endregion
 
 
 type ActionResponse = {
     success: boolean;
     message: string;
     characterId?: string;
-    attributes?: RpgAttributes;
+    skills?: RpgAttributes['skills'];
+    error?: string;
 };
 
 export async function deleteCharacter(characterId: string) {
@@ -182,14 +243,24 @@ export async function updateCharacter(
     
     const hasClassChanged = existingData.core.archetype !== (archetype || null);
     
-    // If the class has changed, reset the RPG attributes so the user knows to regenerate them.
     if (hasClassChanged) {
-        updates['rpg.statsStatus'] = 'pending';
-        updates['rpg.skillsStatus'] = 'pending';
+        if (archetype) {
+            const newStats = generateBalancedStats(archetype);
+            const newRarity = calculateRarity(newStats);
+            updates['rpg.stats'] = newStats;
+            updates['core.rarity'] = newRarity;
+            updates['rpg.statsStatus'] = 'complete';
+            updates['rpg.isPlayable'] = true;
+        } else {
+            // Reset stats if class is removed
+            updates['rpg.stats'] = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
+            updates['core.rarity'] = 1;
+            updates['rpg.isPlayable'] = false;
+        }
+        
+        // Reset skills whenever the class changes, as they become irrelevant.
         updates['rpg.skills'] = [];
-        updates['rpg.stats'] = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
-        updates['core.rarity'] = 1;
-        updates['rpg.isPlayable'] = !!archetype;
+        updates['rpg.skillsStatus'] = 'pending';
     }
   
     await characterRef.update(updates);
@@ -386,13 +457,7 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
   }
 }
 
-/**
- * A new, direct server action to generate RPG attributes for a character.
- * This replaces the complex Task Queue flow.
- * @param characterId The ID of the character to generate attributes for.
- * @returns A promise that resolves to an ActionResponse containing the new attributes.
- */
-export async function generateCharacterAttributes(characterId: string): Promise<ActionResponse> {
+export async function generateCharacterSkills(characterId: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     if (!adminDb) {
         return { success: false, message: 'Database service is unavailable.' };
@@ -401,6 +466,9 @@ export async function generateCharacterAttributes(characterId: string): Promise<
     const charRef = adminDb.collection('characters').doc(characterId);
 
     try {
+        await charRef.update({ 'rpg.skillsStatus': 'pending' });
+        revalidatePath(`/characters/${characterId}/edit`);
+
         const charDoc = await charRef.get();
         if (!charDoc.exists) {
             throw new Error('Character not found.');
@@ -410,18 +478,17 @@ export async function generateCharacterAttributes(characterId: string): Promise<
             throw new Error('Permission denied.');
         }
         if (!character.core.archetype) {
-            throw new Error('Character must have an Archetype to generate attributes.');
+            throw new Error('Character must have an Archetype to generate skills.');
         }
 
-        // Directly call the Genkit flow
-        const attributes = await generateAllRpgAttributesFlow(character);
+        const result = await generateCharacterSkills({
+            archetype: character.core.archetype,
+            equipment: character.core.equipment || [],
+            biography: character.core.biography,
+        });
 
-        // Update Firestore with the complete set of new attributes
         await charRef.update({
-            'rpg.stats': attributes.stats,
-            'core.rarity': attributes.rarity,
-            'rpg.skills': attributes.skills,
-            'rpg.statsStatus': 'complete',
+            'rpg.skills': result.skills,
             'rpg.skillsStatus': 'complete',
         });
         
@@ -429,18 +496,16 @@ export async function generateCharacterAttributes(characterId: string): Promise<
 
         return {
             success: true,
-            message: 'Character attributes generated successfully!',
-            attributes: { ...attributes, isPlayable: true, level: 1, experience: 0 } as RpgAttributes,
+            message: 'Character skills generated successfully!',
+            skills: result.skills,
         };
 
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        // Ensure status is set to failed on error
         await charRef.update({ 
-            'rpg.statsStatus': 'failed',
             'rpg.skillsStatus': 'failed',
         }).catch(() => {});
         revalidatePath(`/characters/${characterId}/edit`);
-        return { success: false, message: 'Failed to generate attributes.', error: message };
+        return { success: false, message: 'Failed to generate skills.', error: message };
     }
 }

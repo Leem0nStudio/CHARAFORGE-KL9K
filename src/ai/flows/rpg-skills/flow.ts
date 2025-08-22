@@ -4,7 +4,7 @@
 
 /**
  * @fileOverview An AI agent for generating character RPG skills.
- * @deprecated This flow is now part of the unified `rpg-attributes` flow and will be removed.
+ * This is a self-contained flow focused only on skill generation.
  */
 import { ai } from '@/ai/genkit';
 import { 
@@ -31,7 +31,7 @@ export const generateSkillsFlow = ai.defineFlow(
 
     Character Profile:
     - Archetype/Class: ${input.archetype}
-    - Key Equipment: ${input.equipment.join(', ') || 'None'}
+    - Key Equipment: ${input.equipment?.join(', ') || 'None'}
     - Biography Summary: ${input.biography.substring(0, 500)}...
 
     Instructions:
