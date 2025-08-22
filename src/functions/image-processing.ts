@@ -3,6 +3,7 @@
  * This function is triggered when a new image is uploaded to the `raw-uploads/`
  * path in Firebase Storage. It performs several processing steps and saves
  * the result to a different path, updating the character's Firestore document.
+ * It will also trigger the RPG stat generation flow.
  */
 
 import { logger } from 'firebase-functions/v2';
@@ -13,6 +14,9 @@ import { initializeApp, getApps } from 'firebase-admin/app';
 import * as path from 'path';
 import sharp from 'sharp';
 import FormData from 'form-data';
+
+// TODO: Import the stat generation flow when it's created.
+// import { generateCharacterStats } from '@/ai/flows/generate-character-stats/flow';
 
 // Initialize Firebase Admin SDK if not already done
 if (getApps().length === 0) {
@@ -166,8 +170,16 @@ export const processUploadedImage = onObjectFinalized({
             'visuals.showcaseImageUrl': publicUrl,
             'visuals.isShowcaseProcessed': true,
             'visuals.showcaseProcessingStatus': 'complete',
+            // Set initial RPG stats state
+            'rpg.statsStatus': 'pending',
         });
         logger.log(`Successfully updated Firestore for character '${characterId}'.`);
+        
+        // Asynchronously trigger the stat generation. No need to wait for it.
+        // TODO: Uncomment this when the stat generation flow is created.
+        // generateCharacterStats({ characterId }).catch(err => {
+        //     logger.error(`Failed to trigger stat generation for character ${characterId}`, err);
+        // });
         
         await bucket.file(filePath).delete();
         logger.log(`Successfully deleted raw file: '${filePath}'.`);

@@ -16,6 +16,31 @@ export interface TimelineEvent {
 export type ShowcaseProcessingStatus = 'idle' | 'removing-background' | 'upscaling' | 'finalizing' | 'complete' | 'failed';
 
 /**
+ * Defines the attributes for the RPG / gamification system.
+ */
+export interface RpgAttributes {
+    stats: {
+        strength: number;
+        dexterity: number;
+        constitution: number;
+        intelligence: number;
+        wisdom: number;
+        charisma: number;
+    };
+    skills: {
+        id: string; // ID of the skill
+        name: string;
+        description: string;
+        power: number;
+        type: 'attack' | 'defense' | 'utility';
+    }[];
+    level: number;
+    experience: number;
+    statsStatus: 'pending' | 'complete' | 'failed'; // Status for the stat generation
+}
+
+
+/**
  * A more professional, modular structure for the Character object.
  * Properties are grouped into logical sub-objects for clarity and maintainability.
  */
@@ -79,6 +104,9 @@ export type Character = {
     wizardData?: Record<string, string> | null;
     originalPrompt?: string; // The original simple text prompt
   }
+  
+  // RPG / Gamification attributes
+  rpg?: RpgAttributes;
 };
 
 // Zod validation schemas updated to reflect the new structure.
