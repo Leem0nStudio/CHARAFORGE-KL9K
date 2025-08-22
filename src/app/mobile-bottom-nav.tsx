@@ -12,7 +12,8 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const { authUser } = useAuth();
   
-  const items = mainNavItems;
+  // Filter out items that require auth if user is not logged in, but keep the primary action
+  const items = mainNavItems.filter(item => !item.requiresAuth || authUser || item.isPrimary);
   const numItems = items.length;
 
   return (
@@ -22,12 +23,10 @@ export function MobileBottomNav() {
           const isActive = (item.href === '/' && pathname === '/') || (item.href !== '/' && pathname.startsWith(item.href));
           
           if (item.requiresAuth && !authUser) {
-            return (
-              <Link href="/login" key={item.href} className="inline-flex flex-col items-center justify-center px-5 opacity-50 cursor-pointer">
-                  <item.icon className="w-5 h-5 mb-1" />
-                  <span className="text-xs">{item.label}</span>
-              </Link>
-            )
+            return <div key={item.href} className="inline-flex flex-col items-center justify-center px-5 opacity-50 cursor-not-allowed">
+                <item.icon className="w-5 h-5 mb-1" />
+                <span className="text-xs">{item.label}</span>
+            </div>
           }
 
           if (item.isPrimary) {
