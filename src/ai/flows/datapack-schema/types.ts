@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Data schemas and types for the DataPack schema generation flow.
  * The output schema is now a single string containing the YAML content, which

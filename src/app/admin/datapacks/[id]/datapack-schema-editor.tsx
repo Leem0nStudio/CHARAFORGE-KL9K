@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { DataPackFormValues, DataPackSchema, EquipmentOption } from '@/types/datapack';
+import type { DataPackFormValues, DataPackSchema } from '@/types/datapack';
 import { AiGeneratorDialog } from './ai-generator-dialog';
 import { Loader2, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -100,10 +100,11 @@ function EquipmentSlotAccordion({ control }: { control: any }) {
     );
 }
 
-export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating }: { 
+export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating, onAiGeneratingChange }: { 
     form: ReturnType<typeof useFormContext<DataPackFormValues>>,
     onAiSchemaGenerated: (schema: DataPackSchema, tags: string[]) => void,
     isAiGenerating: boolean,
+    onAiGeneratingChange: (isGenerating: boolean) => void,
 }) {
   const { control } = form;
   const { fields, append, remove } = useFieldArray({
@@ -120,7 +121,7 @@ export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating
            </CardTitle>
            {isAiGenerating && <Loader2 className="animate-spin text-primary" />}
         </div>
-        <AiGeneratorDialog onSchemaGenerated={onAiSchemaGenerated} onGeneratingChange={() => {}} isGenerating={isAiGenerating} />
+        <AiGeneratorDialog onSchemaGenerated={onAiSchemaGenerated} onGeneratingChange={onAiGeneratingChange} />
       </CardHeader>
       <CardContent className="space-y-6">
         

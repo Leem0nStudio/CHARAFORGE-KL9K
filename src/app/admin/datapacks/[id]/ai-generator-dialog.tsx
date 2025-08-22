@@ -26,14 +26,13 @@ import type { DataPackSchema } from '@/types/datapack';
 interface AiGeneratorDialogProps {
     onSchemaGenerated: (schema: DataPackSchema, tags: string[]) => void;
     onGeneratingChange: (isGenerating: boolean) => void;
-    isGenerating: boolean;
 }
 
-export function AiGeneratorDialog({ onSchemaGenerated, onGeneratingChange, isGenerating }: AiGeneratorDialogProps) {
+export function AiGeneratorDialog({ onSchemaGenerated, onGeneratingChange }: AiGeneratorDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [concept, setConcept] = useState('');
     const { toast } = useToast();
-    const [_, startTransition] = useTransition();
+    const [isGenerating, startTransition] = useTransition();
 
     const handleGenerate = () => {
         if (!concept) return;

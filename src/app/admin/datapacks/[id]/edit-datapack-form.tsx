@@ -139,6 +139,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
                 form={form} 
                 onAiSchemaGenerated={handleAiSchemaGenerated}
                 isAiGenerating={isAiGenerating}
+                onAiGeneratingChange={setIsAiGenerating}
             />
         </TabsContent>
       </Tabs>

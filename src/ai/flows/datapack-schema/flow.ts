@@ -32,13 +32,13 @@ Instructions:
 2.  **Prompt Templates**: Generate 2-3 diverse 'promptTemplates'. Each template should use placeholders (e.g., {raceClass}, {torso_armor}) that correspond to the slots you will define in the 'characterProfileSchema'.
 3.  **Character Profile Schema**:
     *   Create a rich 'characterProfileSchema' with many granular slots for appearance and equipment.
+    *   **GRANULARITY IS KEY**: You MUST create separate, granular slots for different parts of the character, especially for clothing. Instead of one 'clothing' slot, you MUST create specific slots like 'headwear', 'topwear', 'bottomwear', 'footwear', etc.
     *   Use nested keys for equipment (e.g., head.clothing, torso.armor).
     *   For EVERY slot, provide 4-5 creative, thematically consistent options.
     *   Each option MUST have a 'label' for the UI and a 'value' for the prompt. The 'value' should be a descriptive phrase ready for use in a prompt.
 4.  **Tags**: Generate an array of 5-7 relevant, single-word, lowercase tags that categorize the datapack.
 
 Example YAML structure:
----
 promptTemplates:
   - name: "Cinematic Portrait"
     template: "cinematic portrait of a {raceClass} with {hair}, {eyes}, wearing {torso_armor} and {head_accessory}, in {background}, {lighting} lighting"
@@ -72,7 +72,6 @@ characterProfileSchema:
       value: "a horned, dark iron circlet"
   # ... and so on for many other slots
 tags: ["fantasy", "magic", "knights", "warlocks", "epic"]
----
 `,
 });
 
@@ -93,4 +92,3 @@ const generateDataPackSchemaFlow = ai.defineFlow(
     };
   }
 );
-
