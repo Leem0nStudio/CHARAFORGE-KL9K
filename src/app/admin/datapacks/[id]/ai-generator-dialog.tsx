@@ -46,7 +46,6 @@ export function AiGeneratorDialog({ onSchemaGenerated, onGeneratingChange }: AiG
             try {
                 const result = await generateDataPackSchema({ concept });
                 
-                // Robust YAML parsing: remove document separators '---' to handle cases where the AI includes them.
                 const cleanedYaml = result.yamlContent.replace(/---\s*/g, '');
                 const parsedSchema = yaml.load(cleanedYaml) as any;
                 
@@ -54,6 +53,7 @@ export function AiGeneratorDialog({ onSchemaGenerated, onGeneratingChange }: AiG
                     throw new Error("The AI returned invalid or empty YAML content for the schema.");
                 }
 
+                // The schema from AI is already in the correct format now.
                 const finalSchema: DataPackSchema = {
                     promptTemplates: parsedSchema.promptTemplates || [],
                     characterProfileSchema: parsedSchema.characterProfileSchema || {},

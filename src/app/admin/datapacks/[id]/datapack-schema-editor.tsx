@@ -10,51 +10,48 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { DataPackFormValues, DataPackSchema } from '@/types/datapack';
 import { AiGeneratorDialog } from './ai-generator-dialog';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, Wand2, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Helper function to render a textarea for a given field in the schema
-function JsonOptionEditor({ control, name, label, placeholder }: {
-    control: any;
-    name: any;
-    label: string;
-    placeholder: string;
-}) {
+
+function OptionEditor({ control, namePrefix }: { control: any, namePrefix: string }) {
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: namePrefix
+    });
+
     return (
-        <div className="space-y-1">
-            <Label htmlFor={name} className="font-mono text-xs">{label}</Label>
-            <Controller
-                name={name}
-                control={control}
-                render={({ field }) => {
-                    const valueAsString = typeof field.value === 'string' 
-                        ? field.value 
-                        : (field.value ? JSON.stringify(field.value, null, 2) : '');
-                    
-                    return (
-                        <Textarea
-                            id={name}
-                            className="min-h-24 font-mono text-xs"
-                            placeholder={placeholder}
-                            value={valueAsString}
-                            onChange={(e) => {
-                                try {
-                                    const parsed = JSON.parse(e.target.value);
-                                    field.onChange(parsed);
-                                } catch (error) {
-                                    // If JSON is invalid, just update the string value for now
-                                    field.onChange(e.target.value);
-                                }
-                            }}
-                        />
-                    )
-                }}
-            />
+        <div className="space-y-2">
+            {fields.map((field, index) => (
+                <div key={field.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center bg-background p-2 rounded-md">
+                    <Controller
+                        name={`${namePrefix}.${index}.label`}
+                        control={control}
+                        render={({ field }) => <Input {...field} placeholder="Label (UI)" />}
+                    />
+                     <Controller
+                        name={`${namePrefix}.${index}.value`}
+                        control={control}
+                        render={({ field }) => <Input {...field} placeholder="Value (Prompt)" />}
+                    />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                        <Trash2 className="text-destructive"/>
+                    </Button>
+                </div>
+            ))}
+             <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => append({ label: '', value: '' })}
+            >
+                <PlusCircle className="mr-2" /> Add Option
+            </Button>
         </div>
     );
 }
 
-// Helper to render the multiple equipment slots inside an accordion
+
 function EquipmentSlotAccordion({ control }: { control: any }) {
     const equipmentSlots: Array<keyof Omit<DataPackFormValues['schema']['characterProfileSchema'], 'count' | 'raceClass' | 'gender' | 'hair' | 'eyes' | 'skin' | 'facialFeatures' | 'weaponsExtra' | 'pose' | 'action' | 'camera' | 'background' | 'effects'>> = 
         ['head', 'face', 'neck', 'shoulders', 'torso', 'arms', 'hands', 'waist', 'legs', 'feet', 'back'];
@@ -66,33 +63,11 @@ function EquipmentSlotAccordion({ control }: { control: any }) {
                     <AccordionTrigger className="capitalize text-base font-semibold border bg-muted/50 px-4 rounded-md">
                         {slotName}
                     </AccordionTrigger>
-                    <AccordionContent className="p-4 border rounded-b-md">
-                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <JsonOptionEditor
-                                control={control}
-                                name={`schema.characterProfileSchema.${slotName}.clothing`}
-                                label="Clothing"
-                                placeholder={`[{"label": "T-Shirt", "value": "wearing a t-shirt"}]`}
-                            />
-                            <JsonOptionEditor
-                                control={control}
-                                name={`schema.characterProfileSchema.${slotName}.armor`}
-                                label="Armor"
-                                placeholder={`[{"label": "Leather Armor", "value": "wearing leather armor"}]`}
-                            />
-                             <JsonOptionEditor
-                                control={control}
-                                name={`schema.characterProfileSchema.${slotName}.accessory`}
-                                label="Accessory"
-                                placeholder={`[{"label": "Necklace", "value": "wearing a necklace"}]`}
-                            />
-                             <JsonOptionEditor
-                                control={control}
-                                name={`schema.characterProfileSchema.${slotName}.weapon`}
-                                label="Weapon"
-                                placeholder={`[{"label": "Sword", "value": "wielding a sword"}]`}
-                            />
-                        </div>
+                    <AccordionContent className="p-4 border rounded-b-md space-y-4">
+                       <div className="space-y-1"><Label className="font-mono text-xs">Clothing</Label><OptionEditor control={control} namePrefix={`schema.characterProfileSchema.${slotName}.clothing`} /></div>
+                       <div className="space-y-1"><Label className="font-mono text-xs">Armor</Label><OptionEditor control={control} namePrefix={`schema.characterProfileSchema.${slotName}.armor`} /></div>
+                       <div className="space-y-1"><Label className="font-mono text-xs">Accessory</Label><OptionEditor control={control} namePrefix={`schema.characterProfileSchema.${slotName}.accessory`} /></div>
+                       <div className="space-y-1"><Label className="font-mono text-xs">Weapon</Label><OptionEditor control={control} namePrefix={`schema.characterProfileSchema.${slotName}.weapon`} /></div>
                     </AccordionContent>
                 </AccordionItem>
             ))}
@@ -102,7 +77,7 @@ function EquipmentSlotAccordion({ control }: { control: any }) {
 
 export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating, onAiGeneratingChange }: { 
     form: ReturnType<typeof useFormContext<DataPackFormValues>>,
-    onAiSchemaGenerated: (schema: DataPackSchema, tags: string[]) => void,
+    onAiSchemaGenerated: (schema: DataPackSchema, name: string, description: string, tags: string[]) => void,
     isAiGenerating: boolean,
     onAiGeneratingChange: (isGenerating: boolean) => void,
 }) {
@@ -159,22 +134,18 @@ export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating
         {/* General Section */}
         <div className="space-y-4 p-4 border rounded-md">
           <h3 className="font-semibold text-lg">General</h3>
-          <div className="grid md:grid-cols-3 gap-4">
-            <JsonOptionEditor control={control} name="schema.characterProfileSchema.count" label="Count" placeholder='[{"label": "1 Girl", "value": "1girl"}]' />
-            <JsonOptionEditor control={control} name="schema.characterProfileSchema.raceClass" label="Race/Class" placeholder='[{"label": "Elf Warrior", "value": "elf warrior"}]' />
-            <JsonOptionEditor control={control} name="schema.characterProfileSchema.gender" label="Gender" placeholder='[{"label": "Female", "value": "female"}]' />
-          </div>
+           <div className="space-y-1"><Label>Count</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.count" /></div>
+           <div className="space-y-1"><Label>Race/Class</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.raceClass" /></div>
+           <div className="space-y-1"><Label>Gender</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.gender" /></div>
         </div>
 
         {/* Appearance Section */}
         <div className="space-y-4 p-4 border rounded-md">
           <h3 className="font-semibold text-lg">Appearance</h3>
-          <div className="grid md:grid-cols-4 gap-4">
-            <JsonOptionEditor control={control} name="schema.characterProfileSchema.hair" label="Hair" placeholder='[{"label": "Long Hair", "value": "long hair"}]' />
-            <JsonOptionEditor control={control} name="schema.characterProfileSchema.eyes" label="Eyes" placeholder='[{"label": "Blue Eyes", "value": "blue eyes"}]' />
-            <JsonOptionEditor control={control} name="schema.characterProfileSchema.skin" label="Skin" placeholder='[{"label": "Pale Skin", "value": "pale skin"}]' />
-            <JsonOptionEditor control={control} name="schema.characterProfileSchema.facialFeatures" label="Facial Features" placeholder='[{"label": "Freckles", "value": "freckles"}]' />
-          </div>
+           <div className="space-y-1"><Label>Hair</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.hair" /></div>
+           <div className="space-y-1"><Label>Eyes</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.eyes" /></div>
+           <div className="space-y-1"><Label>Skin</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.skin" /></div>
+           <div className="space-y-1"><Label>Facial Features</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.facialFeatures" /></div>
         </div>
         
         {/* Equipment Section */}
@@ -186,13 +157,13 @@ export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating
         {/* Scene Section */}
         <div className="space-y-4 p-4 border rounded-md">
           <h3 className="font-semibold text-lg">Scene & Action</h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-             <JsonOptionEditor control={control} name="schema.characterProfileSchema.weaponsExtra" label="Extra Weapons" placeholder='[{"label": "Dagger", "value": "dagger"}]' />
-             <JsonOptionEditor control={control} name="schema.characterProfileSchema.pose" label="Pose" placeholder='[{"label": "Standing", "value": "standing"}]' />
-             <JsonOptionEditor control={control} name="schema.characterProfileSchema.action" label="Action" placeholder='[{"label": "Holding Sword", "value": "holding sword"}]' />
-             <JsonOptionEditor control={control} name="schema.characterProfileSchema.camera" label="Camera" placeholder='[{"label": "Full Body", "value": "full body"}]' />
-             <JsonOptionEditor control={control} name="schema.characterProfileSchema.background" label="Background" placeholder='[{"label": "Forest", "value": "forest"}]' />
-             <JsonOptionEditor control={control} name="schema.characterProfileSchema.effects" label="Effects" placeholder='[{"label": "Glowing Aura", "value": "glowing aura"}]' />
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-1"><Label>Extra Weapons</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.weaponsExtra" /></div>
+            <div className="space-y-1"><Label>Pose</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.pose" /></div>
+            <div className="space-y-1"><Label>Action</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.action" /></div>
+            <div className="space-y-1"><Label>Camera</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.camera" /></div>
+            <div className="space-y-1"><Label>Background</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.background" /></div>
+            <div className="space-y-1"><Label>Effects</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.effects" /></div>
           </div>
         </div>
 

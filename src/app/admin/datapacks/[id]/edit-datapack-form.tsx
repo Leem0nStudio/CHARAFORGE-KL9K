@@ -78,16 +78,11 @@ export function EditDataPackForm({ packId }: { packId: string }) {
     fetchData();
   }, [packId, form]);
 
-  const handleAiSchemaGenerated = (data: {
-      name: string;
-      description: string;
-      tags: string[];
-      schema: DataPackSchema;
-  }) => {
-      form.setValue('name', data.name, { shouldValidate: true, shouldDirty: true });
-      form.setValue('description', data.description, { shouldValidate: true, shouldDirty: true });
-      form.setValue('tags', data.tags, { shouldValidate: true, shouldDirty: true });
-      form.setValue('schema', data.schema, { shouldValidate: true, shouldDirty: true });
+  const handleAiSchemaGenerated = (schema: DataPackSchema, name: string, description: string, tags: string[]) => {
+      form.setValue('name', name, { shouldValidate: true, shouldDirty: true });
+      form.setValue('description', description, { shouldValidate: true, shouldDirty: true });
+      form.setValue('tags', tags, { shouldValidate: true, shouldDirty: true });
+      form.setValue('schema', schema, { shouldValidate: true, shouldDirty: true });
   };
 
 
