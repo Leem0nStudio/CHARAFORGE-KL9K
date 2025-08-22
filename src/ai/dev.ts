@@ -13,8 +13,8 @@ import '@/ai/flows/datapack-schema/flow';
 import '@/ai/flows/danbooru-tag-suggestion/flow';
 import '@/ai/flows/story-generation/flow';
 import '@/ai/flows/hf-model-suggestion/flow';
-import '@/ai/flows/rpg-stats/flow';
-import '@/ai/flows/rpg-skills/flow';
+import '@/ai/flows/rpg-attributes/flow';
+
 
 // Utility files are not flows, so they don't need to be imported here for dev.
 // import '@/ai/utils/llm-utils';

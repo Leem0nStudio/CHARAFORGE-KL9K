@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useTransition } from 'react';
+import { useTransition, useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -77,6 +76,7 @@ export function EditDetailsTab({ character }: { character: Character }) {
     const [isUpdating, startUpdateTransition] = useTransition();
     const [isRegenerating, startRegenerateTransition] = useTransition();
     const [isRpgGenerating, startRpgGenerateTransition] = useTransition();
+    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(FormSchema),
@@ -89,6 +89,31 @@ export function EditDetailsTab({ character }: { character: Character }) {
             physicalDescription: character.core.physicalDescription || character.generation?.originalPrompt,
         },
     });
+
+    const isGenerationInProgress = character.rpg?.statsStatus === 'pending' || character.rpg?.skillsStatus === 'pending';
+
+    useEffect(() => {
+        // Start polling if generation is in progress
+        if (isGenerationInProgress && !pollingIntervalRef.current) {
+            pollingIntervalRef.current = setInterval(() => {
+                router.refresh();
+            }, 3000); // Poll every 3 seconds
+        }
+
+        // Stop polling if generation is not in progress
+        if (!isGenerationInProgress && pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+        }
+
+        // Cleanup on unmount
+        return () => {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+                pollingIntervalRef.current = null;
+            }
+        };
+    }, [isGenerationInProgress, router]);
 
     const onSubmit = (data: FormValues) => {
         const dataToSave = {
@@ -141,11 +166,10 @@ export function EditDetailsTab({ character }: { character: Character }) {
             return;
         }
         startRpgGenerateTransition(async () => {
-            toast({ title: 'Generation Started', description: 'Forging new RPG attributes... this may take a moment.' });
+            toast({ title: 'Generation Queued', description: 'Forging new RPG attributes... this may take a moment.' });
             const result = await generateAllRpgAttributes(character.id);
-
             if (result.success) {
-                 toast({ title: 'RPG Attributes Generated!', description: result.message });
+                 // The polling will handle the UI update
             } else {
                  toast({ variant: 'destructive', title: 'Generation Failed', description: result.error || result.message });
             }
@@ -155,7 +179,6 @@ export function EditDetailsTab({ character }: { character: Character }) {
 
     const rpg = character.rpg;
     const isPlayable = rpg?.isPlayable;
-    const attributesPending = rpg?.statsStatus === 'pending' || rpg?.skillsStatus === 'pending';
     const attributesComplete = rpg?.statsStatus === 'complete' && rpg?.skillsStatus === 'complete';
     const generationFailed = rpg?.statsStatus === 'failed' || rpg?.skillsStatus === 'failed';
 
@@ -268,7 +291,7 @@ export function EditDetailsTab({ character }: { character: Character }) {
                             <div className="space-y-6">
                                 <div className="p-4 rounded-lg border bg-muted/30">
                                     <h3 className="font-semibold mb-3 flex items-center gap-2"><Dna className="text-primary"/> Base Stats</h3>
-                                    {attributesPending ? (
+                                    {isGenerationInProgress ? (
                                         <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="animate-spin" /> Generating stats...</div>
                                     ) : attributesComplete ? (
                                         <div className="grid grid-cols-3 gap-2">
@@ -283,15 +306,15 @@ export function EditDetailsTab({ character }: { character: Character }) {
                                          <p className="text-sm text-muted-foreground">Stats are ready to be generated.</p>
                                     )}
                                 </div>
-                                <Button onClick={handleGenerateRpgAttributes} disabled={isRpgGenerating || attributesPending}>
-                                    {isRpgGenerating || attributesPending ? <Loader2 className="animate-spin mr-2"/> : <RefreshCw className="mr-2"/>}
+                                <Button onClick={handleGenerateRpgAttributes} disabled={isRpgGenerating || isGenerationInProgress}>
+                                    {isRpgGenerating || isGenerationInProgress ? <Loader2 className="animate-spin mr-2"/> : <RefreshCw className="mr-2"/>}
                                     {attributesComplete ? 'Regenerate Attributes' : 'Generate Attributes'}
                                 </Button>
                              </div>
                              <div className="lg:col-span-2 p-4 rounded-lg border bg-muted/30">
                                 <h3 className="font-semibold mb-3 flex items-center gap-2"><Swords className="text-primary"/> Combat Skills</h3>
                                 <div className="space-y-2">
-                                    {attributesPending ? (
+                                    {isGenerationInProgress ? (
                                         <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="animate-spin" /> Generating skills...</div>
                                     ) : attributesComplete && rpg.skills.length > 0 ? (
                                         rpg.skills.map(skill => <SkillDisplay key={skill.id} skill={skill} />)

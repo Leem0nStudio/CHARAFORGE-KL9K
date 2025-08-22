@@ -1,8 +1,10 @@
 
+
 'use server';
 
 /**
  * @fileOverview An AI agent for generating character RPG skills.
+ * @deprecated This flow is now part of the unified `rpg-attributes` flow and will be removed.
  */
 import { ai } from '@/ai/genkit';
 import { 

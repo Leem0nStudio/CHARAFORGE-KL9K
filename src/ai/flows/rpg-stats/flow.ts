@@ -3,6 +3,8 @@
 
 /**
  * @fileOverview An AI agent for generating character RPG stats.
+ * @deprecated This flow is no longer used. Stat generation is now a deterministic function
+ * within the unified `rpg-attributes` flow.
  */
 import { ai } from '@/ai/genkit';
 import { 
