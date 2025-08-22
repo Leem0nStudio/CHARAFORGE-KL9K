@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useTransition } from 'react';
@@ -18,9 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Wand2, Dna, Swords, Shield, BrainCircuit, AlertCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Star } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { StarRating } from '@/components/showcase/star-rating';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { rpgArchetypes } from '@/lib/app-config';
@@ -39,7 +38,6 @@ const FormSchema = z.object({
   biography: z.string().min(1, "Biography is required.").max(15000, "Biography is too long."),
   alignment: z.enum(alignmentOptions),
   physicalDescription: z.string().optional(),
-  rarity: z.number().min(1).max(5),
 });
 type FormValues = z.infer<typeof FormSchema>;
 
@@ -89,14 +87,12 @@ export function EditDetailsTab({ character }: { character: Character }) {
             biography: character.core.biography,
             alignment: character.core.alignment || 'True Neutral',
             physicalDescription: character.core.physicalDescription || character.generation?.originalPrompt,
-            rarity: character.core.rarity || 3,
         },
     });
 
     const onSubmit = (data: FormValues) => {
         const dataToSave = {
             ...data,
-            // If archetype is 'no-class', send null to the server action
             archetype: data.archetype === 'no-class' ? undefined : data.archetype,
         };
         startUpdateTransition(async () => {
@@ -234,27 +230,9 @@ export function EditDetailsTab({ character }: { character: Character }) {
                     </div>
                     
                     <div className="space-y-3">
-                        <Label htmlFor="rarity">Rarity</Label>
-                        <Controller
-                            name="rarity"
-                            control={form.control}
-                            render={({ field }) => (
-                                <RadioGroup
-                                    onValueChange={(value) => field.onChange(parseInt(value))}
-                                    defaultValue={String(field.value)}
-                                    className="grid grid-cols-5 gap-2"
-                                >
-                                {[1, 2, 3, 4, 5].map(rarity => (
-                                    <Label key={rarity} htmlFor={`rarity-${rarity}`} className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === rarity && "border-primary")}>
-                                        <RadioGroupItem value={String(rarity)} id={`rarity-${rarity}`} className="sr-only" />
-                                        <div className="flex">
-                                            {Array.from({length: rarity}).map((_, i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400" />)}
-                                        </div>
-                                    </Label>
-                                ))}
-                                </RadioGroup>
-                            )}
-                        />
+                        <Label>Rarity</Label>
+                        <StarRating rating={character.core.rarity || 1} />
+                         <p className="text-xs text-muted-foreground">Rarity is automatically calculated based on the character's generated stats.</p>
                     </div>
 
                     <div className="space-y-2">

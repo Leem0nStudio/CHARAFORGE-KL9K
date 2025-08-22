@@ -5,11 +5,72 @@
 import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
-import type { Character, TimelineEvent } from '@/types/character';
+import type { Character, TimelineEvent, RpgAttributes } from '@/types/character';
 import { FieldValue } from 'firebase-admin/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadToStorage } from '@/services/storage';
 import { UpdateCharacterSchema, SaveCharacterInputSchema, type SaveCharacterInput } from '@/types/character';
+import { rpgArchetypes } from '@/lib/app-config';
+
+// #region New "Intelligent Dice Roll" and Rarity Calculation Logic
+
+type Stat = keyof RpgAttributes['stats'];
+const STAT_KEYS: Stat[] = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+
+const archetypeStatPriorities: Record<string, [Stat, Stat] | [Stat]> = {
+    Artificer: ['intelligence', 'constitution'],
+    Barbarian: ['strength', 'constitution'],
+    Bard: ['charisma', 'dexterity'],
+    Cleric: ['wisdom', 'constitution'],
+    Druid: ['wisdom', 'constitution'],
+    Fighter: ['strength', 'dexterity'],
+    Monk: ['dexterity', 'wisdom'],
+    Paladin: ['strength', 'charisma'],
+    Ranger: ['dexterity', 'wisdom'],
+    Rogue: ['dexterity', 'charisma'],
+    Sorcerer: ['charisma', 'constitution'],
+    Warlock: ['charisma', 'constitution'],
+    Wizard: ['intelligence', 'constitution'],
+};
+
+function roll4d6DropLowest(): number {
+    const rolls = Array(4).fill(0).map(() => Math.floor(Math.random() * 6) + 1);
+    rolls.sort((a, b) => a - b);
+    rolls.shift();
+    return rolls.reduce((sum, roll) => sum + roll, 0);
+}
+
+function generateStats(archetype: string): RpgAttributes['stats'] {
+    const statPool = Array(6).fill(0).map(() => roll4d6DropLowest());
+    statPool.sort((a, b) => b - a);
+
+    const priorities = archetypeStatPriorities[archetype as keyof typeof archetypeStatPriorities] || [];
+    const remainingStats = STAT_KEYS.filter(stat => !priorities.includes(stat));
+
+    const finalStats: Partial<RpgAttributes['stats']> = {};
+
+    priorities.forEach((priorityStat) => {
+        finalStats[priorityStat] = statPool.shift();
+    });
+
+    remainingStats.forEach(stat => {
+        finalStats[stat] = statPool.shift();
+    });
+
+    return finalStats as RpgAttributes['stats'];
+}
+
+function calculateRarity(stats: RpgAttributes['stats']): Character['core']['rarity'] {
+    const totalScore = Object.values(stats).reduce((sum, value) => sum + value, 0);
+
+    if (totalScore >= 90) return 5; // Legendary (Exceptional Rolls)
+    if (totalScore >= 80) return 4; // Epic (Very High Rolls)
+    if (totalScore >= 65) return 3; // Rare (Good Rolls)
+    if (totalScore >= 50) return 2; // Uncommon (Average Rolls)
+    return 1; // Common (Low Rolls)
+}
+
+// #endregion
 
 
 type ActionResponse = {
@@ -159,17 +220,16 @@ export async function updateCharacter(
         };
     }
     
-    const { name, biography, alignment, archetype, equipment, physicalDescription, rarity } = validatedFields.data;
+    const { name, biography, alignment, archetype, equipment, physicalDescription } = validatedFields.data;
     const characterRef = adminDb.collection('characters').doc(characterId);
     
     const characterDoc = await characterRef.get();
-    const existingData = characterDoc.data();
+    const existingData = characterDoc.data() as Character;
 
     if (!characterDoc.exists || existingData?.meta?.userId !== uid) {
         return { success: false, message: 'Permission denied or character not found.' };
     }
     
-    // Create an object with dot notation for updating nested fields in Firestore
     const updates: { [key: string]: any } = {
       'core.name': name,
       'core.biography': biography,
@@ -179,24 +239,23 @@ export async function updateCharacter(
       'core.physicalDescription': physicalDescription || null,
     };
     
-    // This is the key fix: explicitly set rpg.isPlayable based on the archetype.
-    // This ensures it's always correctly updated.
     updates['rpg.isPlayable'] = !!archetype;
-
-    if (rarity) {
-        updates['core.rarity'] = rarity;
-    }
     
-    // If the class or rarity changes, we must reset the stats and skills
-    // so they can be regenerated with the new context.
-    const hasClassChanged = existingData?.core?.archetype !== (archetype || null);
-    const hasRarityChanged = existingData?.core?.rarity !== rarity;
+    const hasClassChanged = existingData.core.archetype !== (archetype || null);
     
-    if (hasClassChanged || hasRarityChanged) {
+    if (hasClassChanged) {
         updates['rpg.statsStatus'] = 'pending';
         updates['rpg.skillsStatus'] = 'pending';
-        updates['rpg.stats'] = {};
         updates['rpg.skills'] = [];
+        // If the class changes, we need to regenerate stats and thus recalculate rarity.
+        if (archetype) {
+            const newStats = generateStats(archetype);
+            updates['rpg.stats'] = newStats;
+            updates['core.rarity'] = calculateRarity(newStats);
+        } else {
+             updates['rpg.stats'] = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
+             updates['core.rarity'] = 1;
+        }
     }
   
     await characterRef.update(updates);
@@ -221,7 +280,6 @@ export async function saveCharacter(input: SaveCharacterInput) {
   const { 
       name, biography, imageUrl: imageDataUri, dataPackId, tags, 
       archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt,
-      rarity
   } = validation.data;
   
   const userId = await verifyAndGetUid();
@@ -236,6 +294,12 @@ export async function saveCharacter(input: SaveCharacterInput) {
     const storageUrl = await uploadToStorage(imageDataUri, destinationPath);
 
     const userRef = adminDb.collection('users').doc(userId);
+    
+    // Generate RPG stats and rarity
+    const stats = archetype ? generateStats(archetype) : { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
+    const rarity = archetype ? calculateRarity(stats) : 1;
+    const isPlayable = !!archetype;
+
 
     await adminDb.runTransaction(async (transaction) => {
         const userDoc = await transaction.get(userRef);
@@ -259,7 +323,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 physicalDescription: physicalDescription || null,
                 timeline: [],
                 tags: uniqueTags,
-                rarity: (rarity as Character['core']['rarity']) || 3,
+                rarity: rarity,
             },
             visuals: {
                 imageUrl: storageUrl,
@@ -294,20 +358,13 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 originalPrompt: originalPrompt,
             },
             rpg: {
-                isPlayable: !!archetype,
+                isPlayable: isPlayable,
                 level: 1,
                 experience: 0,
                 skills: [],
-                statsStatus: 'pending',
-                skillsStatus: 'pending',
-                stats: {
-                    strength: 0,
-                    dexterity: 0,
-                    constitution: 0,
-                    intelligence: 0,
-                    wisdom: 0,
-                    charisma: 0,
-                }
+                statsStatus: isPlayable ? 'pending' : 'complete',
+                skillsStatus: isPlayable ? 'pending' : 'complete',
+                stats: stats,
             }
         };
 
