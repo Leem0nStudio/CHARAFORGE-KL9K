@@ -1,0 +1,193 @@
+
+{
+    "name": "Pro-Composition",
+    "author": "CharaForge",
+    "description": "An advanced DataPack for precise control over scene composition, using a highly granular, Danbooru-style prompt structure. Ideal for power users who want to define every aspect of the generated image.",
+    "type": "free",
+    "price": 0,
+    "tags": ["utility", "advanced", "composition", "style control", "free"],
+    "isNsfw": false,
+    "schema": {
+        "promptTemplates": [
+            {
+                "name": "Full Composition Prompt",
+                "template": "({character_type}), {character_gender}, solo, full body, {pose_description}, {arm_position}, {head_position}, {body_posture}, exuding an aura of {aura_type}, ({lower_body_description}, {tail_description}, {body_frame}, {skin_tone}, {eye_description}, {hair_description}, {facial_features}, {body_markings}), {expression}, {hand_details}, Attire: ({top_clothing}, {clothing_patterns}, {clothing_trim}, {accessory_type}, {fashion_theme}, {clothing_details}, {coat_type}, {coat_features}, {pants_type}, {belt_type}, {clothing_fasteners}, {ring_type}), {art_style}, {view_type}, {color_palette}, {resolution}, {edge_quality}, {render_quality}, {masterpiece_quality}, {detail_level}, illustration, high resolution, {style_reference}, {game_reference}, {wallpaper_quality}, {overall_quality}, {sharpness}, {lighting_style}"
+            }
+        ],
+        "characterProfileSchema": {
+            "character_type": [
+                { "label": "Naga Warrior", "value": "Naga Warrior" },
+                { "label": "Cyborg Ninja", "value": "Cyborg Ninja" },
+                { "label": "Gothic Vampire", "value": "Gothic Vampire" }
+            ],
+            "character_gender": [
+                { "label": "Female", "value": "1girl" },
+                { "label": "Male", "value": "1boy" }
+            ],
+            "pose_description": [
+                { "label": "Powerful Stance", "value": "standing in a powerful and enigmatic pose" },
+                { "label": "Crouching", "value": "crouching, ready to pounce" }
+            ],
+            "arm_position": [
+                { "label": "Arms at Sides", "value": "arms at sides" },
+                { "label": "Arms Crossed", "value": "arms crossed" }
+            ],
+            "head_position": [
+                { "label": "Head Tilted", "value": "head tilted slightly" },
+                { "label": "Looking Up", "value": "looking up" }
+            ],
+            "body_posture": [
+                { "label": "Coiled Lower Body", "value": "slightly coiled lower body" },
+                { "label": "Straight Posture", "value": "straight posture" }
+            ],
+            "aura_type": [
+                { "label": "Mystery and Strength", "value": "mystery and strength" },
+                { "label": "Chaotic Energy", "value": "chaotic energy" }
+            ],
+            "lower_body_description": [
+                { "label": "Serpentine", "value": "serpentine lower body" },
+                { "label": "Bipedal", "value": "humanoid legs" }
+            ],
+            "tail_description": [
+                { "label": "Dark Snake Tail", "value": "long muscular snake tail covered in iridescent dark scales" },
+                { "label": "No Tail", "value": "no tail" }
+            ],
+            "body_frame": [
+                { "label": "Tall and Sinuous", "value": "tall and sinuous frame" },
+                { "label": "Muscular", "value": "muscular build" }
+            ],
+            "skin_tone": [
+                { "label": "Bronze Skin", "value": "smooth bronze skin" },
+                { "label": "Pale Skin", "value": "pale skin" }
+            ],
+            "eye_description": [
+                { "label": "Glowing Golden Eyes", "value": "glowing golden eyes with slit pupils" },
+                { "label": "Crimson Red Eyes", "value": "crimson red eyes" }
+            ],
+            "hair_description": [
+                { "label": "Wild Dark Green Hair", "value": "long wild dark green hair" },
+                { "label": "Slicked Back White Hair", "value": "slicked back white hair" }
+            ],
+            "facial_features": [
+                { "label": "Sharp and Striking", "value": "sharp and striking facial features" },
+                { "label": "Soft and Youthful", "value": "soft and youthful facial features" }
+            ],
+            "body_markings": [
+                { "label": "Tribal Markings", "value": "subtle tribal markings on skin" },
+                { "label": "Cybernetic Lines", "value": "glowing cybernetic lines" }
+            ],
+            "expression": [
+                { "label": "Neutral and Confident", "value": "neutral yet confident expression" },
+                { "label": "Smirking", "value": "smirking" }
+            ],
+            "hand_details": [
+                { "label": "Sharp Claws", "value": "sharp claws" },
+                { "label": "Human Hands", "value": "normal hands" }
+            ],
+            "top_clothing": [
+                { "label": "Red Shirt", "value": "red shirt" },
+                { "label": "Tactical Vest", "value": "tactical vest" }
+            ],
+            "clothing_patterns": [
+                { "label": "Animal Print", "value": "animal print" },
+                { "label": "Solid Color", "value": "solid color" }
+            ],
+            "clothing_trim": [
+                { "label": "Zebra Fur Trim", "value": "zebra print fur trim" },
+                { "label": "Gold Embroidery", "value": "gold embroidery" }
+            ],
+            "accessory_type": [
+                { "label": "Barbwire Jewelry", "value": "barbwire jewelry" },
+                { "label": "Goggles", "value": "goggles on head" }
+            ],
+            "fashion_theme": [
+                { "label": "Gothic Theme", "value": "gothic theme" },
+                { "label": "Cyberpunk", "value": "cyberpunk fashion" }
+            ],
+            "clothing_details": [
+                { "label": "Frills", "value": "frills" },
+                { "label": "Zippers", "value": "zippers" }
+            ],
+            "coat_type": [
+                { "label": "Black Velvet Coat", "value": "black velvet coat" },
+                { "label": "Trench Coat", "value": "trench coat" }
+            ],
+            "coat_features": [
+                { "label": "Hip Vent", "value": "hip vent" },
+                { "label": "High Collar", "value": "high collar" }
+            ],
+            "pants_type": [
+                { "label": "Latex Black Pants", "value": "latex black pants" },
+                { "label": "Cargo Pants", "value": "cargo pants" }
+            ],
+            "belt_type": [
+                { "label": "Belt", "value": "belt" },
+                { "label": "Utility Belt", "value": "utility belt" }
+            ],
+            "clothing_fasteners": [
+                { "label": "Buttons", "value": "buttons" },
+                { "label": "Buckles", "value": "buckles" }
+            ],
+            "ring_type": [
+                { "label": "Ring", "value": "ring" },
+                { "label": "No Ring", "value": "no ring" }
+            ],
+            "art_style": [
+                { "label": "2D-HD Style", "value": "2D-HD style" },
+                { "label": "Photorealistic", "value": "photorealistic" }
+            ],
+            "view_type": [
+                { "label": "Isometric View", "value": "isometric view" },
+                { "label": "Front View", "value": "front view" }
+            ],
+            "color_palette": [
+                { "label": "32-bit Color", "value": "32-bit color palette" },
+                { "label": "Vibrant Colors", "value": "vibrant colors" }
+            ],
+            "resolution": [
+                { "label": "256x256", "value": "256x256 resolution" },
+                { "label": "4K", "value": "4k resolution" }
+            ],
+            "edge_quality": [
+                { "label": "Crisp Edges", "value": "crisp edges, no anti-aliasing" },
+                { "label": "Soft Edges", "value": "soft edges" }
+            ],
+            "render_quality": [
+                { "label": "Masterpiece", "value": "masterpiece, ultra-detailed" },
+                { "label": "Simple", "value": "simple render" }
+            ],
+            "masterpiece_quality": [
+                { "label": "Best Quality", "value": "best quality" },
+                { "label": "Standard Quality", "value": "standard quality" }
+            ],
+            "detail_level": [
+                { "label": "Very Detailed", "value": "very detailed" },
+                { "label": "Flat Colors", "value": "flat colors" }
+            ],
+            "style_reference": [
+                { "label": "Anime CG", "value": "anime CG, official art" },
+                { "label": "Concept Art", "value": "concept art" }
+            ],
+            "game_reference": [
+                { "label": "Game CG", "value": "game CG" },
+                { "label": "No Game Reference", "value": "" }
+            ],
+            "wallpaper_quality": [
+                { "label": "Unity 8K", "value": "unity 8k wallpaper" },
+                { "label": "Standard", "value": "" }
+            ],
+            "overall_quality": [
+                { "label": "Amazing Quality", "value": "amazing quality" },
+                { "label": "Good Quality", "value": "good quality" }
+            ],
+            "sharpness": [
+                { "label": "Sharp Focus", "value": "sharp focus" },
+                { "label": "Soft Focus", "value": "soft focus" }
+            ],
+            "lighting_style": [
+                { "label": "Dramatic Lighting", "value": "dramatic lighting" },
+                { "label": "Studio Lighting", "value": "studio lighting" }
+            ]
+        }
+    }
+}

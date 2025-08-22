@@ -338,6 +338,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                                     {renderSimpleSlot('action', 'Action')}
                                     {renderSimpleSlot('camera', 'Camera')}
                                     {renderSimpleSlot('background', 'Background')}
+                                    {renderSimpleSlot('effects', 'Effects')}
                                 </AccordionContent>
                             </AccordionItem>
                         </Accordion>
@@ -513,5 +514,3 @@ export function DataPackSelectorModal({
         </Dialog>
     )
 }
-
-    
