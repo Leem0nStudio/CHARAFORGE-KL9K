@@ -1,8 +1,8 @@
-
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-  
+
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
@@ -11,43 +11,41 @@ service cloud.firestore {
       allow read: if isOwner(userId) || resource.data.preferences.privacy.profileVisibility == 'public';
       allow create, update: if isOwner(userId);
     }
-    
+
     match /characters/{characterId} {
-      // Listen permission requires both get and list.
-      // Allow the owner to listen to their own documents, and anyone to listen to public documents.
-      allow get, list: if (request.auth.uid != null && request.auth.uid == resource.data.meta.userId) || resource.data.meta.status == 'public';
-      
-      // Allow create and update only for the owner.
-      // For create, we check the incoming document's data.
-      allow create: if request.auth.uid != null && request.resource.data.meta.userId == request.auth.uid;
-      allow update, delete: if request.auth.uid != null && resource.data.meta.userId == request.auth.uid;
-    }
+      // Un usuario puede LEER un personaje si es el propietario O si el personaje es público.
+      // Esta es la regla clave que soluciona el problema del listener.
+      allow read: if (request.auth.uid != null && request.auth.uid == resource.data.meta.userId) || resource.data.meta.status == 'public';
 
+      // Un usuario puede CREAR un personaje si los datos que está enviando lo marcan como propietario.
+      allow create: if isOwner(request.resource.data.meta.userId);
+
+      // Un usuario puede ACTUALIZAR o ELIMINAR un personaje si es el propietario de los datos existentes.
+      allow update, delete: if isOwner(resource.data.meta.userId);
+    }
+    
+    // El resto de las colecciones son de solo lectura para los clientes,
+    // ya que se gestionan a través del backend seguro.
     match /datapacks/{packId} {
-        // DataPacks are public content catalogs.
-        allow read: if true;
-        // Writes should be handled by secure server-side logic (Admin SDK).
-        allow write: if false;
+      allow read: if true;
+      allow write: if false;
     }
-
+    
     match /storyCasts/{castId} {
-        // Users can only manage their own story casts.
-        allow read, write: if isOwner(resource.data.userId);
-        allow create: if isOwner(request.resource.data.userId);
+      allow read: if request.auth.uid == resource.data.userId;
+      allow create, update, delete: if isOwner(request.resource.data.userId);
     }
-
-    match /settings/{docId} {
-        // App settings should be publicly readable but only writable from the server.
-        allow read: if true;
-        allow write: if false;
+    
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if false;
     }
     
     match /ai_models/{modelId} {
-      // Anyone can read system models (no userId) or their own models.
-      allow read: if resource.data.userId == null || request.auth.uid == resource.data.userId;
-      
-      // Users can only write to their own models. System models are handled by admins.
-      allow write: if request.auth.uid != null && request.resource.data.userId == request.auth.uid;
+       allow read: if true;
+       // Solo permite a los usuarios crear/actualizar SUS PROPIOS modelos.
+       allow create: if request.resource.data.userId != null && isOwner(request.resource.data.userId);
+       allow update, delete: if resource.data.userId != null && isOwner(resource.data.userId);
     }
   }
 }
