@@ -76,9 +76,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, h
                              className="relative"
                         >
                             {heroCharacter ? (
-                                <Link href={`/showcase/${heroCharacter.id}`}>
-                                    <GachaCard character={heroCharacter} />
-                                </Link>
+                                <GachaCard character={heroCharacter} />
                             ) : (
                                 <Image
                                     src="https://placehold.co/600x600.png"
