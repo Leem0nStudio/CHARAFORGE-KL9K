@@ -7,7 +7,7 @@
 export { processUploadedImage } from './image-processing';
 
 // Import and export the RPG generation HTTP-callable functions
-export { generateCharacterSkills, generateCharacterStats } from './rpg';
+export { triggerRpgGeneration } from './rpg';
 
 
 // NOTE: Genkit flows are automatically handled by the Genkit plugin
