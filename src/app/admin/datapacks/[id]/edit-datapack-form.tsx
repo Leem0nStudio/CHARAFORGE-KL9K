@@ -41,8 +41,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
       price: initialData?.price || 0,
       tags: initialData?.tags || [],
       schema: initialData?.schema || {
-        promptTemplates: [],
-        slots: [],
+        characterProfileSchema: {}, // Initialize with empty object for the new structure
       },
       isNsfw: initialData?.isNsfw || false,
   }), [initialData]);
@@ -65,7 +64,6 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
       
       if (result.success) {
         toast({ title: 'Success!', description: result.message });
-        // If it's a new pack, redirect to the new edit page to prevent duplicate creations
         if (!initialData?.id && result.packId) {
              router.push(`/admin/datapacks/${result.packId}`);
         }
