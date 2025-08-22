@@ -2,14 +2,13 @@
 
 'use client';
 
-import { useTransition, useEffect, useRef, useState, useCallback } from 'react';
+import { useTransition, useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character, RpgAttributes } from '@/types/character';
-import { updateCharacter } from '@/app/actions/character-write';
+import { updateCharacter, generateCharacterAttributes } from '@/app/actions/character-write';
 import { regenerateCharacterSheet } from '@/app/actions/generation';
-import { generateAllRpgAttributes } from '@/app/actions/rpg';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,8 +22,6 @@ import { StarRating } from '@/components/showcase/star-rating';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { rpgArchetypes } from '@/lib/app-config';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { getFirebaseClient } from '@/lib/firebase/client';
 
 
 const alignmentOptions = [
@@ -80,7 +77,10 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
     const [isUpdating, startUpdateTransition] = useTransition();
     const [isRegenerating, startRegenerateTransition] = useTransition();
     const [isRpgGenerating, startRpgGenerateTransition] = useTransition();
-    const unsubscribeRef = useRef<() => void | null>(null);
+    
+    useEffect(() => {
+        setCharacter(initialCharacter);
+    }, [initialCharacter]);
 
 
     const form = useForm<FormValues>({
@@ -95,29 +95,6 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
         },
     });
 
-    useEffect(() => {
-        const { db } = getFirebaseClient();
-        const charDocRef = doc(db, 'characters', character.id);
-        
-        const unsubscribe = onSnapshot(charDocRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const updatedData = docSnap.data() as Character;
-                const oldRpgStatus = character.rpg?.skillsStatus;
-
-                setCharacter(prev => ({...prev, rpg: updatedData.rpg }));
-
-                if (oldRpgStatus === 'pending' && updatedData.rpg.skillsStatus === 'complete') {
-                    toast({ title: "Skills Generated!", description: "The new combat skills are ready." });
-                } else if (oldRpgStatus === 'pending' && updatedData.rpg.skillsStatus === 'failed') {
-                     toast({ variant: 'destructive', title: 'Generation Failed', description: "Something went wrong during skill generation." });
-                }
-            }
-        });
-
-        return () => unsubscribe();
-    }, [character.id, character.rpg?.skillsStatus, toast]);
-    
-
     const onSubmit = (data: FormValues) => {
         const dataToSave = {
             ...data,
@@ -131,11 +108,6 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                 variant: result.success ? 'default' : 'destructive',
             });
             if (result.success) {
-                const wasPlayable = character.rpg.isPlayable;
-                const isNowPlayable = !!dataToSave.archetype;
-                if (!wasPlayable && isNowPlayable) {
-                    setCharacter(prev => ({...prev, rpg: {...prev.rpg, isPlayable: true, statsStatus: 'pending', skillsStatus: 'pending'}}));
-                }
                 router.refresh();
             }
         });
@@ -174,9 +146,12 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
             return;
         }
         startRpgGenerateTransition(async () => {
-            const result = await generateAllRpgAttributes(character.id);
-            if (result.success) {
-                 toast({ title: 'Generation Queued', description: 'Forging new RPG attributes... this may take a moment.' });
+            const result = await generateCharacterAttributes(character.id);
+            if (result.success && result.attributes) {
+                 toast({ title: 'Attributes Generated!', description: result.message });
+                 // Manually update the local state to reflect the changes immediately
+                 setCharacter(prev => ({...prev, rpg: result.attributes!, core: {...prev.core, rarity: result.attributes!.rarity}}));
+                 router.refresh(); // Still refresh to ensure full consistency
             } else {
                  toast({ variant: 'destructive', title: 'Generation Failed', description: result.error || result.message });
             }
@@ -185,7 +160,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
 
     const rpg = character.rpg;
     const isPlayable = rpg?.isPlayable;
-    const isGenerationInProgress = rpg?.skillsStatus === 'pending' || isRpgGenerating;
+    const isGenerationNeeded = rpg?.statsStatus === 'pending' || rpg?.skillsStatus === 'pending';
     const attributesComplete = rpg?.statsStatus === 'complete';
     const generationFailed = rpg?.statsStatus === 'failed' || rpg?.skillsStatus === 'failed';
 
@@ -311,15 +286,15 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                                          <p className="text-sm text-muted-foreground">Stats are ready to be generated.</p>
                                     )}
                                 </div>
-                                <Button onClick={handleGenerateRpgAttributes} disabled={isGenerationInProgress}>
-                                    {isGenerationInProgress ? <Loader2 className="animate-spin mr-2"/> : <RefreshCw className="mr-2"/>}
-                                    {rpg.skillsStatus === 'complete' ? 'Regenerate Attributes' : 'Generate Attributes'}
+                                <Button onClick={handleGenerateRpgAttributes} disabled={isRpgGenerating}>
+                                    {isRpgGenerating ? <Loader2 className="animate-spin mr-2"/> : <RefreshCw className="mr-2"/>}
+                                    {attributesComplete ? 'Regenerate Attributes' : 'Generate Attributes'}
                                 </Button>
                              </div>
                              <div className="lg:col-span-2 p-4 rounded-lg border bg-muted/30">
                                 <h3 className="font-semibold mb-3 flex items-center gap-2"><Swords className="text-primary"/> Combat Skills</h3>
                                 <div className="space-y-2">
-                                    {isGenerationInProgress ? (
+                                    {isRpgGenerating ? (
                                         <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="animate-spin" /> Generating skills...</div>
                                     ) : rpg.skills.length > 0 ? (
                                         rpg.skills.map(skill => <SkillDisplay key={skill.id} skill={skill} />)

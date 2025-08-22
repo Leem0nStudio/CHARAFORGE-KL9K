@@ -10,12 +10,14 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadToStorage } from '@/services/storage';
 import { UpdateCharacterSchema, SaveCharacterInputSchema, type SaveCharacterInput } from '@/types/character';
-import { rpgArchetypes } from '@/lib/app-config';
+import { generateAllRpgAttributesFlow } from '@/ai/flows/rpg-attributes/flow';
+
 
 type ActionResponse = {
     success: boolean;
     message: string;
     characterId?: string;
+    attributes?: RpgAttributes;
 };
 
 export async function deleteCharacter(characterId: string) {
@@ -180,14 +182,14 @@ export async function updateCharacter(
     
     const hasClassChanged = existingData.core.archetype !== (archetype || null);
     
-    // Only queue for regeneration if the class has changed.
-    // The generation function itself now handles both stats and skills.
+    // If the class has changed, reset the RPG attributes so the user knows to regenerate them.
     if (hasClassChanged) {
         updates['rpg.statsStatus'] = 'pending';
         updates['rpg.skillsStatus'] = 'pending';
         updates['rpg.skills'] = [];
         updates['rpg.stats'] = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
         updates['core.rarity'] = 1;
+        updates['rpg.isPlayable'] = !!archetype;
     }
   
     await characterRef.update(updates);
@@ -291,9 +293,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 level: 1,
                 experience: 0,
                 skills: [],
-                // Attributes are now generated upfront, so their status is 'complete'.
-                // Skills will be generated in the background.
-                statsStatus: 'complete', 
+                statsStatus: stats ? 'complete' : 'pending', 
                 skillsStatus: 'pending',
                 stats: stats || { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 },
             }
@@ -384,4 +384,63 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
     const message = error instanceof Error ? error.message : 'Could not update permissions.';
     return { success: false, message };
   }
+}
+
+/**
+ * A new, direct server action to generate RPG attributes for a character.
+ * This replaces the complex Task Queue flow.
+ * @param characterId The ID of the character to generate attributes for.
+ * @returns A promise that resolves to an ActionResponse containing the new attributes.
+ */
+export async function generateCharacterAttributes(characterId: string): Promise<ActionResponse> {
+    const uid = await verifyAndGetUid();
+    if (!adminDb) {
+        return { success: false, message: 'Database service is unavailable.' };
+    }
+
+    const charRef = adminDb.collection('characters').doc(characterId);
+
+    try {
+        const charDoc = await charRef.get();
+        if (!charDoc.exists) {
+            throw new Error('Character not found.');
+        }
+        const character = charDoc.data() as Character;
+        if (character.meta.userId !== uid) {
+            throw new Error('Permission denied.');
+        }
+        if (!character.core.archetype) {
+            throw new Error('Character must have an Archetype to generate attributes.');
+        }
+
+        // Directly call the Genkit flow
+        const attributes = await generateAllRpgAttributesFlow(character);
+
+        // Update Firestore with the complete set of new attributes
+        await charRef.update({
+            'rpg.stats': attributes.stats,
+            'core.rarity': attributes.rarity,
+            'rpg.skills': attributes.skills,
+            'rpg.statsStatus': 'complete',
+            'rpg.skillsStatus': 'complete',
+        });
+        
+        revalidatePath(`/characters/${characterId}/edit`);
+
+        return {
+            success: true,
+            message: 'Character attributes generated successfully!',
+            attributes: { ...attributes, isPlayable: true, level: 1, experience: 0 } as RpgAttributes,
+        };
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+        // Ensure status is set to failed on error
+        await charRef.update({ 
+            'rpg.statsStatus': 'failed',
+            'rpg.skillsStatus': 'failed',
+        }).catch(() => {});
+        revalidatePath(`/characters/${characterId}/edit`);
+        return { success: false, message: 'Failed to generate attributes.', error: message };
+    }
 }
