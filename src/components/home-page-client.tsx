@@ -34,7 +34,29 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, h
             {/* Hero Section */}
              <section className="w-full pt-12 md:pt-24 lg:pt-32 relative overflow-hidden bg-gradient-to-b from-background to-primary/5">
                 <div className="container px-4 md:px-6">
-                    <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
+                    <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
+                         <motion.div
+                             key={heroCharacter?.id || 'hero'}
+                             initial={{ opacity: 0, scale: 0.8 }}
+                             animate={{ opacity: 1, scale: 1 }}
+                             transition={{ duration: 0.6, delay: 0.2 }}
+                             className="relative lg:order-last" // Reorder for large screens
+                        >
+                            {heroCharacter ? (
+                                <GachaCard character={heroCharacter} />
+                            ) : (
+                                <Image
+                                    src="https://placehold.co/600x600.png"
+                                    alt="Hero Character Placeholder"
+                                    width={600}
+                                    height={600}
+                                    className="mx-auto aspect-square overflow-hidden rounded-xl object-contain sm:w-full"
+                                    data-ai-hint="fantasy character portrait"
+                                    priority
+                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                />
+                            )}
+                        </motion.div>
                         <div className="flex flex-col justify-center space-y-4 text-center lg:text-left">
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
@@ -52,7 +74,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, h
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5, delay: 0.2 }}
-                                className="w-full max-w-sm mx-auto lg:mx-0 space-y-2"
+                                className="w-full max-w-sm mx-auto lg:mx-0"
                             >
                                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                                     <Button asChild size="lg" className="font-headline text-lg">
@@ -68,28 +90,6 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, h
                                 </div>
                             </motion.div>
                         </div>
-                        <motion.div
-                             key={heroCharacter?.id || 'hero'}
-                             initial={{ opacity: 0, scale: 0.8 }}
-                             animate={{ opacity: 1, scale: 1 }}
-                             transition={{ duration: 0.6, delay: 0.2 }}
-                             className="relative"
-                        >
-                            {heroCharacter ? (
-                                <GachaCard character={heroCharacter} />
-                            ) : (
-                                <Image
-                                    src="https://placehold.co/600x600.png"
-                                    alt="Hero Character Placeholder"
-                                    width={600}
-                                    height={600}
-                                    className="mx-auto aspect-square overflow-hidden rounded-xl object-contain sm:w-full lg:order-last"
-                                    data-ai-hint="fantasy character portrait"
-                                    priority
-                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                />
-                            )}
-                        </motion.div>
                     </div>
                 </div>
             </section>
