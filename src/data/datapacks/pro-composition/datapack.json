@@ -14,6 +14,7 @@
                 "template": "{count}, ({raceClass}), solo, full body, {pose}, {action}, {camera}, {background}, {effects}, {art_style}, {color_palette}, {resolution}, {masterpiece_quality}, {detail_level}, illustration, high resolution, {style_reference}, {wallpaper_quality}, {sharpness}, {lighting_style}"
             }
         ],
+        "slots": [],
         "characterProfileSchema": {
             "count": [
                 { "label": "Female", "value": "1girl" },
