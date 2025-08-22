@@ -1,41 +1,47 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if a user is an admin
-    function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Rules for the 'users' collection
+    
+    // Users can only manage their own profile.
+    // Public profiles can be read by anyone if privacy is set.
     match /users/{userId} {
-      // Anyone can read non-sensitive public profile data (e.g., for creator lists)
-      allow read: if request.auth != null;
-
-      // Only the user themselves can create their own document
-      allow create: if request.auth.uid == userId;
-
-      // The user can update their own document. An admin can also update roles.
-      allow update: if request.auth.uid == userId || isAdmin();
-      
-      // The user can delete their own account.
-      allow delete: if request.auth.uid == userId;
+      allow read: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(userId)).data.preferences.privacy.profileVisibility == 'public';
+      allow create, update: if request.auth.uid == userId;
     }
 
-    // Rules for the 'characters' collection
+    // Characters can be read if they are public.
+    // Users can perform all actions on their own characters.
     match /characters/{characterId} {
-      // Allow reading a character if it is public, or if the user is the owner.
-      allow read: if resource.data.status == 'public' || (request.auth != null && request.auth.uid == resource.data.userId);
-
-      // Allow creating a character if the user is logged in and the character's userId matches their own.
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-
-      // Allow updating a character if the user is the owner.
-      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
-
-      // Allow deleting a character if the user is the owner.
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow read: if resource.data.meta.status == 'public' || request.auth.uid == resource.data.meta.userId;
+      allow create, update, delete: if request.auth.uid == resource.data.meta.userId;
     }
+
+    // DataPacks are public and read-only from the client.
+    // Writes are handled by admin server actions.
+    match /datapacks/{packId} {
+      allow read: if true;
+      allow write: if false; 
+    }
+    
+    // AI Models are read-only from the client.
+    // User-specific models are handled by server actions.
+    match /ai_models/{modelId} {
+        allow read: if true;
+        allow write: if false;
+    }
+    
+    // Settings should not be client-accessible at all.
+    match /settings/{docId} {
+        allow read, write: if false;
+    }
+    
+    // StoryCasts are user-specific content.
+    match /storyCasts/{castId} {
+        allow read, update, delete: if request.auth.uid == resource.data.userId;
+        allow create: if request.auth.uid == request.resource.data.userId;
+    }
+    
   }
 }
