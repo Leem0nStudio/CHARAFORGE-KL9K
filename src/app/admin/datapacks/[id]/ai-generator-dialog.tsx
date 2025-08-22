@@ -3,6 +3,7 @@
 
 import { useState, useTransition } from 'react';
 import { generateDataPackSchema } from '@/ai/flows/datapack-schema/flow';
+import type { GenerateDataPackSchemaOutput } from '@/ai/flows/datapack-schema/types';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -19,11 +20,34 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Loader2, Wand2 } from 'lucide-react';
-import type { DataPackSchema } from '@/types/datapack';
+import type { CharacterProfileSchema } from '@/types/datapack';
 
 interface AiGeneratorDialogProps {
-    onSchemaGenerated: (schema: DataPackSchema) => void;
+    onSchemaGenerated: (schema: Partial<CharacterProfileSchema>, tags: string[]) => void;
 }
+
+/**
+ * Transforms a flat list of slots from the AI into the nested CharacterProfileSchema.
+ * @param slots The flat array of slots from the AI.
+ * @returns A nested CharacterProfileSchema object.
+ */
+function reconstructSchema(slots: GenerateDataPackSchemaOutput['slots']): Partial<CharacterProfileSchema> {
+    const schema: any = {};
+    for (const slot of slots) {
+        const parts = slot.id.split('.');
+        if (parts.length === 2) {
+            const [parent, child] = parts;
+            if (!schema[parent]) {
+                schema[parent] = {};
+            }
+            schema[parent][child] = slot.options;
+        } else {
+            schema[slot.id] = slot.options;
+        }
+    }
+    return schema;
+}
+
 
 export function AiGeneratorDialog({ onSchemaGenerated }: AiGeneratorDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
@@ -36,7 +60,8 @@ export function AiGeneratorDialog({ onSchemaGenerated }: AiGeneratorDialogProps)
         startTransition(async () => {
             try {
                 const result = await generateDataPackSchema({ concept });
-                onSchemaGenerated(result);
+                const reconstructed = reconstructSchema(result.slots);
+                onSchemaGenerated(reconstructed, result.tags);
                 toast({ title: "Schema Generated!", description: "The AI has populated the schema editor. Please review the results."});
                 setIsOpen(false);
             } catch (error) {
@@ -79,5 +104,3 @@ export function AiGeneratorDialog({ onSchemaGenerated }: AiGeneratorDialogProps)
         </AlertDialog>
     );
 }
-
-    

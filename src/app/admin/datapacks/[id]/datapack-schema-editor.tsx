@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { DataPackFormValues, DataPackSchema, CharacterProfileSchema } from '@/types/datapack';
+import type { DataPackFormValues, CharacterProfileSchema } from '@/types/datapack';
 import { AiGeneratorDialog } from './ai-generator-dialog';
 
 // Helper function to render a textarea for a given field in the schema
@@ -48,7 +48,8 @@ function JsonOptionEditor({ control, name, label, placeholder }: {
 
 // Helper to render the multiple equipment slots inside an accordion
 function EquipmentSlotAccordion({ control }: { control: any }) {
-    const equipmentSlots: Array<keyof CharacterProfileSchema> = ['head', 'face', 'neck', 'shoulders', 'torso', 'arms', 'hands', 'waist', 'legs', 'feet', 'back'];
+    const equipmentSlots: Array<keyof Omit<CharacterProfileSchema, 'count' | 'raceClass' | 'gender' | 'hair' | 'eyes' | 'skin' | 'facialFeatures' | 'weaponsExtra' | 'pose' | 'action' | 'camera' | 'background' | 'effects'>> = 
+        ['head', 'face', 'neck', 'shoulders', 'torso', 'arms', 'hands', 'waist', 'legs', 'feet', 'back'];
 
     return (
         <Accordion type="multiple" className="w-full space-y-2">
@@ -95,15 +96,15 @@ function EquipmentSlotAccordion({ control }: { control: any }) {
 export function DataPackSchemaEditor({ form }: { form: ReturnType<typeof useFormContext<DataPackFormValues>> }) {
   const { control, setValue, getValues } = form;
 
-  const handleAiSchemaGenerated = (generatedSchema: Partial<DataPackSchema>) => {
+  const handleAiSchemaGenerated = (generatedSchema: Partial<CharacterProfileSchema>, tags: string[]) => {
     // When the AI generates a schema, it might be incomplete. We merge it with the existing one.
     const currentSchema = getValues('schema.characterProfileSchema') || {};
-    const newSchema = { ...currentSchema, ...generatedSchema.characterProfileSchema };
+    const newSchema = { ...currentSchema, ...generatedSchema };
     
     setValue('schema.characterProfileSchema', newSchema, { shouldValidate: true, shouldDirty: true });
     
-    if (generatedSchema.tags) {
-        setValue('tags', generatedSchema.tags, { shouldValidate: true, shouldDirty: true });
+    if (tags) {
+        setValue('tags', tags, { shouldValidate: true, shouldDirty: true });
     }
   };
 

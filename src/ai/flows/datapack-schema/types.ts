@@ -1,9 +1,9 @@
 
 /**
  * @fileOverview Data schemas and types for the DataPack schema generation flow.
- * This file defines the Zod schemas for input and output validation,
- * and exports the corresponding TypeScript types. Now updated to support
- * the new granular CharacterProfileSchema.
+ * The output schema is now a flat list of slots to avoid hitting API limits
+ * on complex nested objects. The client is responsible for reconstructing the
+ * nested structure.
  */
 
 import { z } from 'zod';
@@ -20,44 +20,14 @@ const OptionObjectSchema = z.object({
     value: z.string(),
 });
 
-const EquipmentSlotOptionsSchema = z.object({
-    clothing: z.array(OptionObjectSchema).optional(),
-    armor: z.array(OptionObjectSchema).optional(),
-    accessory: z.array(OptionObjectSchema).optional(),
-    weapon: z.array(OptionObjectSchema).optional(),
-}).optional();
-
-
-const CharacterProfileSchema = z.object({
-    count: z.array(OptionObjectSchema),
-    raceClass: z.array(OptionObjectSchema),
-    gender: z.array(OptionObjectSchema),
-    hair: z.array(OptionObjectSchema),
-    eyes: z.array(OptionObjectSchema),
-    skin: z.array(OptionObjectSchema),
-    facialFeatures: z.array(OptionObjectSchema),
-    head: EquipmentSlotOptionsSchema,
-    face: EquipmentSlotOptionsSchema,
-    neck: EquipmentSlotOptionsSchema,
-    shoulders: EquipmentSlotOptionsSchema,
-    torso: EquipmentSlotOptionsSchema,
-    arms: EquipmentSlotOptionsSchema,
-    hands: EquipmentSlotOptionsSchema,
-    waist: EquipmentSlotOptionsSchema,
-    legs: EquipmentSlotOptionsSchema,
-    feet: EquipmentSlotOptionsSchema,
-    back: EquipmentSlotOptionsSchema,
-    weaponsExtra: z.array(OptionObjectSchema),
-    pose: z.array(OptionObjectSchema),
-    action: z.array(OptionObjectSchema),
-    camera: z.array(OptionObjectSchema),
-    background: z.array(OptionObjectSchema),
-    effects: z.array(OptionObjectSchema),
+const SlotObjectSchema = z.object({
+  id: z.string().describe("The unique identifier for the slot, using dot notation for nested properties (e.g., 'hair', 'torso.armor')."),
+  options: z.array(OptionObjectSchema).describe("An array of options for this slot."),
 });
 
 
 export const GenerateDataPackSchemaOutputSchema = z.object({
-  characterProfileSchema: CharacterProfileSchema.describe("The main schema object defining all available options for the character profile."),
+  slots: z.array(SlotObjectSchema).describe("A flat list of all generated slots for the character profile."),
   tags: z.array(z.string()).describe("An array of 3-5 relevant, single-word, lowercase tags that categorize the datapack (e.g., ['fantasy', 'sci-fi', 'horror']).")
 });
 export type GenerateDataPackSchemaOutput = z.infer<typeof GenerateDataPackSchemaOutputSchema>;
