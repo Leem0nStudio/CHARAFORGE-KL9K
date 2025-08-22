@@ -12,7 +12,7 @@ import { EditDetailsTab } from './edit-details-tab';
 import { EditGalleryTab } from './edit-gallery-tab';
 import { EditVersionsTab } from './edit-versions-tab';
 import { EditSharingTab } from './edit-sharing-tab';
-import { EditTimelineTab } from './edit-timeline-tab';
+import { RpgAttributesTab } from './rpg-attributes-tab';
 
 
 async function getCharacterForEdit(characterId: string): Promise<Character> {
@@ -62,9 +62,9 @@ export default async function EditCharacterPage({
           <div className="max-w-4xl mx-auto mt-8">
               <Tabs defaultValue={defaultTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="details">Details</TabsTrigger>
+                    <TabsTrigger value="details">Details & Lore</TabsTrigger>
                     <TabsTrigger value="gallery">Gallery</TabsTrigger>
-                    <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                    <TabsTrigger value="rpg">RPG Attributes</TabsTrigger>
                     <TabsTrigger value="versions">Versions</TabsTrigger>
                     <TabsTrigger value="sharing">Sharing</TabsTrigger>
                 </TabsList>
@@ -75,8 +75,8 @@ export default async function EditCharacterPage({
                 <TabsContent value="gallery">
                     <EditGalleryTab character={character} />
                 </TabsContent>
-                <TabsContent value="timeline">
-                    <EditTimelineTab character={character} />
+                <TabsContent value="rpg">
+                    <RpgAttributesTab character={character} />
                 </TabsContent>
                 <TabsContent value="versions">
                     <EditVersionsTab character={character} />

@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview This service provides a centralized function for converting
  * Firestore document data into a fully-typed and serializable `Character` object.
@@ -25,6 +26,7 @@ export function toCharacterObject(docId: string, data: DocumentData): Character 
         name: data.name || 'Unnamed',
         biography: data.biography || '',
         physicalDescription: data.physicalDescription || data.description || null,
+        birthYear: data.birthYear || null,
         alignment: data.alignment || 'True Neutral',
         archetype: data.archetype || null,
         equipment: data.equipment || [],

@@ -57,6 +57,7 @@ export type Character = {
     alignment: 'Lawful Good' | 'Neutral Good' | 'Chaotic Good' | 'Lawful Neutral' | 'True Neutral' | 'Chaotic Neutral' | 'Lawful Evil' | 'Neutral Evil' | 'Chaotic Evil';
     biography: string;
     physicalDescription: string | null;
+    birthYear: string | null;
     equipment: string[] | null;
     timeline: TimelineEvent[];
     tags: string[];
@@ -121,6 +122,7 @@ export const UpdateCharacterSchema = z.object({
   archetype: z.string().optional(),
   equipment: z.array(z.string()).optional(),
   physicalDescription: z.string().optional(),
+  birthYear: z.string().optional(),
 });
 
 export const SaveCharacterInputSchema = z.object({

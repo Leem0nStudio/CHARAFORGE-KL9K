@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import type { Character } from '@/types/character';
-import { ArrowLeft, Edit, Share2, Dna, Swords as SwordsIcon, Shield, BrainCircuit } from 'lucide-react';
+import { ArrowLeft, Edit, Share2, Dna, Swords as SwordsIcon, Shield, BrainCircuit, BarChart3, Info } from 'lucide-react';
 import { StatItem } from './stat-item';
 import { StarRating } from './star-rating';
 import { motion } from 'framer-motion';
@@ -108,7 +108,13 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                         <CardContent className="p-6 space-y-4">
                             <div>
                                 <h1 className="text-3xl font-headline tracking-wider">{character.core.name}</h1>
-                                <StarRating rating={character.core.rarity || 3} />
+                                <div className="flex items-center justify-between">
+                                    <StarRating rating={character.core.rarity || 3} />
+                                    <div className="text-right">
+                                        <p className="text-sm font-semibold text-primary">LVL {character.rpg.level}</p>
+                                        <p className="text-xs text-muted-foreground">{character.rpg.experience} XP</p>
+                                    </div>
+                                </div>
                             </div>
 
                             <Separator />
@@ -116,13 +122,14 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <StatItem label="Archetype" value={character.core.archetype || 'N/A'} />
                                 <StatItem label="Alignment" value={character.core.alignment} />
+                                <StatItem label="Birth Year" value={character.core.birthYear || 'Unknown'} />
                                 <StatItem label="Text Engine" value={character.generation.textEngine || 'N/A'} />
                                 <StatItem label="Image Engine" value={character.generation.imageEngine || 'N/A'} />
                             </div>
                             
                              <div>
                                 <h3 className="font-semibold text-muted-foreground mb-2">Lore</h3>
-                                <ScrollArea className="h-40 md:h-48 pr-4">
+                                <ScrollArea className="h-32 md:h-40 pr-4">
                                     <p className="text-sm text-card-foreground/90 whitespace-pre-wrap">{character.core.biography}</p>
                                 </ScrollArea>
                             </div>
@@ -149,7 +156,6 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                                  </div>
                                 </>
                             )}
-
 
                              <div className="flex gap-2 pt-4">
                                 <Button className="flex-1" variant="secondary"><Share2 className="mr-2"/>Share</Button>

@@ -222,7 +222,7 @@ export async function updateCharacter(
         };
     }
     
-    const { name, biography, alignment, archetype, equipment, physicalDescription } = validatedFields.data;
+    const { name, biography, alignment, archetype, equipment, physicalDescription, birthYear } = validatedFields.data;
     const characterRef = adminDb.collection('characters').doc(characterId);
     
     const characterDoc = await characterRef.get();
@@ -239,6 +239,7 @@ export async function updateCharacter(
       'core.archetype': archetype || null,
       'core.equipment': equipment || null,
       'core.physicalDescription': physicalDescription || null,
+      'core.birthYear': birthYear || null,
     };
     
     const hasClassChanged = existingData.core.archetype !== (archetype || null);
@@ -328,6 +329,7 @@ export async function saveCharacter(input: Omit<SaveCharacterInput, 'rarity'>) {
                 alignment: 'True Neutral',
                 equipment: equipment || null,
                 physicalDescription: physicalDescription || null,
+                birthYear: 'Year 1',
                 timeline: [],
                 tags: uniqueTags,
                 rarity: finalRarity,
@@ -460,4 +462,30 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
     const message = error instanceof Error ? error.message : 'Could not update permissions.';
     return { success: false, message };
   }
+}
+
+export async function addCharacterExperience(characterId: string, xp: number): Promise<ActionResponse> {
+    const uid = await verifyAndGetUid();
+    if (!adminDb) {
+        return { success: false, message: 'Database service is unavailable.' };
+    }
+
+    try {
+        const characterRef = adminDb.collection('characters').doc(characterId);
+        const characterDoc = await characterRef.get();
+        if (!characterDoc.exists || characterDoc.data()?.meta.userId !== uid) {
+            return { success: false, message: 'Permission denied or character not found.' };
+        }
+        
+        await characterRef.update({
+            'rpg.experience': FieldValue.increment(xp)
+        });
+        
+        revalidatePath(`/showcase/${characterId}`);
+        
+        return { success: true, message: `${xp} XP gained!` };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Could not add experience.';
+        return { success: false, message };
+    }
 }

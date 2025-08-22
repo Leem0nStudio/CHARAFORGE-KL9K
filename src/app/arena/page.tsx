@@ -1,17 +1,23 @@
+
 import { Suspense } from 'react';
 import { getCharacters } from '@/app/actions/character-read';
 import { ArenaClient } from './arena-client';
 import { Loader2 } from 'lucide-react';
+import { notFound } from 'next/navigation';
 
 async function ArenaPageContent() {
     // Fetch all characters and then filter for playable ones.
     const allCharacters = await getCharacters();
     const playableCharacters = allCharacters.filter(c => c.rpg.isPlayable && c.rpg.statsStatus === 'complete');
     
-    // For now, we'll create a static list of opponents. This could come from a DB later.
-    const opponents = allCharacters.filter(c => c.rpg.isPlayable && c.rpg.statsStatus === 'complete' && c.meta.status === 'public').slice(0, 10);
+    if (playableCharacters.length === 0) {
+        // This is a better user experience than showing an empty selector.
+        // We can create a dedicated component for this state.
+        // For now, we can redirect or show a message.
+        // Let's assume the client will handle the "no characters" state gracefully.
+    }
 
-    return <ArenaClient userCharacters={playableCharacters} opponents={opponents} />;
+    return <ArenaClient userCharacters={playableCharacters} />;
 }
 
 
