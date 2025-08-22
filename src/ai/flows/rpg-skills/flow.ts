@@ -11,7 +11,7 @@ import {
   type GenerateSkillsInput, 
   type GenerateSkillsOutput 
 } from './types';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 export async function generateCharacterSkills(input: GenerateSkillsInput): Promise<GenerateSkillsOutput> {
   return generateSkillsFlow(input);
@@ -56,7 +56,7 @@ export const generateSkillsFlow = ai.defineFlow(
     // Add a unique ID to each generated skill
     const skillsWithIds = output.skills.map(skill => ({
       ...skill,
-      id: uuidv4(),
+      id: randomUUID(),
     }));
 
     return { skills: skillsWithIds };
