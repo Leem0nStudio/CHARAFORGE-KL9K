@@ -3,7 +3,7 @@
  * This function is triggered when a new image is uploaded to the `raw-uploads/`
  * path in Firebase Storage. It performs several processing steps and saves
  * the result to a different path, updating the character's Firestore document.
- * It will also trigger the RPG stat generation flow.
+ * It will also trigger the RPG stat and skill generation flows.
  */
 
 import { logger } from 'firebase-functions/v2';
@@ -15,8 +15,9 @@ import * as path from 'path';
 import sharp from 'sharp';
 import FormData from 'form-data';
 
-// TODO: Import the stat generation flow when it's created.
-// import { generateCharacterStats } from '@/ai/flows/generate-character-stats/flow';
+// Import the new generation flows
+import { generateCharacterStats } from '@/ai/flows/rpg-stats/flow';
+import { generateCharacterSkills } from '@/ai/flows/rpg-skills/flow';
 
 // Initialize Firebase Admin SDK if not already done
 if (getApps().length === 0) {
@@ -118,7 +119,7 @@ export const processUploadedImage = onObjectFinalized({
     
     const pathParts = filePath.split('/');
     if (pathParts.length < 4) {
-        logger.warn(`File path '${filePath}' does not have the expected structure. Ignoring.`);
+        logger.warn(`File path '${filePath}' does not have the expected path structure. Ignoring.`);
         return;
     }
     const userId = pathParts[1];
@@ -175,11 +176,21 @@ export const processUploadedImage = onObjectFinalized({
         });
         logger.log(`Successfully updated Firestore for character '${characterId}'.`);
         
-        // Asynchronously trigger the stat generation. No need to wait for it.
-        // TODO: Uncomment this when the stat generation flow is created.
-        // generateCharacterStats({ characterId }).catch(err => {
-        //     logger.error(`Failed to trigger stat generation for character ${characterId}`, err);
-        // });
+        // Asynchronously trigger the stat and skill generation.
+        logger.info(`Triggering RPG attribute generation for character ${characterId}...`);
+        
+        const generationPromises = [
+            generateCharacterStats({ characterId }).catch(err => {
+                logger.error(`Failed to generate stats for character ${characterId}`, err);
+                characterRef.update({ 'rpg.statsStatus': 'failed' });
+            }),
+            generateCharacterSkills({ characterId }).catch(err => {
+                logger.error(`Failed to generate skills for character ${characterId}`, err);
+                // We can add a 'skillsStatus' field later if needed
+            })
+        ];
+
+        await Promise.all(generationPromises);
         
         await bucket.file(filePath).delete();
         logger.log(`Successfully deleted raw file: '${filePath}'.`);

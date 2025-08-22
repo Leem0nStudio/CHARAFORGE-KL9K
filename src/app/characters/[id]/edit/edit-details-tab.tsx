@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useTransition } from 'react';
@@ -15,12 +14,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Wand2 } from 'lucide-react';
+import { Loader2, Wand2, Dna, Swords, Shield, BrainCircuit } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 const alignmentOptions = [
     'Lawful Good', 'Neutral Good', 'Chaotic Good', 
@@ -38,6 +38,36 @@ const FormSchema = z.object({
   rarity: z.number().min(1).max(5),
 });
 type FormValues = z.infer<typeof FormSchema>;
+
+function StatDisplay({ label, value }: { label: string; value: number }) {
+    return (
+        <div className="flex flex-col items-center justify-center p-2 border rounded-lg bg-background text-center">
+            <span className="text-xs text-muted-foreground">{label.substring(0, 3).toUpperCase()}</span>
+            <span className="text-xl font-bold text-primary">{value}</span>
+        </div>
+    );
+}
+
+function SkillDisplay({ skill }: { skill: Character['rpg']['skills'][0]}) {
+    const iconMap = {
+        attack: <Swords className="text-destructive w-4 h-4" />,
+        defense: <Shield className="text-blue-500 w-4 h-4" />,
+        utility: <BrainCircuit className="text-green-500 w-4 h-4" />,
+    }
+
+    return (
+        <div className="p-3 border rounded-lg bg-background">
+            <div className="flex justify-between items-start">
+                <h4 className="font-semibold text-sm">{skill.name}</h4>
+                 <div className="flex items-center gap-1">
+                     <span className="text-xs font-bold text-primary">{skill.power}</span>
+                     {iconMap[skill.type]}
+                 </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">{skill.description}</p>
+        </div>
+    )
+}
 
 export function EditDetailsTab({ character }: { character: Character }) {
     const { toast } = useToast();
@@ -102,103 +132,141 @@ export function EditDetailsTab({ character }: { character: Character }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Core Details</CardTitle>
-                <CardDescription>Modify the fields below to update your character's story and attributes.</CardDescription>
+                <CardTitle>Core Details & RPG Stats</CardTitle>
+                <CardDescription>Modify the character's story, attributes, and view their generated combat stats.</CardDescription>
             </CardHeader>
             <CardContent>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                         <div className="space-y-2">
-                            <Label htmlFor="name">Character Name</Label>
-                            <Input id="name" {...form.register('name')} />
-                            {form.formState.errors.name && <p className="text-sm font-medium text-destructive">{form.formState.errors.name.message}</p>}
+                <div className="grid lg:grid-cols-3 gap-8">
+                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 lg:col-span-2">
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Character Name</Label>
+                                <Input id="name" {...form.register('name')} />
+                                {form.formState.errors.name && <p className="text-sm font-medium text-destructive">{form.formState.errors.name.message}</p>}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="archetype">Archetype</Label>
+                                <Input id="archetype" {...form.register('archetype')} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="alignment">Alignment</Label>
+                                <Controller
+                                    name="alignment"
+                                    control={form.control}
+                                    render={({ field }) => (
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                {alignmentOptions.map(option => (
+                                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
+                                {form.formState.errors.alignment && <p className="text-sm font-medium text-destructive">{form.formState.errors.alignment.message}</p>}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="equipment">Equipment (comma-separated)</Label>
+                                <Controller
+                                    name="equipment"
+                                    control={form.control}
+                                    render={({ field }) => (
+                                        <Input
+                                            id="equipment"
+                                            value={Array.isArray(field.value) ? field.value.join(', ') : ''}
+                                            onChange={(e) => field.onChange(e.target.value.split(',').map(item => item.trim()).filter(Boolean))}
+                                        />
+                                    )}
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="archetype">Archetype</Label>
-                            <Input id="archetype" {...form.register('archetype')} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="alignment">Alignment</Label>
+                        
+                        <div className="space-y-3">
+                            <Label htmlFor="rarity">Rarity</Label>
                             <Controller
-                                name="alignment"
+                                name="rarity"
                                 control={form.control}
                                 render={({ field }) => (
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {alignmentOptions.map(option => (
-                                                <SelectItem key={option} value={option}>{option}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
-                            {form.formState.errors.alignment && <p className="text-sm font-medium text-destructive">{form.formState.errors.alignment.message}</p>}
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="equipment">Equipment (comma-separated)</Label>
-                            <Controller
-                                name="equipment"
-                                control={form.control}
-                                render={({ field }) => (
-                                    <Input
-                                        id="equipment"
-                                        value={Array.isArray(field.value) ? field.value.join(', ') : ''}
-                                        onChange={(e) => field.onChange(e.target.value.split(',').map(item => item.trim()).filter(Boolean))}
-                                    />
+                                    <RadioGroup
+                                        onValueChange={(value) => field.onChange(parseInt(value))}
+                                        defaultValue={String(field.value)}
+                                        className="grid grid-cols-5 gap-2"
+                                    >
+                                    {[1, 2, 3, 4, 5].map(rarity => (
+                                        <Label key={rarity} htmlFor={`rarity-${rarity}`} className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === rarity && "border-primary")}>
+                                            <RadioGroupItem value={String(rarity)} id={`rarity-${rarity}`} className="sr-only" />
+                                            <div className="flex">
+                                                {Array.from({length: rarity}).map((_, i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400" />)}
+                                            </div>
+                                        </Label>
+                                    ))}
+                                    </RadioGroup>
                                 )}
                             />
                         </div>
-                    </div>
+
+
+                        <div className="space-y-2">
+                            <Label htmlFor="physicalDescription">Physical Description (for Image Generation)</Label>
+                            <Textarea id="physicalDescription" {...form.register('physicalDescription')} className="min-h-[150px] w-full" />
+                        </div>
                     
-                     <div className="space-y-3">
-                        <Label htmlFor="rarity">Rarity</Label>
-                        <Controller
-                            name="rarity"
-                            control={form.control}
-                            render={({ field }) => (
-                                <RadioGroup
-                                    onValueChange={(value) => field.onChange(parseInt(value))}
-                                    defaultValue={String(field.value)}
-                                    className="grid grid-cols-5 gap-2"
-                                >
-                                {[1, 2, 3, 4, 5].map(rarity => (
-                                    <Label key={rarity} htmlFor={`rarity-${rarity}`} className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === rarity && "border-primary")}>
-                                        <RadioGroupItem value={String(rarity)} id={`rarity-${rarity}`} className="sr-only" />
-                                        <div className="flex">
-                                            {Array.from({length: rarity}).map((_, i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400" />)}
-                                        </div>
-                                    </Label>
-                                ))}
-                                </RadioGroup>
-                            )}
-                        />
-                    </div>
-
-
-                    <div className="space-y-2">
-                        <Label htmlFor="physicalDescription">Physical Description (for Image Generation)</Label>
-                        <Textarea id="physicalDescription" {...form.register('physicalDescription')} className="min-h-[150px] w-full" />
-                    </div>
-                   
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <Label htmlFor="biography">Biography</Label>
-                             <Button type="button" variant="outline" size="sm" onClick={handleRegenerateBio} disabled={isRegenerating}>
-                                {isRegenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
-                                Regenerate All Text
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                                <Label htmlFor="biography">Biography</Label>
+                                <Button type="button" variant="outline" size="sm" onClick={handleRegenerateBio} disabled={isRegenerating}>
+                                    {isRegenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
+                                    Regenerate All Text
+                                </Button>
+                            </div>
+                            <Textarea id="biography" {...form.register('biography')} className="min-h-[250px] w-full" />
+                            {form.formState.errors.biography && <p className="text-sm font-medium text-destructive">{form.formState.errors.biography.message}</p>}
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button type="submit" disabled={isUpdating || !form.formState.isDirty}>
+                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Save Details
                             </Button>
                         </div>
-                        <Textarea id="biography" {...form.register('biography')} className="min-h-[250px] w-full" />
-                        {form.formState.errors.biography && <p className="text-sm font-medium text-destructive">{form.formState.errors.biography.message}</p>}
+                    </form>
+                    
+                    {/* RPG Stats Section */}
+                    <div className="space-y-6">
+                        <div className="p-4 rounded-lg border bg-muted/30">
+                            <h3 className="font-semibold mb-3 flex items-center gap-2"><Dna className="text-primary"/> RPG Attributes</h3>
+                            {character.rpg?.statsStatus === 'pending' && (
+                                <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                    <Loader2 className="animate-spin" /> Generating stats...
+                                </div>
+                            )}
+                            {character.rpg?.statsStatus === 'failed' && (
+                                <div className="text-sm text-destructive">Failed to generate stats.</div>
+                            )}
+                             {character.rpg?.statsStatus === 'complete' && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <StatDisplay label="STR" value={character.rpg.stats.strength} />
+                                    <StatDisplay label="DEX" value={character.rpg.stats.dexterity} />
+                                    <StatDisplay label="CON" value={character.rpg.stats.constitution} />
+                                    <StatDisplay label="INT" value={character.rpg.stats.intelligence} />
+                                    <StatDisplay label="WIS" value={character.rpg.stats.wisdom} />
+                                    <StatDisplay label="CHA" value={character.rpg.stats.charisma} />
+                                </div>
+                             )}
+                        </div>
+
+                         <div className="p-4 rounded-lg border bg-muted/30">
+                            <h3 className="font-semibold mb-3 flex items-center gap-2"><Swords className="text-primary"/> Combat Skills</h3>
+                            <div className="space-y-2">
+                                {character.rpg?.skills && character.rpg.skills.length > 0 ? (
+                                    character.rpg.skills.map(skill => <SkillDisplay key={skill.id} skill={skill} />)
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No skills generated yet. They will appear here after processing.</p>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex justify-end gap-2">
-                        <Button type="submit" disabled={isUpdating || !form.formState.isDirty}>
-                            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Details
-                        </Button>
-                    </div>
-                </form>
+                </div>
             </CardContent>
         </Card>
     );
