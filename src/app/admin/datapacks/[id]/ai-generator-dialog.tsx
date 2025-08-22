@@ -24,12 +24,7 @@ import type { DataPackSchema } from '@/types/datapack';
 
 
 interface AiGeneratorDialogProps {
-    onSchemaGenerated: (data: {
-        name: string;
-        description: string;
-        tags: string[];
-        schema: DataPackSchema;
-    }) => void;
+    onSchemaGenerated: (schema: DataPackSchema, name: string, description: string, tags: string[]) => void;
     onGeneratingChange: (isGenerating: boolean) => void;
 }
 
@@ -46,25 +41,21 @@ export function AiGeneratorDialog({ onSchemaGenerated, onGeneratingChange }: AiG
             try {
                 const result = await generateDataPackSchema({ concept });
                 
-                const cleanedYaml = result.yamlContent.replace(/---\s*/g, '');
+                // Clean the YAML string before parsing to handle potential AI formatting issues.
+                const cleanedYaml = result.yamlContent.replace(/---\s*/g, '').trim();
                 const parsedSchema = yaml.load(cleanedYaml) as any;
                 
-                if (!parsedSchema || !parsedSchema.characterProfileSchema) {
-                    throw new Error("The AI returned invalid or empty YAML content for the schema.");
+                if (!parsedSchema) {
+                    throw new Error("The AI returned empty or invalid YAML content.");
                 }
 
-                // The schema from AI is already in the correct format now.
+                // The schema from AI is already in the correct format.
                 const finalSchema: DataPackSchema = {
                     promptTemplates: parsedSchema.promptTemplates || [],
                     characterProfileSchema: parsedSchema.characterProfileSchema || {},
                 };
                 
-                onSchemaGenerated({
-                    name: result.name,
-                    description: result.description,
-                    tags: result.tags || [],
-                    schema: finalSchema,
-                });
+                onSchemaGenerated(finalSchema, result.name, result.description, result.tags || []);
 
                 toast({ title: "DataPack Generated!", description: "The AI has populated the form. Please review the results."});
                 setIsOpen(false);

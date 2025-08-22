@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { upsertDataPack, deleteDataPack, getDataPackForAdmin } from '@/app/actions/datapacks';
@@ -25,6 +25,7 @@ import type { DataPack, DataPackSchema } from '@/types/datapack';
 import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
 import { DataPackMetadataForm } from './datapack-metadata-form';
 import { DataPackSchemaEditor } from './datapack-schema-editor';
+import { formatDataPackSchemaFromAI } from './ai-schema-adapter';
 
 // This component now fetches its own data.
 export function EditDataPackForm({ packId }: { packId: string }) {
@@ -78,11 +79,13 @@ export function EditDataPackForm({ packId }: { packId: string }) {
     fetchData();
   }, [packId, form]);
 
-  const handleAiSchemaGenerated = (schema: DataPackSchema, name: string, description: string, tags: string[]) => {
+ const handleAiSchemaGenerated = (generatedSchema: DataPackSchema, name: string, description: string, tags: string[]) => {
       form.setValue('name', name, { shouldValidate: true, shouldDirty: true });
       form.setValue('description', description, { shouldValidate: true, shouldDirty: true });
       form.setValue('tags', tags, { shouldValidate: true, shouldDirty: true });
-      form.setValue('schema', schema, { shouldValidate: true, shouldDirty: true });
+      
+      const formattedSchema = formatDataPackSchemaFromAI(generatedSchema);
+      form.setValue('schema', formattedSchema, { shouldValidate: true, shouldDirty: true });
   };
 
 
@@ -131,6 +134,7 @@ export function EditDataPackForm({ packId }: { packId: string }) {
   }
 
   return (
+    <FormProvider {...form}>
     <form onSubmit={form.handleSubmit(onSubmit)} className="pb-24 sm:pb-0">
        <div className="hidden sm:flex items-center justify-end gap-2 mb-4">
             {initialData && (
@@ -205,5 +209,6 @@ export function EditDataPackForm({ packId }: { packId: string }) {
           </div>
       </div>
     </form>
+    </FormProvider>
   );
 }

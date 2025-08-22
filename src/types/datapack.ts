@@ -90,13 +90,13 @@ export interface PromptTemplate {
  */
 export interface DataPackSchema {
     // Legacy system (to be deprecated)
-    promptTemplates?: PromptTemplate[];
     slots?: Slot[];
     
     // New RPG Inventory system
     characterProfileSchema?: Partial<CharacterProfileSchema>;
     
     // Common fields
+    promptTemplates?: PromptTemplate[];
     tags?: string[];
 }
 
@@ -117,21 +117,50 @@ export interface DataPack {
 
 // Zod Schemas for validation (both client and server)
 
-// Zod schema for the new granular system. We use `z.any()` because the structure
-// is deeply nested and mainly validated by TypeScript types and AI generation.
-// We just need to ensure it's an object.
-const CharacterProfileSchemaForZod = z.object({}).passthrough().optional();
+const EquipmentOptionSchema = z.object({
+  label: z.string(),
+  value: z.string(),
+});
+
+const EquipmentSlotOptionsSchema = z.object({
+  clothing: z.array(EquipmentOptionSchema).optional(),
+  armor: z.array(EquipmentOptionSchema).optional(),
+  accessory: z.array(EquipmentOptionSchema).optional(),
+  weapon: z.array(EquipmentOptionSchema).optional(),
+}).optional();
+
+const CharacterProfileSchemaForZod = z.object({
+  count: z.array(EquipmentOptionSchema).optional(),
+  raceClass: z.array(EquipmentOptionSchema).optional(),
+  gender: z.array(EquipmentOptionSchema).optional(),
+  hair: z.array(EquipmentOptionSchema).optional(),
+  eyes: z.array(EquipmentOptionSchema).optional(),
+  skin: z.array(EquipmentOptionSchema).optional(),
+  facialFeatures: z.array(EquipmentOptionSchema).optional(),
+  head: EquipmentSlotOptionsSchema,
+  face: EquipmentSlotOptionsSchema,
+  neck: EquipmentSlotOptionsSchema,
+  shoulders: EquipmentSlotOptionsSchema,
+  torso: EquipmentSlotOptionsSchema,
+  arms: EquipmentSlotOptionsSchema,
+  hands: EquipmentSlotOptionsSchema,
+  waist: EquipmentSlotOptionsSchema,
+  legs: EquipmentSlotOptionsSchema,
+  feet: EquipmentSlotOptionsSchema,
+  back: EquipmentSlotOptionsSchema,
+  weaponsExtra: z.array(EquipmentOptionSchema).optional(),
+  pose: z.array(EquipmentOptionSchema).optional(),
+  action: z.array(EquipmentOptionSchema).optional(),
+  camera: z.array(EquipmentOptionSchema).optional(),
+  background: z.array(EquipmentOptionSchema).optional(),
+  effects: z.array(EquipmentOptionSchema).optional(),
+}).passthrough().optional();
+
 
 export const DataPackSchemaSchema = z.object({
     promptTemplates: z.array(z.object({
         name: z.string(),
         template: z.string(),
-    })).optional(),
-    slots: z.array(z.object({
-        id: z.string(),
-        label: z.string(),
-        type: z.enum(['text', 'select']),
-        options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
     })).optional(),
     characterProfileSchema: CharacterProfileSchemaForZod,
     tags: z.array(z.string()).optional(),
