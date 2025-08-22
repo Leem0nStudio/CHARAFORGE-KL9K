@@ -9,14 +9,14 @@ import { z } from 'zod';
 import type { Character } from '@/types/character';
 import { updateCharacter } from '@/app/actions/character-write';
 import { regenerateCharacterSheet } from '@/app/actions/generation';
-import { triggerStatGeneration, triggerSkillGeneration } from '@/app/actions/rpg';
+import { generateAllRpgAttributes } from '@/app/actions/rpg';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Wand2, Dna, Swords, Shield, BrainCircuit, AlertCircle } from 'lucide-react';
+import { Loader2, Wand2, Dna, Swords, Shield, BrainCircuit, AlertCircle, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { StarRating } from '@/components/showcase/star-rating';
@@ -141,16 +141,13 @@ export function EditDetailsTab({ character }: { character: Character }) {
             return;
         }
         startRpgGenerateTransition(async () => {
-            toast({ title: 'Generation Started', description: 'Requesting stats and skills from the AI...' });
-            const [statsResult, skillsResult] = await Promise.all([
-                triggerStatGeneration(character.id),
-                triggerSkillGeneration(character.id)
-            ]);
+            toast({ title: 'Generation Started', description: 'Forging new RPG attributes... this may take a moment.' });
+            const result = await generateAllRpgAttributes(character.id);
 
-            if (statsResult.success && skillsResult.success) {
-                 toast({ title: 'RPG Attributes Generated!', description: 'The character is ready for battle.'});
+            if (result.success) {
+                 toast({ title: 'RPG Attributes Generated!', description: result.message });
             } else {
-                 toast({ variant: 'destructive', title: 'Generation Failed', description: statsResult.error || skillsResult.error || 'An unknown error occurred.'});
+                 toast({ variant: 'destructive', title: 'Generation Failed', description: result.error || result.message });
             }
             router.refresh();
         });
@@ -158,10 +155,9 @@ export function EditDetailsTab({ character }: { character: Character }) {
 
     const rpg = character.rpg;
     const isPlayable = rpg?.isPlayable;
-    const statsPending = rpg?.statsStatus === 'pending';
-    const skillsPending = rpg?.skillsStatus === 'pending';
-    const statsComplete = rpg?.statsStatus === 'complete';
-    const skillsComplete = rpg?.skillsStatus === 'complete';
+    const attributesPending = rpg?.statsStatus === 'pending' || rpg?.skillsStatus === 'pending';
+    const attributesComplete = rpg?.statsStatus === 'complete' && rpg?.skillsStatus === 'complete';
+    const generationFailed = rpg?.statsStatus === 'failed' || rpg?.skillsStatus === 'failed';
 
     return (
         <Card>
@@ -269,12 +265,12 @@ export function EditDetailsTab({ character }: { character: Character }) {
                     </CardHeader>
                      {isPlayable ? (
                         <div className="grid lg:grid-cols-3 gap-8">
-                             <div className="space-y-6">
+                            <div className="space-y-6">
                                 <div className="p-4 rounded-lg border bg-muted/30">
                                     <h3 className="font-semibold mb-3 flex items-center gap-2"><Dna className="text-primary"/> Base Stats</h3>
-                                    {statsPending ? (
+                                    {attributesPending ? (
                                         <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="animate-spin" /> Generating stats...</div>
-                                    ) : statsComplete ? (
+                                    ) : attributesComplete ? (
                                         <div className="grid grid-cols-3 gap-2">
                                             <StatDisplay label="STR" value={rpg.stats.strength} />
                                             <StatDisplay label="DEX" value={rpg.stats.dexterity} />
@@ -287,18 +283,20 @@ export function EditDetailsTab({ character }: { character: Character }) {
                                          <p className="text-sm text-muted-foreground">Stats are ready to be generated.</p>
                                     )}
                                 </div>
-                                <Button onClick={handleGenerateRpgAttributes} disabled={isRpgGenerating || statsPending || skillsPending}>
-                                    {isRpgGenerating && <Loader2 className="animate-spin mr-2"/>}
-                                    {statsComplete ? 'Regenerate Attributes' : 'Generate Attributes'}
+                                <Button onClick={handleGenerateRpgAttributes} disabled={isRpgGenerating || attributesPending}>
+                                    {isRpgGenerating || attributesPending ? <Loader2 className="animate-spin mr-2"/> : <RefreshCw className="mr-2"/>}
+                                    {attributesComplete ? 'Regenerate Attributes' : 'Generate Attributes'}
                                 </Button>
                              </div>
                              <div className="lg:col-span-2 p-4 rounded-lg border bg-muted/30">
                                 <h3 className="font-semibold mb-3 flex items-center gap-2"><Swords className="text-primary"/> Combat Skills</h3>
                                 <div className="space-y-2">
-                                    {skillsPending ? (
+                                    {attributesPending ? (
                                         <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="animate-spin" /> Generating skills...</div>
-                                    ) : skillsComplete && rpg.skills.length > 0 ? (
+                                    ) : attributesComplete && rpg.skills.length > 0 ? (
                                         rpg.skills.map(skill => <SkillDisplay key={skill.id} skill={skill} />)
+                                    ) : generationFailed ? (
+                                        <p className="text-sm text-destructive">Skill generation failed.</p>
                                     ) : (
                                         <p className="text-sm text-muted-foreground">No skills generated yet.</p>
                                     )}

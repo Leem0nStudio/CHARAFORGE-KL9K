@@ -1,11 +1,9 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { adminDb } from '@/lib/firebase/server';
-import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { generateSkillsFlow } from '@/ai/flows/rpg-skills/flow';
 import type { Character, RpgAttributes } from '@/types/character';
@@ -18,7 +16,7 @@ type ActionResponse = {
 
 const CharacterIdSchema = z.string().min(1, 'A character ID is required.');
 
-// #region "Intelligent Dice Roll" Stat Generation Logic (from previous step)
+// #region "Intelligent Dice Roll" Stat Generation Logic
 
 type Stat = keyof RpgAttributes['stats'];
 const STAT_KEYS: Stat[] = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
@@ -88,83 +86,75 @@ async function getCharacterForRpg(characterId: string, uid: string): Promise<Cha
     if (!charDoc.exists) {
         throw new Error('Character not found.');
     }
-    const character = charDoc.data() as Character;
-    if (character.meta.userId !== uid) {
+    const characterData = charDoc.data();
+    if (characterData?.meta.userId !== uid) {
         throw new Error('Permission denied.');
     }
-    if (!character.core.archetype) {
+    if (!characterData?.core.archetype) {
         throw new Error('Character must have an Archetype (class) assigned to generate attributes.');
     }
-    return character;
+    // This is a re-casting, but it's safe because we've checked the required fields.
+    return characterData as Character;
 }
 
-export async function triggerStatGeneration(characterId: string): Promise<ActionResponse> {
+
+/**
+ * A single, robust server action to generate all RPG attributes (stats and skills).
+ * This function handles the entire lifecycle of the generation process.
+ * @param characterId The ID of the character to generate attributes for.
+ * @returns A promise that resolves to an ActionResponse.
+ */
+export async function generateAllRpgAttributes(characterId: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     const validation = CharacterIdSchema.safeParse(characterId);
     if (!validation.success) {
         return { success: false, message: 'Invalid character ID.' };
     }
+
     const charRef = adminDb.collection('characters').doc(characterId);
 
     try {
-        await charRef.update({ 'rpg.statsStatus': 'pending' });
+        // Step 1: Set status to pending to update the UI immediately
+        await charRef.update({ 
+            'rpg.statsStatus': 'pending',
+            'rpg.skillsStatus': 'pending',
+        });
         revalidatePath(`/characters/${characterId}/edit`);
 
+        // Step 2: Get character data
         const character = await getCharacterForRpg(characterId, uid);
-        
-        const stats = generateBalancedStats(character.core.archetype!);
-        const newRarity = calculateRarity(stats);
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
 
+        // Step 3: Generate stats and skills in parallel
+        const [stats, skillsResult] = await Promise.all([
+            generateBalancedStats(character.core.archetype!),
+            generateSkillsFlow({
+                archetype: character.core.archetype!,
+                equipment: character.core.equipment || [],
+                biography: character.core.biography,
+            })
+        ]);
+        
+        const newRarity = calculateRarity(stats);
+
+        // Step 4: Update Firestore with the final results
         await charRef.update({
             'rpg.stats': stats,
             'core.rarity': newRarity,
+            'rpg.skills': skillsResult.skills,
             'rpg.statsStatus': 'complete',
-        });
-        
-        revalidatePath(`/characters/${characterId}/edit`);
-        return { success: true, message: 'Stats generated successfully!' };
-    } catch (error) {
-        await charRef.update({ 'rpg.statsStatus': 'failed' }).catch(() => {});
-        revalidatePath(`/characters/${characterId}/edit`);
-        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        return { success: false, message, error: message };
-    }
-}
-
-
-export async function triggerSkillGeneration(characterId: string): Promise<ActionResponse> {
-    const uid = await verifyAndGetUid();
-    const validation = CharacterIdSchema.safeParse(characterId);
-    if (!validation.success) {
-        return { success: false, message: 'Invalid character ID.' };
-    }
-    const charRef = adminDb.collection('characters').doc(characterId);
-
-    try {
-        await charRef.update({ 'rpg.skillsStatus': 'pending' });
-        revalidatePath(`/characters/${characterId}/edit`);
-        
-        const character = await getCharacterForRpg(characterId, uid);
-        
-        const { skills } = await generateSkillsFlow({
-            archetype: character.core.archetype!,
-            equipment: character.core.equipment || [],
-            biography: character.core.biography,
-        });
-
-        await charRef.update({
-            'rpg.skills': skills,
             'rpg.skillsStatus': 'complete',
         });
         
         revalidatePath(`/characters/${characterId}/edit`);
-        return { success: true, message: 'Skills generated successfully!' };
+        return { success: true, message: 'Character attributes generated successfully!' };
+
     } catch (error) {
-        await charRef.update({ 'rpg.skillsStatus': 'failed' }).catch(() => {});
+        await charRef.update({ 
+            'rpg.statsStatus': 'failed',
+            'rpg.skillsStatus': 'failed',
+        }).catch(() => {});
         revalidatePath(`/characters/${characterId}/edit`);
-        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+        const message = error instanceof Error ? error.message : 'An unknown error occurred during attribute generation.';
         return { success: false, message, error: message };
     }
 }
