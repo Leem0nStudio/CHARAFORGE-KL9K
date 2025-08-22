@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return (
         <div className="flex min-h-screen w-full bg-background">
             <AdminSidebar />
-            <div className="flex flex-col w-full bg-card">
+            <div className="flex flex-col w-full">
                 <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
                      <Sheet>
                         <SheetTrigger asChild>
@@ -79,5 +79,3 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
     );
 }
-
-    
