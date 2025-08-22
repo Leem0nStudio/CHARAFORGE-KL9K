@@ -1,47 +1,43 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Users can only manage their own profile.
-    // Public profiles can be read by anyone if privacy is set.
+    // Users can only read/write their own data.
+    // Public profiles are readable if the user has set their privacy setting.
     match /users/{userId} {
-      allow read: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(userId)).data.preferences.privacy.profileVisibility == 'public';
+      allow read: if request.auth.uid == userId || (get(/databases/$(database)/documents/users/$(userId)).data.preferences.privacy.profileVisibility == 'public');
       allow create, update: if request.auth.uid == userId;
     }
-
-    // Characters can be read if they are public.
-    // Users can perform all actions on their own characters.
+    
+    // Characters can be read if public, or by their owner.
+    // Characters can only be written by their owner.
     match /characters/{characterId} {
-      allow read: if resource.data.meta.status == 'public' || request.auth.uid == resource.data.meta.userId;
-      allow create, update, delete: if request.auth.uid == resource.data.meta.userId;
+        allow read: if (request.auth.uid != null && request.auth.uid == resource.data.meta.userId) || resource.data.meta.status == 'public';
+        allow create, update, delete: if request.auth.uid == resource.data.meta.userId;
     }
-
-    // DataPacks are public and read-only from the client.
-    // Writes are handled by admin server actions.
+    
+    // Public collections, readable by anyone.
+    // Writes are handled by secure server-side logic (Admin SDK).
     match /datapacks/{packId} {
       allow read: if true;
       allow write: if false; 
     }
     
-    // AI Models are read-only from the client.
-    // User-specific models are handled by server actions.
-    match /ai_models/{modelId} {
+    match /storyCasts/{castId} {
+        allow read: if true;
+        allow create, update, delete: if request.auth.uid == resource.data.userId;
+    }
+    
+    match /settings/{settingId} {
         allow read: if true;
         allow write: if false;
     }
-    
-    // Settings should not be client-accessible at all.
-    match /settings/{docId} {
-        allow read, write: if false;
+
+    match /ai_models/{modelId} {
+        allow read: if true;
+        allow create: if request.auth.uid != null;
+        allow update, delete: if request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-    
-    // StoryCasts are user-specific content.
-    match /storyCasts/{castId} {
-        allow read, update, delete: if request.auth.uid == resource.data.userId;
-        allow create: if request.auth.uid == request.resource.data.userId;
-    }
-    
   }
 }
