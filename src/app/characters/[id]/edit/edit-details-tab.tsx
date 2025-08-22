@@ -6,7 +6,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
-import { updateCharacter, generateCharacterSkillsAction } from '@/app/actions/character-write';
+import { updateCharacter } from '@/app/actions/character-write';
 import { generateCharacterSheetData } from '@/app/actions/generation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -76,7 +76,6 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
     const [character, setCharacter] = useState(initialCharacter);
     const [isUpdating, startUpdateTransition] = useTransition();
     const [isRegenerating, startRegenerateTransition] = useTransition();
-    const [isSkillGenerating, startSkillGenerateTransition] = useTransition();
     
     useEffect(() => {
         setCharacter(initialCharacter);
@@ -147,24 +146,10 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
         });
     };
     
-    const handleGenerateSkills = () => {
-        startSkillGenerateTransition(async () => {
-            const result = await generateCharacterSkillsAction(character.id);
-             if (result.success && result.skills) {
-                 toast({ title: 'Skills Generated!', description: result.message });
-                 router.refresh();
-             } else {
-                 toast({ variant: 'destructive', title: 'Generation Failed', description: result.error || result.message });
-                 router.refresh();
-             }
-        });
-    };
-
     const rpg = character.rpg;
     const isPlayable = rpg?.isPlayable;
     const statsAreSet = rpg?.stats.strength > 0;
     const skillsAreSet = rpg?.skills.length > 0;
-    const generationFailed = rpg?.skillsStatus === 'failed';
 
     return (
         <Card>
@@ -289,20 +274,16 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                              </div>
                              <div className="lg:col-span-2 space-y-4 p-4 rounded-lg border bg-muted/30">
                                 <h3 className="font-semibold flex items-center gap-2"><Swords className="text-primary"/> Combat Skills</h3>
-                                {isSkillGenerating ? (
-                                    <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="animate-spin" /> Generating skills...</div>
-                                ) : skillsAreSet ? (
+                                {skillsAreSet ? (
                                      <div className="space-y-2">
                                         {rpg.skills.map(skill => <SkillDisplay key={skill.id} skill={skill} />)}
                                      </div>
-                                ) : generationFailed ? (
-                                    <p className="text-sm text-destructive">Skill generation failed. You can try again.</p>
                                 ) : (
                                     <p className="text-sm text-muted-foreground">No skills generated yet. Click "Generate" to create them.</p>
                                 )}
-                                <Button onClick={handleGenerateSkills} disabled={isSkillGenerating}>
-                                    {isSkillGenerating ? <Loader2 className="animate-spin mr-2"/> : <RefreshCw className="mr-2"/>}
-                                    {skillsAreSet ? 'Regenerate Skills' : 'Generate Skills'}
+                                <Button disabled>
+                                    <RefreshCw className="mr-2"/>
+                                    Regenerate Skills (Coming Soon)
                                 </Button>
                             </div>
                         </div>

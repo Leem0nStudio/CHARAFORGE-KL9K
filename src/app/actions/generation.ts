@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
-import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
+import type { ImageEngineConfig } from '@/types/generation';
 import { type TextEngineConfig } from '@/types/generation';
 import type { AiModel } from '@/types/ai-model';
 import { verifyAndGetUid } from '@/lib/auth/server';

@@ -10,7 +10,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { uploadToStorage } from '@/services/storage';
 import { UpdateCharacterSchema, SaveCharacterInputSchema, type SaveCharacterInput } from '@/types/character';
 import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
-import { generateCharacterSkills } from '@/ai/flows/rpg-skills/flow';
 
 // #region Helper Functions for Stat Generation
 // This logic is now part of the server action to be used when a character's archetype changes.
@@ -249,7 +248,6 @@ export async function updateCharacter(
             const newRarity = calculateRarity(newStats);
             updates['rpg.stats'] = newStats;
             updates['core.rarity'] = newRarity;
-            updates['rpg.statsStatus'] = 'complete';
             updates['rpg.isPlayable'] = true;
         } else {
             // Reset stats if class is removed
@@ -461,58 +459,4 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
     const message = error instanceof Error ? error.message : 'Could not update permissions.';
     return { success: false, message };
   }
-}
-
-
-export async function generateCharacterSkillsAction(characterId: string): Promise<ActionResponse> {
-    const uid = await verifyAndGetUid();
-    if (!adminDb) {
-        return { success: false, message: 'Database service is unavailable.' };
-    }
-
-    const charRef = adminDb.collection('characters').doc(characterId);
-
-    try {
-        await charRef.update({ 'rpg.skillsStatus': 'pending' });
-        revalidatePath(`/characters/${characterId}/edit`);
-
-        const charDoc = await charRef.get();
-        if (!charDoc.exists) {
-            throw new Error('Character not found.');
-        }
-        const character = charDoc.data() as Character;
-        if (character.meta.userId !== uid) {
-            throw new Error('Permission denied.');
-        }
-        if (!character.core.archetype) {
-            throw new Error('Character must have an Archetype to generate skills.');
-        }
-        
-        const result = await generateCharacterSkills({
-            archetype: character.core.archetype,
-            biography: character.core.biography,
-            equipment: character.core.equipment || [],
-        });
-
-        await charRef.update({
-            'rpg.skills': result.skills,
-            'rpg.skillsStatus': 'complete',
-        });
-        
-        revalidatePath(`/characters/${characterId}/edit`);
-
-        return {
-            success: true,
-            message: 'Character skills generated successfully!',
-            skills: result.skills || [],
-        };
-
-    } catch (error) {
-        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        await charRef.update({ 
-            'rpg.skillsStatus': 'failed',
-        }).catch(() => {});
-        revalidatePath(`/characters/${characterId}/edit`);
-        return { success: false, message: 'Failed to generate skills.', error: message };
-    }
 }

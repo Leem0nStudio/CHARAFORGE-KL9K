@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Data schemas and types for the text translation flow.
  * This file defines the Zod schemas for input and output validation,
@@ -5,7 +6,7 @@
  */
 
 import {z} from 'genkit';
-import { TextEngineConfigSchema } from '@/ai/flows/character-sheet/types';
+import { TextEngineConfigSchema } from '@/types/generation';
 
 export const TranslateTextInputSchema = z.object({
   text: z.string().describe('The text to be translated.'),
