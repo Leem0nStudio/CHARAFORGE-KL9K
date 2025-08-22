@@ -23,7 +23,7 @@ import { StarRating } from '@/components/showcase/star-rating';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { rpgArchetypes } from '@/lib/app-config';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { getFirebaseClient } from '@/lib/firebase/client';
 
 
@@ -80,7 +80,8 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
     const [isUpdating, startUpdateTransition] = useTransition();
     const [isRegenerating, startRegenerateTransition] = useTransition();
     const [isRpgGenerating, startRpgGenerateTransition] = useTransition();
-    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const unsubscribeRef = useRef<() => void | null>(null);
+
 
     const form = useForm<FormValues>({
         resolver: zodResolver(FormSchema),
@@ -94,47 +95,49 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
         },
     });
 
-    const isGenerationInProgress = character.rpg?.statsStatus === 'pending' || character.rpg?.skillsStatus === 'pending';
-
-    const stopPolling = useCallback(() => {
-        if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-        }
+    useEffect(() => {
+        // Clean up the listener when the component unmounts
+        return () => {
+            if (unsubscribeRef.current) {
+                unsubscribeRef.current();
+            }
+        };
     }, []);
+    
 
-    const startPolling = useCallback(() => {
-        stopPolling(); // Ensure no multiple intervals are running
+    const listenForRpgUpdates = useCallback(() => {
+        const { db } = getFirebaseClient();
+        const charDocRef = doc(db, 'characters', character.id);
+        
+        // Stop any previous listener
+        if (unsubscribeRef.current) {
+            unsubscribeRef.current();
+        }
 
-        pollingIntervalRef.current = setInterval(async () => {
-            const { db } = getFirebaseClient();
-            const charDocRef = doc(db, 'characters', character.id);
-            const charDocSnap = await getDoc(charDocRef);
-            
-            if (charDocSnap.exists()) {
-                const updatedData = charDocSnap.data() as Character;
-                const rpgStatus = updatedData.rpg?.statsStatus;
-                
-                if (rpgStatus === 'complete' || rpgStatus === 'failed') {
-                    stopPolling();
-                    setCharacter(prev => ({...prev, rpg: updatedData.rpg }));
-                    router.refresh(); // Final refresh to sync server component data
+        unsubscribeRef.current = onSnapshot(charDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const updatedData = docSnap.data() as Character;
+                const newRpgStatus = updatedData.rpg?.statsStatus;
+                const oldRpgStatus = character.rpg?.statsStatus;
+
+                // Update local state only if there's a change
+                setCharacter(prev => ({...prev, rpg: updatedData.rpg }));
+
+                if (oldRpgStatus === 'pending' && newRpgStatus === 'complete') {
+                    toast({ title: "Attributes Generated!", description: "The new stats and skills are ready." });
+                    if (unsubscribeRef.current) unsubscribeRef.current();
+                } else if (oldRpgStatus === 'pending' && newRpgStatus === 'failed') {
+                     toast({ variant: 'destructive', title: 'Generation Failed', description: "Something went wrong during attribute generation." });
+                    if (unsubscribeRef.current) unsubscribeRef.current();
                 }
             } else {
-                stopPolling();
+                 if (unsubscribeRef.current) unsubscribeRef.current();
             }
-        }, 5000); // Poll every 5 seconds
-    }, [character.id, router, stopPolling]);
-
-
-    useEffect(() => {
-        if (isGenerationInProgress) {
-            startPolling();
-        } else {
-            stopPolling();
-        }
-        return stopPolling;
-    }, [isGenerationInProgress, startPolling, stopPolling]);
+        }, (error) => {
+            console.error("Firestore listener error:", error);
+            if (unsubscribeRef.current) unsubscribeRef.current();
+        });
+    }, [character.id, character.rpg?.statsStatus, toast]);
 
     const onSubmit = (data: FormValues) => {
         const dataToSave = {
@@ -149,6 +152,13 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                 variant: result.success ? 'default' : 'destructive',
             });
             if (result.success) {
+                // Manually set the isPlayable status on the client for immediate feedback
+                // if an archetype was newly added. The server will handle the rest.
+                const wasPlayable = character.rpg.isPlayable;
+                const isNowPlayable = !!dataToSave.archetype;
+                if (!wasPlayable && isNowPlayable) {
+                    setCharacter(prev => ({...prev, rpg: {...prev.rpg, isPlayable: true, statsStatus: 'pending', skillsStatus: 'pending'}}));
+                }
                 router.refresh();
             }
         });
@@ -187,11 +197,11 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
             return;
         }
         startRpgGenerateTransition(async () => {
-            toast({ title: 'Generation Queued', description: 'Forging new RPG attributes... this may take a moment.' });
             const result = await generateAllRpgAttributes(character.id);
             if (result.success) {
-                 setCharacter(prev => ({...prev, rpg: { ...prev.rpg, statsStatus: 'pending', skillsStatus: 'pending' }}));
-                 startPolling();
+                 toast({ title: 'Generation Queued', description: 'Forging new RPG attributes... this may take a moment.' });
+                 // Start listening for changes immediately
+                 listenForRpgUpdates();
             } else {
                  toast({ variant: 'destructive', title: 'Generation Failed', description: result.error || result.message });
             }
@@ -200,6 +210,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
 
     const rpg = character.rpg;
     const isPlayable = rpg?.isPlayable;
+    const isGenerationInProgress = rpg?.statsStatus === 'pending' || isRpgGenerating;
     const attributesComplete = rpg?.statsStatus === 'complete' && rpg?.skillsStatus === 'complete';
     const generationFailed = rpg?.statsStatus === 'failed' || rpg?.skillsStatus === 'failed';
 
@@ -327,8 +338,8 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                                          <p className="text-sm text-muted-foreground">Stats are ready to be generated.</p>
                                     )}
                                 </div>
-                                <Button onClick={handleGenerateRpgAttributes} disabled={isRpgGenerating || isGenerationInProgress}>
-                                    {isRpgGenerating || isGenerationInProgress ? <Loader2 className="animate-spin mr-2"/> : <RefreshCw className="mr-2"/>}
+                                <Button onClick={handleGenerateRpgAttributes} disabled={isGenerationInProgress}>
+                                    {isGenerationInProgress ? <Loader2 className="animate-spin mr-2"/> : <RefreshCw className="mr-2"/>}
                                     {attributesComplete ? 'Regenerate Attributes' : 'Generate Attributes'}
                                 </Button>
                              </div>
@@ -352,7 +363,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                             <AlertCircle className="h-4 w-4" />
                             <AlertTitle>Not a Playable Character</AlertTitle>
                             <AlertDescription>
-                                This character is not playable because it does not have an Archetype/Class assigned. Edit the character details to assign one.
+                                This character is not playable because it does not have an Archetype/Class assigned. Edit the character details to assign one. Once saved, you can generate attributes.
                             </AlertDescription>
                         </Alert>
                      )}
