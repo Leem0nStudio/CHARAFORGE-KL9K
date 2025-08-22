@@ -78,15 +78,13 @@ export function CharacterCard({ character }: CharacterCardProps) {
                      {character.core.tags && character.core.tags.length > 0 ? (
                         <div className="flex flex-wrap items-center gap-1 mb-2">
                             {character.core.tags.slice(0, 3).map((tag) => (
-                                <Link key={tag} href={`/search?tag=${encodeURIComponent(tag)}`}>
-                                    <Badge
-                                        variant="outline"
-                                        className="cursor-pointer hover:border-primary/50"
-                                        data-category={getSlotCategory(tag)}
-                                    >
-                                      {tag.replace(/_/g, ' ')}
-                                    </Badge>
-                                </Link>
+                                <Badge
+                                    key={tag}
+                                    variant="outline"
+                                    data-category={getSlotCategory(tag)}
+                                >
+                                  {tag.replace(/_/g, ' ')}
+                                </Badge>
                             ))}
                             {character.core.tags.length > 3 && <Badge variant="outline" className="text-xs">...</Badge>}
                         </div>
@@ -149,5 +147,3 @@ export function CharacterCard({ character }: CharacterCardProps) {
         </motion.div>
     );
 }
-
-    
