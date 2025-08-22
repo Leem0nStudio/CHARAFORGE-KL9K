@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import type { Character } from '@/types/character';
-import { ArrowLeft, Edit, Share2 } from 'lucide-react';
+import { ArrowLeft, Edit, Share2, Dna, Swords as SwordsIcon, Shield, BrainCircuit } from 'lucide-react';
 import { StatItem } from './stat-item';
 import { StarRating } from './star-rating';
 import { motion } from 'framer-motion';
@@ -18,6 +18,28 @@ interface ShowcaseViewerProps {
     character: Character;
     currentUserId: string | null;
 }
+
+function SkillDisplay({ skill }: { skill: Character['rpg']['skills'][0]}) {
+    const iconMap = {
+        attack: <SwordsIcon className="text-destructive w-4 h-4" />,
+        defense: <Shield className="text-blue-500 w-4 h-4" />,
+        utility: <BrainCircuit className="text-green-500 w-4 h-4" />,
+    }
+
+    return (
+        <div className="text-sm">
+            <div className="flex justify-between items-start gap-2">
+                <h4 className="font-semibold text-card-foreground">{skill.name}</h4>
+                 <div className="flex items-center gap-1.5 shrink-0">
+                     <span className="text-xs font-bold text-primary">{skill.power}</span>
+                     {iconMap[skill.type]}
+                 </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">{skill.description}</p>
+        </div>
+    )
+}
+
 
 export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps) {
     const isOwner = character.meta.userId === currentUserId;
@@ -82,6 +104,7 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                 {/* Info Panel */}
                 <motion.div className="w-full" variants={itemVariants}>
                      <Card className="bg-card/80 backdrop-blur-md">
+                        <ScrollArea className="h-full max-h-[85vh]">
                         <CardContent className="p-6 space-y-4">
                             <div>
                                 <h1 className="text-3xl font-headline tracking-wider">{character.core.name}</h1>
@@ -105,6 +128,30 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                                     <p className="text-sm text-card-foreground/90 whitespace-pre-wrap">{character.core.biography}</p>
                                 </ScrollArea>
                             </div>
+                            
+                            {character.rpg.isPlayable && (
+                                <>
+                                 <Separator />
+                                 <div className="space-y-4">
+                                     <h3 className="font-semibold text-muted-foreground flex items-center gap-2"><Dna className="w-4 h-4"/> Base Stats</h3>
+                                      <div className="grid grid-cols-6 gap-2 text-center">
+                                        <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">STR</span><b className="text-primary">{character.rpg.stats.strength}</b></div>
+                                        <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">DEX</span><b className="text-primary">{character.rpg.stats.dexterity}</b></div>
+                                        <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">CON</span><b className="text-primary">{character.rpg.stats.constitution}</b></div>
+                                        <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">INT</span><b className="text-primary">{character.rpg.stats.intelligence}</b></div>
+                                        <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">WIS</span><b className="text-primary">{character.rpg.stats.wisdom}</b></div>
+                                        <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">CHA</span><b className="text-primary">{character.rpg.stats.charisma}</b></div>
+                                    </div>
+                                 </div>
+                                  <div className="space-y-4">
+                                     <h3 className="font-semibold text-muted-foreground flex items-center gap-2"><SwordsIcon className="w-4 h-4"/> Skills</h3>
+                                      <div className="space-y-3">
+                                        {character.rpg.skills.map((skill) => <SkillDisplay key={skill.id} skill={skill} />)}
+                                      </div>
+                                 </div>
+                                </>
+                            )}
+
 
                              <div className="flex gap-2 pt-4">
                                 <Button className="flex-1" variant="secondary"><Share2 className="mr-2"/>Share</Button>
@@ -116,6 +163,7 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                             </div>
 
                         </CardContent>
+                        </ScrollArea>
                     </Card>
                 </motion.div>
             </motion.div>
