@@ -23,7 +23,7 @@ import { StarRating } from '@/components/showcase/star-rating';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { rpgArchetypes } from '@/lib/app-config';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { getFirebaseClient } from '@/lib/firebase/client';
 
 
@@ -96,48 +96,27 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
     });
 
     useEffect(() => {
-        // Clean up the listener when the component unmounts
-        return () => {
-            if (unsubscribeRef.current) {
-                unsubscribeRef.current();
-            }
-        };
-    }, []);
-    
-
-    const listenForRpgUpdates = useCallback(() => {
         const { db } = getFirebaseClient();
         const charDocRef = doc(db, 'characters', character.id);
         
-        // Stop any previous listener
-        if (unsubscribeRef.current) {
-            unsubscribeRef.current();
-        }
-
-        unsubscribeRef.current = onSnapshot(charDocRef, (docSnap) => {
+        const unsubscribe = onSnapshot(charDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const updatedData = docSnap.data() as Character;
-                const newRpgStatus = updatedData.rpg?.statsStatus;
-                const oldRpgStatus = character.rpg?.statsStatus;
+                const oldRpgStatus = character.rpg?.skillsStatus;
 
-                // Update local state only if there's a change
                 setCharacter(prev => ({...prev, rpg: updatedData.rpg }));
 
-                if (oldRpgStatus === 'pending' && newRpgStatus === 'complete') {
-                    toast({ title: "Attributes Generated!", description: "The new stats and skills are ready." });
-                    if (unsubscribeRef.current) unsubscribeRef.current();
-                } else if (oldRpgStatus === 'pending' && newRpgStatus === 'failed') {
-                     toast({ variant: 'destructive', title: 'Generation Failed', description: "Something went wrong during attribute generation." });
-                    if (unsubscribeRef.current) unsubscribeRef.current();
+                if (oldRpgStatus === 'pending' && updatedData.rpg.skillsStatus === 'complete') {
+                    toast({ title: "Skills Generated!", description: "The new combat skills are ready." });
+                } else if (oldRpgStatus === 'pending' && updatedData.rpg.skillsStatus === 'failed') {
+                     toast({ variant: 'destructive', title: 'Generation Failed', description: "Something went wrong during skill generation." });
                 }
-            } else {
-                 if (unsubscribeRef.current) unsubscribeRef.current();
             }
-        }, (error) => {
-            console.error("Firestore listener error:", error);
-            if (unsubscribeRef.current) unsubscribeRef.current();
         });
-    }, [character.id, character.rpg?.statsStatus, toast]);
+
+        return () => unsubscribe();
+    }, [character.id, character.rpg?.skillsStatus, toast]);
+    
 
     const onSubmit = (data: FormValues) => {
         const dataToSave = {
@@ -152,8 +131,6 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                 variant: result.success ? 'default' : 'destructive',
             });
             if (result.success) {
-                // Manually set the isPlayable status on the client for immediate feedback
-                // if an archetype was newly added. The server will handle the rest.
                 const wasPlayable = character.rpg.isPlayable;
                 const isNowPlayable = !!dataToSave.archetype;
                 if (!wasPlayable && isNowPlayable) {
@@ -200,8 +177,6 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
             const result = await generateAllRpgAttributes(character.id);
             if (result.success) {
                  toast({ title: 'Generation Queued', description: 'Forging new RPG attributes... this may take a moment.' });
-                 // Start listening for changes immediately
-                 listenForRpgUpdates();
             } else {
                  toast({ variant: 'destructive', title: 'Generation Failed', description: result.error || result.message });
             }
@@ -210,8 +185,8 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
 
     const rpg = character.rpg;
     const isPlayable = rpg?.isPlayable;
-    const isGenerationInProgress = rpg?.statsStatus === 'pending' || isRpgGenerating;
-    const attributesComplete = rpg?.statsStatus === 'complete' && rpg?.skillsStatus === 'complete';
+    const isGenerationInProgress = rpg?.skillsStatus === 'pending' || isRpgGenerating;
+    const attributesComplete = rpg?.statsStatus === 'complete';
     const generationFailed = rpg?.statsStatus === 'failed' || rpg?.skillsStatus === 'failed';
 
     return (
@@ -323,9 +298,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                             <div className="space-y-6">
                                 <div className="p-4 rounded-lg border bg-muted/30">
                                     <h3 className="font-semibold mb-3 flex items-center gap-2"><Dna className="text-primary"/> Base Stats</h3>
-                                    {isGenerationInProgress ? (
-                                        <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="animate-spin" /> Generating stats...</div>
-                                    ) : attributesComplete ? (
+                                    {attributesComplete ? (
                                         <div className="grid grid-cols-3 gap-2">
                                             <StatDisplay label="STR" value={rpg.stats.strength} />
                                             <StatDisplay label="DEX" value={rpg.stats.dexterity} />
@@ -340,7 +313,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                                 </div>
                                 <Button onClick={handleGenerateRpgAttributes} disabled={isGenerationInProgress}>
                                     {isGenerationInProgress ? <Loader2 className="animate-spin mr-2"/> : <RefreshCw className="mr-2"/>}
-                                    {attributesComplete ? 'Regenerate Attributes' : 'Generate Attributes'}
+                                    {rpg.skillsStatus === 'complete' ? 'Regenerate Attributes' : 'Generate Attributes'}
                                 </Button>
                              </div>
                              <div className="lg:col-span-2 p-4 rounded-lg border bg-muted/30">
@@ -348,12 +321,12 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                                 <div className="space-y-2">
                                     {isGenerationInProgress ? (
                                         <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="animate-spin" /> Generating skills...</div>
-                                    ) : attributesComplete && rpg.skills.length > 0 ? (
+                                    ) : rpg.skills.length > 0 ? (
                                         rpg.skills.map(skill => <SkillDisplay key={skill.id} skill={skill} />)
                                     ) : generationFailed ? (
                                         <p className="text-sm text-destructive">Skill generation failed.</p>
                                     ) : (
-                                        <p className="text-sm text-muted-foreground">No skills generated yet.</p>
+                                        <p className="text-sm text-muted-foreground">No skills generated yet. Click "Generate" to create them.</p>
                                     )}
                                 </div>
                             </div>

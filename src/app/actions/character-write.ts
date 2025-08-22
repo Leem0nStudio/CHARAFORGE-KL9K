@@ -291,7 +291,9 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 level: 1,
                 experience: 0,
                 skills: [],
-                statsStatus: 'pending', // Always start as pending
+                // Attributes are now generated upfront, so their status is 'complete'.
+                // Skills will be generated in the background.
+                statsStatus: 'complete', 
                 skillsStatus: 'pending',
                 stats: stats || { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 },
             }
