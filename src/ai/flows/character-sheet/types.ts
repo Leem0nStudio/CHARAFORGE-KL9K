@@ -23,5 +23,15 @@ export const GenerateCharacterSheetOutputSchema = z.object({
   equipment: z.array(z.string()).describe("A list of the character's key equipment or weapons.").optional(),
   physicalDescription: z.string().describe("A detailed physical description suitable for an image prompt.").optional(),
   biography: z.string().describe("The character's detailed, narrative biography.").optional(),
+  // Add stats and rarity to the output schema.
+  stats: z.object({
+    strength: z.number().int(),
+    dexterity: z.number().int(),
+    constitution: z.number().int(),
+    intelligence: z.number().int(),
+    wisdom: z.number().int(),
+    charisma: z.number().int(),
+  }),
+  rarity: z.number().min(1).max(5) as z.ZodType<1 | 2 | 3 | 4 | 5>,
 });
 export type GenerateCharacterSheetOutput = z.infer<typeof GenerateCharacterSheetOutputSchema>;

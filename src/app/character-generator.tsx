@@ -290,6 +290,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
           imageEngine: generationResult.imageEngine,
           wizardData: formData.wizardData,
           originalPrompt: generationResult.originalDescription,
+          stats: generationResult.stats,
+          rarity: generationResult.rarity,
         });
 
         if (result.success && result.characterId) {

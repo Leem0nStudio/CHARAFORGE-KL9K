@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview This file contains data types related to the AI generation process
  * that are safe to be used in Client Components. It avoids importing server-only
@@ -40,6 +41,7 @@ export interface ImageEngineConfig {
 
 /**
  * The output shape of the character sheet generation flow.
+ * Now includes stats and rarity.
  * Safe for client-side use.
  */
 export interface GenerationResult {
@@ -53,4 +55,13 @@ export interface GenerationResult {
   dataPackId?: string | null;
   textEngine?: TextEngineConfig['engineId'];
   imageEngine?: ImageEngineConfig['engineId'];
+  stats?: {
+    strength: number;
+    dexterity: number;
+    constitution: number;
+    intelligence: number;
+    wisdom: number;
+    charisma: number;
+  };
+  rarity?: 1 | 2 | 3 | 4 | 5;
 }

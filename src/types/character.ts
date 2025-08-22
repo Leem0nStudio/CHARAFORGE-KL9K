@@ -136,6 +136,15 @@ export const SaveCharacterInputSchema = z.object({
   imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai', 'comfyui', 'modelslab']).optional(),
   wizardData: z.record(z.string()).optional().nullable(),
   originalPrompt: z.string().optional(),
-  rarity: z.number().min(1).max(5).optional(), // Rarity is now optional as it's calculated
+  // Add stats and rarity to the input schema for saving.
+  stats: z.object({
+    strength: z.number().int(),
+    dexterity: z.number().int(),
+    constitution: z.number().int(),
+    intelligence: z.number().int(),
+    wisdom: z.number().int(),
+    charisma: z.number().int(),
+  }).optional(),
+  rarity: z.number().min(1).max(5).optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
