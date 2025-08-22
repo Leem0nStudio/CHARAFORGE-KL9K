@@ -80,12 +80,18 @@ export function EditDataPackForm({ packId }: { packId: string }) {
   }, [packId, form]);
 
  const handleAiSchemaGenerated = (generatedSchema: DataPackSchema, name: string, description: string, tags: string[]) => {
-      form.setValue('name', name, { shouldValidate: true, shouldDirty: true });
-      form.setValue('description', description, { shouldValidate: true, shouldDirty: true });
-      form.setValue('tags', tags, { shouldValidate: true, shouldDirty: true });
-      
+      const currentValues = form.getValues();
       const formattedSchema = formatDataPackSchemaFromAI(generatedSchema);
-      form.setValue('schema', formattedSchema, { shouldValidate: true, shouldDirty: true });
+      
+      // Use form.reset to update the entire form state at once.
+      // This ensures all child components, including those with useFieldArray, re-render correctly.
+      form.reset({
+          ...currentValues, // Keep existing values like type, price, etc.
+          name,
+          description,
+          tags,
+          schema: formattedSchema,
+      });
   };
 
 
