@@ -12,28 +12,21 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const { authUser } = useAuth();
   
-  // Filter out items that require auth if user is not logged in, but keep the primary action
-  const items = mainNavItems.filter(item => !item.requiresAuth || authUser || item.isPrimary);
-  const numItems = items.length;
+  // Always render all items to ensure consistent grid column count
+  const items = mainNavItems;
 
   return (
     <div className="sm:hidden fixed bottom-0 left-0 z-50 w-full h-16 bg-background border-t border-border">
-      <div className={cn("grid h-full max-w-lg mx-auto font-medium", `grid-cols-${numItems}`)}>
+      <div className="grid h-full max-w-lg mx-auto font-medium grid-cols-6">
         {items.map((item) => {
           const isActive = (item.href === '/' && pathname === '/') || (item.href !== '/' && pathname.startsWith(item.href));
-          
-          if (item.requiresAuth && !authUser) {
-            return <div key={item.href} className="inline-flex flex-col items-center justify-center px-5 opacity-50 cursor-not-allowed">
-                <item.icon className="w-5 h-5 mb-1" />
-                <span className="text-xs">{item.label}</span>
-            </div>
-          }
+          const requiresAuthAndIsUnauthed = item.requiresAuth && !authUser;
 
           if (item.isPrimary) {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={requiresAuthAndIsUnauthed ? '/login' : item.href}
                 className="inline-flex flex-col items-center justify-center -translate-y-3"
               >
                 <div className="p-4 bg-primary rounded-full text-primary-foreground shadow-lg ring-4 ring-background">
@@ -47,10 +40,11 @@ export function MobileBottomNav() {
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={requiresAuthAndIsUnauthed ? '/login' : item.href}
               className={cn(
-                'inline-flex flex-col items-center justify-center px-5 hover:bg-muted/50 group',
-                isActive ? 'text-primary' : 'text-muted-foreground'
+                'inline-flex flex-col items-center justify-center px-2 text-center group',
+                isActive && !requiresAuthAndIsUnauthed ? 'text-primary' : 'text-muted-foreground',
+                requiresAuthAndIsUnauthed ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted/50'
               )}
             >
               <item.icon className="w-5 h-5 mb-1" />
