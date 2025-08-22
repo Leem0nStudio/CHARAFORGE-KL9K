@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useTransition, useEffect, useRef } from 'react';
+import { useTransition, useEffect, useRef, useState, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { Character } from '@/types/character';
+import type { Character, RpgAttributes } from '@/types/character';
 import { updateCharacter } from '@/app/actions/character-write';
 import { regenerateCharacterSheet } from '@/app/actions/generation';
 import { generateAllRpgAttributes } from '@/app/actions/rpg';
@@ -22,6 +22,8 @@ import { StarRating } from '@/components/showcase/star-rating';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { rpgArchetypes } from '@/lib/app-config';
+import { doc, getDoc } from 'firebase/firestore';
+import { getFirebaseClient } from '@/lib/firebase/client';
 
 
 const alignmentOptions = [
@@ -70,9 +72,10 @@ function SkillDisplay({ skill }: { skill: Character['rpg']['skills'][0]}) {
     )
 }
 
-export function EditDetailsTab({ character }: { character: Character }) {
+export function EditDetailsTab({ character: initialCharacter }: { character: Character }) {
     const { toast } = useToast();
     const router = useRouter();
+    const [character, setCharacter] = useState(initialCharacter);
     const [isUpdating, startUpdateTransition] = useTransition();
     const [isRegenerating, startRegenerateTransition] = useTransition();
     const [isRpgGenerating, startRpgGenerateTransition] = useTransition();
@@ -92,28 +95,45 @@ export function EditDetailsTab({ character }: { character: Character }) {
 
     const isGenerationInProgress = character.rpg?.statsStatus === 'pending' || character.rpg?.skillsStatus === 'pending';
 
-    useEffect(() => {
-        // Start polling if generation is in progress
-        if (isGenerationInProgress && !pollingIntervalRef.current) {
-            pollingIntervalRef.current = setInterval(() => {
-                router.refresh();
-            }, 3000); // Poll every 3 seconds
-        }
-
-        // Stop polling if generation is not in progress
-        if (!isGenerationInProgress && pollingIntervalRef.current) {
+    const stopPolling = useCallback(() => {
+        if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
             pollingIntervalRef.current = null;
         }
+    }, []);
 
-        // Cleanup on unmount
-        return () => {
-            if (pollingIntervalRef.current) {
-                clearInterval(pollingIntervalRef.current);
-                pollingIntervalRef.current = null;
+    const startPolling = useCallback(() => {
+        stopPolling(); // Ensure no multiple intervals are running
+
+        pollingIntervalRef.current = setInterval(async () => {
+            const { db } = getFirebaseClient();
+            const charDocRef = doc(db, 'characters', character.id);
+            const charDocSnap = await getDoc(charDocRef);
+            
+            if (charDocSnap.exists()) {
+                const updatedData = charDocSnap.data() as Character;
+                const rpgStatus = updatedData.rpg?.statsStatus;
+                
+                if (rpgStatus === 'complete' || rpgStatus === 'failed') {
+                    stopPolling();
+                    setCharacter(prev => ({...prev, rpg: updatedData.rpg }));
+                    router.refresh(); // Final refresh to sync server component data
+                }
+            } else {
+                stopPolling();
             }
-        };
-    }, [isGenerationInProgress, router]);
+        }, 5000); // Poll every 5 seconds
+    }, [character.id, router, stopPolling]);
+
+
+    useEffect(() => {
+        if (isGenerationInProgress) {
+            startPolling();
+        } else {
+            stopPolling();
+        }
+        return stopPolling;
+    }, [isGenerationInProgress, startPolling, stopPolling]);
 
     const onSubmit = (data: FormValues) => {
         const dataToSave = {
@@ -169,11 +189,11 @@ export function EditDetailsTab({ character }: { character: Character }) {
             toast({ title: 'Generation Queued', description: 'Forging new RPG attributes... this may take a moment.' });
             const result = await generateAllRpgAttributes(character.id);
             if (result.success) {
-                 // The polling will handle the UI update
+                 setCharacter(prev => ({...prev, rpg: { ...prev.rpg, statsStatus: 'pending', skillsStatus: 'pending' }}));
+                 startPolling();
             } else {
                  toast({ variant: 'destructive', title: 'Generation Failed', description: result.error || result.message });
             }
-            router.refresh();
         });
     };
 

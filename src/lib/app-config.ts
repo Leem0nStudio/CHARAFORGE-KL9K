@@ -1,6 +1,6 @@
 
 
-import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon, Download, TestTube, Film, SlidersHorizontal } from 'lucide-react';
+import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon, Download, TestTube, Film, SlidersHorizontal, Shield } from 'lucide-react';
 import type { AiModel } from '@/types/ai-model';
 
 // Static AI Model Definitions. The administrator can add more via the admin panel.
@@ -61,7 +61,7 @@ export const mainNavItems: NavItem[] = [
     { href: '/datapacks', label: 'DataPacks', icon: Package },
     { href: '/character-generator', label: 'Forge', icon: Swords, isPrimary: true },
     { href: '/lore-forge', label: 'Lore Forge', icon: ScrollText, requiresAuth: true },
-    { href: '/arena', label: 'Arena', icon: Swords, requiresAuth: true },
+    { href: '/arena', label: 'Arena', icon: Shield, requiresAuth: true },
     { href: '/profile', label: 'Profile', icon: UserCircle, requiresAuth: true },
 ];
 
