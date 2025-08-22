@@ -193,19 +193,6 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
     // This is the core of the backward-compatibility fix.
     const schema = pack.schema?.characterProfileSchema || (pack.schema?.slots ? hydrateLegacySlotsToProfileSchema(pack.schema.slots) : null);
    
-    if (!schema) {
-        return (
-             <div className="flex-grow flex items-center justify-center">
-                <Alert variant="destructive">
-                  <AlertTitle>Invalid DataPack</AlertTitle>
-                  <AlertDescription>
-                    This DataPack does not have a valid schema. Please correct it in the admin panel.
-                  </AlertDescription>
-                </Alert>
-            </div>
-        )
-    }
-    
     // Set initial default values
     useEffect(() => {
         if (!schema) return;
@@ -220,13 +207,27 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                 })
             }
         });
-    }, [schema, setValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pack]);
 
 
     const onSubmit = (data: any) => {
         const finalPrompt = buildPromptFromProfile(data, pack);
         onWizardComplete(data, finalPrompt);
     };
+    
+    if (!schema) {
+        return (
+             <div className="flex-grow flex items-center justify-center">
+                <Alert variant="destructive">
+                  <AlertTitle>Invalid DataPack</AlertTitle>
+                  <AlertDescription>
+                    This DataPack does not have a valid schema. Please correct it in the admin panel.
+                  </AlertDescription>
+                </Alert>
+            </div>
+        )
+    }
     
     const renderSimpleSlot = (fieldName: keyof CharacterProfileSchema, label: string) => {
         const options = (schema as any)[fieldName] as (EquipmentOption[] | Option[]);
