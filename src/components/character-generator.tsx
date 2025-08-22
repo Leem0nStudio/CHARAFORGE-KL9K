@@ -65,7 +65,6 @@ const generationFormSchema = z.object({
   }),
   selectedLora: z.custom<AiModel>().optional().nullable(),
   loraWeight: z.number().min(0).max(2).optional(),
-  rarity: z.number().min(1).max(5).default(3),
 });
 
 export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null }) {
@@ -106,7 +105,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       loraWeight: 0.75,
       selectedModel: undefined,
       selectedLora: null,
-      rarity: 3,
     },
   });
 
@@ -293,7 +291,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
           imageEngine: generationResult.imageEngine,
           wizardData: formData.wizardData,
           originalPrompt: generationResult.originalDescription,
-          rarity: formData.rarity,
         });
 
         if (result.success && result.characterId) {
@@ -481,37 +478,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                             </FormItem>
                           )}
                         />
-                         <FormField
-                          control={generationForm.control}
-                          name="rarity"
-                          render={({ field }) => (
-                            <FormItem className="space-y-3">
-                              <FormLabel>Rarity</FormLabel>
-                               <FormControl>
-                                  <RadioGroup
-                                    onValueChange={(value) => field.onChange(parseInt(value))}
-                                    defaultValue={String(field.value)}
-                                    className="grid grid-cols-5 gap-2"
-                                    disabled={!canInteract}
-                                  >
-                                    {[1, 2, 3, 4, 5].map(rarity => (
-                                         <FormItem key={rarity}>
-                                            <FormControl><RadioGroupItem value={String(rarity)} id={`rarity-${rarity}`} className="sr-only" /></FormControl>
-                                            <FormLabel htmlFor={`rarity-${rarity}`} className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === rarity && "border-primary")}>
-                                                <div className="flex">
-                                                    {Array.from({length: rarity}).map((_, i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400" />)}
-                                                </div>
-                                            </FormLabel>
-                                        </FormItem>
-                                    ))}
-                                  </RadioGroup>
-                               </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-
+                         
                         <Accordion type="single" collapsible defaultValue="engine">
                             <AccordionItem value="engine">
                                 <AccordionTrigger>AI Settings</AccordionTrigger>

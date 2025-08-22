@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -274,15 +275,15 @@ export async function updateCharacter(
   }
 }
 
-export async function saveCharacter(input: SaveCharacterInput) {
-  const validation = SaveCharacterInputSchema.safeParse(input);
+export async function saveCharacter(input: Omit<SaveCharacterInput, 'rarity'>) {
+  const validation = SaveCharacterInputSchema.omit({ rarity: true }).safeParse(input);
   if (!validation.success) {
     const firstError = validation.error.errors[0];
     throw new Error(`Invalid input for ${firstError.path.join('.')}: ${firstError.message}`);
   }
   const { 
       name, biography, imageUrl: imageDataUri, dataPackId, tags, 
-      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt, rarity
+      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt
   } = validation.data;
   
   const userId = await verifyAndGetUid();
@@ -300,7 +301,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
     
     const isPlayable = !!archetype;
     let finalStats: RpgAttributes['stats'] = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
-    let finalRarity: Character['core']['rarity'] = rarity || 1;
+    let finalRarity: Character['core']['rarity'] = 1;
 
     if (archetype) {
         finalStats = generateBalancedStats(archetype);
