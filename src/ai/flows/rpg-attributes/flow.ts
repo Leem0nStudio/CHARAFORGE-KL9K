@@ -83,7 +83,7 @@ const skillsGenerationPrompt = ai.definePrompt(
     input: {
         schema: z.object({
             archetype: z.string(),
-            equipment: z.array(z.string()),
+            equipment: z.array(z.string()).optional().nullable(),
             biography: z.string(),
         })
     },
@@ -98,7 +98,7 @@ const skillsGenerationPrompt = ai.definePrompt(
 
     Character Profile:
     - Archetype/Class: ${input.archetype}
-    - Key Equipment: ${input.equipment.join(', ') || 'None'}
+    - Key Equipment: ${input.equipment?.join(', ') || 'None'}
     - Biography Summary: ${input.biography.substring(0, 500)}...
 
     Instructions:
@@ -130,7 +130,7 @@ export const generateAllRpgAttributesFlow = ai.defineFlow(
     // Step 3: Generate skills using an AI call.
     const skillsResponse = await skillsGenerationPrompt({
         archetype: character.core.archetype!,
-        equipment: character.core.equipment || [],
+        equipment: character.core.equipment,
         biography: character.core.biography,
     });
     
