@@ -31,7 +31,11 @@ Instructions:
 2.  **Description**: Write a concise, one-to-two sentence description that explains the theme and purpose of the DataPack.
 3.  **Tags**: Generate an array of 5-7 relevant, single-word, lowercase tags that categorize the datapack.
 4.  **YAML Content**: Your entire YAML output MUST be a single, valid YAML document string within the 'yamlContent' field. Do NOT include any other text or explanations outside of the YAML content.
-    *   **CRITICAL - COMPLETE ALL SECTIONS**: You MUST generate thematically appropriate options for ALL of the following sections and their sub-sections: General (raceClass, gender), Appearance (hair, eyes), ALL equipment slots (head, torso, legs, feet, hands, etc.), and Scene (pose, background, effects). Do not leave any section empty.
+    *   **CRITICAL - COMPLETE ALL SECTIONS**: You MUST generate thematically appropriate options for ALL of the following sections and their sub-sections. Do not leave any section empty.
+        *   **General**: You MUST generate options for 'raceClass' and 'gender'.
+        *   **Appearance**: You MUST generate options for 'hair', 'eyes', 'skin', and 'facialFeatures'.
+        *   **Equipment**: You MUST generate options for ALL equipment slots: 'head', 'face', 'neck', 'shoulders', 'torso', 'arms', 'hands', 'waist', 'legs', 'feet', 'back'. Each slot should contain thematically appropriate 'clothing', 'armor', 'accessory', or 'weapon' options.
+        *   **Scene & Action**: You MUST generate options for 'pose', 'action', 'camera', 'background', and 'effects'.
     *   **Prompt Templates**: Generate 2-3 diverse and detailed 'promptTemplates'. Each template MUST use a wide variety of placeholders (e.g., {raceClass}, {torso_armor}, {head_accessory}, {legs_clothing}, etc.) that correspond to the slots you will define.
     *   **Character Profile Schema**:
         *   **GRANULARITY IS KEY**: You MUST create separate, granular slots for different parts of the character, especially for clothing and equipment. Instead of one 'clothing' slot, you MUST create specific slots like 'head', 'torso', 'legs', 'feet', 'hands'.
