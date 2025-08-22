@@ -24,7 +24,12 @@ import type { DataPackSchema } from '@/types/datapack';
 
 
 interface AiGeneratorDialogProps {
-    onSchemaGenerated: (schema: DataPackSchema, tags: string[]) => void;
+    onSchemaGenerated: (data: {
+        name: string;
+        description: string;
+        tags: string[];
+        schema: DataPackSchema;
+    }) => void;
     onGeneratingChange: (isGenerating: boolean) => void;
 }
 
@@ -45,8 +50,8 @@ export function AiGeneratorDialog({ onSchemaGenerated, onGeneratingChange }: AiG
                 const cleanedYaml = result.yamlContent.replace(/---\s*/g, '');
                 const parsedSchema = yaml.load(cleanedYaml) as any;
                 
-                if (!parsedSchema || (!parsedSchema.promptTemplates && !parsedSchema.characterProfileSchema)) {
-                    throw new Error("The AI returned invalid or empty YAML content.");
+                if (!parsedSchema || !parsedSchema.characterProfileSchema) {
+                    throw new Error("The AI returned invalid or empty YAML content for the schema.");
                 }
 
                 const finalSchema: DataPackSchema = {
@@ -54,11 +59,14 @@ export function AiGeneratorDialog({ onSchemaGenerated, onGeneratingChange }: AiG
                     characterProfileSchema: parsedSchema.characterProfileSchema || {},
                 };
                 
-                const tags = parsedSchema.tags || [];
+                onSchemaGenerated({
+                    name: result.name,
+                    description: result.description,
+                    tags: result.tags || [],
+                    schema: finalSchema,
+                });
 
-                onSchemaGenerated(finalSchema, tags);
-
-                toast({ title: "Schema Generated!", description: "The AI has populated the schema editor. Please review the results."});
+                toast({ title: "DataPack Generated!", description: "The AI has populated the form. Please review the results."});
                 setIsOpen(false);
             } catch (error) {
                 const message = error instanceof Error ? error.message : "An unknown error occurred.";

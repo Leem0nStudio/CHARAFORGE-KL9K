@@ -1,8 +1,8 @@
 
 /**
  * @fileOverview Data schemas and types for the DataPack schema generation flow.
- * The output schema is now a single string containing the YAML content, which
- * is more robust for the AI to generate than a complex, nested JSON object.
+ * The output schema now includes metadata fields (name, description, tags)
+ * alongside the YAML content string.
  */
 
 import { z } from 'zod';
@@ -14,6 +14,9 @@ export type GenerateDataPackSchemaInput = z.infer<typeof GenerateDataPackSchemaI
 
 
 export const GenerateDataPackSchemaOutputSchema = z.object({
+  name: z.string().describe("A compelling and concise name for the DataPack."),
+  description: z.string().describe("A brief, one-to-two sentence description of the DataPack's theme and content."),
+  tags: z.array(z.string()).describe("An array of 5-7 relevant, single-word, lowercase tags."),
   yamlContent: z.string().describe("A string containing the full DataPack schema, formatted as YAML."),
 });
 export type GenerateDataPackSchemaOutput = z.infer<typeof GenerateDataPackSchemaOutputSchema>;

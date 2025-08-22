@@ -2,9 +2,8 @@
 'use server';
 
 /**
- * @fileOverview An AI agent for generating a complete DataPack schema from a concept.
- * It now generates a complete YAML file as a string, which is more robust and flexible
- * for the AI than generating a complex JSON object.
+ * @fileOverview An AI agent for generating a complete DataPack (metadata and schema) from a concept.
+ * It now generates a complete YAML file as a string for the schema, plus metadata fields.
  */
 
 import { ai } from '@/ai/genkit';
@@ -23,21 +22,22 @@ const prompt = ai.definePrompt({
   input: { schema: GenerateDataPackSchemaInputSchema },
   output: { schema: GenerateDataPackSchemaOutputSchema },
   model: 'googleai/gemini-1.5-flash-latest',
-  prompt: `You are an expert game designer and prompt engineer. Your task is to generate a complete DataPack schema as a single YAML document based on a user's concept.
+  prompt: `You are an expert game designer and prompt engineer. Your task is to generate a complete DataPack, including metadata and a YAML schema, based on a user's concept.
 
 Concept: {{{concept}}}
 
 Instructions:
-1.  **YAML Output**: Your entire output MUST be a single, valid YAML document string within the 'yamlContent' field. Do NOT include any other text or explanations outside of the YAML content.
-2.  **Prompt Templates**: Generate 2-3 diverse 'promptTemplates'. Each template should use placeholders (e.g., {raceClass}, {torso_armor}) that correspond to the slots you will define in the 'characterProfileSchema'.
-3.  **Character Profile Schema**:
-    *   Create a rich 'characterProfileSchema' with many granular slots for appearance and equipment.
-    *   **GRANULARITY IS KEY**: You MUST create separate, granular slots for different parts of the character, especially for clothing. Instead of one 'clothing' slot, you MUST create specific slots like 'headwear', 'topwear', 'bottomwear', 'footwear', etc.
-    *   For EVERY slot, provide 4-5 creative, thematically consistent options.
-    *   Each option MUST have a 'label' for the UI and a 'value' for the prompt.
-    *   **CRITICAL**: The 'value' for each option MUST be a single, concise line of text. Do NOT use multi-line strings for values.
-4.  **Mandatory Archetype Slot**: It is MANDATORY that one of the slots you generate is for the character's class or archetype (e.g., id: 'raceClass', 'class', or 'role'), as this is required by the game system. Provide options like "Warrior", "Mage", "Rogue", etc.
-5.  **Tags**: Generate an array of 5-7 relevant, single-word, lowercase tags that categorize the datapack.
+1.  **Name**: Generate a short, compelling, and marketable name for the DataPack.
+2.  **Description**: Write a concise, one-to-two sentence description that explains the theme and purpose of the DataPack.
+3.  **Tags**: Generate an array of 5-7 relevant, single-word, lowercase tags that categorize the datapack.
+4.  **YAML Content**: Your entire YAML output MUST be a single, valid YAML document string within the 'yamlContent' field. Do NOT include any other text or explanations outside of the YAML content.
+    *   **Prompt Templates**: Generate 2-3 diverse 'promptTemplates'. Each template should use placeholders (e.g., {raceClass}, {torso_armor}) that correspond to the slots you will define.
+    *   **Character Profile Schema**:
+        *   **GRANULARITY IS KEY**: You MUST create separate, granular slots for different parts of the character, especially for clothing. Instead of one 'clothing' slot, you MUST create specific slots like 'headwear', 'topwear', 'bottomwear', 'footwear', etc.
+        *   For EVERY slot, provide 4-5 creative, thematically consistent options.
+        *   Each option MUST have a 'label' for the UI and a 'value' for the prompt.
+        *   **CRITICAL**: The 'value' for each option MUST be a single, concise line of text. Do NOT use multi-line strings for values.
+    *   **Mandatory Archetype Slot**: It is MANDATORY that one of the slots you generate is for the character's class or archetype (e.g., id: 'raceClass', 'class', or 'role'), as this is required by the game system.
 
 Example YAML structure:
 promptTemplates:
@@ -56,23 +56,7 @@ characterProfileSchema:
       value: "long flowing white hair"
     - label: "Short & Spiky"
       value: "short, spiky black hair"
-  eyes:
-    - label: "Glowing Blue"
-      value: "glowing blue eyes"
-    - label: "Piercing Amber"
-      value: "piercing amber eyes"
-  torso_armor:
-    - label: "Sunforged Plate"
-      value: "ornate sunforged plate armor"
-    - label: "Shadow-Woven Robes"
-      value: "dark, shadow-woven robes"
-  head_accessory:
-    - label: "Laurel Crown"
-      value: "a golden laurel crown"
-    - label: "Horned Circlet"
-      value: "a horned, dark iron circlet"
   # ... and so on for many other slots
-tags: ["fantasy", "magic", "knights", "warlocks", "epic"]
 `,
 });
 
@@ -88,8 +72,6 @@ const generateDataPackSchemaFlow = ai.defineFlow(
     if (!output || !output.yamlContent) {
       throw new Error('AI failed to generate a valid YAML content for the DataPack schema.');
     }
-    return {
-        yamlContent: output.yamlContent,
-    };
+    return output;
   }
 );

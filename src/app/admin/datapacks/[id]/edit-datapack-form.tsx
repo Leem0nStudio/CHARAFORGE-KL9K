@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useMemo, useEffect } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -78,11 +78,16 @@ export function EditDataPackForm({ packId }: { packId: string }) {
     fetchData();
   }, [packId, form]);
 
-  const handleAiSchemaGenerated = (generatedSchema: DataPackSchema, tags: string[]) => {
-      form.setValue('schema', generatedSchema, { shouldValidate: true, shouldDirty: true });
-      if (tags) {
-        form.setValue('tags', tags, { shouldValidate: true, shouldDirty: true });
-      }
+  const handleAiSchemaGenerated = (data: {
+      name: string;
+      description: string;
+      tags: string[];
+      schema: DataPackSchema;
+  }) => {
+      form.setValue('name', data.name, { shouldValidate: true, shouldDirty: true });
+      form.setValue('description', data.description, { shouldValidate: true, shouldDirty: true });
+      form.setValue('tags', data.tags, { shouldValidate: true, shouldDirty: true });
+      form.setValue('schema', data.schema, { shouldValidate: true, shouldDirty: true });
   };
 
 
