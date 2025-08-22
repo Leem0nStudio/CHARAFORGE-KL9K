@@ -363,7 +363,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             <Form {...generationForm}>
               <form onSubmit={generationForm.handleSubmit(onGenerateSheet)} className="space-y-6">
                 
-                <Tabs defaultValue="prompt">
+                <Tabs defaultValue="prompt" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="prompt">Prompt</TabsTrigger>
                         <TabsTrigger value="settings">AI Settings</TabsTrigger>
@@ -376,46 +376,31 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                             <FormItem>
                               <div className="flex justify-between items-center mb-2">
                                 <FormLabel>Character Concept</FormLabel>
-                                <div className="flex items-center gap-2">
-                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsPackModalOpen(true)}>
-                                        <Package className="mr-2 h-3 w-3"/> Use DataPack
-                                    </Button>
-                                </div>
-                              </div>
-                              <FormControl>
-                                  <Tabs defaultValue="visual" className="w-full">
-                                    <TabsList className="grid w-full grid-cols-2">
-                                        <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual Editor</TabsTrigger>
-                                        <TabsTrigger value="text"><Braces className="mr-2"/>Text Editor</TabsTrigger>
-                                    </TabsList>
-                                    <TabsContent value="visual" className="mt-2">
-                                         <PromptTagInput
-                                            value={field.value}
-                                            onChange={field.onChange}
-                                            disabled={!canInteract}
-                                        />
-                                    </TabsContent>
-                                     <TabsContent value="text" className="mt-2">
-                                        <PromptEditor 
-                                          ref={promptEditorRef}
-                                          value={field.value}
-                                          onChange={field.onChange}
-                                          disabled={!canInteract}
-                                        />
-                                    </TabsContent>
-                                </Tabs>
-                              </FormControl>
-                               <div className="flex items-center justify-between mt-2">
-                                {activePack ? (
-                                  <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
-                                    <Package className="h-3 w-3" />
-                                    Using: {activePack.name}
-                                  </Badge>
-                                ) : <div />}
-                                <Button type="button" variant="link" size="sm" onClick={() => setIsTagModalOpen(true)} className="px-1">
-                                    <Tags className="mr-2 h-3 w-3"/> Tag Assistant
+                                <Button type="button" variant="secondary" size="sm" onClick={() => setIsPackModalOpen(true)}>
+                                    <Package className="mr-2 h-4 w-4"/> Use DataPack
                                 </Button>
-                               </div>
+                              </div>
+                               <Tabs defaultValue="visual" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual Editor</TabsTrigger>
+                                    <TabsTrigger value="text"><Braces className="mr-2"/>Text Editor</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="visual" className="mt-2 bg-input rounded-xl p-3">
+                                     <PromptTagInput
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        disabled={!canInteract}
+                                    />
+                                </TabsContent>
+                                 <TabsContent value="text" className="mt-2">
+                                    <PromptEditor 
+                                      ref={promptEditorRef}
+                                      value={field.value}
+                                      onChange={field.onChange}
+                                      disabled={!canInteract}
+                                    />
+                                </TabsContent>
+                            </Tabs>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -634,5 +619,3 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     </>
   );
 }
-
-    

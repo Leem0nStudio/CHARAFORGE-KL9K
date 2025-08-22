@@ -12,11 +12,10 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const { authUser } = useAuth();
   
-  // Always render all items to ensure consistent grid column count
   const items = mainNavItems;
 
   return (
-    <div className="sm:hidden fixed bottom-0 left-0 z-50 w-full h-16 bg-background border-t border-border">
+    <div className="sm:hidden fixed bottom-0 left-0 z-50 w-full h-16 bg-background/90 backdrop-blur-sm border-t border-border">
       <div className="grid h-full max-w-lg mx-auto font-medium grid-cols-6">
         {items.map((item) => {
           const isActive = (item.href === '/' && pathname === '/') || (item.href !== '/' && pathname.startsWith(item.href));
@@ -27,7 +26,7 @@ export function MobileBottomNav() {
               <Link
                 key={item.href}
                 href={requiresAuthAndIsUnauthed ? '/login' : item.href}
-                className="inline-flex flex-col items-center justify-center -translate-y-3"
+                className="inline-flex flex-col items-center justify-center -translate-y-4"
               >
                 <div className="p-4 bg-primary rounded-full text-primary-foreground shadow-lg ring-4 ring-background">
                     <item.icon className="w-6 h-6" />
@@ -44,7 +43,7 @@ export function MobileBottomNav() {
               className={cn(
                 'inline-flex flex-col items-center justify-center px-2 text-center group',
                 isActive && !requiresAuthAndIsUnauthed ? 'text-primary' : 'text-muted-foreground',
-                requiresAuthAndIsUnauthed ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted/50'
+                requiresAuthAndIsUnauthed ? 'opacity-50 cursor-not-allowed' : 'hover:text-primary'
               )}
             >
               <item.icon className="w-5 h-5 mb-1" />
