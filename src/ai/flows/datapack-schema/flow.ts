@@ -29,20 +29,19 @@ Concept: {{{concept}}}
 
 Instructions:
 1.  **Slots**: First, generate an array of 7 to 10 diverse and creative slots that represent the core components of the concept.
+    *   **GRANULARITY IS KEY**: You MUST create separate, granular slots for different parts of the character, especially for clothing. Instead of one "clothing" slot, you MUST create specific slots like "headwear", "topwear", "bottomwear", "footwear", etc.
     *   Each slot must have a unique 'id' in snake_case.
     *   Each slot must have a user-friendly 'label'.
     *   For each 'select' slot, provide a list of 4-6 creative and thematic 'options'.
-    *   Each option must have a 'label' for the UI and a 'value' to be inserted into the prompt. The value should be a coherent and ready-to-use descriptive phrase (e.g., "wearing a leather jacket", "cybernetic glowing eyes", "in a rain-slicked alley"), not just a single word.
-    *   **Locking Core Attributes**: Identify 1-2 slots that are absolutely essential to the core identity of the concept (e.g., for "Vampire Noble", the 'race' slot should be locked to 'vampire'). For these slots, set \`isLocked: true\`. These locked slots will use their \`defaultOption\` in the prompt but won't be configurable by the end-user.
-    *   You can include a 'text' type slot for things like a character's name, but prefer 'select' for visual concepts.
+    *   The 'value' for each option MUST be a coherent and ready-to-use descriptive phrase (e.g., "wearing a leather jacket", "cybernetic glowing eyes", "in a rain-slicked alley"), not just a single word.
+    *   **Locking Core Attributes**: Identify 1-2 slots that are absolutely essential to the core identity of the concept (e.g., for "Vampire Noble", the 'race' slot should be locked to 'vampire'). For these slots, set \`isLocked: true\`.
     *   Set a sensible 'defaultOption' for every single slot, referencing one of the option 'value's.
 
 2.  **Prompt Templates**: After defining the slots, generate an array of 3 to 5 diverse prompt templates.
-    *   Each template object must have a short, descriptive 'name' (e.g., "Cinematic Portrait", "Action Shot", "Sketch Style").
+    *   Each template object must have a short, descriptive 'name' (e.g., "Cinematic Portrait", "Action Shot").
     *   Each 'template' string MUST be a comma-separated list of tags and phrases that follows this exact, detailed structure:
-        **[# of Characters], [Facial Appearance(s)], [Body Appearance(s)], [Clothing(head, face, shoulders, back, arms, legs, uppertorso, lowtorso, waist, feet, accessories, outfit colors)], [Position(s)/Action(s)], [Camera Angle/View], [Location/Background], [Miscellaneous/Effects]**
-    *   You MUST use placeholders in the format '{slot_id}' to populate the sections of this structure. Every single slot you defined must be used in each template.
-    *   Example for a "Cyberpunk" theme: "1girl, {face_details}, {body_type}, {headwear}, {clothing_torso}, {clothing_legs}, {footwear}, {action_pose}, {camera_angle}, {background_location}, {style_details}"
+        **1girl, {facial_details}, {body_type}, {headwear}, {topwear}, {bottomwear}, {footwear}, {action_pose}, {camera_angle}, {background_location}, {style_details}**
+    *   You MUST use placeholders in the format '{slot_id}' that correspond to the granular slots you defined in step 1. Every single slot you defined must be used in at least one template.
     *   Be creative and ensure the combination of slots makes sense within the structured prompt.
 
 3.  **Tags**: Based on the concept, generate an array of 3-5 relevant, single-word, lowercase tags that categorize the datapack. Examples: "fantasy", "sci-fi", "horror", "cyberpunk", "post-apocalyptic", "anime".
