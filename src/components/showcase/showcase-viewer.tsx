@@ -120,8 +120,6 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                                 <StatItem label="Image Engine" value={character.generation.imageEngine || 'N/A'} />
                             </div>
                             
-                            <Separator />
-                            
                              <div>
                                 <h3 className="font-semibold text-muted-foreground mb-2">Lore</h3>
                                 <ScrollArea className="h-40 md:h-48 pr-4">
