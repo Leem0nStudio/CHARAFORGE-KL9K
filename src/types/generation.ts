@@ -8,6 +8,7 @@
 
 import { z } from 'zod';
 import type { AiModel } from './ai-model';
+import type { Character } from './character';
 
 /**
  * Defines the configuration for a text-generation engine.
@@ -55,13 +56,7 @@ export interface GenerationResult {
   dataPackId?: string | null;
   textEngine?: TextEngineConfig['engineId'];
   imageEngine?: ImageEngineConfig['engineId'];
-  stats?: {
-    strength: number;
-    dexterity: number;
-    constitution: number;
-    intelligence: number;
-    wisdom: number;
-    charisma: number;
-  };
-  rarity?: 1 | 2 | 3 | 4 | 5;
+  stats?: Character['rpg']['stats'];
+  skills?: Character['rpg']['skills'];
+  rarity?: Character['core']['rarity'];
 }

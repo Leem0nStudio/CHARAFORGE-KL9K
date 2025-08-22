@@ -7,7 +7,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
-import { updateCharacter, generateCharacterSkills } from '@/app/actions/character-write';
+import { updateCharacter, regenerateCharacterAttributes } from '@/app/actions/character-write';
 import { regenerateCharacterSheet } from '@/app/actions/generation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -142,7 +142,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
     
     const handleGenerateSkills = () => {
         startSkillGenerateTransition(async () => {
-            const result = await generateCharacterSkills(character.id);
+            const result = await regenerateCharacterAttributes(character.id);
              if (result.success && result.skills) {
                  toast({ title: 'Skills Generated!', description: result.message });
                  router.refresh();

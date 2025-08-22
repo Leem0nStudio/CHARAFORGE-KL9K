@@ -10,7 +10,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadToStorage } from '@/services/storage';
 import { UpdateCharacterSchema, SaveCharacterInputSchema, type SaveCharacterInput } from '@/types/character';
-import { generateCharacterSkills } from '@/ai/flows/rpg-skills/flow';
+import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
 
 // #region Helper Functions for Stat Generation
 // This logic is now part of the server action to be used when a character's archetype changes.
@@ -457,7 +457,7 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
   }
 }
 
-export async function generateCharacterSkills(characterId: string): Promise<ActionResponse> {
+export async function regenerateCharacterAttributes(characterId: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     if (!adminDb) {
         return { success: false, message: 'Database service is unavailable.' };
@@ -466,7 +466,7 @@ export async function generateCharacterSkills(characterId: string): Promise<Acti
     const charRef = adminDb.collection('characters').doc(characterId);
 
     try {
-        await charRef.update({ 'rpg.skillsStatus': 'pending' });
+        await charRef.update({ 'rpg.skillsStatus': 'pending', 'rpg.statsStatus': 'pending' });
         revalidatePath(`/characters/${characterId}/edit`);
 
         const charDoc = await charRef.get();
@@ -480,32 +480,42 @@ export async function generateCharacterSkills(characterId: string): Promise<Acti
         if (!character.core.archetype) {
             throw new Error('Character must have an Archetype to generate skills.');
         }
-
-        const result = await generateCharacterSkills({
-            archetype: character.core.archetype,
-            equipment: character.core.equipment || [],
-            biography: character.core.biography,
+        
+        // The generateCharacterSheet flow is now used to regenerate attributes.
+        // We pass the existing character description to get a full, consistent output.
+        const result = await generateCharacterSheet({
+            description: character.generation.originalPrompt || character.core.name,
+            targetLanguage: 'English', // Or detect language from character data
+            engineConfig: { // Use a default engine for regeneration
+                engineId: 'gemini',
+                modelId: 'gemini-1.5-flash-latest'
+            }
         });
 
         await charRef.update({
-            'rpg.skills': result.skills,
+            'rpg.stats': result.stats,
+            'core.rarity': result.rarity,
+            'rpg.skills': result.skills?.map(skill => ({...skill, id: uuidv4() })) || [],
             'rpg.skillsStatus': 'complete',
+            'rpg.statsStatus': 'complete',
+            'rpg.isPlayable': true,
         });
         
         revalidatePath(`/characters/${characterId}/edit`);
 
         return {
             success: true,
-            message: 'Character skills generated successfully!',
-            skills: result.skills,
+            message: 'Character attributes regenerated successfully!',
+            skills: result.skills || [],
         };
 
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
         await charRef.update({ 
             'rpg.skillsStatus': 'failed',
+            'rpg.statsStatus': 'failed',
         }).catch(() => {});
         revalidatePath(`/characters/${characterId}/edit`);
-        return { success: false, message: 'Failed to generate skills.', error: message };
+        return { success: false, message: 'Failed to generate attributes.', error: message };
     }
 }

@@ -5,13 +5,17 @@
  * @fileOverview Character sheet generation AI agent.
  * This flow generates a structured character sheet from a simple description,
  * including RPG stats and rarity calculated based on the generated archetype.
+ * It will also generate a set of skills if an archetype is present.
  */
 import { ai } from '@/ai/genkit';
+import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 import { 
   GenerateCharacterSheetInputSchema, 
   GenerateCharacterSheetOutputSchema, 
   type GenerateCharacterSheetInput, 
-  type GenerateCharacterSheetOutput 
+  type GenerateCharacterSheetOutput,
+  SkillSchema
 } from './types';
 import type { RpgAttributes, Character } from '@/types/character';
 
@@ -84,11 +88,11 @@ const generateCharacterSheetFlow = ai.defineFlow(
     outputSchema: GenerateCharacterSheetOutputSchema,
   },
   async (input) => {
-    const { description, targetLanguage, engineConfig } = input;
+    const { description, targetLanguage, engineConfig, existingCharacter } = input;
     const { engineId, modelId, userApiKey } = engineConfig;
     
     // This prompt now asks the AI to determine the archetype from the description.
-    const prompt = `You are a professional writer and game master specializing in creating rich character details. Your task is to generate a complete character sheet from a user's description.
+    let prompt = `You are a professional writer and game master specializing in creating rich character details. Your task is to generate a complete character sheet from a user's description.
 
     Based on the provided description, generate all the required fields.
     
@@ -105,6 +109,14 @@ const generateCharacterSheetFlow = ai.defineFlow(
     - physicalDescription: A detailed, one-paragraph description focusing only on the character's visual appearance, clothing, and gear. This will be used for an image generation prompt, so be descriptive and evocative.
     - biography: A detailed, multi-paragraph biography exploring the character's backstory, personality, and motivations. Make it engaging and narrative-driven.
     `;
+    
+    // Conditionally add the skill generation part to the prompt if an archetype exists
+    const archetype = existingCharacter?.core?.archetype;
+    if (archetype) {
+      prompt += `
+      - skills: The character's archetype is '${archetype}'. Based on this and their biography, generate a set of 3-4 thematic and balanced skills. Each skill must have a name, a description of what it does, a power level (1-10), and a type (attack, defense, utility).
+      `;
+    }
 
     // This schema is for the AI output, which does NOT include stats/rarity yet.
     const AiOutputSchema = GenerateCharacterSheetOutputSchema.omit({ stats: true, rarity: true });
@@ -158,8 +170,8 @@ const generateCharacterSheetFlow = ai.defineFlow(
     }
     
     // Now that the AI has determined the archetype, generate stats and rarity.
-    const archetype = aiOutput.archetype || 'Fighter'; // Default to Fighter if archetype is missing
-    const stats = generateStats(archetype);
+    const finalArchetype = aiOutput.archetype || archetype || 'Fighter'; // Use AI, existing, or default
+    const stats = generateStats(finalArchetype);
     const rarity = calculateRarity(stats);
     
     // Return the combined result, fulfilling the full output schema.
@@ -167,6 +179,7 @@ const generateCharacterSheetFlow = ai.defineFlow(
       ...aiOutput,
       stats,
       rarity,
+      skills: aiOutput.skills?.map(skill => ({...skill, id: uuidv4() })),
     };
   }
 );
