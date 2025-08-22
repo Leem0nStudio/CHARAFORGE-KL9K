@@ -163,8 +163,9 @@ export async function updateCharacter(
     const characterRef = adminDb.collection('characters').doc(characterId);
     
     const characterDoc = await characterRef.get();
+    const existingData = characterDoc.data();
 
-    if (!characterDoc.exists || characterDoc.data()?.meta?.userId !== uid) {
+    if (!characterDoc.exists || existingData?.meta?.userId !== uid) {
         return { success: false, message: 'Permission denied or character not found.' };
     }
     
@@ -176,10 +177,23 @@ export async function updateCharacter(
       'core.archetype': archetype || null,
       'core.equipment': equipment || null,
       'core.physicalDescription': physicalDescription || null,
+      'rpg.isPlayable': !!archetype,
     };
 
     if (rarity) {
         updates['core.rarity'] = rarity;
+    }
+    
+    // If the class or rarity changes, we must reset the stats and skills
+    // so they can be regenerated with the new context.
+    const hasClassChanged = existingData?.core?.archetype !== archetype;
+    const hasRarityChanged = existingData?.core?.rarity !== rarity;
+    
+    if (hasClassChanged || hasRarityChanged) {
+        updates['rpg.statsStatus'] = 'pending';
+        updates['rpg.skillsStatus'] = 'pending';
+        updates['rpg.stats'] = {};
+        updates['rpg.skills'] = [];
     }
   
     await characterRef.update(updates);
@@ -277,10 +291,12 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 originalPrompt: originalPrompt,
             },
             rpg: {
+                isPlayable: !!archetype,
                 level: 1,
                 experience: 0,
                 skills: [],
                 statsStatus: 'pending',
+                skillsStatus: 'pending',
                 stats: {
                     strength: 0,
                     dexterity: 0,

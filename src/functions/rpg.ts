@@ -5,8 +5,10 @@
  */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions/v2';
 import { generateStatsFlow } from '@/ai/flows/rpg-stats/flow';
 import { generateSkillsFlow } from '@/ai/flows/rpg-skills/flow';
 import type { Character } from '@/types/character';
@@ -19,78 +21,57 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 /**
- * Generates and saves RPG stats for a given character.
+ * A Task Queue function that handles the generation of both stats and skills.
+ * This is more efficient as it's triggered once per character processing.
  */
-export const generateCharacterStats = onCall(async (request) => {
-    const { characterId } = request.data;
+export const triggerRpgGeneration = onTaskDispatched(async (req) => {
+    const { characterId } = req.data as { characterId: string };
     if (!characterId) {
-        throw new HttpsError('invalid-argument', 'The function must be called with a "characterId".');
+        logger.error("Task Queue Error: characterId was not provided.", req.data);
+        return;
     }
-
-    const charRef = db.collection('characters').doc(characterId);
-    const charDoc = await charRef.get();
-
-    if (!charDoc.exists) {
-        throw new HttpsError('not-found', `Character with ID ${characterId} not found.`);
-    }
-
-    const character = charDoc.data() as Character;
     
-    try {
-        const stats = await generateStatsFlow({
-            archetype: character.core.archetype || 'Adventurer',
-            rarity: character.core.rarity || 3,
-        });
+    logger.log(`Starting RPG generation for character: ${characterId}`);
+    const charRef = db.collection('characters').doc(characterId);
 
+    try {
+        const charDoc = await charRef.get();
+        if (!charDoc.exists) {
+            logger.error(`Character ${characterId} not found.`);
+            return;
+        }
+        const character = charDoc.data() as Character;
+        if (!character.core.archetype) {
+            logger.warn(`Character ${characterId} has no archetype. Skipping RPG generation.`);
+            await charRef.update({ 'rpg.statsStatus': 'failed', 'rpg.skillsStatus': 'failed' });
+            return;
+        }
+
+        // Generate stats and skills in parallel
+        const [stats, { skills }] = await Promise.all([
+            generateStatsFlow({
+                archetype: character.core.archetype,
+                rarity: character.core.rarity || 3,
+            }),
+            generateSkillsFlow({
+                archetype: character.core.archetype,
+                equipment: character.core.equipment || [],
+                biography: character.core.biography,
+            })
+        ]);
+
+        // Update Firestore with both results
         await charRef.update({
             'rpg.stats': stats,
             'rpg.statsStatus': 'complete',
-        });
-        
-        return { success: true, message: `Stats generated for ${character.core.name}.`};
-
-    } catch (error) {
-        await charRef.update({ 'rpg.statsStatus': 'failed' });
-        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        throw new HttpsError('internal', `Failed to generate stats: ${message}`);
-    }
-});
-
-
-/**
- * Generates and saves RPG skills for a given character.
- */
-export const generateCharacterSkills = onCall(async (request) => {
-    const { characterId } = request.data;
-    if (!characterId) {
-        throw new HttpsError('invalid-argument', 'The function must be called with a "characterId".');
-    }
-
-    const charRef = db.collection('characters').doc(characterId);
-    const charDoc = await charRef.get();
-
-    if (!charDoc.exists) {
-        throw new HttpsError('not-found', `Character with ID ${characterId} not found.`);
-    }
-
-    const character = charDoc.data() as Character;
-    
-    try {
-        const { skills } = await generateSkillsFlow({
-            archetype: character.core.archetype || 'Adventurer',
-            equipment: character.core.equipment || [],
-            biography: character.core.biography,
-        });
-
-        await charRef.update({
             'rpg.skills': skills,
+            'rpg.skillsStatus': 'complete',
         });
-        
-        return { success: true, message: `Skills generated for ${character.core.name}.`};
+
+        logger.log(`Successfully generated stats and skills for ${characterId}.`);
 
     } catch (error) {
-        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        throw new HttpsError('internal', `Failed to generate skills: ${message}`);
+        logger.error(`Failed to generate RPG attributes for ${characterId}.`, { error });
+        await charRef.update({ 'rpg.statsStatus': 'failed', 'rpg.skillsStatus': 'failed' });
     }
 });
-

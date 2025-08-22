@@ -8,6 +8,7 @@
 
 import { logger } from 'firebase-functions/v2';
 import { onObjectFinalized } from 'firebase-functions/v2/storage';
+import { getFunctions } from 'firebase-admin/functions';
 import { getStorage } from 'firebase-admin/storage';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps } from 'firebase-admin/app';
@@ -15,9 +16,6 @@ import * as path from 'path';
 import sharp from 'sharp';
 import FormData from 'form-data';
 
-// Import the new generation flows
-import { generateCharacterStats } from '@/ai/flows/rpg-stats/flow';
-import { generateCharacterSkills } from '@/ai/flows/rpg-skills/flow';
 
 // Initialize Firebase Admin SDK if not already done
 if (getApps().length === 0) {
@@ -171,26 +169,22 @@ export const processUploadedImage = onObjectFinalized({
             'visuals.showcaseImageUrl': publicUrl,
             'visuals.isShowcaseProcessed': true,
             'visuals.showcaseProcessingStatus': 'complete',
-            // Set initial RPG stats state
             'rpg.statsStatus': 'pending',
+            'rpg.skillsStatus': 'pending',
         });
         logger.log(`Successfully updated Firestore for character '${characterId}'.`);
         
-        // Asynchronously trigger the stat and skill generation.
-        logger.info(`Triggering RPG attribute generation for character ${characterId}...`);
-        
-        const generationPromises = [
-            generateCharacterStats({ characterId }).catch(err => {
-                logger.error(`Failed to generate stats for character ${characterId}`, err);
-                characterRef.update({ 'rpg.statsStatus': 'failed' });
-            }),
-            generateCharacterSkills({ characterId }).catch(err => {
-                logger.error(`Failed to generate skills for character ${characterId}`, err);
-                // We can add a 'skillsStatus' field later if needed
-            })
-        ];
+        const characterDoc = await characterRef.get();
+        const characterData = characterDoc.data();
 
-        await Promise.all(generationPromises);
+        // Trigger RPG attribute generation if the character is playable
+        if (characterData?.rpg?.isPlayable) {
+            logger.info(`Character is playable. Triggering RPG attribute generation for ${characterId}...`);
+            const queue = getFunctions().taskQueue('triggerRpgGeneration');
+            await queue.enqueue({ characterId });
+        } else {
+            logger.info(`Character ${characterId} is not playable. Skipping RPG attribute generation.`);
+        }
         
         await bucket.file(filePath).delete();
         logger.log(`Successfully deleted raw file: '${filePath}'.`);

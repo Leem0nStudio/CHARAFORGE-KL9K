@@ -14,11 +14,13 @@ export interface TimelineEvent {
 }
 
 export type ShowcaseProcessingStatus = 'idle' | 'removing-background' | 'upscaling' | 'finalizing' | 'complete' | 'failed';
+export type RpgAttributeStatus = 'pending' | 'complete' | 'failed';
 
 /**
  * Defines the attributes for the RPG / gamification system.
  */
 export interface RpgAttributes {
+    isPlayable: boolean; // A character is playable if they have an archetype
     stats: {
         strength: number;
         dexterity: number;
@@ -36,7 +38,8 @@ export interface RpgAttributes {
     }[];
     level: number;
     experience: number;
-    statsStatus: 'pending' | 'complete' | 'failed'; // Status for the stat generation
+    statsStatus: RpgAttributeStatus;
+    skillsStatus: RpgAttributeStatus;
 }
 
 
@@ -106,7 +109,7 @@ export type Character = {
   }
   
   // RPG / Gamification attributes
-  rpg?: RpgAttributes;
+  rpg: RpgAttributes;
 };
 
 // Zod validation schemas updated to reflect the new structure.
