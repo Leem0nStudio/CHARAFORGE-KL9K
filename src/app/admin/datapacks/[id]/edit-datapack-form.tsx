@@ -21,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { DataPack } from '@/types/datapack';
+import type { DataPack, DataPackSchema } from '@/types/datapack';
 import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
 import { DataPackMetadataForm } from './datapack-metadata-form';
 import { DataPackSchemaEditor } from './datapack-schema-editor';
@@ -41,7 +41,8 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
       price: initialData?.price || 0,
       tags: initialData?.tags || [],
       schema: initialData?.schema || {
-        characterProfileSchema: {}, // Initialize with empty object for the new structure
+        characterProfileSchema: {},
+        promptTemplates: [],
       },
       isNsfw: initialData?.isNsfw || false,
   }), [initialData]);
@@ -52,6 +53,15 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
     mode: 'onChange',
   });
   
+  const handleAiSchemaGenerated = (generatedSchema: DataPackSchema, tags: string[]) => {
+      // AI generation now drives the entire schema, so we can replace it directly.
+      form.setValue('schema', generatedSchema, { shouldValidate: true, shouldDirty: true });
+      if (tags) {
+        form.setValue('tags', tags, { shouldValidate: true, shouldDirty: true });
+      }
+  };
+
+
   const onSubmit = (values: DataPackFormValues) => {
     startTransition(async () => {
       let imageBuffer: Buffer | undefined = undefined;
@@ -124,7 +134,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
             <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} />
         </TabsContent>
         <TabsContent value="schema">
-            <DataPackSchemaEditor form={form} />
+            <DataPackSchemaEditor form={form} onAiSchemaGenerated={handleAiSchemaGenerated}/>
         </TabsContent>
       </Tabs>
 

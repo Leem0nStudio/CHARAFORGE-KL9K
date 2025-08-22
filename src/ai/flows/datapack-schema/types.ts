@@ -1,9 +1,7 @@
-
 /**
  * @fileOverview Data schemas and types for the DataPack schema generation flow.
- * The output schema is now a flat list of slots to avoid hitting API limits
- * on complex nested objects. The client is responsible for reconstructing the
- * nested structure.
+ * The output schema is now a single string containing the YAML content, which
+ * is more robust for the AI to generate than a complex, nested JSON object.
  */
 
 import { z } from 'zod';
@@ -14,20 +12,7 @@ export const GenerateDataPackSchemaInputSchema = z.object({
 export type GenerateDataPackSchemaInput = z.infer<typeof GenerateDataPackSchemaInputSchema>;
 
 
-// Define Zod schemas that match the new types in src/types/datapack.ts
-const OptionObjectSchema = z.object({
-    label: z.string(),
-    value: z.string(),
-});
-
-const SlotObjectSchema = z.object({
-  id: z.string().describe("The unique identifier for the slot, using dot notation for nested properties (e.g., 'hair', 'torso.armor')."),
-  options: z.array(OptionObjectSchema).describe("An array of options for this slot."),
-});
-
-
 export const GenerateDataPackSchemaOutputSchema = z.object({
-  slots: z.array(SlotObjectSchema).describe("A flat list of all generated slots for the character profile."),
-  tags: z.array(z.string()).describe("An array of 3-5 relevant, single-word, lowercase tags that categorize the datapack (e.g., ['fantasy', 'sci-fi', 'horror']).")
+  yamlContent: z.string().describe("A string containing the full DataPack schema, formatted as YAML."),
 });
 export type GenerateDataPackSchemaOutput = z.infer<typeof GenerateDataPackSchemaOutputSchema>;

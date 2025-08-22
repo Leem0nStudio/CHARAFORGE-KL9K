@@ -3,8 +3,8 @@
 
 import { useState, useTransition } from 'react';
 import { generateDataPackSchema } from '@/ai/flows/datapack-schema/flow';
-import type { GenerateDataPackSchemaOutput } from '@/ai/flows/datapack-schema/types';
 import { useToast } from '@/hooks/use-toast';
+import * as yaml from 'js-yaml';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,34 +20,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Loader2, Wand2 } from 'lucide-react';
-import type { CharacterProfileSchema } from '@/types/datapack';
+import type { DataPackSchema } from '@/types/datapack';
+
 
 interface AiGeneratorDialogProps {
-    onSchemaGenerated: (schema: Partial<CharacterProfileSchema>, tags: string[]) => void;
+    onSchemaGenerated: (schema: DataPackSchema, tags: string[]) => void;
 }
-
-/**
- * Transforms a flat list of slots from the AI into the nested CharacterProfileSchema.
- * @param slots The flat array of slots from the AI.
- * @returns A nested CharacterProfileSchema object.
- */
-function reconstructSchema(slots: GenerateDataPackSchemaOutput['slots']): Partial<CharacterProfileSchema> {
-    const schema: any = {};
-    for (const slot of slots) {
-        const parts = slot.id.split('.');
-        if (parts.length === 2) {
-            const [parent, child] = parts;
-            if (!schema[parent]) {
-                schema[parent] = {};
-            }
-            schema[parent][child] = slot.options;
-        } else {
-            schema[slot.id] = slot.options;
-        }
-    }
-    return schema;
-}
-
 
 export function AiGeneratorDialog({ onSchemaGenerated }: AiGeneratorDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
@@ -60,13 +38,29 @@ export function AiGeneratorDialog({ onSchemaGenerated }: AiGeneratorDialogProps)
         startTransition(async () => {
             try {
                 const result = await generateDataPackSchema({ concept });
-                const reconstructed = reconstructSchema(result.slots);
-                onSchemaGenerated(reconstructed, result.tags);
+                
+                // Parse the YAML content string into a JavaScript object
+                const parsedSchema = yaml.load(result.yamlContent) as any;
+                
+                if (!parsedSchema || (!parsedSchema.promptTemplates && !parsedSchema.characterProfileSchema)) {
+                    throw new Error("The AI returned invalid or empty YAML content.");
+                }
+
+                const finalSchema: DataPackSchema = {
+                    promptTemplates: parsedSchema.promptTemplates || [],
+                    characterProfileSchema: parsedSchema.characterProfileSchema || {},
+                };
+                
+                const tags = parsedSchema.tags || [];
+
+                onSchemaGenerated(finalSchema, tags);
+
                 toast({ title: "Schema Generated!", description: "The AI has populated the schema editor. Please review the results."});
                 setIsOpen(false);
             } catch (error) {
                 const message = error instanceof Error ? error.message : "An unknown error occurred.";
                 toast({ variant: 'destructive', title: 'Generation Failed', description: message });
+                console.error("YAML Parsing or Generation Error:", error);
             }
         });
     }

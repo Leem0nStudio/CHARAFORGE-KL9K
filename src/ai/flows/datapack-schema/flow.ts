@@ -3,8 +3,8 @@
 
 /**
  * @fileOverview An AI agent for generating a complete DataPack schema from a concept.
- * It now generates a flat list of slots, which is then reconstructed into a nested
- * object on the client side to avoid hitting API limits for complex schemas.
+ * It now generates a complete YAML file as a string, which is more robust and flexible
+ * for the AI than generating a complex JSON object.
  */
 
 import { ai } from '@/ai/genkit';
@@ -23,18 +23,56 @@ const prompt = ai.definePrompt({
   input: { schema: GenerateDataPackSchemaInputSchema },
   output: { schema: GenerateDataPackSchemaOutputSchema },
   model: 'googleai/gemini-1.5-flash-latest',
-  prompt: `You are an expert game designer and prompt engineer, specializing in creating rich, thematic character generation systems. Your task is to generate a flat list of schema slots for a character creator based on a given concept.
+  prompt: `You are an expert game designer and prompt engineer. Your task is to generate a complete DataPack schema as a single YAML document based on a user's concept.
 
 Concept: {{{concept}}}
 
 Instructions:
-1.  **Generate a Flat List of Slots**: Your output MUST be an array of slot objects in the 'slots' field.
-2.  **Granular Slot IDs**: Each slot MUST have a unique 'id' that represents its place in the character profile. Use dot notation for equipment (e.g., 'head.clothing', 'torso.armor', 'facialFeatures', 'hair').
-3.  **Rich Options**: For every single slot, you MUST provide an array of 4-6 creative and thematic options. Each option must have a 'label' for the user and a 'value' for the prompt.
-4.  **Descriptive Values**: The 'value' for each option must be a descriptive phrase ready to be used in a prompt (e.g., 'long flowing silver hair', 'spiked demonic pauldrons', 'worn leather corset').
-5.  **Comprehensive Coverage**: You MUST generate slots covering all major areas: general (race/class), appearance (hair, eyes, skin), a WIDE VARIETY of equipment slots (head, face, neck, shoulders, torso, arms, hands, waist, legs, feet, back) with options for clothing, armor, and accessories, and scene details (pose, action, camera, background).
-6.  **Cohesion**: All generated options must be thematically consistent with the core concept.
-7.  **Tags**: Finally, generate an array of 3-5 relevant, single-word, lowercase tags that categorize the datapack (e.g., "fantasy", "sci-fi", "horror", "cyberpunk").
+1.  **YAML Output**: Your entire output MUST be a single, valid YAML document string within the 'yamlContent' field. Do NOT include any other text or explanations outside of the YAML content.
+2.  **Prompt Templates**: Generate 2-3 diverse 'promptTemplates'. Each template should use placeholders (e.g., {raceClass}, {torso_armor}) that correspond to the slots you will define in the 'characterProfileSchema'.
+3.  **Character Profile Schema**:
+    *   Create a rich 'characterProfileSchema' with many granular slots for appearance and equipment.
+    *   Use nested keys for equipment (e.g., head.clothing, torso.armor).
+    *   For EVERY slot, provide 4-5 creative, thematically consistent options.
+    *   Each option MUST have a 'label' for the UI and a 'value' for the prompt. The 'value' should be a descriptive phrase ready for use in a prompt.
+4.  **Tags**: Generate an array of 5-7 relevant, single-word, lowercase tags that categorize the datapack.
+
+Example YAML structure:
+---
+promptTemplates:
+  - name: "Cinematic Portrait"
+    template: "cinematic portrait of a {raceClass} with {hair}, {eyes}, wearing {torso_armor} and {head_accessory}, in {background}, {lighting} lighting"
+  - name: "Action Shot"
+    template: "dynamic action shot of a {raceClass}, {action}, wielding a {hands_weapon}, wearing {torso_armor}, in {background}"
+characterProfileSchema:
+  raceClass:
+    - label: "Solar Knight"
+      value: "a noble solar knight"
+    - label: "Void Warlock"
+      value: "a mysterious void warlock"
+  hair:
+    - label: "Flowing White"
+      value: "long flowing white hair"
+    - label: "Short & Spiky"
+      value: "short, spiky black hair"
+  eyes:
+    - label: "Glowing Blue"
+      value: "glowing blue eyes"
+    - label: "Piercing Amber"
+      value: "piercing amber eyes"
+  torso_armor:
+    - label: "Sunforged Plate"
+      value: "ornate sunforged plate armor"
+    - label: "Shadow-Woven Robes"
+      value: "dark, shadow-woven robes"
+  head_accessory:
+    - label: "Laurel Crown"
+      value: "a golden laurel crown"
+    - label: "Horned Circlet"
+      value: "a horned, dark iron circlet"
+  # ... and so on for many other slots
+tags: ["fantasy", "magic", "knights", "warlocks", "epic"]
+---
 `,
 });
 
@@ -47,12 +85,12 @@ const generateDataPackSchemaFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await prompt(input);
-    if (!output) {
-      throw new Error('AI failed to generate a DataPack schema.');
+    if (!output || !output.yamlContent) {
+      throw new Error('AI failed to generate a valid YAML content for the DataPack schema.');
     }
     return {
-        slots: output.slots,
-        tags: output.tags,
+        yamlContent: output.yamlContent,
     };
   }
 );
+
