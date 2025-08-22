@@ -66,7 +66,7 @@ export const processUploadedImage = onObjectFinalized({
     logger.log(`Successfully downloaded '${fileName}'. Starting processing pipeline.`);
 
     try {
-        await characterRef.update({ 'visuals.showcaseProcessingStatus': 'finalizing' });
+        await characterRef.update({ 'visuals.showcaseProcessingStatus': 'removing-background' });
         const processedBuffer = await sharp(imageBuffer)
             .removeBackground() // Use sharp's built-in background removal
             .webp({ quality: 90 })
@@ -92,8 +92,6 @@ export const processUploadedImage = onObjectFinalized({
             'visuals.showcaseImageUrl': publicUrl,
             'visuals.isShowcaseProcessed': true,
             'visuals.showcaseProcessingStatus': 'complete',
-            'rpg.statsStatus': 'pending',
-            'rpg.skillsStatus': 'pending',
         });
         logger.log(`Successfully updated Firestore for character '${characterId}'.`);
         
@@ -103,10 +101,7 @@ export const processUploadedImage = onObjectFinalized({
         // Trigger RPG attribute generation if the character is playable
         if (characterData?.rpg?.isPlayable) {
             logger.info(`Character is playable. Triggering RPG attribute generation for ${characterId}...`);
-            const queue = getFunctions().taskQueue('triggerRpgGeneration', {
-                retryConfig: { maxAttempts: 3, minBackoffSeconds: 10 },
-                rateLimits: { maxDispatchesPerSecond: 2 },
-            });
+            const queue = getFunctions().taskQueue('triggerRpgGeneration');
             await queue.enqueue({ characterId });
         } else {
             logger.info(`Character ${characterId} is not playable. Skipping RPG attribute generation.`);
@@ -123,3 +118,5 @@ export const processUploadedImage = onObjectFinalized({
          });
     }
 });
+
+    

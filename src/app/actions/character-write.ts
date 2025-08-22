@@ -362,8 +362,8 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 level: 1,
                 experience: 0,
                 skills: [],
-                statsStatus: isPlayable ? 'pending' : 'complete',
-                skillsStatus: isPlayable ? 'pending' : 'complete',
+                statsStatus: 'pending',
+                skillsStatus: 'pending',
                 stats: stats,
             }
         };
@@ -454,3 +454,5 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
     return { success: false, message };
   }
 }
+
+    

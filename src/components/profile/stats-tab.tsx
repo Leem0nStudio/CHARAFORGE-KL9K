@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +16,9 @@ export function StatsTab({ userStats }: { userStats?: UserProfile['stats'] }) {
     // This check handles that correctly.
     if (typeof memberSince === 'number') {
       const date = new Date(memberSince);
-      memberSinceDate = format(date, 'PPP');
+      if (!isNaN(date.getTime())) {
+          memberSinceDate = format(date, 'PPP');
+      }
     } else if (memberSince) {
       // Fallback for older data that might still be a string or other type
       const date = new Date(memberSince);
@@ -47,3 +50,5 @@ export function StatsTab({ userStats }: { userStats?: UserProfile['stats'] }) {
         </Card>
     );
 }
+
+    

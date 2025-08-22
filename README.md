@@ -1,4 +1,3 @@
-
 # CharaForge: Forja de Personajes con IA (v3)
 
 CharaForge es una aplicación web moderna y full-stack construida con Next.js y Firebase, diseñada para generar, gestionar y compartir personajes de ficción utilizando IA generativa. Proporciona una plataforma robusta para que escritores, directores de juego y creativos den vida a sus ideas con biografías detalladas y retratos únicos generados por IA.
@@ -22,6 +21,7 @@ CharaForge es una aplicación web moderna y full-stack construida con Next.js y 
     -   **Autenticación**: Firebase Authentication
     -   **Base de Datos**: Firestore (NoSQL)
     -   **Almacenamiento**: Firebase Storage (para imágenes y activos) y Google Cloud Storage (para archivos de modelos pesados).
+    -   **Funciones de Backend**: Cloud Functions for Firebase (para procesamiento de imágenes y tareas de fondo).
 -   **Capa de IA**: [Genkit](https://firebase.google.com/docs/genkit) con `@genkit-ai/googleai`. Soporta Google Gemini, Hugging Face, OpenRouter y ComfyUI.
 -   **UI**: [React](https://react.dev/), [ShadCN UI](https://ui.shadcn.com/), [Tailwind CSS](https://tailwindcss.com/)
 -   **Gestión de Estado**: React Hooks y Context API (`useAuth`).
@@ -87,10 +87,11 @@ CharaForge está construido utilizando un enfoque moderno y centrado en el servi
 -   La UI está construida con **React Server Components (RSC)** por defecto, lo que mejora el rendimiento al renderizar en el servidor. La interactividad del lado del cliente se introduce mediante la directiva `'use client'` donde sea necesario (p. ej., formularios, botones interactivos).
 -   Los componentes de la UI provienen de la excelente biblioteca [ShadCN UI](https://ui.shadcn.com/) (`/src/components/ui`) y se complementan con componentes de aplicación personalizados y reutilizables (`/src/components`).
 
-### Backend (Server Actions)
+### Backend (Server Actions & Cloud Functions)
 
 -   En lugar de las rutas de API tradicionales, CharaForge depende en gran medida de las **Next.js Server Actions** para la lógica de backend. Estas son funciones asíncronas que se ejecutan en el servidor pero que pueden ser llamadas directamente desde los componentes del cliente.
--   Toda la lógica del lado del servidor está co-ubicada en `/src/app/actions/`, organizada por dominio (p. ej., `character-write.ts`, `datapacks.ts`). Esto simplifica la arquitectura al eliminar la necesidad de una capa de API separada.
+-   Toda la lógica del lado del servidor está co-ubicada en `/src/app/actions/`, organizada por dominio (p. ej., `character-write.ts`, `datapacks.ts`).
+-   Para tareas asíncronas y pesadas, como el procesamiento de imágenes o la generación de atributos RPG, se utiliza **Cloud Functions for Firebase**. Estas funciones se activan por eventos (como una subida a Storage) y se ejecutan de forma independiente, lo que evita timeouts en el navegador y proporciona una arquitectura más robusta y escalable.
 
 ### Flujo de Autenticación (Cookie HTTPOnly)
 
@@ -127,3 +128,4 @@ El sistema de autenticación está diseñado para ser robusto y seguro, especial
 -   `npm run admin:list`: Lista todos los usuarios con el rol de administrador.
 -   `npm run tags:fetch`: Obtiene y procesa un conjunto de tags de Danbooru para usarlos en el asistente de tags.
 
+    
