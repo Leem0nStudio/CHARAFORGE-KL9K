@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Main entry point for Firebase Cloud Functions.
  * This file should only import and export the functions to be deployed.

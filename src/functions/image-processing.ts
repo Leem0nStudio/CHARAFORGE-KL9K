@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Cloud Function for post-upload image processing.
  * This function is triggered when a new image is uploaded to the `raw-uploads/`
@@ -118,5 +119,3 @@ export const processUploadedImage = onObjectFinalized({
          });
     }
 });
-
-    

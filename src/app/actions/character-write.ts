@@ -276,7 +276,7 @@ export async function updateCharacter(
 }
 
 export async function saveCharacter(input: Omit<SaveCharacterInput, 'rarity'>) {
-  const validation = SaveCharacterInputSchema.omit({ rarity: true }).safeParse(input);
+  const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
     const firstError = validation.error.errors[0];
     throw new Error(`Invalid input for ${firstError.path.join('.')}: ${firstError.message}`);
