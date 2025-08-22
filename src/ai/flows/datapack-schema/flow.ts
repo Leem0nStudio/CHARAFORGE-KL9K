@@ -29,7 +29,7 @@ Concept: {{{concept}}}
 
 Instructions:
 1.  **Slots**: First, generate an array of 7 to 10 diverse and creative slots that represent the core components of the concept.
-    *   **GRANULARITY IS KEY**: You MUST create separate, granular slots for different parts of the character, especially for clothing. Instead of one "clothing" slot, you MUST create specific slots like "headwear", "topwear", "bottomwear", "footwear", etc.
+    *   **GRANULARITY IS KEY**: You MUST create separate, granular slots for different parts of the character, especially for clothing. Instead of one "clothing" slot, you MUST create specific slots like "headwear", "topwear", "bottomwear", "footwear", "shoulders", etc.
     *   **RPG COMPATIBILITY**: It is mandatory that one of the slots represents the character's **class or archetype** (e.g., with an \`id\` of "class", "role", or "archetype"). The options for this slot should be relevant fantasy/sci-fi classes like "Warrior", "Mage", "Bounty Hunter", etc.
     *   Each slot must have a unique 'id' in snake_case.
     *   Each slot must have a user-friendly 'label'.
