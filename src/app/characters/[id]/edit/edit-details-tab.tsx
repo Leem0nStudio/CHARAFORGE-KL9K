@@ -203,5 +203,3 @@ export function EditDetailsTab({ character }: { character: Character }) {
         </Card>
     );
 }
-
-    

@@ -71,5 +71,3 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
         </div>
     );
 }
-
-    

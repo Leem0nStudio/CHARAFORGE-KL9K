@@ -30,6 +30,7 @@ function toCharacterObject(docId: string, data: DocumentData): Character {
         equipment: data.equipment || [],
         timeline: data.timeline || [],
         tags: data.tags || [],
+        rarity: data.rarity || 3,
     };
     const defaultVisuals = {
         imageUrl: data.imageUrl || '',

@@ -132,18 +132,20 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
             'visuals.showcaseProcessingStatus': 'removing-background',
         });
 
+        revalidatePath(`/characters/${characterId}/edit`);
+        
+        // This part is now handled by the client, but we keep the server logic
+        // This might seem redundant, but it's a good pattern to ensure the job is queued
+        // even if client-side logic fails for some reason. The external worker will
+        // fetch the primary URL from the character doc.
         const fetch = (await import('node-fetch')).default;
         const response = await fetch(imageUrl);
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch existing image: ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`Failed to fetch original image for reprocessing: ${response.statusText}`);
         const imageBuffer = await response.buffer();
         
         // This upload now acts as the trigger for the external worker.
         await uploadToStorage(imageBuffer, destinationPath, response.headers.get('content-type') || 'image/png');
         
-        revalidatePath(`/characters/${characterId}/edit`);
         return { success: true, message: 'Image reprocessing job has been successfully queued.' };
         
     } catch(error) {
@@ -152,6 +154,7 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
         await characterRef.update({ 
             'visuals.showcaseProcessingStatus': 'failed',
          }).catch(() => {});
+         revalidatePath(`/characters/${characterId}/edit`);
         return { success: false, message };
     }
 }

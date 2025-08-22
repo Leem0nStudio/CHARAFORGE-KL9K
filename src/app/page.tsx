@@ -16,9 +16,9 @@ export default async function Home() {
     // Optimize hero character selection on the server
     const heroCharacter = (() => {
         if (featuredCharacters.length === 0) return null;
-        // Take the last 5 created characters to feature newer content
-        const lastFive = featuredCharacters.slice(0, 5);
-        return lastFive[Math.floor(Math.random() * lastFive.length)];
+        // Prefer a higher-rarity character for the hero section
+        const sortedByRarity = [...featuredCharacters].sort((a, b) => (b.core.rarity || 0) - (a.core.rarity || 0));
+        return sortedByRarity[0];
     })();
 
 

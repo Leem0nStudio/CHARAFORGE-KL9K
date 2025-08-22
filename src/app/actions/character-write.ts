@@ -247,7 +247,6 @@ export async function saveCharacter(input: SaveCharacterInput) {
             visuals: {
                 imageUrl: storageUrl,
                 gallery: [storageUrl],
-                isProcessed: false,
                 showcaseImageUrl: null,
                 isShowcaseProcessed: false,
                 showcaseProcessingStatus: 'idle',
