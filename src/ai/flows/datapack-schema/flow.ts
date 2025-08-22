@@ -32,7 +32,7 @@ Instructions:
     *   Each slot must have a unique 'id' in snake_case.
     *   Each slot must have a user-friendly 'label'.
     *   For each 'select' slot, provide a list of 4-6 creative and thematic 'options'.
-    *   Each option must have a 'label' for the UI and a 'value' to be used in the prompt. The value should be a coherent phrase or concept (e.g., "wearing a leather jacket", "cybernetic glowing eyes"), not just a single word.
+    *   Each option must have a 'label' for the UI and a 'value' to be inserted into the prompt. The value should be a coherent phrase or concept (e.g., "wearing a leather jacket", "cybernetic glowing eyes"), not just a single word.
     *   **Locking Core Attributes**: Identify 1-2 slots that are absolutely essential to the core identity of the concept (e.g., for "Vampire Noble", the 'race' slot should be locked to 'vampire'). For these slots, set \`isLocked: true\`. These locked slots will use their \`defaultOption\` in the prompt but won't be configurable by the end-user.
     *   You can include a 'text' type slot for things like a character's name, but prefer 'select' for visual concepts.
     *   Set a sensible 'defaultOption' for every single slot, referencing one of the option 'value's.
@@ -40,7 +40,7 @@ Instructions:
 2.  **Prompt Templates**: After defining the slots, generate an array of 3 to 5 diverse prompt templates.
     *   Each template object must have a short, descriptive 'name' (e.g., "Cinematic Portrait", "Action Shot", "Sketch Style").
     *   Each 'template' string MUST be a comma-separated list of tags and phrases that follows this exact, detailed structure:
-        **[# of Characters], [Facial Appearance(s)], [Body Appearance(s)], [Clothing(head, face, shoulders, back, arms, legs, uppertorso, lowtorso, waist, feet, accessories, outfit colors)], [Position(s)/Action(s)], [Camera Angle/View], [Location/Background], [Miscellaneous]**
+        **[# of Characters], [Facial Appearance(s)], [Body Appearance(s)], [Clothing(head, face, shoulders, back, arms, legs, uppertorso, lowtorso, waist, feet, accessories, outfit colors)], [Position(s)/Action(s)], [Camera Angle/View], [Location/Background], [Miscellaneous/Effects]**
     *   You MUST use placeholders in the format '{slot_id}' to populate the sections of this structure. Every single slot you defined must be used in each template.
     *   Example for a "Cyberpunk" theme: "1girl, {face_details}, {body_type}, wearing a {headwear}, {clothing_torso}, {clothing_legs}, {footwear}, {action_pose}, {camera_angle}, in a {background_location}, {style_details}"
     *   Be creative and ensure the combination of slots makes sense within the structured prompt.
