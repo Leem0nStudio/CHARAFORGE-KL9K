@@ -7,6 +7,7 @@
  */
 import { ai } from '@/ai/genkit';
 import { randomUUID } from 'crypto';
+import { z } from 'zod';
 import type { Character, RpgAttributes } from '@/types/character';
 import { 
   GenerateAllRpgAttributesInputSchema,
@@ -103,7 +104,7 @@ const skillsGenerationPrompt = ai.definePrompt(
     Instructions:
     1. Create 3 to 4 unique skills.
     2. Each skill must have a name, a description of what it does, a power level (1-10), and a type (attack, defense, utility).
-    3. The skills should be creative and directly inspired by the character's archetype, equipment, and backstory. For example, a "Starship Captain" with a "laser pistol" might have a skill called "Ricochet Shot", not a generic "Fireball".
+    3. The skills should be creative and directly inspired by the character's archetype, equipment, and backstory. For ejemplo, a "Starship Captain" with a "laser pistol" might have a skill called "Ricochet Shot", not a generic "Fireball".
     4. Ensure a balanced mix of skill types (e.g., 2 attack, 1 defense, 1 utility).
     5. The power level should reflect the skill's impact in a game. A simple sword strike might be power 3, while a powerful area-of-effect spell could be power 8.
     6. The output must be ONLY the JSON object.
