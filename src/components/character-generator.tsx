@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback, useTransition, useRef } from "react";
@@ -86,7 +85,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   const [selectedTextModel, setSelectedTextModel] = useState<AiModel>(textModels[0]);
   
   const [activePack, setActivePack] = useState<DataPack | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
   
   const { toast } = useToast();
   const { userProfile, loading: authLoading } = useAuth();
@@ -108,30 +106,15 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     },
   });
 
-  const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-    let finalPrompt = template.template || '';
-    
-    for (const slotId in wizardData) {
-        const selectedValue = wizardData[slotId];
-        const slot = pack.schema.slots.find(s => s.id === slotId);
-        const option = slot?.options?.find(o => o.value === selectedValue);
-        
-        const replacementValue = option?.value || selectedValue || '';
-        finalPrompt = finalPrompt.replace(`{${slotId}}`, replacementValue);
-    }
-
-    const finalTags = Object.values(wizardData)
-      .map(value => pack.schema.slots.flatMap(s => s.options ?? []).find(o => o.value === value)?.tags ?? [value])
-      .flat()
-      .filter(Boolean)
-      .join(', ');
-
+  const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, finalPrompt: string) => {
     generationForm.setValue('description', finalPrompt, { shouldValidate: true });
-    generationForm.setValue('tags', finalTags);
     generationForm.setValue('wizardData', wizardData);
     
+    // Create tags from the values of the wizard data
+    const finalTags = Object.values(wizardData).join(', ');
+    generationForm.setValue('tags', finalTags);
+    
     setActivePack(pack);
-    setSelectedTemplate(template);
     setIsPackModalOpen(false);
 }, [generationForm]);
   
@@ -151,7 +134,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             setAvailableModels(userModels);
             setAvailableLoras(userLoras);
             
-            // Set a default model if none is selected or the selected one isn't in the available list
             const currentModel = generationForm.getValues('selectedModel');
             if ((!currentModel || !userModels.find(m => m.id === currentModel.id)) && userModels.length > 0) {
                 generationForm.setValue('selectedModel', userModels[0]);
@@ -396,26 +378,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                                     </Button>
                                 </div>
                               </div>
-                               {activePack && selectedTemplate && (
-                                    <Select 
-                                      onValueChange={(value) => {
-                                        const newTemplate = activePack.schema.promptTemplates.find(t => t.name === value);
-                                        if (newTemplate) {
-                                            handleWizardDataChange(generationForm.getValues('wizardData') || {}, activePack, newTemplate);
-                                        }
-                                      }}
-                                      defaultValue={selectedTemplate.name}
-                                    >
-                                        <SelectTrigger className="mb-2">
-                                            <SelectValue placeholder="Select a prompt template..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {activePack.schema.promptTemplates.map(t => (
-                                                <SelectItem key={t.name} value={t.name}>{t.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
                               <FormControl>
                                   <Tabs defaultValue="visual" className="w-full">
                                     <TabsList className="grid w-full grid-cols-2">

@@ -1,23 +1,23 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardTitle } from '@/components/ui/card';
+import { Card, CardTitle, CardHeader, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Loader2, ArrowRight, Wand2, Package, ArrowLeft, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import type { DataPack, Option, Slot, PromptTemplate } from '@/types/datapack';
+import type { DataPack, Option, Slot, PromptTemplate, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import Link from 'next/link';
 import { Badge } from './ui/badge';
 import { getSlotCategory } from '@/lib/app-config';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, isOpen: boolean, onClose: () => void }) {
     if (!pack) return null;
@@ -31,31 +31,22 @@ function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, 
                 </DialogHeader>
                  <ScrollArea className="max-h-[60vh] -mx-6 px-6 py-4">
                      <div className="space-y-6">
-                        <div>
-                            <h4 className="font-semibold mb-2">Prompt Templates</h4>
-                            <div className="space-y-2">
-                                {pack.schema.promptTemplates?.map((template, index) => (
-                                    <div key={index} className="bg-muted/50 p-3 rounded-lg">
-                                        <p className="font-semibold text-sm mb-1">{template.name}</p>
-                                        <p className="text-xs text-muted-foreground font-mono break-words">{template.template}</p>
-                                    </div>
-                                ))}
+                        {pack.schema.characterProfileSchema && (
+                             <div>
+                                <h4 className="font-semibold mb-2">Available Options</h4>
+                                 <div className="flex flex-wrap gap-2">
+                                     {Object.keys(pack.schema.characterProfileSchema).map((slotKey) => (
+                                        <Badge 
+                                            key={slotKey} 
+                                            variant="outline"
+                                            data-category={getSlotCategory(slotKey)}
+                                        >
+                                            {slotKey}
+                                        </Badge>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold mb-2">Available Slots</h4>
-                             <div className="flex flex-wrap gap-2">
-                                 {pack.schema.slots.map((slot) => (
-                                    <Badge 
-                                        key={slot.id} 
-                                        variant="outline"
-                                        data-category={getSlotCategory(slot.id)}
-                                    >
-                                        {slot.label}
-                                    </Badge>
-                                ))}
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </ScrollArea>
                 <DialogFooter>
@@ -66,53 +57,44 @@ function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, 
     );
 }
 
-
 function OptionSelectModal({
     isOpen,
     onClose,
-    slot,
+    options,
     currentValue,
     onSelect,
-    disabledOptions,
+    title,
 }: {
     isOpen: boolean;
     onClose: () => void;
-    slot: Slot;
+    options: EquipmentOption[];
     currentValue: string;
     onSelect: (value: string) => void;
-    disabledOptions: Set<string>;
+    title: string;
 }) {
-    if (!slot) return null;
-
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle className="font-headline text-2xl">{slot.label}</DialogTitle>
+                    <DialogTitle className="font-headline text-2xl">{title}</DialogTitle>
                     <DialogDescription>Select an option for this category.</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
                      <div className="flex flex-wrap gap-2 pt-2">
-                         {slot.options?.map((option: Option) => {
-                             const isDisabled = disabledOptions.has(option.value);
-                             return (
-                                 <Button
-                                     key={option.value}
-                                     type="button"
-                                     variant={currentValue === option.value ? 'default' : 'secondary'}
-                                     onClick={() => {
-                                         if (!isDisabled) {
-                                            onSelect(option.value);
-                                            onClose();
-                                         }
-                                     }}
-                                     disabled={isDisabled}
-                                     className="rounded-full"
-                                 >
-                                     {option.label}
-                                 </Button>
-                             );
-                         })}
+                         {options.map((option) => (
+                             <Button
+                                 key={option.value}
+                                 type="button"
+                                 variant={currentValue === option.value ? 'default' : 'secondary'}
+                                 onClick={() => {
+                                     onSelect(option.value);
+                                     onClose();
+                                 }}
+                                 className="rounded-full"
+                             >
+                                 {option.label}
+                             </Button>
+                         ))}
                     </div>
                 </div>
             </DialogContent>
@@ -120,59 +102,120 @@ function OptionSelectModal({
     )
 }
 
-function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWizardComplete: (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => void, onBack: () => void }) {
+function buildPromptFromProfile(profile: Record<string, any>): string {
+    const parts: string[] = [];
+    const order: Array<keyof CharacterProfileSchema> = [
+        'count', 'raceClass', 'gender', 'hair', 'eyes', 'skin', 'facialFeatures',
+        'head', 'face', 'neck', 'shoulders', 'torso', 'arms', 'hands', 'waist',
+        'legs', 'feet', 'back', 'weaponsExtra', 'pose', 'action', 'camera', 'background', 'effects'
+    ];
+
+    order.forEach(key => {
+        const value = profile[key];
+        if (!value) return;
+
+        if (typeof value === 'string' && value.trim() !== '') {
+            parts.push(value);
+        } else if (Array.isArray(value)) {
+            parts.push(...value.filter(Boolean));
+        } else if (typeof value === 'object') {
+            Object.values(value).forEach(subVal => {
+                if (typeof subVal === 'string' && subVal.trim() !== '') {
+                    parts.push(subVal);
+                }
+            });
+        }
+    });
+
+    return parts.filter(Boolean).join(', ');
+}
+
+
+function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWizardComplete: (wizardData: Record<string, string>, finalPrompt: string) => void, onBack: () => void }) {
     const { handleSubmit, watch, setValue } = useForm();
     const formValues = watch();
 
-    const [activeSlot, setActiveSlot] = useState<Slot | null>(null);
+    const [activeModal, setActiveModal] = useState<{title: string, options: EquipmentOption[], fieldName: string} | null>(null);
 
-    const wizardSlots = pack.schema.slots.filter(slot => !slot.isLocked);
-
-    const hasValidTemplates = Array.isArray(pack.schema.promptTemplates) && pack.schema.promptTemplates.length > 0;
-
-    useEffect(() => {
-        pack.schema.slots.forEach(slot => {
-            if (slot.defaultOption) {
-                setValue(slot.id, slot.defaultOption);
-            } else if (slot.type === 'select' && slot.options && slot.options.length > 0) {
-                 setValue(slot.id, slot.options[0].value);
-            }
-        });
-    }, [pack.schema.slots, setValue]);
-
-    const onSubmit = (data: any) => {
-        if (!hasValidTemplates) {
-             console.error("Attempted to submit a DataPack with an invalid or missing promptTemplates array.", pack);
-             return;
-        }
-        const defaultTemplate = pack.schema.promptTemplates[0];
-        onWizardComplete(data, pack, defaultTemplate);
-    };
-
-    if (!hasValidTemplates) {
+    const schema = pack.schema.characterProfileSchema;
+    if (!schema) {
         return (
-            <>
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
-                        <Wand2 className="h-6 w-6 text-destructive" /> Configuration Error
-                    </DialogTitle>
-                </DialogHeader>
-                <div className="flex-grow flex items-center justify-center">
-                    <Alert variant="destructive">
-                      <AlertTitle>Invalid DataPack</AlertTitle>
-                      <AlertDescription>
-                        This DataPack (`{pack.name}`) is missing valid prompt templates and cannot be used. Please correct it in the admin panel.
-                      </AlertDescription>
-                    </Alert>
-                </div>
-                <DialogFooter className="flex-none pt-4 border-t mt-auto">
-                    <Button type="button" variant="ghost" onClick={onBack}>
-                        <ArrowLeft className="mr-2" /> Back
-                    </Button>
-                </DialogFooter>
-            </>
+             <div className="flex-grow flex items-center justify-center">
+                <Alert variant="destructive">
+                  <AlertTitle>Invalid DataPack</AlertTitle>
+                  <AlertDescription>
+                    This DataPack does not have a valid schema. Please correct it in the admin panel.
+                  </AlertDescription>
+                </Alert>
+            </div>
         )
     }
+    
+    // Set initial default values
+    useEffect(() => {
+        if (!schema) return;
+        Object.entries(schema).forEach(([key, value]) => {
+            if (Array.isArray(value) && value.length > 0) {
+                 setValue(key, value[0].value);
+            } else if (typeof value === 'object' && value !== null) {
+                Object.entries(value).forEach(([subKey, subValue]) => {
+                    if (Array.isArray(subValue) && subValue.length > 0) {
+                        setValue(`${key}.${subKey}`, subValue[0].value);
+                    }
+                })
+            }
+        });
+    }, [schema, setValue]);
+
+
+    const onSubmit = (data: any) => {
+        const finalPrompt = buildPromptFromProfile(data);
+        onWizardComplete(data, finalPrompt);
+    };
+    
+    const renderSimpleSlot = (fieldName: keyof CharacterProfileSchema, label: string) => {
+        const options = (schema as any)[fieldName] as EquipmentOption[];
+        if (!options || options.length === 0) return null;
+        
+        const selectedValue = formValues[fieldName];
+        const selectedOption = options.find(o => o.value === selectedValue);
+
+        return (
+            <Card onClick={() => setActiveModal({ title: label, options, fieldName })} className="cursor-pointer hover:bg-muted/50 transition-colors h-full flex flex-col">
+                <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{label}</CardTitle></CardHeader>
+                <CardContent className="flex-grow flex items-center"><p className="text-base text-primary font-semibold">{selectedOption?.label || 'None'}</p></CardContent>
+            </Card>
+        );
+    };
+
+    const renderEquipmentSlot = (fieldName: keyof CharacterProfileSchema, label: string) => {
+        const slotOptions = (schema as any)[fieldName] as EquipmentSlotOptions;
+        if (!slotOptions || Object.values(slotOptions).every(arr => !arr || arr.length === 0)) return null;
+
+        return (
+            <AccordionItem value={fieldName as string}>
+                <AccordionTrigger>{label}</AccordionTrigger>
+                <AccordionContent>
+                    <div className="grid grid-cols-2 gap-2 p-2">
+                        {Object.entries(slotOptions).map(([subKey, options]) => {
+                             if (!options || options.length === 0) return null;
+                             const subFieldName = `${fieldName}.${subKey}`;
+                             const selectedValue = formValues[fieldName]?.[subKey];
+                             const selectedOption = options.find(o => o.value === selectedValue);
+                             
+                             return (
+                                 <div key={subKey} onClick={() => setActiveModal({ title: `${label} - ${subKey}`, options, fieldName: subFieldName })} className="p-2 border rounded-md cursor-pointer hover:bg-muted/20">
+                                     <p className="text-xs text-muted-foreground capitalize">{subKey}</p>
+                                     <p className="text-sm font-medium text-primary truncate">{selectedOption?.label || 'None'}</p>
+                                 </div>
+                             )
+                        })}
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+        )
+    }
+
 
     return (
         <>
@@ -181,47 +224,76 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                     <Wand2 className="h-6 w-6 text-primary" /> {pack.name} Wizard
                 </DialogTitle>
                 <DialogDescription>
-                    Click on any card to change its selection.
+                    Configure the character's profile by selecting from the available options.
                 </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-grow min-h-0">
-                 <OptionSelectModal
-                    isOpen={!!activeSlot}
-                    onClose={() => setActiveSlot(null)}
-                    slot={activeSlot!}
-                    currentValue={activeSlot ? formValues[activeSlot.id] : ''}
-                    onSelect={(value) => activeSlot && setValue(activeSlot.id, value)}
-                    disabledOptions={new Set()}
-                />
+                 {activeModal && (
+                    <OptionSelectModal
+                        isOpen={!!activeModal}
+                        onClose={() => setActiveModal(null)}
+                        options={activeModal.options}
+                        currentValue={formValues[activeModal.fieldName]}
+                        onSelect={(value) => setValue(activeModal.fieldName, value)}
+                        title={activeModal.title}
+                    />
+                )}
                 <ScrollArea className="flex-grow my-4 pr-3 -mr-3">
-                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {wizardSlots.map(slot => {
-                            const selectedValue = formValues[slot.id];
-                            const selectedOption = slot.options?.find(o => o.value === selectedValue);
-
-                            return (
-                                <Card
-                                    key={slot.id}
-                                    onClick={() => setActiveSlot(slot)}
-                                    className="cursor-pointer hover:bg-muted/50 transition-colors h-full flex flex-col"
-                                >
-                                    <div className="p-3 pb-0">
-                                        <div className="text-sm text-muted-foreground">{slot.label}</div>
-                                    </div>
-                                    <div className="p-3 flex-grow flex items-center">
-                                         <p className="text-base text-primary font-semibold whitespace-normal">{selectedOption?.label || 'None'}</p>
-                                    </div>
-                                </Card>
-                            )
-                        })}
-                     </div>
+                    <div className="space-y-4">
+                        <Accordion type="multiple" defaultValue={['general', 'appearance', 'equipment']} className="w-full">
+                            <AccordionItem value="general">
+                                <AccordionTrigger>General</AccordionTrigger>
+                                <AccordionContent className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+                                    {renderSimpleSlot('raceClass', 'Race/Class')}
+                                    {renderSimpleSlot('gender', 'Gender')}
+                                    {renderSimpleSlot('count', 'Count')}
+                                </AccordionContent>
+                            </AccordionItem>
+                             <AccordionItem value="appearance">
+                                <AccordionTrigger>Appearance</AccordionTrigger>
+                                <AccordionContent className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+                                    {renderSimpleSlot('hair', 'Hair')}
+                                    {renderSimpleSlot('eyes', 'Eyes')}
+                                    {renderSimpleSlot('skin', 'Skin')}
+                                    {renderSimpleSlot('facialFeatures', 'Facial Features')}
+                                </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="equipment">
+                                <AccordionTrigger>Equipment</AccordionTrigger>
+                                <AccordionContent className="pt-2">
+                                    <Accordion type="multiple" className="w-full">
+                                        {renderEquipmentSlot('head', 'Head')}
+                                        {renderEquipmentSlot('face', 'Face')}
+                                        {renderEquipmentSlot('neck', 'Neck')}
+                                        {renderEquipmentSlot('shoulders', 'Shoulders')}
+                                        {renderEquipmentSlot('torso', 'Torso')}
+                                        {renderEquipmentSlot('arms', 'Arms')}
+                                        {renderEquipmentSlot('hands', 'Hands')}
+                                        {renderEquipmentSlot('waist', 'Waist')}
+                                        {renderEquipmentSlot('legs', 'Legs')}
+                                        {renderEquipmentSlot('feet', 'Feet')}
+                                        {renderEquipmentSlot('back', 'Back')}
+                                    </Accordion>
+                                </AccordionContent>
+                            </AccordionItem>
+                             <AccordionItem value="scene">
+                                <AccordionTrigger>Scene & Action</AccordionTrigger>
+                                <AccordionContent className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+                                    {renderSimpleSlot('pose', 'Pose')}
+                                    {renderSimpleSlot('action', 'Action')}
+                                    {renderSimpleSlot('camera', 'Camera')}
+                                    {renderSimpleSlot('background', 'Background')}
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    </div>
                 </ScrollArea>
                 <DialogFooter className="flex-none pt-4 border-t mt-auto">
                     <Button type="button" variant="ghost" onClick={onBack}>
                         <ArrowLeft className="mr-2" /> Back
                     </Button>
                     <Button type="submit" size="lg" className="w-full sm:w-auto font-headline text-lg">
-                        Use Selections <ArrowRight className="ml-2" />
+                        Generate Prompt <ArrowRight className="ml-2" />
                     </Button>
                 </DialogFooter>
             </form>
@@ -323,7 +395,7 @@ function PackGallery({
 interface DataPackSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onPromptGenerated: (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => void;
+    onPromptGenerated: (wizardData: Record<string, string>, pack: DataPack, finalPrompt: string) => void;
     initialPack?: DataPack | null;
 }
 
@@ -347,10 +419,12 @@ export function DataPackSelectorModal({
         }
     }, [isOpen, initialPack]);
     
-    const handleWizardComplete = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-        onPromptGenerated(wizardData, pack, template);
+    const handleWizardComplete = useCallback((wizardData: Record<string, string>, finalPrompt: string) => {
+        if (wizardPack) {
+            onPromptGenerated(wizardData, wizardPack, finalPrompt);
+        }
         onClose();
-    }, [onPromptGenerated, onClose]);
+    }, [onPromptGenerated, onClose, wizardPack]);
     
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
