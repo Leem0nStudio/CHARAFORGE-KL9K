@@ -177,8 +177,11 @@ export async function updateCharacter(
       'core.archetype': archetype || null,
       'core.equipment': equipment || null,
       'core.physicalDescription': physicalDescription || null,
-      'rpg.isPlayable': !!archetype,
     };
+    
+    // This is the key fix: explicitly set rpg.isPlayable based on the archetype.
+    // This ensures it's always correctly updated.
+    updates['rpg.isPlayable'] = !!archetype;
 
     if (rarity) {
         updates['core.rarity'] = rarity;
