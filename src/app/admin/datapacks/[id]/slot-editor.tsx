@@ -121,5 +121,3 @@ export function SlotEditor({ form, slotIndex, removeSlot }: SlotEditorProps) {
         </div>
     );
 }
-
-    

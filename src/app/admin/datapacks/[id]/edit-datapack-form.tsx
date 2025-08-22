@@ -41,7 +41,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
       price: initialData?.price || 0,
       tags: initialData?.tags || [],
       schema: initialData?.schema || {
-        promptTemplate: 'A {style} portrait of a {race} {class}.',
+        promptTemplates: [],
         slots: [],
       },
       isNsfw: initialData?.isNsfw || false,

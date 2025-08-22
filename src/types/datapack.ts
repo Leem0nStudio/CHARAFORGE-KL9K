@@ -28,7 +28,6 @@ export interface Slot {
 export interface PromptTemplate {
     name: string;
     template: string; // A full sentence template with {slot_id} placeholders
-    tags?: string[]; // DEPRECATED: This will no longer be the primary method
 }
 
 export interface DataPackSchema {
@@ -79,7 +78,6 @@ export const SlotSchema = z.object({
 export const PromptTemplateSchema = z.object({
   name: z.string().min(1, 'Template name is required.'),
   template: z.string().min(1, 'Template string is required.'),
-  tags: z.array(z.string()).optional(), // Keep for potential future use, but template is primary
 });
 
 
@@ -109,5 +107,3 @@ export const UpsertDataPackSchema = DataPackFormSchema.extend({
 // TypeScript types inferred from Zod schemas
 export type DataPackFormValues = z.infer<typeof DataPackFormSchema>;
 export type UpsertDataPack = z.infer<typeof UpsertDataPackSchema>;
-
-    
