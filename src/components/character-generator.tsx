@@ -27,7 +27,7 @@ import {
     Label,
     Switch,
 } from "@/components/ui";
-import { useToast } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/actions/generation";
@@ -111,7 +111,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     generationForm.setValue('wizardData', wizardData);
     
     const finalTags = Object.values(wizardData)
-      .map(value => pack.schema.slots.flatMap(s => s.options ?? []).find(o => o.value === value)?.tags ?? [value])
+      .map(value => (pack.schema.slots ?? []).flatMap(s => s.options ?? []).find(o => o.value === value)?.tags ?? [value])
       .flat()
       .filter(Boolean)
       .join(', ');
