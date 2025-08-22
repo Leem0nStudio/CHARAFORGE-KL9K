@@ -300,9 +300,9 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                             <AccordionItem value="general">
                                 <AccordionTrigger>General</AccordionTrigger>
                                 <AccordionContent className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+                                    {renderSimpleSlot('count', 'Count')}
                                     {renderSimpleSlot('raceClass', 'Race/Class')}
                                     {renderSimpleSlot('gender', 'Gender')}
-                                    {renderSimpleSlot('count', 'Count')}
                                 </AccordionContent>
                             </AccordionItem>
                              <AccordionItem value="appearance">
@@ -372,6 +372,8 @@ function PackGallery({
             setIsLoading(true);
             try {
                 const installedPacks = await getInstalledDataPacks();
+                // This was the source of the bug. It incorrectly filtered out valid packs.
+                // By removing the filter, all installed packs will now be shown.
                 setPacks(installedPacks);
             } catch (error) {
                 console.error("Failed to load installed datapacks for selector", error);
