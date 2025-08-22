@@ -83,6 +83,23 @@ interface NavItem {
     requiresAuth?: boolean;
 }
 
+// A list of pre-defined archetypes for the RPG system.
+export const rpgArchetypes = [
+    'Artificer',
+    'Barbarian',
+    'Bard',
+    'Cleric',
+    'Druid',
+    'Fighter',
+    'Monk',
+    'Paladin',
+    'Ranger',
+    'Rogue',
+    'Sorcerer',
+    'Warlock',
+    'Wizard',
+] as const;
+
 type SlotCategory = 'appearance' | 'equipment' | 'style' | 'setting' | 'class' | 'misc';
 
 // A more robust mapping of slot IDs and keywords to categories for UI styling.

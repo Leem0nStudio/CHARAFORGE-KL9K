@@ -24,6 +24,7 @@ import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { rpgArchetypes } from '@/lib/app-config';
 
 
 const alignmentOptions = [
@@ -178,7 +179,21 @@ export function EditDetailsTab({ character }: { character: Character }) {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="archetype">Archetype / Class</Label>
-                            <Input id="archetype" {...form.register('archetype')} placeholder="e.g., Starship Captain"/>
+                            <Controller
+                                name="archetype"
+                                control={form.control}
+                                render={({ field }) => (
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <SelectTrigger id="archetype"><SelectValue placeholder="Select a class..." /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="">No Class</SelectItem>
+                                            {rpgArchetypes.map(option => (
+                                                <SelectItem key={option} value={option}>{option}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="alignment">Alignment</Label>
