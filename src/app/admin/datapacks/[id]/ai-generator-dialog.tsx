@@ -25,16 +25,19 @@ import type { DataPackSchema } from '@/types/datapack';
 
 interface AiGeneratorDialogProps {
     onSchemaGenerated: (schema: DataPackSchema, tags: string[]) => void;
+    onGeneratingChange: (isGenerating: boolean) => void;
+    isGenerating: boolean;
 }
 
-export function AiGeneratorDialog({ onSchemaGenerated }: AiGeneratorDialogProps) {
+export function AiGeneratorDialog({ onSchemaGenerated, onGeneratingChange, isGenerating }: AiGeneratorDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const [isGenerating, startTransition] = useTransition();
     const [concept, setConcept] = useState('');
     const { toast } = useToast();
+    const [_, startTransition] = useTransition();
 
     const handleGenerate = () => {
         if (!concept) return;
+        onGeneratingChange(true);
         startTransition(async () => {
             try {
                 const result = await generateDataPackSchema({ concept });
@@ -62,6 +65,8 @@ export function AiGeneratorDialog({ onSchemaGenerated }: AiGeneratorDialogProps)
                 const message = error instanceof Error ? error.message : "An unknown error occurred.";
                 toast({ variant: 'destructive', title: 'Generation Failed', description: message });
                 console.error("YAML Parsing or Generation Error:", error);
+            } finally {
+                onGeneratingChange(false);
             }
         });
     }
@@ -69,7 +74,10 @@ export function AiGeneratorDialog({ onSchemaGenerated }: AiGeneratorDialogProps)
     return (
         <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
             <AlertDialogTrigger asChild>
-                <Button type="button" variant="outline"><Wand2 className="mr-2" /> AI Assistant</Button>
+                <Button type="button" variant="outline" disabled={isGenerating}>
+                    {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
+                     AI Assistant
+                </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>

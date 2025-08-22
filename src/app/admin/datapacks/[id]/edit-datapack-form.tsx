@@ -31,6 +31,7 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
 
   const defaultValues = useMemo<DataPackFormValues>(() => ({
@@ -134,7 +135,11 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
             <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} />
         </TabsContent>
         <TabsContent value="schema">
-            <DataPackSchemaEditor form={form} onAiSchemaGenerated={handleAiSchemaGenerated}/>
+            <DataPackSchemaEditor 
+                form={form} 
+                onAiSchemaGenerated={handleAiSchemaGenerated}
+                isAiGenerating={isAiGenerating}
+            />
         </TabsContent>
       </Tabs>
 

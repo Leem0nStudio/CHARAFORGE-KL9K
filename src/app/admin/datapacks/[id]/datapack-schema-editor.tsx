@@ -8,9 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { DataPackFormValues, DataPackSchema } from '@/types/datapack';
+import type { DataPackFormValues, DataPackSchema, EquipmentOption } from '@/types/datapack';
 import { AiGeneratorDialog } from './ai-generator-dialog';
-import { Trash2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Helper function to render a textarea for a given field in the schema
 function JsonOptionEditor({ control, name, label, placeholder }: {
@@ -59,7 +60,7 @@ function EquipmentSlotAccordion({ control }: { control: any }) {
         ['head', 'face', 'neck', 'shoulders', 'torso', 'arms', 'hands', 'waist', 'legs', 'feet', 'back'];
 
     return (
-        <Accordion type="multiple" className="w-full space-y-2">
+        <Accordion type="multiple" className="w-full space-y-2" defaultValue={['torso', 'hands', 'feet']}>
             {equipmentSlots.map(slotName => (
                 <AccordionItem key={slotName} value={slotName}>
                     <AccordionTrigger className="capitalize text-base font-semibold border bg-muted/50 px-4 rounded-md">
@@ -99,9 +100,10 @@ function EquipmentSlotAccordion({ control }: { control: any }) {
     );
 }
 
-export function DataPackSchemaEditor({ form, onAiSchemaGenerated }: { 
+export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating }: { 
     form: ReturnType<typeof useFormContext<DataPackFormValues>>,
-    onAiSchemaGenerated: (schema: DataPackSchema, tags: string[]) => void 
+    onAiSchemaGenerated: (schema: DataPackSchema, tags: string[]) => void,
+    isAiGenerating: boolean,
 }) {
   const { control } = form;
   const { fields, append, remove } = useFieldArray({
@@ -112,11 +114,13 @@ export function DataPackSchemaEditor({ form, onAiSchemaGenerated }: {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Schema Content</CardTitle>
-          <CardDescription>Define the building blocks of your prompt using the new granular system.</CardDescription>
+        <div className="flex items-center gap-2">
+           <CardTitle className={cn("transition-colors", isAiGenerating && "text-primary")}>
+             Schema Content
+           </CardTitle>
+           {isAiGenerating && <Loader2 className="animate-spin text-primary" />}
         </div>
-        <AiGeneratorDialog onSchemaGenerated={onAiSchemaGenerated} />
+        <AiGeneratorDialog onSchemaGenerated={onAiSchemaGenerated} onGeneratingChange={() => {}} isGenerating={isAiGenerating} />
       </CardHeader>
       <CardContent className="space-y-6">
         
