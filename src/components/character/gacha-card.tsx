@@ -14,11 +14,11 @@ interface GachaCardProps {
 }
 
 const rarityStyles: Record<number, string> = {
-    1: 'from-gray-500/10 to-gray-800/20 border-gray-600/50', // Common
-    2: 'from-green-600/10 to-green-900/20 border-green-600/50', // Uncommon
-    3: 'from-blue-500/10 to-blue-800/20 border-blue-600/50', // Rare
-    4: 'from-purple-500/10 to-purple-800/20 border-purple-500/60', // Epic
-    5: 'from-yellow-500/10 to-yellow-800/20 border-yellow-500/60', // Legendary
+    1: 'from-slate-800/20 to-slate-900/30 border-slate-700/50', // Iron
+    2: 'from-amber-800/10 to-amber-900/20 border-amber-800/50', // Bronze
+    3: 'from-sky-700/10 to-sky-900/20 border-sky-700/50',      // Silver
+    4: 'from-purple-600/10 to-purple-900/20 border-purple-600/50',// Amethyst
+    5: 'from-yellow-500/10 to-yellow-700/20 border-yellow-500/50', // Gold
 };
 
 const rarityGlow: Record<number, string> = {

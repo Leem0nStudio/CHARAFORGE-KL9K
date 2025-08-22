@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { cn } from '@/lib/utils';
@@ -9,11 +10,11 @@ interface RankBadgeProps {
 
 export function RankBadge({ rank }: RankBadgeProps) {
     const colors: { [key: number]: string } = {
-        1: 'bg-amber-400/20 text-amber-300 border-amber-400',
-        2: 'bg-slate-400/20 text-slate-300 border-slate-400',
-        3: 'bg-orange-600/20 text-orange-400 border-orange-500',
+        1: 'bg-yellow-500/20 text-yellow-300 border-yellow-500', // Gold
+        2: 'bg-sky-400/20 text-sky-300 border-sky-400', // Silver
+        3: 'bg-amber-600/20 text-amber-500 border-amber-600', // Bronze
     };
-    const defaultColor = 'bg-slate-600/20 text-slate-400 border-slate-500';
+    const defaultColor = 'bg-slate-600/20 text-slate-400 border-slate-500'; // Iron
     const color = colors[rank] || defaultColor;
 
     return (
@@ -22,5 +23,3 @@ export function RankBadge({ rank }: RankBadgeProps) {
         </div>
     );
 }
-
-    
