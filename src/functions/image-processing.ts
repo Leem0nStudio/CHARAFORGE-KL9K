@@ -14,8 +14,6 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import * as path from 'path';
 import sharp from 'sharp';
-import FormData from 'form-data';
-
 
 // Initialize Firebase Admin SDK if not already done
 if (getApps().length === 0) {
@@ -23,73 +21,6 @@ if (getApps().length === 0) {
 }
 
 const db = getFirestore();
-
-/**
- * Removes the background from an image using the ClipDrop API.
- * @param buffer The input image buffer.
- * @returns A promise that resolves to a buffer of the image with the background removed.
- */
-async function removeBackground(buffer: Buffer): Promise<Buffer> {
-    const apiKey = process.env.CLIPDROP_API_KEY;
-    if (!apiKey) {
-        logger.warn("CLIPDROP_API_KEY is not set. Skipping background removal.");
-        return buffer;
-    }
-
-    logger.info("Calling ClipDrop API for background removal...");
-    
-    const form = new FormData();
-    form.append('image_file', buffer, 'image.png');
-
-    const response = await fetch('https://api.clipdrop.co/remove-background/v1', {
-      method: 'POST',
-      headers: { 'x-api-key': apiKey },
-      body: form as any,
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Background removal failed: ${errorText}`);
-    }
-    
-    const resultBuffer = Buffer.from(await response.arrayBuffer());
-    logger.info("Successfully removed background.");
-    return resultBuffer;
-}
-
-/**
- * Upscales an image using the ClipDrop Super Resolution API.
- * @param buffer The input image buffer.
- * @returns A promise that resolves to a buffer of the upscaled image.
- */
-async function upscaleImage(buffer: Buffer): Promise<Buffer> {
-    const apiKey = process.env.CLIPDROP_API_KEY;
-    if (!apiKey) {
-        logger.warn("CLIPDROP_API_KEY is not set. Skipping upscaling.");
-        return buffer;
-    }
-
-    logger.info("Calling ClipDrop API for upscaling...");
-
-    const form = new FormData();
-    form.append('image_file', buffer, 'image.png');
-
-    const response = await fetch('https://api.clipdrop.co/super-resolution/v1', {
-      method: 'POST',
-      headers: { 'x-api-key': apiKey },
-      body: form as any,
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Upscaling failed: ${errorText}`);
-    }
-
-    const resultBuffer = Buffer.from(await response.arrayBuffer());
-    logger.info("Successfully upscaled image.");
-    return resultBuffer;
-}
-
 
 /**
  * Cloud Function that triggers on new file uploads to the 'raw-uploads/' path.
@@ -135,20 +66,12 @@ export const processUploadedImage = onObjectFinalized({
     logger.log(`Successfully downloaded '${fileName}'. Starting processing pipeline.`);
 
     try {
-        await characterRef.update({ 'visuals.showcaseProcessingStatus': 'removing-background' });
-        const bufferWithoutBg = await removeBackground(imageBuffer);
-        logger.info("Step 1/4: Background removal complete.");
-
-        await characterRef.update({ 'visuals.showcaseProcessingStatus': 'upscaling' });
-        const upscaledBuffer = await upscaleImage(bufferWithoutBg);
-        logger.info("Step 2/4: Upscaling complete.");
-
         await characterRef.update({ 'visuals.showcaseProcessingStatus': 'finalizing' });
-        const processedBuffer = await sharp(upscaledBuffer)
-            .resize(1024, 1024, { fit: 'contain', background: { r:0, g:0, b:0, alpha:0 } })
+        const processedBuffer = await sharp(imageBuffer)
+            .removeBackground() // Use sharp's built-in background removal
             .webp({ quality: 90 })
             .toBuffer();
-        logger.info("Step 3/4: Image successfully normalized and converted to WebP.");
+        logger.info("Step 1/2: Background removed and image converted to WebP.");
             
         const processedFileName = `${path.parse(fileName).name}.webp`;
         const processedPath = `showcase-images/${userId}/${characterId}/${processedFileName}`;
@@ -163,7 +86,7 @@ export const processUploadedImage = onObjectFinalized({
         });
 
         const publicUrl = file.publicUrl();
-        logger.info(`Step 4/4: Processed image uploaded. Public URL: ${publicUrl}`);
+        logger.info(`Step 2/2: Processed image uploaded. Public URL: ${publicUrl}`);
 
         await characterRef.update({
             'visuals.showcaseImageUrl': publicUrl,
@@ -180,7 +103,10 @@ export const processUploadedImage = onObjectFinalized({
         // Trigger RPG attribute generation if the character is playable
         if (characterData?.rpg?.isPlayable) {
             logger.info(`Character is playable. Triggering RPG attribute generation for ${characterId}...`);
-            const queue = getFunctions().taskQueue('triggerRpgGeneration');
+            const queue = getFunctions().taskQueue('triggerRpgGeneration', {
+                retryConfig: { maxAttempts: 3, minBackoffSeconds: 10 },
+                rateLimits: { maxDispatchesPerSecond: 2 },
+            });
             await queue.enqueue({ characterId });
         } else {
             logger.info(`Character ${characterId} is not playable. Skipping RPG attribute generation.`);

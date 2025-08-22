@@ -9,6 +9,7 @@ import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions/v2';
 import { generateAllRpgAttributesFlow } from '@/ai/flows/rpg-attributes/flow';
+import type { Character } from '@/types/character';
 
 // Initialize Firebase Admin SDK if not already done
 if (getApps().length === 0) {
@@ -29,6 +30,8 @@ export const triggerRpgGeneration = onTaskDispatched({
     rateLimits: {
         maxDispatchesPerSecond: 2,
     },
+    timeoutSeconds: 300, // Extend timeout for Genkit execution
+    cpu: 2, // Allocate more CPU for AI processing
 }, async (req) => {
     const { characterId } = req.data as { characterId: string };
     if (!characterId) {
@@ -44,7 +47,7 @@ export const triggerRpgGeneration = onTaskDispatched({
         if (!charDoc.exists) {
             throw new Error(`Character ${characterId} not found in database.`);
         }
-        const character = charDoc.data() as any;
+        const character = charDoc.data() as Character;
 
         // Call the unified Genkit flow
         const attributes = await generateAllRpgAttributesFlow(character);
