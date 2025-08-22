@@ -136,12 +136,12 @@ export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating
           <h3 className="font-semibold text-lg">General</h3>
            <div className="space-y-1"><Label>Count</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.count" /></div>
            <div className="space-y-1"><Label>Race/Class</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.raceClass" /></div>
-           <div className="space-y-1"><Label>Gender</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.gender" /></div>
         </div>
 
         {/* Appearance Section */}
         <div className="space-y-4 p-4 border rounded-md">
           <h3 className="font-semibold text-lg">Appearance</h3>
+           <div className="space-y-1"><Label>Gender</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.gender" /></div>
            <div className="space-y-1"><Label>Hair</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.hair" /></div>
            <div className="space-y-1"><Label>Eyes</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.eyes" /></div>
            <div className="space-y-1"><Label>Skin</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.skin" /></div>
