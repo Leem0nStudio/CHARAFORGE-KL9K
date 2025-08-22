@@ -10,7 +10,7 @@
         "promptTemplates": [
             {
                 "name": "Full Body Street Style",
-                "template": "{camera}, {count}, {raceClass}, {hair}, {eyes}, {head_clothing}, {torso_clothing}, {legs_clothing}, {feet_clothing}, {action}, in the {background}, cinematic lighting"
+                "template": "{camera}, {count}, {raceClass}, {hair}, {eyes}, {head_clothing}, {torso_clothing}, {legs_clothing}, {feet_clothing}, {pose}, in the {background}, cinematic lighting"
             },
             {
                 "name": "Upper Body Portrait",
