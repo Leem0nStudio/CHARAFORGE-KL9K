@@ -7,6 +7,7 @@ import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
 import { FieldValue, FieldPath, Timestamp, QuerySnapshot, DocumentData } from 'firebase-admin/firestore';
 import type { DataPack } from '@/types/datapack';
+import { toCharacterObject } from '@/services/character-hydrator';
 
 // Helper to fetch documents in batches of 30 for 'in' queries
 async function fetchDocsInBatches<T>(ids: string[], collection: string): Promise<Map<string, T>> {
@@ -23,72 +24,6 @@ async function fetchDocsInBatches<T>(ids: string[], collection: string): Promise
         }
     }
     return results;
-}
-
-/**
- * Converts a Firestore document data object into a fully-typed, serializable Character object.
- * This helper function ensures consistency across different read operations.
- * @param docId The ID of the document.
- * @param data The document data from Firestore.
- * @returns A Character object.
- */
-function toCharacterObject(docId: string, data: DocumentData): Character {
-    const createdAt = data.meta?.createdAt;
-    
-    // Default values for backward compatibility with the old flat structure
-    const defaultCore = {
-        name: data.name || 'Unnamed',
-        biography: data.biography || '',
-        physicalDescription: data.physicalDescription || data.description || null,
-        alignment: data.alignment || 'True Neutral',
-        archetype: data.archetype || null,
-        equipment: data.equipment || [],
-        timeline: data.timeline || [],
-        tags: data.tags || [],
-        rarity: data.rarity || 3,
-    };
-    const defaultVisuals = {
-        imageUrl: data.imageUrl || '',
-        gallery: data.gallery || [data.imageUrl].filter(Boolean),
-        isProcessed: data.isProcessed || false,
-        showcaseImageUrl: data.showcaseImageUrl || null,
-        isShowcaseProcessed: data.isShowcaseProcessed || false,
-    };
-    const defaultMeta = {
-        userId: data.userId || '',
-        status: data.status || 'private',
-        isNsfw: data.isNsfw || false,
-        dataPackId: data.dataPackId || null,
-        createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(),
-    };
-    const defaultLineage = {
-        version: data.version || 1,
-        versionName: data.versionName || 'v.1',
-        baseCharacterId: data.baseCharacterId || docId,
-        versions: data.versions || [{ id: docId, name: 'v.1', version: 1 }],
-        branchedFromId: data.branchedFromId || null,
-        originalAuthorId: data.originalAuthorId || null,
-    };
-    const defaultSettings = {
-        isSharedToDataPack: data.isSharedToDataPack || false,
-        branchingPermissions: data.branchingPermissions || 'private',
-    };
-    const defaultGeneration = {
-        textEngine: data.textEngine,
-        imageEngine: data.imageEngine,
-        wizardData: data.wizardData,
-        originalPrompt: data.originalPrompt || data.description,
-    };
-
-    return {
-        id: docId,
-        core: { ...defaultCore, ...data.core },
-        visuals: { ...defaultVisuals, ...data.visuals },
-        meta: { ...defaultMeta, ...data.meta, createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date() },
-        lineage: { ...defaultLineage, ...data.lineage },
-        settings: { ...defaultSettings, ...data.settings },
-        generation: { ...defaultGeneration, ...data.generation }
-    } as Character;
 }
 
 /**
@@ -270,5 +205,3 @@ export async function getPublicCharactersForUser(userId: string): Promise<Charac
     return [];
   }
 }
-
-    
