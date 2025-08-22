@@ -189,7 +189,7 @@ export async function updateCharacter(
     
     // If the class or rarity changes, we must reset the stats and skills
     // so they can be regenerated with the new context.
-    const hasClassChanged = existingData?.core?.archetype !== archetype;
+    const hasClassChanged = existingData?.core?.archetype !== (archetype || null);
     const hasRarityChanged = existingData?.core?.rarity !== rarity;
     
     if (hasClassChanged || hasRarityChanged) {

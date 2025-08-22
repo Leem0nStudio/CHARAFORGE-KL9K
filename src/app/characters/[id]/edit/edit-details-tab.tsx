@@ -95,8 +95,13 @@ export function EditDetailsTab({ character }: { character: Character }) {
     });
 
     const onSubmit = (data: FormValues) => {
+        const dataToSave = {
+            ...data,
+            // If archetype is 'no-class', send null to the server action
+            archetype: data.archetype === 'no-class' ? undefined : data.archetype,
+        };
         startUpdateTransition(async () => {
-            const result = await updateCharacter(character.id, data);
+            const result = await updateCharacter(character.id, dataToSave);
             toast({
                 title: result.success ? 'Success!' : 'Update Failed',
                 description: result.message,
@@ -183,10 +188,10 @@ export function EditDetailsTab({ character }: { character: Character }) {
                                 name="archetype"
                                 control={form.control}
                                 render={({ field }) => (
-                                    <Select onValueChange={field.onChange} value={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value || 'no-class'}>
                                         <SelectTrigger id="archetype"><SelectValue placeholder="Select a class..." /></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">No Class</SelectItem>
+                                            <SelectItem value="no-class">No Class</SelectItem>
                                             {rpgArchetypes.map(option => (
                                                 <SelectItem key={option} value={option}>{option}</SelectItem>
                                             ))}
