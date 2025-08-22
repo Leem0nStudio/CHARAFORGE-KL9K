@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { upsertDataPack, deleteDataPack } from '@/app/actions/datapacks';
+import { upsertDataPack, deleteDataPack, getDataPackForAdmin } from '@/app/actions/datapacks';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Loader2, Trash2, Save } from 'lucide-react';
@@ -26,36 +26,59 @@ import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
 import { DataPackMetadataForm } from './datapack-metadata-form';
 import { DataPackSchemaEditor } from './datapack-schema-editor';
 
-
-export function EditDataPackForm({ initialData }: { initialData: DataPack | null }) {
+// This component now fetches its own data.
+export function EditDataPackForm({ packId }: { packId: string }) {
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
-
-  const defaultValues = useMemo<DataPackFormValues>(() => ({
-      name: initialData?.name || '',
-      author: initialData?.author || 'CharaForge',
-      description: initialData?.description || '',
-      type: initialData?.type || 'free',
-      price: initialData?.price || 0,
-      tags: initialData?.tags || [],
-      schema: initialData?.schema || {
-        characterProfileSchema: {},
-        promptTemplates: [],
-      },
-      isNsfw: initialData?.isNsfw || false,
-  }), [initialData]);
+  const [initialData, setInitialData] = useState<DataPack | null>(null);
+  const [isLoading, setIsLoading] = useState(packId !== 'new');
 
   const form = useForm<DataPackFormValues>({
     resolver: zodResolver(DataPackFormSchema),
-    defaultValues,
+    defaultValues: {
+      name: '',
+      author: 'CharaForge',
+      description: '',
+      type: 'free',
+      price: 0,
+      tags: [],
+      schema: {
+        characterProfileSchema: {},
+        promptTemplates: [],
+      },
+      isNsfw: false,
+    },
     mode: 'onChange',
   });
   
+  useEffect(() => {
+    async function fetchData() {
+      if (packId && packId !== 'new') {
+        setIsLoading(true);
+        const data = await getDataPackForAdmin(packId);
+        if (data) {
+          setInitialData(data);
+          form.reset({
+            name: data.name || '',
+            author: data.author || 'CharaForge',
+            description: data.description || '',
+            type: data.type || 'free',
+            price: data.price || 0,
+            tags: data.tags || [],
+            schema: data.schema || { characterProfileSchema: {}, promptTemplates: [] },
+            isNsfw: data.isNsfw || false,
+          });
+        }
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, [packId, form]);
+
   const handleAiSchemaGenerated = (generatedSchema: DataPackSchema, tags: string[]) => {
-      // AI generation now drives the entire schema, so we can replace it directly.
       form.setValue('schema', generatedSchema, { shouldValidate: true, shouldDirty: true });
       if (tags) {
         form.setValue('tags', tags, { shouldValidate: true, shouldDirty: true });
@@ -98,6 +121,14 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
       }
     });
   };
+  
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center p-16">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    );
+  }
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="pb-24 sm:pb-0">
@@ -109,10 +140,10 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
                      </AlertDialogTrigger>
                      <AlertDialogContent>
                          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
-                         <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
+                         <AlertDialogDescription>This will permanently delete the DataPack and any characters created with it. This action cannot be undone.</AlertDialogDescription>
                          <AlertDialogFooter>
                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                             <AlertDialogAction onClick={handleDelete} disabled={isPending}>
+                             <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive-hover">
                                  {isPending && <Loader2 className="animate-spin mr-2"/>}
                                  Continue
                              </AlertDialogAction>
@@ -156,10 +187,10 @@ export function EditDataPackForm({ initialData }: { initialData: DataPack | null
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
-                        <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
+                        <AlertDialogDescription>This will permanently delete the DataPack and any characters created with it. This action cannot be undone.</AlertDialogDescription>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDelete} disabled={isPending}>
+                            <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive-hover">
                                 {isPending && <Loader2 className="animate-spin mr-2"/>}
                                 Continue
                             </AlertDialogAction>

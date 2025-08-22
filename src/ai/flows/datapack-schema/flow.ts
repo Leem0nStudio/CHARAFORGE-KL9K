@@ -33,10 +33,11 @@ Instructions:
 3.  **Character Profile Schema**:
     *   Create a rich 'characterProfileSchema' with many granular slots for appearance and equipment.
     *   **GRANULARITY IS KEY**: You MUST create separate, granular slots for different parts of the character, especially for clothing. Instead of one 'clothing' slot, you MUST create specific slots like 'headwear', 'topwear', 'bottomwear', 'footwear', etc.
-    *   Use nested keys for equipment (e.g., head.clothing, torso.armor).
     *   For EVERY slot, provide 4-5 creative, thematically consistent options.
-    *   Each option MUST have a 'label' for the UI and a 'value' for the prompt. The 'value' should be a descriptive phrase ready for use in a prompt.
-4.  **Tags**: Generate an array of 5-7 relevant, single-word, lowercase tags that categorize the datapack.
+    *   Each option MUST have a 'label' for the UI and a 'value' for the prompt.
+    *   **CRITICAL**: The 'value' for each option MUST be a single, concise line of text. Do NOT use multi-line strings for values.
+4.  **Mandatory Archetype Slot**: It is MANDATORY that one of the slots you generate is for the character's class or archetype (e.g., id: 'raceClass', 'class', or 'role'), as this is required by the game system. Provide options like "Warrior", "Mage", "Rogue", etc.
+5.  **Tags**: Generate an array of 5-7 relevant, single-word, lowercase tags that categorize the datapack.
 
 Example YAML structure:
 promptTemplates:
