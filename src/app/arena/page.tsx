@@ -1,6 +1,3 @@
-
-'use server';
-
 import { Suspense } from 'react';
 import { getCharacters } from '@/app/actions/character-read';
 import { ArenaClient } from './arena-client';
