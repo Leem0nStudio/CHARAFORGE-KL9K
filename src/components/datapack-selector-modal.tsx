@@ -22,6 +22,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, isOpen: boolean, onClose: () => void }) {
     if (!pack) return null;
 
+    // Hydration for backward compatibility
+    const allSlots = pack.schema?.characterProfileSchema 
+        ? Object.keys(pack.schema.characterProfileSchema)
+        : pack.schema?.slots?.map(s => s.label) || [];
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-2xl">
@@ -31,11 +36,11 @@ function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, 
                 </DialogHeader>
                  <ScrollArea className="max-h-[60vh] -mx-6 px-6 py-4">
                      <div className="space-y-6">
-                        {pack.schema.characterProfileSchema && (
+                        {allSlots.length > 0 && (
                              <div>
                                 <h4 className="font-semibold mb-2">Available Options</h4>
                                  <div className="flex flex-wrap gap-2">
-                                     {Object.keys(pack.schema.characterProfileSchema).map((slotKey) => (
+                                     {allSlots.map((slotKey) => (
                                         <Badge 
                                             key={slotKey} 
                                             variant="outline"
@@ -67,7 +72,7 @@ function OptionSelectModal({
 }: {
     isOpen: boolean;
     onClose: () => void;
-    options: EquipmentOption[];
+    options: (EquipmentOption | Option)[]; // Can be either new or old option type
     currentValue: string;
     onSelect: (value: string) => void;
     title: string;
@@ -102,42 +107,92 @@ function OptionSelectModal({
     )
 }
 
-function buildPromptFromProfile(profile: Record<string, any>): string {
-    const parts: string[] = [];
-    const order: Array<keyof CharacterProfileSchema> = [
-        'count', 'raceClass', 'gender', 'hair', 'eyes', 'skin', 'facialFeatures',
-        'head', 'face', 'neck', 'shoulders', 'torso', 'arms', 'hands', 'waist',
-        'legs', 'feet', 'back', 'weaponsExtra', 'pose', 'action', 'camera', 'background', 'effects'
-    ];
+function buildPromptFromProfile(profile: Record<string, any>, pack: DataPack): string {
+    // Check if we are using the new granular schema or the legacy one
+    if (pack.schema?.characterProfileSchema) {
+        // New granular prompt building logic
+        const parts: string[] = [];
+        const order: Array<keyof CharacterProfileSchema> = [
+            'count', 'raceClass', 'gender', 'hair', 'eyes', 'skin', 'facialFeatures',
+            'head', 'face', 'neck', 'shoulders', 'torso', 'arms', 'hands', 'waist',
+            'legs', 'feet', 'back', 'weaponsExtra', 'pose', 'action', 'camera', 'background', 'effects'
+        ];
 
-    order.forEach(key => {
-        const value = profile[key];
-        if (!value) return;
+        order.forEach(key => {
+            const value = profile[key];
+            if (!value) return;
 
-        if (typeof value === 'string' && value.trim() !== '') {
-            parts.push(value);
-        } else if (Array.isArray(value)) {
-            parts.push(...value.filter(Boolean));
-        } else if (typeof value === 'object') {
-            Object.values(value).forEach(subVal => {
-                if (typeof subVal === 'string' && subVal.trim() !== '') {
-                    parts.push(subVal);
-                }
-            });
+            if (typeof value === 'string' && value.trim() !== '') {
+                parts.push(value);
+            } else if (typeof value === 'object' && !Array.isArray(value)) {
+                // This handles EquipmentSlot objects
+                Object.values(value).forEach(subVal => {
+                    if (typeof subVal === 'string' && subVal.trim() !== '') {
+                        parts.push(subVal);
+                    }
+                });
+            } else if (Array.isArray(value)) {
+                 parts.push(...value.filter(Boolean));
+            }
+        });
+
+        return parts.filter(Boolean).join(', ');
+
+    } else if (pack.schema?.promptTemplates?.[0]) {
+        // Legacy prompt template logic
+        let template = pack.schema.promptTemplates[0].template;
+        for(const key in profile) {
+            template = template.replace(`{${key}}`, profile[key] || '');
+        }
+        return template;
+    }
+    
+    // Fallback if no schema is found
+    return Object.values(profile).filter(Boolean).join(', ');
+}
+
+// Hydrates a legacy `slots` array into a `characterProfileSchema` for UI compatibility
+function hydrateLegacySlotsToProfileSchema(slots: Slot[]): CharacterProfileSchema {
+    const profileSchema: CharacterProfileSchema = {};
+    
+    slots.forEach(slot => {
+        // Direct mapping for simple slots
+        if (slot.id in profileSchema) {
+            (profileSchema as any)[slot.id] = slot.options;
+        } else {
+             // Heuristic mapping for compatibility
+            const keyMap: Record<string, keyof CharacterProfileSchema> = {
+                'race': 'raceClass',
+                'class': 'raceClass',
+                'armor_torso': 'torso',
+                'weapon': 'hands',
+            }
+            const targetKey = keyMap[slot.id] || slot.id as keyof CharacterProfileSchema;
+            
+            if (targetKey === 'torso' || targetKey === 'hands') {
+                 if (!profileSchema[targetKey]) {
+                    profileSchema[targetKey] = {};
+                 }
+                (profileSchema[targetKey] as EquipmentSlotOptions).armor = slot.options;
+                (profileSchema[targetKey] as EquipmentSlotOptions).weapon = slot.options;
+            } else {
+                 (profileSchema as any)[targetKey] = slot.options;
+            }
         }
     });
 
-    return parts.filter(Boolean).join(', ');
+    return profileSchema;
 }
 
 
 function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWizardComplete: (wizardData: Record<string, string>, finalPrompt: string) => void, onBack: () => void }) {
     const { handleSubmit, watch, setValue } = useForm();
     const formValues = watch();
+    const [activeModal, setActiveModal] = useState<{title: string, options: (EquipmentOption | Option)[], fieldName: string} | null>(null);
 
-    const [activeModal, setActiveModal] = useState<{title: string, options: EquipmentOption[], fieldName: string} | null>(null);
-
-    const schema = pack.schema.characterProfileSchema;
+    // This is the core of the backward-compatibility fix.
+    const schema = pack.schema?.characterProfileSchema || (pack.schema?.slots ? hydrateLegacySlotsToProfileSchema(pack.schema.slots) : null);
+   
     if (!schema) {
         return (
              <div className="flex-grow flex items-center justify-center">
@@ -169,19 +224,19 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
 
 
     const onSubmit = (data: any) => {
-        const finalPrompt = buildPromptFromProfile(data);
+        const finalPrompt = buildPromptFromProfile(data, pack);
         onWizardComplete(data, finalPrompt);
     };
     
     const renderSimpleSlot = (fieldName: keyof CharacterProfileSchema, label: string) => {
-        const options = (schema as any)[fieldName] as EquipmentOption[];
+        const options = (schema as any)[fieldName] as (EquipmentOption[] | Option[]);
         if (!options || options.length === 0) return null;
         
         const selectedValue = formValues[fieldName];
         const selectedOption = options.find(o => o.value === selectedValue);
 
         return (
-            <Card onClick={() => setActiveModal({ title: label, options, fieldName })} className="cursor-pointer hover:bg-muted/50 transition-colors h-full flex flex-col">
+            <Card onClick={() => setActiveModal({ title: label, options, fieldName: fieldName as string })} className="cursor-pointer hover:bg-muted/50 transition-colors h-full flex flex-col">
                 <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{label}</CardTitle></CardHeader>
                 <CardContent className="flex-grow flex items-center"><p className="text-base text-primary font-semibold">{selectedOption?.label || 'None'}</p></CardContent>
             </Card>
@@ -458,3 +513,5 @@ export function DataPackSelectorModal({
         </Dialog>
     )
 }
+
+    
