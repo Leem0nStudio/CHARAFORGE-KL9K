@@ -1,53 +1,53 @@
-rules_version = '2';
 
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check ownership
+  
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    // Users can only read/write their own profile.
-    // Public profiles can be read by anyone if explicitly set.
     match /users/{userId} {
       allow read: if isOwner(userId) || resource.data.preferences.privacy.profileVisibility == 'public';
       allow create, update: if isOwner(userId);
-      allow delete: if isOwner(userId);
-    }
-
-    // Characters can be read if they are public, or if the requester is the owner.
-    // Characters can only be created, updated, or deleted by their owner.
-    match /characters/{characterId} {
-      allow read: if (request.auth.uid != null && request.auth.uid == resource.data.meta.userId) || resource.data.meta.status == 'public';
-      allow create: if request.auth.uid == request.resource.data.meta.userId;
-      allow update, delete: if request.auth.uid == resource.data.meta.userId;
     }
     
-    // DataPacks and Stories are world-readable.
-    // Writes are handled by secure server-side actions.
+    match /characters/{characterId} {
+      // Listen permission requires both get and list.
+      // Allow the owner to listen to their own documents, and anyone to listen to public documents.
+      allow get, list: if (request.auth.uid != null && request.auth.uid == resource.data.meta.userId) || resource.data.meta.status == 'public';
+      
+      // Allow create and update only for the owner.
+      // For create, we check the incoming document's data.
+      allow create: if request.auth.uid != null && request.resource.data.meta.userId == request.auth.uid;
+      allow update, delete: if request.auth.uid != null && resource.data.meta.userId == request.auth.uid;
+    }
+
     match /datapacks/{packId} {
+        // DataPacks are public content catalogs.
+        allow read: if true;
+        // Writes should be handled by secure server-side logic (Admin SDK).
+        allow write: if false;
+    }
+
+    match /storyCasts/{castId} {
+        // Users can only manage their own story casts.
+        allow read, write: if isOwner(resource.data.userId);
+        allow create: if isOwner(request.resource.data.userId);
+    }
+
+    match /settings/{docId} {
+        // App settings should be publicly readable but only writable from the server.
         allow read: if true;
         allow write: if false;
     }
     
-    match /storyCasts/{castId} {
-        allow read: if isOwner(resource.data.userId);
-        allow create, update, delete: if isOwner(request.resource.data.userId);
-    }
-    
-    match /settings/{settingId} {
-        allow read: if true;
-        allow write: if false; // Only admin server can write
-    }
-    
     match /ai_models/{modelId} {
-        // System models (no userId) are readable by all.
-        // User-specific models are readable only by the owner.
-        allow read: if resource.data.userId == null || isOwner(resource.data.userId);
-        
-        // Users can create/update/delete their own models.
-        allow create, update, delete: if isOwner(request.resource.data.userId);
+      // Anyone can read system models (no userId) or their own models.
+      allow read: if resource.data.userId == null || request.auth.uid == resource.data.userId;
+      
+      // Users can only write to their own models. System models are handled by admins.
+      allow write: if request.auth.uid != null && request.resource.data.userId == request.auth.uid;
     }
   }
 }
