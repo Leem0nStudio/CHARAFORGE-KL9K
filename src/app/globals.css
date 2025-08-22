@@ -5,73 +5,65 @@
 
 @layer base {
   :root {
-    --background: 45 20% 10%;
-    --foreground: 45 15% 90%;
+    --background: 45 10% 12%; /* Warm, very dark brown */
+    --foreground: 40 20% 88%; /* Light parchment/off-white */
 
-    --card: 45 15% 15%;
-    --card-foreground: 45 15% 90%;
-    --card-highlight: 45 15% 20%;
+    --card: 45 10% 16%; /* Slightly lighter warm brown for cards/inputs */
+    --card-foreground: 40 20% 88%;
+    --card-highlight: 45 10% 20%;
 
-    --popover: 45 20% 8%;
-    --popover-foreground: 45 15% 90%;
+    --popover: 45 10% 10%;
+    --popover-foreground: 40 20% 88%;
 
-    --primary: 45 40% 40%;
-    --primary-foreground: 45 15% 95%;
-    --primary-hover: 45 40% 45%;
+    --primary: 195 50% 65%; /* Muted light blue for primary accents */
+    --primary-foreground: 45 20% 10%; /* Dark text for primary buttons */
+    --primary-hover: 195 50% 70%;
 
-    --secondary: 45 10% 22%;
-    --secondary-foreground: 45 15% 90%;
-    --secondary-hover: 45 10% 28%;
+    --secondary: 45 15% 25%; /* Khaki/brown for secondary elements */
+    --secondary-foreground: 40 20% 88%;
+    --secondary-hover: 45 15% 30%;
 
-    --muted: 45 10% 25%;
-    --muted-foreground: 45 10% 65%;
+    --muted: 45 10% 22%;
+    --muted-foreground: 40 15% 60%;
 
-    --accent: 45 40% 40%;
-    --accent-foreground: 45 15% 95%;
+    --accent: 195 50% 65%; /* Using the primary blue as accent */
+    --accent-foreground: 45 20% 10%;
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --destructive-hover: 0 63% 36%;
+    --destructive: 0 63% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-hover: 0 63% 45%;
 
-    --border: 45 10% 25%;
-    --input: 45 10% 25%;
-    --ring: 45 40% 45%;
+    --border: 45 10% 22%;
+    --input: 45 10% 16%; /* Match card background */
+    --ring: 195 50% 70%;
     
-    --radius: 0.5rem;
+    --radius: 0.8rem; /* Increased radius for softer corners */
   }
 
   .dark {
-    --background: 45 20% 10%;
-    --foreground: 45 15% 90%;
-
-    --card: 45 15% 15%;
-    --card-foreground: 45 15% 90%;
-    --card-highlight: 45 15% 20%;
-
-    --popover: 45 20% 8%;
-    --popover-foreground: 45 15% 90%;
-
-    --primary: 45 40% 40%;
-    --primary-foreground: 45 15% 95%;
-    --primary-hover: 45 40% 45%;
-
-    --secondary: 45 10% 22%;
-    --secondary-foreground: 45 15% 90%;
-    --secondary-hover: 45 10% 28%;
-
-    --muted: 45 10% 25%;
-    --muted-foreground: 45 10% 65%;
-    
-    --accent: 45 40% 40%;
-    --accent-foreground: 45 15% 95%;
-
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --destructive-hover: 0 63% 36%;
-
-    --border: 45 10% 25%;
-    --input: 45 10% 25%;
-    --ring: 45 40% 45%;
+    --background: 45 10% 12%;
+    --foreground: 40 20% 88%;
+    --card: 45 10% 16%;
+    --card-foreground: 40 20% 88%;
+    --card-highlight: 45 10% 20%;
+    --popover: 45 10% 10%;
+    --popover-foreground: 40 20% 88%;
+    --primary: 195 50% 65%;
+    --primary-foreground: 45 20% 10%;
+    --primary-hover: 195 50% 70%;
+    --secondary: 45 15% 25%;
+    --secondary-foreground: 40 20% 88%;
+    --secondary-hover: 45 15% 30%;
+    --muted: 45 10% 22%;
+    --muted-foreground: 40 15% 60%;
+    --accent: 195 50% 65%;
+    --accent-foreground: 45 20% 10%;
+    --destructive: 0 63% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-hover: 0 63% 45%;
+    --border: 45 10% 22%;
+    --input: 45 10% 16%;
+    --ring: 195 50% 70%;
   }
 }
 
