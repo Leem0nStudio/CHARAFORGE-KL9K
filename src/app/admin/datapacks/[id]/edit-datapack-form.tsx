@@ -144,7 +144,7 @@ export function EditDataPackForm({ packId }: { packId: string }) {
                      </AlertDialogTrigger>
                      <AlertDialogContent>
                          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
-                         <AlertDialogDescription>This will permanently delete the DataPack and any characters created with it. This action cannot be undone.</AlertDialogDescription>
+                         <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
                          <AlertDialogFooter>
                              <AlertDialogCancel>Cancel</AlertDialogCancel>
                              <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive-hover">
@@ -191,7 +191,7 @@ export function EditDataPackForm({ packId }: { packId: string }) {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
-                        <AlertDialogDescription>This will permanently delete the DataPack and any characters created with it. This action cannot be undone.</AlertDialogDescription>
+                        <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive-hover">
