@@ -208,8 +208,8 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
         return {
             id: doc.id,
             ...data,
-            createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
-            updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
+            createdAt: createdAt instanceof Timestamp ? createdAt.toMillis() : new Date(createdAt).getTime(),
+            updatedAt: updatedAt instanceof Timestamp ? updatedAt.toMillis() : (updatedAt ? new Date(updatedAt).getTime() : null),
         } as DataPack;
     });
 
@@ -418,3 +418,4 @@ export async function searchDataPacksByTag(tag: string): Promise<DataPack[]> {
         return [];
     }
 }
+
