@@ -1,0 +1,94 @@
+
+{
+    "name": "Fantasy Core",
+    "author": "CharaForge",
+    "description": "The premium version of Fantasy Basics. Create epic fantasy characters with expanded options for armor, mythical races, and enchanted locations.",
+    "type": "premium",
+    "price": 4.99,
+    "tags": ["fantasy", "rpg", "epic", "premium", "detailed"],
+    "isNsfw": false,
+    "schema": {
+        "promptTemplates": [
+            {
+                "name": "Epic Cinematic Portrait",
+                "template": "{camera}, epic cinematic portrait of a legendary {count} {raceClass}, {expression}. They wear ornate {torso_armor} and {legs_armor}, wielding a powerful {hands_weapon}. Their {hair} flows in the wind. The background is a breathtaking {background}, with {effects} lighting.",
+                "tags": ["epic", "cinematic", "portrait", "legendary", "{gender}", "{race}", "{class}", "{expression}", "ornate {armor_torso}", "{armor_legs}", "wielding a powerful {weapon}", "{hair_style}", "{hair_color} hair", "flowing hair", "wind", "breathtaking {background_setting}", "{lighting} lighting"]
+            },
+            {
+                "name": "Grim Dark Style",
+                "template": "A grim, dark fantasy painting of a battle-hardened {count} {raceClass}, {expression}, wearing worn {torso_armor} and {legs_armor}. They carry a menacing {hands_weapon}, lurking in a {background} under {effects} lighting.",
+                "tags": ["grimdark", "dark fantasy", "oil painting (medium)", "battle-hardened", "{gender}", "{race}", "{class}", "{expression}", "worn {armor_torso}", "{armor_legs}", "menacing {weapon}", "lurking in {background_setting}", "{lighting}"]
+            },
+            {
+                "name": "Character Sheet Concept",
+                "template": "{camera}, full body character concept art of a {count} {raceClass} on a white background, clean detailed line art. They are equipped with a {hands_weapon}, and wearing {torso_armor} and {legs_armor}.",
+                "tags": ["full body", "character concept", "white background", "clean lineart", "detailed", "{gender}", "{race}", "{class}", "{weapon}", "{armor_torso}", "{armor_legs}"]
+            }
+        ],
+        "characterProfileSchema": {
+            "count": [
+                { "label": "A single woman", "value": "1girl" },
+                { "label": "A single man", "value": "1boy" }
+            ],
+            "raceClass": [
+                { "label": "Dragonborn Paladin", "value": "dragonborn paladin, dragon scales, horns" },
+                { "label": "Tiefling Warlock", "value": "tiefling warlock, demonic horns, glowing eyes" },
+                { "label": "Aasimar Cleric", "value": "aasimar cleric, angelic, halo" },
+                { "label": "Warforged Artificer", "value": "warforged artificer, robot, golem, full armor" },
+                { "label": "Tabaxi Rogue", "value": "tabaxi rogue, cat girl, cat ears, animal ears" }
+            ],
+            "expression": [
+                { "label": "Determined", "value": "determined expression, serious" },
+                { "label": "Serene", "value": "serene expression, calm" },
+                { "label": "Menacing", "value": "menacing stare, evil smile" },
+                { "label": "Joyful", "value": "joyful smile, laughing" }
+            ],
+            "hair": [
+                { "label": "Ornate Silver Braids", "value": "ornate silver braids" },
+                { "label": "Wild Crimson Hair", "value": "wild, unkempt crimson red hair" },
+                { "label": "Elegant Blue Updo", "value": "elegant deep blue hair updo" },
+                { "label": "White Top Knot", "value": "pure white hair in a top knot" }
+            ],
+            "torso": {
+                "armor": [
+                    { "label": "Adamantine Plate", "value": "ornate adamantine plate armor" },
+                    { "label": "Dragon Scale Mail", "value": "dragon scale mail" },
+                    { "label": "Enchanted Robes", "value": "glowing enchanted robes" },
+                    { "label": "Spiked Leather", "value": "spiked leather armor" }
+                ]
+            },
+            "legs": {
+                "armor": [
+                    { "label": "Plate Leggings", "value": "plate leggings and greaves" },
+                    { "label": "Leather Trousers", "value": "leather trousers" },
+                    { "label": "Armored Kilt", "value": "armored kilt" },
+                    { "label": "Flowing Skirt", "value": "long flowing skirt" }
+                ]
+            },
+            "hands": {
+                "weapon": [
+                    { "label": "Flaming Greatsword", "value": "wielding a flaming greatsword" },
+                    { "label": "Sun-forged Hammer", "value": "holding a sun-forged warhammer" },
+                    { "label": "Crystal Staff", "value": "holding a crystal magic staff" },
+                    { "label": "Soul-Stealing Scythe", "value": "wielding a soul-stealing scythe" }
+                ]
+            },
+            "background": [
+                { "label": "Floating City", "value": "in a floating city among the clouds" },
+                { "label": "Volcanic Lair", "value": "inside a volcanic lair, surrounded by lava" },
+                { "label": "Ancient Forest", "value": "in a glowing, ancient forest" },
+                { "label": "Dragon's Graveyard", "value": "in a dragon's graveyard, surrounded by bones" }
+            ],
+            "effects": [
+                { "label": "God Rays", "value": "god rays, light rays" },
+                { "label": "Eerie Moonlight", "value": "eerie moonlight, night" },
+                { "label": "Magical Glow", "value": "bioluminescence, magical glow" },
+                { "label": "Sunrise", "value": "sunrise, golden hour" }
+            ],
+            "camera": [
+                { "label": "Epic Portrait", "value": "epic cinematic portrait" },
+                { "label": "Full Body Shot", "value": "full body" }
+            ]
+        }
+    }
+}
