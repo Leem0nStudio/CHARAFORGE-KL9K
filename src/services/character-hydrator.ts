@@ -38,6 +38,7 @@ export function toCharacterObject(docId: string, data: DocumentData): Character 
         isProcessed: data.isProcessed || false,
         showcaseImageUrl: data.showcaseImageUrl || null,
         isShowcaseProcessed: data.isShowcaseProcessed || false,
+        showcaseProcessingStatus: data.showcaseProcessingStatus || 'idle',
     };
     const defaultMeta = {
         userId: data.userId || '',
@@ -64,7 +65,9 @@ export function toCharacterObject(docId: string, data: DocumentData): Character 
         wizardData: data.wizardData,
         originalPrompt: data.originalPrompt || data.description,
     };
-     const defaultRpg = {
+    const defaultRpg = {
+        // This logic is critical for backward compatibility.
+        // It checks the new `rpg` object, but falls back to checking the old `archetype` field.
         isPlayable: data.rpg?.isPlayable ?? !!(data.core?.archetype || data.archetype),
         level: data.rpg?.level || 1,
         experience: data.rpg?.experience || 0,
