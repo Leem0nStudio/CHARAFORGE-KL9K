@@ -31,6 +31,7 @@ Instructions:
 2.  **Description**: Write a concise, one-to-two sentence description that explains the theme and purpose of the DataPack.
 3.  **Tags**: Generate an array of 5-7 relevant, single-word, lowercase tags that categorize the datapack.
 4.  **YAML Content**: Your entire YAML output MUST be a single, valid YAML document string within the 'yamlContent' field. Do NOT include any other text or explanations outside of the YAML content.
+    *   **CRITICAL - COMPLETE ALL SECTIONS**: You MUST generate thematically appropriate options for ALL of the following sections and their sub-sections: General (raceClass, gender), Appearance (hair, eyes), ALL equipment slots (head, torso, legs, feet, hands, etc.), and Scene (pose, background, effects). Do not leave any section empty.
     *   **Prompt Templates**: Generate 2-3 diverse 'promptTemplates'. Each template should use placeholders (e.g., {raceClass}, {torso_armor}) that correspond to the slots you will define.
     *   **Character Profile Schema**:
         *   **GRANULARITY IS KEY**: You MUST create separate, granular slots for different parts of the character, especially for clothing. Instead of one 'clothing' slot, you MUST create specific slots like 'headwear', 'topwear', 'bottomwear', 'footwear', etc.
