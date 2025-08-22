@@ -11,8 +11,8 @@
         "promptTemplates": [
             {
                 "name": "Epic Cinematic Portrait",
-                "template": "{camera}, epic cinematic portrait of a legendary {count} {raceClass}, {expression}. They wear ornate {torso_armor} and {legs_armor}, wielding a powerful {hands_weapon}. Their {hair} flows in the wind. The background is a breathtaking {background}, with {effects} lighting.",
-                "tags": ["epic", "cinematic", "portrait", "legendary", "{gender}", "{race}", "{class}", "{expression}", "ornate {armor_torso}", "{armor_legs}", "wielding a powerful {weapon}", "{hair_style}", "{hair_color} hair", "flowing hair", "wind", "breathtaking {background_setting}", "{lighting} lighting"]
+                "template": "{camera}, epic cinematic portrait of a legendary {count} {raceClass}, {expression}. They wear ornate {torso_armor}, {shoulders_armor}, and {legs_armor}, wielding a powerful {hands_weapon}. Their {hair} flows in the wind. The background is a breathtaking {background}, with {effects} lighting.",
+                "tags": ["epic", "cinematic", "portrait", "legendary", "{gender}", "{race}", "{class}", "{expression}", "ornate {armor_torso}", "{armor_legs}", "wielding a powerful {weapon}", "{hair_style}", "{hair_color} hair", "flowing hair", "wind", "breathtaking {background_setting}", "{lighting}"]
             },
             {
                 "name": "Grim Dark Style",
@@ -55,6 +55,13 @@
                     { "label": "Dragon Scale Mail", "value": "dragon scale mail" },
                     { "label": "Enchanted Robes", "value": "glowing enchanted robes" },
                     { "label": "Spiked Leather", "value": "spiked leather armor" }
+                ]
+            },
+            "shoulders": {
+                "armor": [
+                    { "label": "Ornate Pauldrons", "value": "ornate pauldrons" },
+                    { "label": "Skull Pauldrons", "value": "pauldrons made of skulls" },
+                    { "label": "Crystal Pauldrons", "value": "glowing crystal pauldrons" }
                 ]
             },
             "legs": {
