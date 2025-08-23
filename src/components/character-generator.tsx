@@ -11,7 +11,7 @@ import { z } from "zod";
 import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown, Star, CaseSensitive, Pencil, Braces, ArrowLeft, ArrowRight, BrainCircuit } from "lucide-react";
 
 import { 
-    Button, Card, CardContent, CardDescription, CardHeader, CardTitle,
+    Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
     Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
     Input, Textarea, Alert, AlertDescription, AlertTitle, Badge,
     RadioGroup, RadioGroupItem, Slider, Tabs, TabsContent, TabsList, TabsTrigger,
