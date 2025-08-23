@@ -1,33 +1,42 @@
+
+import { getPublishedArticles } from '@/app/actions/articles';
 import { BackButton } from '@/components/back-button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
+import { format } from 'date-fns';
 
-export default function ArticlesPage() {
-  return (
-    <div className="container py-8">
-        <div className="max-w-3xl mx-auto">
-             <BackButton title="Articles" description="Tips and guides for getting the most out of CharaForge."/>
-             <article className="mt-8 prose dark:prose-invert max-w-none">
-                <h2 className="text-3xl font-bold font-headline">Mastering the Prompt: Writing for AI</h2>
-                <p className="lead">
-                    Writing a good prompt is more of an art than a science. The key is to be both specific and evocative. Instead of "a fantasy warrior", try "a grizzled female dwarf warrior with a braided beard, wielding a glowing battle-axe, standing on a snowy mountain peak".
-                </p>
+export default async function ArticlesPage() {
+    const articles = await getPublishedArticles();
 
-                <h3 className="text-2xl font-bold font-headline mt-8">Key Principles</h3>
-                <ol className="list-decimal list-inside space-y-4">
-                    <li>
-                        <strong>Specificity is King:</strong> The more detail you provide, the better the AI can interpret your vision. Mention colors, materials, lighting, and mood.
-                    </li>
-                    <li>
-                        <strong>Use Strong Verbs:</strong> Instead of "holding a sword", try "wielding a sword" or "clutching a sword" to create more dynamic imagery.
-                    </li>
-                    <li>
-                        <strong>Combine Concepts:</strong> Don't be afraid to mix genres! "A cyber-sorcerer with neon-lit robes" is more interesting than just "a sorcerer".
-                    </li>
-                    <li>
-                        <strong>Reference Artists or Styles:</strong> If you want a specific look, mention it. For example, add "in the style of Greg Rutkowski" or "trending on ArtStation" to guide the AI.
-                    </li>
-                </ol>
-             </article>
+    return (
+        <div className="container py-8">
+            <div className="max-w-3xl mx-auto">
+                <BackButton title="Articles" description="Tips and guides for getting the most out of CharaForge." />
+
+                <div className="mt-8 space-y-8">
+                    {articles.length > 0 ? (
+                        articles.map((article) => (
+                            <Link key={article.id} href={`/articles/${article.slug}`}>
+                                <Card className="hover:border-primary/50 transition-colors">
+                                    <CardHeader>
+                                        <CardTitle>{article.title}</CardTitle>
+                                        <CardDescription>
+                                            Published on {format(new Date(article.createdAt), 'PPP')} by {article.author}
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-muted-foreground line-clamp-2">{article.excerpt}</p>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        ))
+                    ) : (
+                        <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
+                            <p>No articles have been published yet. Check back soon!</p>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
-    </div>
-  );
+    );
 }
