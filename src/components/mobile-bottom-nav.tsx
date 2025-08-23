@@ -12,6 +12,11 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const { authUser } = useAuth();
   
+  // Do not render the main navigation bar on admin routes
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
+
   const items = mainNavItems;
 
   return (

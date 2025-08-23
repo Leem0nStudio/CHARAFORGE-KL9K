@@ -9,6 +9,7 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import { Exo_2, Bebas_Neue } from 'next/font/google';
+import { headers } from 'next/headers';
 
 const exo2 = Exo_2({
   subsets: ['latin'],
@@ -32,6 +33,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = headers().get('x-next-pathname') || '';
+  const isAdminRoute = pathname.startsWith('/admin');
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn('min-h-screen bg-background font-sans antialiased', exo2.variable, bebasNeue.variable)}>
@@ -43,10 +47,10 @@ export default function RootLayout({
         >
           <AuthProvider>
             <div className="relative flex min-h-screen flex-col">
-              <SiteHeader />
+              {!isAdminRoute && <SiteHeader />}
               <main className="flex-1">{children}</main>
-              <SiteFooter />
-              <MobileBottomNav />
+              {!isAdminRoute && <SiteFooter />}
+              {!isAdminRoute && <MobileBottomNav />}
             </div>
           </AuthProvider>
           <Toaster />
