@@ -123,7 +123,9 @@ export async function deleteDataPack(packId: string): Promise<ActionResponse> {
 
 export async function getDataPacksForAdmin(): Promise<DataPack[]> {
     if (!adminDb) return [];
+    // CRITICAL FIX: Removed the incorrect .where('type', '==', 'system') clause
     const snapshot = await adminDb.collection('datapacks').orderBy('createdAt', 'desc').get();
+    
     return snapshot.docs.map(doc => {
         const data = doc.data();
         const createdAt = data.createdAt;
@@ -408,3 +410,5 @@ export async function searchDataPacksByTag(tag: string): Promise<DataPack[]> {
         return [];
     }
 }
+
+    
