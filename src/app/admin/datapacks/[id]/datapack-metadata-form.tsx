@@ -1,6 +1,7 @@
 
 'use client';
 
+import React from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,13 +9,86 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Tag, X } from 'lucide-react';
 import type { DataPackFormValues } from '@/types/datapack';
-
+import { Badge } from '@/components/ui/badge';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface DataPackMetadataFormProps {
     form: ReturnType<typeof useFormContext<DataPackFormValues>>;
     onFileChange: (file: File | null) => void;
+}
+
+// A more intuitive component for tag management.
+function TagInputController({ control }: { control: any }) {
+    const [inputValue, setInputValue] = React.useState('');
+
+    return (
+        <Controller
+            name="tags"
+            control={control}
+            render={({ field }) => {
+                const tags = field.value || [];
+
+                const handleAddTag = () => {
+                    const newTag = inputValue.trim().toLowerCase();
+                    if (newTag && !tags.includes(newTag)) {
+                        field.onChange([...tags, newTag]);
+                        setInputValue('');
+                    }
+                };
+
+                const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        handleAddTag();
+                    }
+                };
+
+                const removeTag = (tagToRemove: string) => {
+                    field.onChange(tags.filter((tag: string) => tag !== tagToRemove));
+                };
+
+                return (
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <Input
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder="Add a tag..."
+                                className="flex-grow"
+                            />
+                        </div>
+                        <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px] bg-background/50">
+                            <AnimatePresence>
+                                {tags.map((tag: string) => (
+                                    <motion.div
+                                        key={tag}
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.5 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.5 }}
+                                    >
+                                        <Badge variant="secondary" className="text-base">
+                                            {tag}
+                                            <button
+                                                type="button"
+                                                onClick={() => removeTag(tag)}
+                                                className="ml-2 rounded-full p-0.5 hover:bg-destructive/20"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </Badge>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+                );
+            }}
+        />
+    );
 }
 
 export function DataPackMetadataForm({ form, onFileChange }: DataPackMetadataFormProps) {
@@ -46,18 +120,9 @@ export function DataPackMetadataForm({ form, onFileChange }: DataPackMetadataFor
             </div>
           </div>
           <div className="space-y-4">
-            <div>
-                <Label>Tags (comma-separated)</Label>
-                <Controller
-                    control={control}
-                    name="tags"
-                    render={({ field }) => (
-                         <Input 
-                            defaultValue={Array.isArray(field.value) ? field.value.join(', ') : ''}
-                            onChange={(e) => field.onChange(e.target.value.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean))}
-                         />
-                    )}
-                />
+             <div>
+                <Label>Tags</Label>
+                <TagInputController control={control} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
