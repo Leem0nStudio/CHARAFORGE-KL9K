@@ -1,63 +1,32 @@
-
-import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { BackButton } from '@/components/back-button';
-import Image from 'next/image';
-
-// Datos de ejemplo para los artículos
-const articles = [
-  {
-    slug: 'the-art-of-prompt-crafting',
-    title: 'The Art of Prompt Crafting',
-    description: 'Learn how to write effective prompts to get the most out of our AI generation tools.',
-    author: 'The CharaForge Team',
-    date: 'August 23, 2024',
-    image: 'https://placehold.co/600x400.png?text=Prompt+Art',
-  },
-  {
-    slug: 'getting-started-with-datapacks',
-    title: 'Getting Started with DataPacks',
-    description: 'A beginner\'s guide to using and understanding DataPacks for consistent character creation.',
-    author: 'The CharaForge Team',
-    date: 'August 20, 2024',
-    image: 'https://placehold.co/600x400.png?text=DataPacks',
-  },
-];
-
 
 export default function ArticlesPage() {
   return (
     <div className="container py-8">
-        <BackButton 
-            title="Articles & Updates"
-            description="News, tutorials, and insights from the CharaForge team."
-        />
+        <div className="max-w-3xl mx-auto">
+             <BackButton title="Articles" description="Tips and guides for getting the most out of CharaForge."/>
+             <article className="mt-8 prose dark:prose-invert max-w-none">
+                <h2 className="text-3xl font-bold font-headline">Mastering the Prompt: Writing for AI</h2>
+                <p className="lead">
+                    Writing a good prompt is more of an art than a science. The key is to be both specific and evocative. Instead of "a fantasy warrior", try "a grizzled female dwarf warrior with a braided beard, wielding a glowing battle-axe, standing on a snowy mountain peak".
+                </p>
 
-        <div className="mt-8 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {articles.map((article) => (
-                <Card key={article.slug} className="flex flex-col">
-                    <CardHeader className="p-0">
-                        <Link href={`/articles/${article.slug}`}>
-                            <Image
-                                src={article.image}
-                                alt={article.title}
-                                width={600}
-                                height={400}
-                                className="w-full h-auto rounded-t-lg object-cover"
-                            />
-                        </Link>
-                    </CardHeader>
-                    <CardContent className="p-6 flex-grow">
-                        <CardTitle className="text-xl font-bold">
-                            <Link href={`/articles/${article.slug}`}>{article.title}</Link>
-                        </CardTitle>
-                        <CardDescription className="mt-2">{article.description}</CardDescription>
-                    </CardContent>
-                    <CardFooter className="p-6 pt-0 text-sm text-muted-foreground">
-                        <span>By {article.author} on {article.date}</span>
-                    </CardFooter>
-                </Card>
-            ))}
+                <h3 className="text-2xl font-bold font-headline mt-8">Key Principles</h3>
+                <ol className="list-decimal list-inside space-y-4">
+                    <li>
+                        <strong>Specificity is King:</strong> The more detail you provide, the better the AI can interpret your vision. Mention colors, materials, lighting, and mood.
+                    </li>
+                    <li>
+                        <strong>Use Strong Verbs:</strong> Instead of "holding a sword", try "wielding a sword" or "clutching a sword" to create more dynamic imagery.
+                    </li>
+                    <li>
+                        <strong>Combine Concepts:</strong> Don't be afraid to mix genres! "A cyber-sorcerer with neon-lit robes" is more interesting than just "a sorcerer".
+                    </li>
+                    <li>
+                        <strong>Reference Artists or Styles:</strong> If you want a specific look, mention it. For example, add "in the style of Greg Rutkowski" or "trending on ArtStation" to guide the AI.
+                    </li>
+                </ol>
+             </article>
         </div>
     </div>
   );

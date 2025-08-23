@@ -59,7 +59,6 @@ export const textModels: AiModel[] = [
 export const mainNavItems: NavItem[] = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/datapacks', label: 'DataPacks', icon: Package },
-    { href: '/articles', label: 'Artículos', icon: Newspaper },
     { href: '/character-generator', label: 'Forge', icon: Swords, isPrimary: true },
     { href: '/arena', label: 'Arena', icon: Shield, requiresAuth: true },
     { href: '/profile', label: 'Profile', icon: UserCircle, requiresAuth: true },
