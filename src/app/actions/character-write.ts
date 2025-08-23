@@ -316,7 +316,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
         const versionName = `v.${version}`;
         const initialVersion = { id: characterRef.id, name: versionName, version: version };
         
-        const wizardTags = wizardData ? Object.values(wizardData).map(tag => tag.trim().toLowerCase().replace(/ /g, '_')) : [];
+        const wizardTags = wizardData ? Object.values(wizardData).map(tag => typeof tag === 'string' ? tag.trim().toLowerCase().replace(/ /g, '_') : '').filter(Boolean) : [];
         const uniqueTags = [...new Set([...wizardTags].filter(Boolean))];
 
         const characterData: Omit<Character, 'id'> = {
@@ -487,5 +487,7 @@ export async function addCharacterExperience(characterId: string, xp: number): P
         return { success: false, message };
     }
 }
+
+    
 
     
