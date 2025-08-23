@@ -109,31 +109,54 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   });
 
   const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-    let finalPrompt = template.template || '';
-    
-    for (const slotId in wizardData) {
-        const selectedValue = wizardData[slotId];
-        const slot = (pack.schema.characterProfileSchema as any)[slotId];
-        const option = slot?.find((o: any) => o.value === selectedValue);
-        
-        const replacementValue = option?.value || selectedValue || '';
-        finalPrompt = finalPrompt.replace(`{${slotId}}`, replacementValue);
-    }
+      let finalPrompt = template.template || '';
+      const allTags: string[] = [];
 
-    const finalTags = Object.values(wizardData)
-      .map(value => (Object.values(pack.schema.characterProfileSchema).flat() as Option[]).find(o => o.value === value)?.tags ?? [value])
-      .flat()
-      .filter(Boolean)
-      .join(', ');
+      for (const slotId in wizardData) {
+          const selectedValue = wizardData[slotId];
+          if (!selectedValue) continue;
 
-    generationForm.setValue('description', finalPrompt, { shouldValidate: true });
-    generationForm.setValue('tags', finalTags);
-    generationForm.setValue('wizardData', wizardData);
-    
-    setActivePack(pack);
-    setSelectedTemplate(template);
-    setIsPackModalOpen(false);
-}, [generationForm]);
+          const slotConfig = (pack.schema.characterProfileSchema as any)[slotId];
+          let foundOption: Option | undefined = undefined;
+
+          if (Array.isArray(slotConfig)) {
+              // Handle simple slots
+              foundOption = slotConfig.find(o => o.value === selectedValue);
+          } else if (typeof slotConfig === 'object' && slotConfig !== null) {
+              // Handle nested equipment slots
+              for (const subCategory in slotConfig) {
+                  const options = (slotConfig as any)[subCategory] as Option[];
+                  if (Array.isArray(options)) {
+                      const option = options.find(o => o.value === selectedValue);
+                      if (option) {
+                          foundOption = option;
+                          break;
+                      }
+                  }
+              }
+          }
+
+          if (foundOption) {
+              finalPrompt = finalPrompt.replace(`{${slotId}}`, foundOption.value);
+              if (foundOption.tags) {
+                  allTags.push(...foundOption.tags);
+              }
+          } else {
+              finalPrompt = finalPrompt.replace(`{${slotId}}`, selectedValue);
+          }
+      }
+
+      // Clean up any remaining placeholders
+      finalPrompt = finalPrompt.replace(/\{[a-zA-Z_]+\}/g, '').replace(/,\s*,/g, ',').replace(/, ,/g,',').trim();
+      
+      generationForm.setValue('description', finalPrompt, { shouldValidate: true });
+      generationForm.setValue('tags', [...new Set(allTags)].join(', '));
+      generationForm.setValue('wizardData', wizardData);
+      
+      setActivePack(pack);
+      setSelectedTemplate(template);
+      setIsPackModalOpen(false);
+  }, [generationForm]);
   
   
   useEffect(() => {
