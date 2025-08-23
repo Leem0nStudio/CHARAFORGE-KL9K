@@ -20,7 +20,7 @@ import {
     Label, Switch, Skeleton
 } from "@/components/ui";
 
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-auth";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/character-generator/actions";
@@ -35,7 +35,7 @@ import { VisualModelSelector } from "@/components/visual-model-selector";
 import type { GenerationResult } from "@/types/generation";
 import { PromptEditor } from "@/components/prompt-editor";
 import type { DataPack, PromptTemplate, Option, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
-import { textModels } from "@/lib/app-config";
+import { textModels, rpgArchetypes } from "@/lib/app-config";
 import type { User as FirebaseUser } from "firebase/auth";
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -67,6 +67,7 @@ const stepSchema = z.object({
   dataPackId: z.string().optional().nullable(),
   textEngine: z.string().optional(),
   imageEngine: z.string().optional(),
+  rarity: z.number().min(1).max(5).optional(),
 });
 
 
@@ -251,6 +252,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                     imageEngine: formData.imageEngine as any,
                     wizardData: formData.wizardData,
                     originalPrompt: formData.originalDescription,
+                    rarity: formData.rarity,
                 });
                 if (result.success && result.characterId) {
                     toast({ title: "Character Saved!", description: `${formData.name} is now in your armory.` });
@@ -331,6 +333,19 @@ function ConceptStep({ form, setIsPackModalOpen, activePack, selectedTemplate, h
         }
     };
     
+    const handleArchetypeSelect = (value: string) => {
+        const currentDesc = form.getValues('description');
+        const pattern = new RegExp(`^(${rpgArchetypes.join('|')})\\,?\\s*`, 'i');
+        const cleanedDesc = currentDesc.replace(pattern, '').trim();
+
+        if (value && value !== 'none') {
+            const newDesc = `${value}, ${cleanedDesc}`;
+            form.setValue('description', newDesc, { shouldValidate: true });
+        } else {
+            form.setValue('description', cleanedDesc, { shouldValidate: true });
+        }
+    };
+
     return (
         <>
         <TagAssistantModal
@@ -375,6 +390,21 @@ function ConceptStep({ form, setIsPackModalOpen, activePack, selectedTemplate, h
                 </FormItem>
               )}
             />
+             <div className="space-y-2">
+                <Label>System Class (Recommended)</Label>
+                <Select onValueChange={handleArchetypeSelect}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Inject a class to improve consistency..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="none">No Class</SelectItem>
+                        {rpgArchetypes.map(archetype => (
+                            <SelectItem key={archetype} value={archetype}>{archetype}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                 <p className="text-xs text-muted-foreground">This will be added to the start of your prompt.</p>
+            </div>
         </div>
         </>
     );
@@ -487,3 +517,5 @@ function CompleteStep({ form, onSave, isSaving }: { form: any, onSave: () => voi
         </div>
     );
 }
+
+    
