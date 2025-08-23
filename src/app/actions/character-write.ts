@@ -283,7 +283,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
   }
   const { 
       name, biography, imageUrl: imageDataUri, dataPackId,
-      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt
+      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt, rarity
   } = validation.data;
   
   const userId = await verifyAndGetUid();
@@ -301,11 +301,14 @@ export async function saveCharacter(input: SaveCharacterInput) {
     
     const isPlayable = !!archetype;
     let finalStats: RpgAttributes['stats'] = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
-    let finalRarity: Character['core']['rarity'] = 1;
+    let finalRarity: Character['core']['rarity'] = rarity || 1;
 
     if (archetype) {
         finalStats = generateBalancedStats(archetype);
-        finalRarity = calculateRarity(finalStats);
+        // Only override rarity if it wasn't explicitly passed (e.g. from the new generator flow)
+        if (!rarity) {
+             finalRarity = calculateRarity(finalStats);
+        }
     }
     
     await adminDb.runTransaction(async (transaction) => {
