@@ -1,92 +1,83 @@
-{
-  "name": "nextn",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "genkit:dev": "node --import tsx src/ai/dev.ts",
-    "genkit:watch": "node --watch --import tsx src/ai/dev.ts",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "firebase:setup": "node scripts/firebase-setup.js",
-    "firebase:emulators": "firebase emulators:start --only auth,firestore,storage",
-    "admin:grant": "node --import tsx scripts/manage-admin.js grant",
-    "admin:revoke": "node --import tsx scripts/manage-admin.js revoke",
-    "admin:check": "node --import tsx scripts/manage-admin.js check",
-    "admin:list": "node --import tsx scripts/manage-admin.js list",
-    "datapacks:seed": "node --import tsx scripts/seed-datapacks.ts",
-    "tags:fetch": "node --import tsx scripts/fetch-danbooru-tags.ts"
+
+import { BackButton } from '@/components/back-button';
+import { notFound } from 'next/navigation';
+import Image from 'next/image';
+
+// Datos de ejemplo para los artículos
+const articles = [
+  {
+    slug: 'the-art-of-prompt-crafting',
+    title: 'The Art of Prompt Crafting',
+    description: 'Learn how to write effective prompts to get the most out of our AI generation tools.',
+    author: 'The CharaForge Team',
+    date: 'August 23, 2024',
+    image: 'https://placehold.co/1200x600.png?text=Prompt+Art',
+    content: `
+## Mastering the Prompt
+
+Writing a good prompt is more of an art than a science. The key is to be both specific and evocative. Instead of "a fantasy warrior", try "a grizzled female dwarf warrior with a braided beard, wielding a glowing battle-axe, standing on a snowy mountain peak".
+
+### Key Principles
+
+1.  **Specificity is King:** The more detail you provide, the better the AI can interpret your vision. Mention colors, materials, lighting, and mood.
+2.  **Use Strong Verbs:** Instead of "holding a sword", try "wielding a sword" or "clutching a sword".
+3.  **Combine Concepts:** Don't be afraid to mix genres! "A cyber-sorcerer in a neon-drenched city" can yield fascinating results.
+    `
   },
-  "dependencies": {
-    "@genkit-ai/firebase": "1.14.1",
-    "@genkit-ai/googleai": "1.14.1",
-    "@genkit-ai/next": "1.14.1",
-    "@hookform/resolvers": "^4.1.3",
-    "@opentelemetry/exporter-jaeger": "^1.25.1",
-    "@opentelemetry/winston-transport": "^0.14.0",
-    "@radix-ui/react-accordion": "^1.2.3",
-    "@radix-ui/react-alert-dialog": "^1.1.6",
-    "@radix-ui/react-avatar": "^1.1.3",
-    "@radix-ui/react-checkbox": "^1.1.4",
-    "@radix-ui/react-collapsible": "^1.1.11",
-    "@radix-ui/react-dialog": "^1.1.6",
-    "@radix-ui/react-dropdown-menu": "^2.1.6",
-    "@radix-ui/react-label": "^2.1.2",
-    "@radix-ui/react-menubar": "^1.1.6",
-    "@radix-ui/react-popover": "^1.1.6",
-    "@radix-ui/react-progress": "^1.1.2",
-    "@radix-ui/react-radio-group": "^1.2.3",
-    "@radix-ui/react-scroll-area": "^1.2.3",
-    "@radix-ui/react-select": "^2.1.6",
-    "@radix-ui/react-separator": "^1.1.2",
-    "@radix-ui/react-slider": "^1.2.3",
-    "@radix-ui/react-slot": "^1.2.3",
-    "@radix-ui/react-switch": "^1.1.3",
-    "@radix-ui/react-tabs": "^1.1.3",
-    "@radix-ui/react-toast": "^1.2.6",
-    "@radix-ui/react-tooltip": "^1.1.8",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "@types/uuid": "^10.0.0",
-    "chalk": "^4.1.2",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^3.6.0",
-    "dotenv": "^16.4.5",
-    "embla-carousel-autoplay": "^8.2.1",
-    "embla-carousel-react": "^8.6.0",
-    "firebase": "12.0.0",
-    "firebase-admin": "^12.4.0",
-    "framer-motion": "^11.3.19",
-    "genkit": "1.14.1",
-    "google-auth-library": "^9.11.0",
-    "js-yaml": "^4.1.0",
-    "lucide-react": "^0.475.0",
-    "next": "15.3.3",
-    "next-themes": "^0.3.0",
-    "postcss": "^8",
-    "react": "^18.3.1",
-    "react-day-picker": "^8.10.1",
-    "react-dom": "^18.3.1",
-    "react-hook-form": "^7.54.2",
-    "recharts": "^2.15.1",
-    "sharp": "^0.33.4",
-    "shiki": "^1.10.3",
-    "tailwind-merge": "^3.0.1",
-    "tailwindcss-animate": "^1.0.7",
-    "tsx": "^4.16.2",
-    "typescript": "^5",
-    "uuid": "^10.0.0",
-    "zod": "^3.24.2"
+  {
+    slug: 'getting-started-with-datapacks',
+    title: 'Getting Started with DataPacks',
+    description: 'A beginner\'s guide to using and understanding DataPacks for consistent character creation.',
+    author: 'The CharaForge Team',
+    date: 'August 20, 2024',
+    image: 'https://placehold.co/1200x600.png?text=DataPacks',
+    content: `
+## What are DataPacks?
+
+DataPacks are the heart of CharaForge's reusable content system. They are essentially structured JSON files that define a set of options for the character generation wizard.
+
+### Why use them?
+
+-   **Consistency:** Ensure all characters in a specific setting share a common visual language.
+-   **Speed:** Quickly generate characters without having to type out long, complex prompts every time.
+-   **Community:** Share your DataPacks with others and use packs created by the community.
+    `
   },
-  "devDependencies": {
-    "@types/js-yaml": "^4.0.9",
-    "@types/sharp": "^0.32.0",
-    "firebase-tools": "^13.14.2",
-    "genkit-cli": "1.14.1",
-    "tailwindcss": "^3.4.1"
-  }
+];
+
+async function getArticleFromSlug(slug: string) {
+    return articles.find(article => article.slug === slug);
+}
+
+
+export default async function ArticlePage({ params }: { params: { slug: string[] } }) {
+    const slug = params.slug.join('/');
+    const article = await getArticleFromSlug(slug);
+
+    if (!article) {
+        notFound();
+    }
+
+    return (
+        <div className="container py-8 max-w-4xl mx-auto">
+            <BackButton />
+            <article className="mt-8">
+                <h1 className="text-4xl font-headline font-bold mb-4">{article.title}</h1>
+                <p className="text-muted-foreground text-lg mb-4">{article.description}</p>
+                <div className="flex items-center text-sm text-muted-foreground mb-8">
+                    <span>By {article.author}</span>
+                    <span className="mx-2">•</span>
+                    <span>{article.date}</span>
+                </div>
+                <Image
+                    src={article.image}
+                    alt={article.title}
+                    width={1200}
+                    height={600}
+                    className="w-full h-auto rounded-lg object-cover mb-8"
+                />
+                <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: article.content.replace(/\\n/g, '<br />') }} />
+            </article>
+        </div>
+    );
 }

@@ -1,92 +1,64 @@
-{
-  "name": "nextn",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "genkit:dev": "node --import tsx src/ai/dev.ts",
-    "genkit:watch": "node --watch --import tsx src/ai/dev.ts",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "firebase:setup": "node scripts/firebase-setup.js",
-    "firebase:emulators": "firebase emulators:start --only auth,firestore,storage",
-    "admin:grant": "node --import tsx scripts/manage-admin.js grant",
-    "admin:revoke": "node --import tsx scripts/manage-admin.js revoke",
-    "admin:check": "node --import tsx scripts/manage-admin.js check",
-    "admin:list": "node --import tsx scripts/manage-admin.js list",
-    "datapacks:seed": "node --import tsx scripts/seed-datapacks.ts",
-    "tags:fetch": "node --import tsx scripts/fetch-danbooru-tags.ts"
+
+import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { BackButton } from '@/components/back-button';
+import Image from 'next/image';
+
+// Datos de ejemplo para los artículos
+const articles = [
+  {
+    slug: 'the-art-of-prompt-crafting',
+    title: 'The Art of Prompt Crafting',
+    description: 'Learn how to write effective prompts to get the most out of our AI generation tools.',
+    author: 'The CharaForge Team',
+    date: 'August 23, 2024',
+    image: 'https://placehold.co/600x400.png?text=Prompt+Art',
   },
-  "dependencies": {
-    "@genkit-ai/firebase": "1.14.1",
-    "@genkit-ai/googleai": "1.14.1",
-    "@genkit-ai/next": "1.14.1",
-    "@hookform/resolvers": "^4.1.3",
-    "@opentelemetry/exporter-jaeger": "^1.25.1",
-    "@opentelemetry/winston-transport": "^0.14.0",
-    "@radix-ui/react-accordion": "^1.2.3",
-    "@radix-ui/react-alert-dialog": "^1.1.6",
-    "@radix-ui/react-avatar": "^1.1.3",
-    "@radix-ui/react-checkbox": "^1.1.4",
-    "@radix-ui/react-collapsible": "^1.1.11",
-    "@radix-ui/react-dialog": "^1.1.6",
-    "@radix-ui/react-dropdown-menu": "^2.1.6",
-    "@radix-ui/react-label": "^2.1.2",
-    "@radix-ui/react-menubar": "^1.1.6",
-    "@radix-ui/react-popover": "^1.1.6",
-    "@radix-ui/react-progress": "^1.1.2",
-    "@radix-ui/react-radio-group": "^1.2.3",
-    "@radix-ui/react-scroll-area": "^1.2.3",
-    "@radix-ui/react-select": "^2.1.6",
-    "@radix-ui/react-separator": "^1.1.2",
-    "@radix-ui/react-slider": "^1.2.3",
-    "@radix-ui/react-slot": "^1.2.3",
-    "@radix-ui/react-switch": "^1.1.3",
-    "@radix-ui/react-tabs": "^1.1.3",
-    "@radix-ui/react-toast": "^1.2.6",
-    "@radix-ui/react-tooltip": "^1.1.8",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "@types/uuid": "^10.0.0",
-    "chalk": "^4.1.2",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^3.6.0",
-    "dotenv": "^16.4.5",
-    "embla-carousel-autoplay": "^8.2.1",
-    "embla-carousel-react": "^8.6.0",
-    "firebase": "12.0.0",
-    "firebase-admin": "^12.4.0",
-    "framer-motion": "^11.3.19",
-    "genkit": "1.14.1",
-    "google-auth-library": "^9.11.0",
-    "js-yaml": "^4.1.0",
-    "lucide-react": "^0.475.0",
-    "next": "15.3.3",
-    "next-themes": "^0.3.0",
-    "postcss": "^8",
-    "react": "^18.3.1",
-    "react-day-picker": "^8.10.1",
-    "react-dom": "^18.3.1",
-    "react-hook-form": "^7.54.2",
-    "recharts": "^2.15.1",
-    "sharp": "^0.33.4",
-    "shiki": "^1.10.3",
-    "tailwind-merge": "^3.0.1",
-    "tailwindcss-animate": "^1.0.7",
-    "tsx": "^4.16.2",
-    "typescript": "^5",
-    "uuid": "^10.0.0",
-    "zod": "^3.24.2"
+  {
+    slug: 'getting-started-with-datapacks',
+    title: 'Getting Started with DataPacks',
+    description: 'A beginner\'s guide to using and understanding DataPacks for consistent character creation.',
+    author: 'The CharaForge Team',
+    date: 'August 20, 2024',
+    image: 'https://placehold.co/600x400.png?text=DataPacks',
   },
-  "devDependencies": {
-    "@types/js-yaml": "^4.0.9",
-    "@types/sharp": "^0.32.0",
-    "firebase-tools": "^13.14.2",
-    "genkit-cli": "1.14.1",
-    "tailwindcss": "^3.4.1"
-  }
+];
+
+
+export default function ArticlesPage() {
+  return (
+    <div className="container py-8">
+        <BackButton 
+            title="Articles & Updates"
+            description="News, tutorials, and insights from the CharaForge team."
+        />
+
+        <div className="mt-8 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {articles.map((article) => (
+                <Card key={article.slug} className="flex flex-col">
+                    <CardHeader className="p-0">
+                        <Link href={`/articles/${article.slug}`}>
+                            <Image
+                                src={article.image}
+                                alt={article.title}
+                                width={600}
+                                height={400}
+                                className="w-full h-auto rounded-t-lg object-cover"
+                            />
+                        </Link>
+                    </CardHeader>
+                    <CardContent className="p-6 flex-grow">
+                        <CardTitle className="text-xl font-bold">
+                            <Link href={`/articles/${article.slug}`}>{article.title}</Link>
+                        </CardTitle>
+                        <CardDescription className="mt-2">{article.description}</CardDescription>
+                    </CardContent>
+                    <CardFooter className="p-6 pt-0 text-sm text-muted-foreground">
+                        <span>By {article.author} on {article.date}</span>
+                    </CardFooter>
+                </Card>
+            ))}
+        </div>
+    </div>
+  );
 }
