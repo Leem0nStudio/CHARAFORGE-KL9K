@@ -8,24 +8,27 @@ import { Button } from '@/components/ui/button';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
 import type { DataPack } from '@/types/datapack';
+import type { Article } from '@/types/article';
 import { motion } from 'framer-motion';
-import { ArrowRight, Package, Wand2, Trophy, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { ArrowRight, Package, Wand2, Trophy, Image as ImageIcon, Sparkles, Newspaper } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { DataPackCard } from './datapack/datapack-card';
 import { SectionTitle } from './section-title';
 import { RankBadge } from './rank-badge';
 import { GachaCard } from './character/gacha-card';
+import { ArticleCard } from './article/article-card';
 
 
 type HomePageClientProps = {
     featuredCreations: Character[];
     topCreators: UserProfile[];
     newDataPacks: DataPack[];
+    latestArticles: Article[];
     heroCharacter: Character | null;
 }
 
-export function HomePageClient({ featuredCreations, topCreators, newDataPacks, heroCharacter }: HomePageClientProps) {
+export function HomePageClient({ featuredCreations, topCreators, newDataPacks, latestArticles, heroCharacter }: HomePageClientProps) {
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -126,6 +129,30 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, h
                     ))}
                 </div>
             </section>
+
+            {/* Latest Articles Section */}
+            {latestArticles.length > 0 && (
+                 <section id="articles" className="container">
+                    <SectionTitle title="Recent Articles" subtitle="Check out the latest guides, tips, and stories from the community." />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {latestArticles.map((article, index) => (
+                            <motion.div
+                                key={article.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: index * 0.1 }}
+                            >
+                                <ArticleCard article={article} />
+                            </motion.div>
+                        ))}
+                    </div>
+                     <div className="text-center mt-12">
+                        <Button asChild size="lg" variant="outline">
+                            <Link href="/articles">Read All Articles <ArrowRight className="ml-2"/></Link>
+                        </Button>
+                    </div>
+                </section>
+            )}
             
             {/* Top Creators */}
             <section id="top-creators" className="container">

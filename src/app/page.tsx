@@ -3,14 +3,16 @@
 
 import { getPublicCharacters, getTopCreators } from '@/app/actions/creations';
 import { getPublicDataPacks } from '@/app/actions/datapacks';
+import { getPublishedArticles } from '@/app/actions/articles';
 import { HomePageClient } from '@/components/home-page-client';
 import type { Character } from '@/types/character';
 
 export default async function Home() {
-    const [featuredCharacters, topCreators, newDataPacks] = await Promise.all([
+    const [featuredCharacters, topCreators, newDataPacks, latestArticles] = await Promise.all([
         getPublicCharacters(),
         getTopCreators(),
         getPublicDataPacks(),
+        getPublishedArticles(),
     ]);
 
     // Optimize hero character selection on the server
@@ -27,6 +29,7 @@ export default async function Home() {
             featuredCreations={featuredCharacters} 
             topCreators={topCreators} 
             newDataPacks={newDataPacks}
+            latestArticles={latestArticles.slice(0, 3)} // Pass only the 3 most recent articles
             heroCharacter={heroCharacter}
         />
     );
