@@ -21,6 +21,16 @@ import Link from 'next/link';
 import { ScrollArea } from '../ui/scroll-area';
 
 
+const engineDescriptions: Record<string, string> = {
+    comfyui: "For self-hosted ComfyUI or A1111 servers. Requires a direct URL to the server's API.",
+    vertexai: "For fine-tuned models hosted on Google Cloud's Vertex AI Endpoints. Maximum scalability.",
+    gemini: "Google's powerful, general-purpose model for high-quality image generation. No configuration needed.",
+    huggingface: "Use any public text-to-image model from the Hugging Face Hub via its Inference API.",
+    modelslab: "A commercial service that provides access to a wide variety of community-trained models.",
+    openrouter: "A meta-API that provides access to various models, including DALL-E, SD3, and more.",
+};
+
+
 function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, isOpen: boolean, setIsOpen: (isOpen: boolean) => void }) {
     const [isProcessing, startTransition] = useTransition();
     const { toast } = useToast();
@@ -195,15 +205,14 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                             </Select>
                                         )}
                                     />
+                                     <p className="text-xs text-muted-foreground">{engineDescriptions[watchEngine]}</p>
                                 </div>
 
                                 {watchEngine === 'comfyui' && (
                                      <div className="space-y-2 col-span-2">
                                         <Label>ComfyUI Server URL</Label>
                                         <Input {...form.register('apiUrl')} placeholder="http://your-server-ip:8188/prompt" />
-                                        <Link href="/app/TUTORIAL_KAGGLE_COMFYUI.md" target="_blank">
-                                            <p className="text-xs text-primary underline flex items-center gap-1"><Info className="h-3 w-3" /> How to get this? (Kaggle Guide)</p>
-                                        </Link>
+                                        <Link href="/app/TUTORIAL_KAGGLE_COMFYUI.md" target="_blank" className="text-xs text-primary underline flex items-center gap-1"><Info className="h-3 w-3" /> How to get this? (Kaggle Guide)</Link>
                                      </div>
                                 )}
                                 
@@ -235,6 +244,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                      <div className="space-y-2 col-span-2">
                                         <Label>Vertex AI LoRA Alias</Label>
                                         <Input {...form.register('vertexAiAlias')} placeholder="e.g., my-anime-lora" />
+                                         <p className="text-xs text-muted-foreground">The alias you gave the LoRA when you deployed it to the Vertex AI Endpoint.</p>
                                      </div>
                                 )}
 
@@ -268,6 +278,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                                 />
                                             )}
                                         />
+                                        <p className="text-xs text-muted-foreground">In ComfyUI, click "Save (API Format)" and paste the contents of the downloaded JSON file here.</p>
                                      </div>
                                 )}
                             </div>
