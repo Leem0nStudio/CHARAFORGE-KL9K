@@ -1,4 +1,6 @@
 
+'use server';
+
 import { z } from 'zod';
 
 /**
@@ -104,7 +106,7 @@ export type Character = {
   generation: {
     textEngine?: 'gemini' | 'openrouter';
     imageEngine?: 'gemini' | 'openrouter' | 'huggingface' | 'vertexai' | 'comfyui' | 'modelslab';
-    wizardData?: Record<string, string> | null;
+    wizardData?: Record<string, any> | null;
     originalPrompt?: string; // The original simple text prompt
   }
   
@@ -134,9 +136,7 @@ export const SaveCharacterInputSchema = z.object({
   physicalDescription: z.string().optional().nullable(),
   textEngine: z.enum(['gemini', 'openrouter']).optional(),
   imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai', 'comfyui', 'modelslab']).optional(),
-  wizardData: z.record(z.string()).optional().nullable(),
+  wizardData: z.record(z.union([z.string(), z.record(z.string())])).optional().nullable(),
   originalPrompt: z.string().optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
-
-    
