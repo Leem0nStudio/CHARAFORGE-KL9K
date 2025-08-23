@@ -170,7 +170,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                 const result = await generateCharacterSheetData({
                     description, targetLanguage,
                     engineConfig: {
-                        engineId: selectedTextModel.engine,
+                        engineId: selectedTextModel.engine as 'gemini' | 'openrouter',
                         modelId: selectedTextModel.hf_id,
                         userApiKey: userProfile?.preferences?.openRouterApiKey,
                     },
@@ -271,6 +271,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                     exit={{ opacity: 0, x: -50 }}
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
                 >
+                    <Form {...form}>
                     <Card className="shadow-lg">
                         <CardContent className="p-4 sm:p-6">
                             {renderStep()}
@@ -287,6 +288,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                             ) : <div></div>}
                         </CardFooter>
                     </Card>
+                    </Form>
                 </motion.div>
             </AnimatePresence>
             {!authUser && <Alert className="mt-4"><AlertCircle className="h-4 w-4" /><AlertTitle>Heads up!</AlertTitle><AlertDescription>You need to be logged in to generate and save characters.</AlertDescription></Alert>}
@@ -421,5 +423,3 @@ function CompleteStep({ form, onSave, isSaving }: { form: any, onSave: () => voi
         </div>
     );
 }
-
-    
