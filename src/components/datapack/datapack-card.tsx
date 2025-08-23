@@ -17,7 +17,6 @@ interface DataPackCardProps {
 
 export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
     
-    // Stop propagation to prevent card's main link from firing when a tag is clicked.
     const handleTagClick = (e: React.MouseEvent) => {
         e.stopPropagation();
     }
@@ -45,7 +44,7 @@ export function DataPackCard({ pack, isCompact = false }: DataPackCardProps) {
                         )}>{pack.type}</Badge>
                     </div>
                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <CardTitle className="text-white font-bold drop-shadow-lg font-headline text-2xl">{pack.name}</CardTitle>
+                        <CardTitle className="text-white font-bold drop-shadow-lg font-headline text-lg sm:text-xl">{pack.name}</CardTitle>
                     </div>
                 </Link>
             </CardHeader>
