@@ -284,7 +284,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
   }
   const { 
       name, biography, imageUrl: imageDataUri, dataPackId, tags, 
-      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt, rarity
+      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt
   } = validation.data;
   
   const userId = await verifyAndGetUid();

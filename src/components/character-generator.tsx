@@ -91,7 +91,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   const { userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   
-  const promptEditorRef = useRef<{ format: () => void }>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
 
@@ -294,7 +293,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
           imageEngine: generationResult.imageEngine,
           wizardData: formData.wizardData,
           originalPrompt: generationResult.originalDescription,
-          rarity: undefined, // Rarity is now determined by the server
         });
 
         if (result.success && result.characterId) {
