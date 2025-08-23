@@ -96,23 +96,14 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
     resolver: zodResolver(generationFormSchema),
-    defaultValues: {
-      description: "",
-      physicalDescription: "",
-      tags: "",
-      targetLanguage: 'English',
-      aspectRatio: '1:1',
-      loraWeight: 0.75,
-      selectedModel: undefined,
-      selectedLora: null,
-    },
+    // Default values are set in useEffect once models are loaded to ensure validity
   });
 
   const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
       let finalPrompt = template.template || '';
       const allTags: string[] = [];
 
-      for (const slotId in wizardData) {
+       for (const slotId in wizardData) {
           const selectedValue = wizardData[slotId];
           if (!selectedValue) continue;
 
@@ -136,9 +127,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
 
           if (foundOption) {
               finalPrompt = finalPrompt.replace(`{${slotId}}`, foundOption.value);
-              if (foundOption.tags) {
-                  allTags.push(...foundOption.tags);
-              }
+              // The original `foundOption.tags` logic was flawed as Option doesn't have it.
+              // We'll rely on the value itself for tag generation if needed later.
           } else {
               finalPrompt = finalPrompt.replace(`{${slotId}}`, selectedValue);
           }
@@ -147,7 +137,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       finalPrompt = finalPrompt.replace(/\{[a-zA-Z_]+\}/g, '').replace(/,\s*,/g, ',').replace(/, ,/g,',').trim();
       
       generationForm.setValue('description', finalPrompt, { shouldValidate: true });
-      generationForm.setValue('tags', [...new Set(allTags)].join(', '));
       generationForm.setValue('wizardData', wizardData);
       
       setActivePack(pack);
@@ -171,10 +160,17 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             setAvailableModels(userModels);
             setAvailableLoras(userLoras);
             
-            const currentModel = generationForm.getValues('selectedModel');
-            if ((!currentModel || !userModels.find(m => m.id === currentModel.id)) && userModels.length > 0) {
-                generationForm.setValue('selectedModel', userModels[0]);
-            }
+            // **CRITICAL FIX**: Initialize form with valid default values *after* fetching data.
+            generationForm.reset({
+              description: "",
+              physicalDescription: "",
+              tags: "",
+              targetLanguage: 'English',
+              aspectRatio: '1:1',
+              loraWeight: 0.75,
+              selectedModel: userModels.length > 0 ? userModels[0] : undefined,
+              selectedLora: null,
+            });
             
             if (initialPackData) {
                 setInitialPack(initialPackData);
@@ -188,7 +184,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
         }
     }
     loadInitialData();
-  }, [authUser, toast, generationForm, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser, toast, searchParams]);
 
   useEffect(() => {
     if (generationResult?.physicalDescription) {
@@ -267,6 +264,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
 
         const result = await generateCharacterPortrait({
              physicalDescription: data.physicalDescription || generationResult.physicalDescription || '',
+             negativePrompt: '', // Added negative prompt
              aspectRatio: data.aspectRatio,
              selectedModel: data.selectedModel,
              selectedLora: data.selectedLora,
@@ -355,13 +353,27 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     setIsModelModalOpen(false);
   }
 
-  const isUiLoading = isGenerating || isSaving || authLoading || isLoadingModels;
+  const isUiLoading = isGenerating || isSaving || authLoading;
   const canInteract = !isUiLoading && !!authUser;
   const watchPhysicalDescription = generationForm.watch('physicalDescription');
   const selectedModel = generationForm.watch('selectedModel');
   const selectedLora = generationForm.watch('selectedLora');
   
   const loraCompatible = selectedModel?.engine === 'huggingface' || selectedModel?.engine === 'vertexai' || selectedModel?.engine === 'modelslab';
+  
+  // Render a loading state until the form is ready
+  if (isLoadingModels || !generationForm.formState.isDirty && !generationForm.getValues('selectedModel')) {
+      return (
+          <div className="grid gap-8 lg:grid-cols-5 items-start">
+              <div className="lg:col-span-2 space-y-4">
+                  <Skeleton className="h-[600px] w-full" />
+              </div>
+               <div className="lg:col-span-3 space-y-4">
+                   <Skeleton className="h-[600px] w-full" />
+              </div>
+          </div>
+      )
+  }
 
   return (
     <>

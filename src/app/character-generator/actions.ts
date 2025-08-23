@@ -12,7 +12,6 @@ import { getUserProfile } from '../actions/user';
 import type { GenerateCharacterSheetOutput } from '@/ai/flows/character-sheet/types';
 
 
-// NEW: Server-side prompt formatting function, moved from the client.
 const formatPromptTextOnServer = (text: string): string => {
     if (!text) return '';
     
@@ -34,7 +33,7 @@ const formatPromptTextOnServer = (text: string): string => {
 
 // Schema for the first step: generating the character sheet
 const GenerateSheetInputSchema = z.object({
-  description: z.string().min(10).max(4000),
+  description: z.string().min(1).max(4000),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   engineConfig: z.custom<TextEngineConfig>(),
 });
@@ -95,7 +94,6 @@ export async function generateCharacterSheetData(input: GenerateSheetInput): Pro
             userApiKey,
         };
         
-        // MODIFIED: Format the description on the server before sending to the AI
         const formattedDescription = formatPromptTextOnServer(description);
 
         const result = await generateCharacterSheet({ 
@@ -147,7 +145,6 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
     }
     
      try {
-        // The primary ID for execution (HF ID, Vertex Endpoint ID, ModelsLab Model ID)
         const executionModelId = selectedModel.engine === 'gemini' ? undefined : selectedModel.hf_id;
 
         const imageEngineConfig: ImageEngineConfig = {
@@ -155,7 +152,6 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
             modelId: executionModelId,
             aspectRatio,
             userApiKey: userApiKey,
-            // ComfyUI specific fields
             apiUrl: selectedModel.apiUrl,
             comfyWorkflow: selectedModel.comfyWorkflow,
         };
@@ -163,7 +159,6 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         let finalDescription = physicalDescription;
 
         if (selectedLora) {
-            // LoRA ID is different based on engine
             let loraIdentifier: string | undefined;
             if (selectedModel.engine === 'vertexai') {
                 loraIdentifier = selectedLora.vertexAiAlias || selectedLora.civitaiModelId;
@@ -206,3 +201,5 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         return { success: false, message: 'Failed to generate portrait.', error: message };
     }
 }
+
+    
