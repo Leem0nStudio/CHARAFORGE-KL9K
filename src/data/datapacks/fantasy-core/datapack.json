@@ -11,18 +11,15 @@
         "promptTemplates": [
             {
                 "name": "Epic Cinematic Portrait",
-                "template": "{camera}, epic cinematic portrait of a legendary {count} {raceClass}, {expression}. They wear ornate {torso_armor}, {shoulders_armor}, and {legs_armor}, wielding a powerful {hands_weapon}. Their {hair} flows in the wind. The background is a breathtaking {background}, with {effects} lighting.",
-                "tags": ["epic", "cinematic", "portrait", "legendary", "{gender}", "{race}", "{class}", "{expression}", "ornate {armor_torso}", "{armor_legs}", "wielding a powerful {weapon}", "{hair_style}", "{hair_color} hair", "flowing hair", "wind", "breathtaking {background_setting}", "{lighting}"]
+                "template": "{camera}, epic cinematic portrait of a legendary {count} {raceClass}, {expression}. They wear ornate {torso_armor}, {shoulders_armor}, and {legs_armor}, wielding a powerful {hands_weapon}. Their {hair} flows in the wind. The background is a breathtaking {background}, with {effects} lighting."
             },
             {
                 "name": "Grim Dark Style",
-                "template": "A grim, dark fantasy painting of a battle-hardened {count} {raceClass}, {expression}, wearing worn {torso_armor} and {legs_armor}. They carry a menacing {hands_weapon}, lurking in a {background} under {effects} lighting.",
-                "tags": ["grimdark", "dark fantasy", "oil painting (medium)", "battle-hardened", "{gender}", "{race}", "{class}", "{expression}", "worn {armor_torso}", "{armor_legs}", "menacing {weapon}", "lurking in {background_setting}", "{lighting}"]
+                "template": "A grim, dark fantasy painting of a battle-hardened {count} {raceClass}, {expression}, wearing worn {torso_armor} and {legs_armor}. They carry a menacing {hands_weapon}, lurking in a {background} under {effects} lighting."
             },
             {
                 "name": "Character Sheet Concept",
-                "template": "{camera}, full body character concept art of a {count} {raceClass} on a white background, clean detailed line art. They are equipped with a {hands_weapon}, and wearing {torso_armor} and {legs_armor}.",
-                "tags": ["full body", "character concept", "white background", "clean lineart", "detailed", "{gender}", "{race}", "{class}", "{weapon}", "{armor_torso}", "{armor_legs}"]
+                "template": "{camera}, full body character concept art of a {count} {raceClass} on a white background, clean detailed line art. They are equipped with a {hands_weapon}, and wearing {torso_armor} and {legs_armor}."
             }
         ],
         "characterProfileSchema": {
