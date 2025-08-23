@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { Badge } from './ui/badge';
 import { getSlotCategory } from '@/lib/app-config';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useAuth } from '@/hooks/use-auth';
 
 function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, isOpen: boolean, onClose: () => void }) {
     if (!pack) return null;
