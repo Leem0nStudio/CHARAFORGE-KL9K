@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useTransition, Suspense } from 'react';
@@ -166,12 +165,12 @@ function CharacterSelector({
     
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl h-[90vh] md:h-auto flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Add Characters to "{currentCast.name}"</DialogTitle>
                     <DialogDescription>Select the characters you want to include in this cast.</DialogDescription>
                 </DialogHeader>
-                 <ScrollArea className="max-h-[60vh] -mx-6 px-6 py-4">
+                 <ScrollArea className="flex-grow -mx-6 px-6 py-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {allCharacters.map(char => {
                             const isSelected = selectedIds.has(char.id);

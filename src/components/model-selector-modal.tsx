@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -41,7 +40,7 @@ export function ModelSelectorModal({ isOpen, onClose, onSelect, type, models, is
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+            <DialogContent className="max-w-4xl h-[90vh] md:h-[80vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle className="font-headline text-2xl">{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>

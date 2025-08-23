@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -67,7 +65,7 @@ function ProfilePageContent() {
        />
       <div className="max-w-7xl mx-auto">
         <Tabs defaultValue="profile" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 h-auto sm:h-10">
                 <TabsTrigger value="profile">Profile</TabsTrigger>
                 <TabsTrigger value="datapacks">DataPacks</TabsTrigger>
                 <TabsTrigger value="models">My Models</TabsTrigger>

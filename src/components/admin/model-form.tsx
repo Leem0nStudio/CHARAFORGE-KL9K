@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -375,5 +374,3 @@ export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: b
         </>
     );
 }
-
-    

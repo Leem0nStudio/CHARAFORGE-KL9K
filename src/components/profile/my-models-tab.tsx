@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -120,7 +119,7 @@ function ModelEditDialog({
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{trigger}</DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] flex flex-col">
                 <form onSubmit={handleFormSubmit}>
                     <DialogHeader>
                         <DialogTitle>{isEditing ? `Edit: ${model?.name}` : 'Add Custom Model'}</DialogTitle>
@@ -205,7 +204,7 @@ function ModelEditDialog({
     );
 }
 
-function ModelList({ models, type, onEdit }: { models: AiModel[], type: 'model' | 'lora', onEdit: (model: AiModel) => void }) {
+function ModelList({ models, type, onEdit }: { models: AiModel[], type: 'model' | 'lora', onEdit: () => void }) {
     const relevantModels = models.filter(m => m.type === type);
 
     if (relevantModels.length === 0) {
@@ -274,18 +273,18 @@ export function MyModelsTab() {
     
     return (
         <Card>
-            <CardHeader className="flex flex-row items-start justify-between">
+            <CardHeader className="flex flex-col sm:flex-row items-start justify-between gap-4">
                 <div>
                     <CardTitle>My Custom Models & LoRAs</CardTitle>
                     <CardDescription>Manage your privately added models. These are only visible to you.</CardDescription>
                 </div>
-                 <div className="flex gap-2">
-                    <Button asChild variant="outline">
+                 <div className="flex gap-2 w-full sm:w-auto">
+                    <Button asChild variant="outline" className="flex-1 sm:flex-initial">
                         <Link href="/models"><SlidersHorizontal/> Browse Catalog</Link>
                     </Button>
                     <ModelEditDialog 
                         onSuccess={fetchModels}
-                        trigger={<Button><PlusCircle /> Add New</Button>}
+                        trigger={<Button className="flex-1 sm:flex-initial"><PlusCircle /> Add New</Button>}
                     />
                  </div>
             </CardHeader>
@@ -300,7 +299,7 @@ export function MyModelsTab() {
                     </div>
                 ) : (
                     <Tabs defaultValue="lora" className="w-full">
-                        <TabsList>
+                        <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="lora">LoRAs</TabsTrigger>
                             <TabsTrigger value="model">Base Models</TabsTrigger>
                         </TabsList>

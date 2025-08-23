@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -439,7 +438,7 @@ export function DataPackSelectorModal({
     
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className={cn("max-h-[90vh] flex flex-col", wizardPack ? "sm:max-w-3xl" : "sm:max-w-4xl h-full sm:h-auto")}>
+            <DialogContent className={cn("max-h-[90vh] flex flex-col", wizardPack ? "sm:max-w-3xl" : "sm:max-w-4xl")}>
                 {wizardPack ? (
                     <WizardGrid pack={wizardPack} onWizardComplete={handleWizardComplete} onBack={() => setWizardPack(null)} />
                 ) : (
