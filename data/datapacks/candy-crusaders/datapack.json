@@ -1,0 +1,127 @@
+
+{
+    "name": "Candy Crusaders",
+    "author": "CharaForge AI",
+    "description": "Forge fierce warriors with a sweet twist! This pack combines kawaii, gothic, and candy-coated aesthetics for a unique heavy-metal-meets-sugar-rush style. Perfect for creating unforgettable, vibrant heroines.",
+    "type": "free",
+    "price": 0,
+    "tags": ["kawaii", "gothic", "candy", "warrior", "colorful", "fantasy"],
+    "isNsfw": false,
+    "schema": {
+        "promptTemplates": [
+            {
+                "name": "Full Battle Scene",
+                "template": "{count}, {raceClass}, {hair}, {skin}, {expression}, {torso_armor}, {shoulders_armor}, {hands_accessory}, {legs_clothing}, {feet_clothing}, wielding {hands_weapon}, {pose}, in a {background}, {art_style}, {masterpiece_quality}, {detail_level}, {lighting_style}"
+            },
+            {
+                "name": "Cinematic Portrait",
+                "template": "cinematic portrait of a {raceClass} with {hair} and {skin}, {expression}, wearing {torso_armor} and {head_accessory}, {lighting_style}, {art_style}, {masterpiece_quality}"
+            },
+            {
+                "name": "Gothic Candy Style",
+                "template": "gothic theme, {count}, {raceClass} with {hair}, {expression}, wearing {torso_clothing} and {legs_clothing}, holding a {hands_weapon}, in a {background}, {art_style}, {masterpiece_quality}"
+            },
+            {
+                "name": "Sticker/Concept Art",
+                "template": "character sticker, {count}, {raceClass}, {pose}, {art_style}, clean line art, white background, no shading, {masterpiece_quality}"
+            }
+        ],
+        "characterProfileSchema": {
+            "count": [
+                { "label": "A single girl", "value": "1girl, solo" }
+            ],
+            "raceClass": [
+                { "label": "Human Knight", "value": "human knight" },
+                { "label": "Candy Barbarian", "value": "candy barbarian" },
+                { "label": "Sugar-Rush Sorceress", "value": "sugar-rush sorceress" },
+                { "label": "Gummy Gladiator", "value": "gummy gladiator" }
+            ],
+            "hair": [
+                { "label": "Pastel Rainbow Pigtails", "value": "hair is a cascade of pastel rainbow sherbet colors (pink, orange, yellow, lime green) styled in voluminous pigtails with licorice-whip ties" },
+                { "label": "Cotton Candy Afro", "value": "hair like a giant puff of pink and blue cotton candy" },
+                { "label": "Sour-Stripe Mohawk", "value": "a mohawk made of vibrant, sour candy stripes" },
+                { "label": "Blue Raspberry Braids", "value": "long, thick braids the color of blue raspberry slush" }
+            ],
+            "skin": [
+                { "label": "Porcelain with Sugar-Skull Paint", "value": "skin like polished porcelain, with tiny, cute sugar-skull face paint details" },
+                { "label": "Chocolate Golem Skin", "value": "skin appears to be made of smooth, dark chocolate" },
+                { "label": "Gummy Translucent Skin", "value": "translucent gummy skin with sparkles inside" }
+            ],
+            "expression": [
+                { "label": "Determined but Sweet Smile", "value": "a determined but sweet smile" },
+                { "label": "Mischievous Grin", "value": "a mischievous grin" },
+                { "label": "Fierce Battle Cry", "value": "fierce battle cry, open mouth" },
+                { "label": "Stoic and Cool", "value": "stoic expression" }
+            ],
+            "torso": {
+                "armor": [
+                    { "label": "Hard Candy Shell Armor", "value": "armor resembling brightly colored, glossy hard candy shells (pinks, yellows, blues) over a black, form-fitting undersuit with subtle glitter" },
+                    { "label": "Waffle Cone Breastplate", "value": "a breastplate shaped like a sturdy waffle cone" },
+                    { "label": "Rock Candy Armor", "value": "jagged, crystalline armor made of rock candy" }
+                ],
+                "clothing": [
+                    { "label": "Gothic Lolita Dress", "value": "a black gothic lolita dress with pastel pink frills" }
+                ]
+            },
+            "shoulders": {
+                "armor": [
+                    { "label": "Gummy Bear Pauldrons", "value": "pauldrons shaped like gummy bears with tiny silver spikes" },
+                    { "label": "Jawbreaker Pauldrons", "value": "round, layered pauldrons resembling giant jawbreakers" },
+                    { "label": "Licorice-Whip Spaulders", "value": "spaulders made of coiled black licorice whips" }
+                ]
+            },
+            "hands": {
+                "accessory": [
+                    { "label": "Asymmetrical Gauntlets", "value": "asymmetrical gauntlets, one pastel pink with sharp edges, the other black studded leather" },
+                    { "label": "Cookie-Plate Gauntlets", "value": "gauntlets that look like frosted sugar cookies" }
+                ],
+                "weapon": [
+                    { "label": "Giant Lollipop Warhammer", "value": "a giant warhammer shaped like an oversized, swirling lollipop" },
+                    { "label": "Candy Cane Scythe", "value": "a massive scythe with a red-and-white striped candy cane blade" },
+                    { "label": "Chocolate Bar Greatsword", "value": "a greatsword that looks like a giant bar of dark chocolate with a sharp edge" }
+                ]
+            },
+            "legs": {
+                "clothing": [
+                    { "label": "Ruffled Rainbow Tulle Skirt", "value": "a short, ruffled skirt made of layered rainbow tulle, over striped black and neon green tights" },
+                    { "label": "Cupcake Wrapper Skirt", "value": "a short skirt resembling a colorful cupcake wrapper" },
+                    { "label": "Chocolate-Dipped Leggings", "value": "leggings that look like they've been dipped in molten chocolate" }
+                ]
+            },
+            "feet": {
+                "clothing": [
+                    { "label": "Chunky Platform Combat Boots", "value": "chunky platform combat boots with candy-colored buckles" },
+                    { "label": "Gumball-Studded Boots", "value": "boots studded with hard, colorful gumballs" }
+                ]
+            },
+            "pose": [
+                { "label": "Powerful Battle Pose", "value": "powerful aura, crackling with energy, battle pose, one leg forward, wide legs stance" },
+                { "label": "Heroic Leap", "value": "dynamic action pose, leaping towards the viewer" },
+                { "label": "Resting on Weapon", "value": "leaning casually on her giant weapon" }
+            ],
+            "background": [
+                { "label": "Menacing Circus Battlefield", "value": "a whimsical yet slightly menacing circus battlefield, with circus tents with sharp teeth, and candy trees with thorny branches" },
+                { "label": "Rock Candy Mountain", "value": "a mountain range made of giant, glittering rock candy crystals" },
+                { "label": "Gingerbread Castle Siege", "value": "the siege of a gingerbread castle with frosting walls" }
+            ],
+            "art_style": [
+                { "label": "Fantasy Heavy Metal Kawaii", "value": "fantasy heavy metal gothic kawaii candy-coated warrior aesthetic" },
+                { "label": "Official Game Art", "value": "official art, game CG, cinematic" },
+                { "label": "Detailed Anime Style", "value": "anime style, detailed illustration" }
+            ],
+            "masterpiece_quality": [
+                { "label": "Masterpiece", "value": "masterpiece, best quality" },
+                { "label": "High Quality", "value": "high quality" }
+            ],
+            "detail_level": [
+                { "label": "Very Detailed", "value": "very detailed" },
+                { "label": "Ultra-Detailed", "value": "ultra-detailed" }
+            ],
+            "lighting_style": [
+                { "label": "Dramatic Lighting", "value": "dramatic lighting" },
+                { "label": "Vibrant Neon Glow", "value": "vibrant neon glow, cinematic lighting" },
+                { "label": "Eerie Backlight", "value": "eerie backlight" }
+            ]
+        }
+    }
+}
