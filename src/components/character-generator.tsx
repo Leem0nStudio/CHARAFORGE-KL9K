@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback, useTransition, useRef } from "react";
@@ -65,7 +64,6 @@ const generationFormSchema = z.object({
   }),
   selectedLora: z.custom<AiModel>().optional().nullable(),
   loraWeight: z.number().min(0).max(2).optional(),
-  rarity: z.number().min(1).max(5).default(1),
 });
 
 export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null }) {
@@ -94,6 +92,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   const router = useRouter();
   
   const promptEditorRef = useRef<{ format: () => void }>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
     resolver: zodResolver(generationFormSchema),
@@ -106,7 +106,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       loraWeight: 0.75,
       selectedModel: undefined,
       selectedLora: null,
-      rarity: 1,
     },
   });
 
@@ -194,10 +193,13 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       return;
     }
     
-    promptEditorRef.current?.format();
-
     setGenerationResult(null);
     setGenerationError(null);
+
+    // Scroll to results on generation start
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
 
     startGenerationTransition(async () => {
         let userApiKey: string | undefined;
@@ -292,7 +294,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
           imageEngine: generationResult.imageEngine,
           wizardData: formData.wizardData,
           originalPrompt: generationResult.originalDescription,
-          rarity: formData.rarity,
+          rarity: undefined, // Rarity is now determined by the server
         });
 
         if (result.success && result.characterId) {
@@ -433,7 +435,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                                     </TabsContent>
                                      <TabsContent value="text" className="mt-2">
                                         <PromptEditor 
-                                          ref={promptEditorRef}
                                           value={field.value}
                                           onChange={field.onChange}
                                           disabled={!canInteract}
@@ -537,7 +538,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
         </Card>
       </div>
 
-      <div className="lg:col-span-3">
+      <div className="lg:col-span-3" ref={resultsRef}>
         <Card className="min-h-full shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline text-3xl">2. Generated Character</CardTitle>

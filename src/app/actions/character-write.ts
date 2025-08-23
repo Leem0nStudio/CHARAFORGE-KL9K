@@ -302,14 +302,11 @@ export async function saveCharacter(input: SaveCharacterInput) {
     
     const isPlayable = !!archetype;
     let finalStats: RpgAttributes['stats'] = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
-    let finalRarity: Character['core']['rarity'] = rarity || 1;
+    let finalRarity: Character['core']['rarity'] = 1;
 
     if (archetype) {
         finalStats = generateBalancedStats(archetype);
-        // If no rarity is provided, calculate it. Otherwise, use the provided one.
-        if (!rarity) {
-            finalRarity = calculateRarity(finalStats);
-        }
+        finalRarity = calculateRarity(finalStats);
     }
     
     await adminDb.runTransaction(async (transaction) => {

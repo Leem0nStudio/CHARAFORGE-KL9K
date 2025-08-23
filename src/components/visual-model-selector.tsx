@@ -44,13 +44,11 @@ export function VisualModelSelector({ label, model, onOpen, disabled, isLoading 
                         <div className="flex items-center justify-center h-full text-muted-foreground"><Bot /></div>
                     )}
                 </div>
-                <div className="text-left">
-                    <p className="font-semibold text-card-foreground">{model?.name || 'Select...'}</p>
+                <div className="text-left overflow-hidden">
+                    <p className="font-semibold text-card-foreground truncate">{model?.name || 'Select...'}</p>
                     <p className="text-xs text-muted-foreground truncate">{model?.hf_id || 'Click to choose a model'}</p>
                 </div>
             </Button>
         </div>
     )
 }
-
-    
