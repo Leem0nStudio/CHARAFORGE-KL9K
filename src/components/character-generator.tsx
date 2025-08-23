@@ -120,10 +120,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
           let foundOption: Option | undefined = undefined;
 
           if (Array.isArray(slotConfig)) {
-              // Handle simple slots
               foundOption = slotConfig.find(o => o.value === selectedValue);
           } else if (typeof slotConfig === 'object' && slotConfig !== null) {
-              // Handle nested equipment slots
               for (const subCategory in slotConfig) {
                   const options = (slotConfig as any)[subCategory] as Option[];
                   if (Array.isArray(options)) {
@@ -146,7 +144,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
           }
       }
 
-      // Clean up any remaining placeholders
       finalPrompt = finalPrompt.replace(/\{[a-zA-Z_]+\}/g, '').replace(/,\s*,/g, ',').replace(/, ,/g,',').trim();
       
       generationForm.setValue('description', finalPrompt, { shouldValidate: true });
@@ -218,7 +215,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     setGenerationResult(null);
     setGenerationError(null);
 
-    // Scroll to results on generation start
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
@@ -634,7 +630,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                                             className="h-32 text-xs" 
                                         />
                                      </div>
-                                    <Button onClick={onGeneratePortrait} disabled={isGenerating}>
+                                    <Button type="button" onClick={onGeneratePortrait} disabled={isGenerating}>
                                          <Wand2 className="mr-2" /> Generate Portrait
                                     </Button>
                                 </div>
@@ -692,3 +688,5 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     </>
   );
 }
+
+    
