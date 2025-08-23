@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback, useTransition, useRef } from "react";
@@ -43,14 +44,14 @@ import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerationResult } from "@/types/generation";
 import { PromptEditor } from "./prompt-editor";
 import { PromptTagInput } from './prompt-tag-input';
-import type { DataPack, PromptTemplate, Option, Slot } from '@/types/datapack';
+import type { DataPack, PromptTemplate, Option, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
 import { textModels } from "@/lib/app-config";
 import type { User as FirebaseUser } from "firebase/auth";
 
 
 const generationFormSchema = z.object({
-  description: z.string().min(10, {
-    message: "Please enter a more detailed description or use a datapack.",
+  description: z.string().min(1, {
+    message: "A description is required to forge a character.",
   }).max(4000, {
     message: "Description must not be longer than 4000 characters."
   }),
@@ -64,6 +65,7 @@ const generationFormSchema = z.object({
   }),
   selectedLora: z.custom<AiModel>().optional().nullable(),
   loraWeight: z.number().min(0).max(2).optional(),
+  rarity: z.number().min(1).max(5).default(1),
 });
 
 export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null }) {
@@ -85,13 +87,13 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   const [selectedTextModel, setSelectedTextModel] = useState<AiModel>(textModels[0]);
   
   const [activePack, setActivePack] = useState<DataPack | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
   
   const { toast } = useToast();
   const { userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   
-  // The ref is no longer needed as the component is simpler.
-  // const promptEditorRef = useRef<{ format: () => void }>(null);
+  const promptEditorRef = useRef<{ format: () => void }>(null);
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
     resolver: zodResolver(generationFormSchema),
@@ -104,22 +106,34 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       loraWeight: 0.75,
       selectedModel: undefined,
       selectedLora: null,
+      rarity: 1,
     },
   });
 
-  const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, finalPrompt: string) => {
-    generationForm.setValue('description', finalPrompt, { shouldValidate: true });
-    generationForm.setValue('wizardData', wizardData);
+  const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
+    let finalPrompt = template.template || '';
     
+    for (const slotId in wizardData) {
+        const selectedValue = wizardData[slotId];
+        const slot = (pack.schema.characterProfileSchema as any)[slotId];
+        const option = slot?.find((o: any) => o.value === selectedValue);
+        
+        const replacementValue = option?.value || selectedValue || '';
+        finalPrompt = finalPrompt.replace(`{${slotId}}`, replacementValue);
+    }
+
     const finalTags = Object.values(wizardData)
-      .map(value => (pack.schema.slots ?? []).flatMap(s => s.options ?? []).find(o => o.value === value)?.tags ?? [value])
+      .map(value => (Object.values(pack.schema.characterProfileSchema).flat() as Option[]).find(o => o.value === value)?.tags ?? [value])
       .flat()
       .filter(Boolean)
       .join(', ');
 
+    generationForm.setValue('description', finalPrompt, { shouldValidate: true });
     generationForm.setValue('tags', finalTags);
+    generationForm.setValue('wizardData', wizardData);
     
     setActivePack(pack);
+    setSelectedTemplate(template);
     setIsPackModalOpen(false);
 }, [generationForm]);
   
@@ -180,8 +194,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       return;
     }
     
-    // No longer need to call format on the editor ref
-    // promptEditorRef.current?.format();
+    promptEditorRef.current?.format();
 
     setGenerationResult(null);
     setGenerationError(null);
@@ -198,7 +211,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             userApiKey: userApiKey,
       };
 
-      // The raw description is sent to the server for formatting
       const result = await generateCharacterSheetData({ 
           description: data.description,
           targetLanguage: data.targetLanguage,
@@ -280,6 +292,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
           imageEngine: generationResult.imageEngine,
           wizardData: formData.wizardData,
           originalPrompt: generationResult.originalDescription,
+          rarity: formData.rarity,
         });
 
         if (result.success && result.characterId) {
@@ -366,7 +379,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             <Form {...generationForm}>
               <form onSubmit={generationForm.handleSubmit(onGenerateSheet)} className="space-y-6">
                 
-                <Tabs defaultValue="prompt" className="w-full">
+                <Tabs defaultValue="prompt">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="prompt">Prompt</TabsTrigger>
                         <TabsTrigger value="settings">AI Settings</TabsTrigger>
@@ -380,34 +393,65 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                               <div className="flex justify-between items-center mb-2">
                                 <FormLabel>Character Concept</FormLabel>
                                 <div className="flex items-center gap-2">
-                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsTagModalOpen(true)}>
-                                        <Tags className="mr-2 h-3 w-3"/> Assistant
-                                    </Button>
-                                    <Button type="button" variant="secondary" size="sm" onClick={() => setIsPackModalOpen(true)}>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsPackModalOpen(true)}>
                                         <Package className="mr-2 h-3 w-3"/> Use DataPack
                                     </Button>
                                 </div>
                               </div>
-                               <Tabs defaultValue="visual" className="w-full">
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual Editor</TabsTrigger>
-                                    <TabsTrigger value="text"><Braces className="mr-2"/>Text Editor</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="visual" className="mt-2 bg-input rounded-xl p-3">
-                                     <PromptTagInput
-                                        value={field.value}
-                                        onChange={field.onChange}
-                                        disabled={!canInteract}
-                                    />
-                                </TabsContent>
-                                 <TabsContent value="text" className="mt-2">
-                                    <PromptEditor 
-                                      value={field.value}
-                                      onChange={field.onChange}
-                                      disabled={!canInteract}
-                                    />
-                                </TabsContent>
-                            </Tabs>
+                               {activePack && selectedTemplate && (
+                                    <Select 
+                                      onValueChange={(value) => {
+                                        const newTemplate = activePack.schema.promptTemplates.find(t => t.name === value);
+                                        if (newTemplate) {
+                                            handleWizardDataChange(generationForm.getValues('wizardData') || {}, activePack, newTemplate);
+                                        }
+                                      }}
+                                      defaultValue={selectedTemplate.name}
+                                    >
+                                        <SelectTrigger className="mb-2">
+                                            <SelectValue placeholder="Select a prompt template..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {activePack.schema.promptTemplates.map(t => (
+                                                <SelectItem key={t.name} value={t.name}>{t.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                              <FormControl>
+                                  <Tabs defaultValue="visual" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual Editor</TabsTrigger>
+                                        <TabsTrigger value="text"><Braces className="mr-2"/>Text Editor</TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent value="visual" className="mt-2">
+                                         <PromptTagInput
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            disabled={!canInteract}
+                                        />
+                                    </TabsContent>
+                                     <TabsContent value="text" className="mt-2">
+                                        <PromptEditor 
+                                          ref={promptEditorRef}
+                                          value={field.value}
+                                          onChange={field.onChange}
+                                          disabled={!canInteract}
+                                        />
+                                    </TabsContent>
+                                </Tabs>
+                              </FormControl>
+                               <div className="flex items-center justify-between mt-2">
+                                {activePack ? (
+                                  <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
+                                    <Package className="h-3 w-3" />
+                                    Using: {activePack.name}
+                                  </Badge>
+                                ) : <div />}
+                                <Button type="button" variant="link" size="sm" onClick={() => setIsTagModalOpen(true)} className="px-1">
+                                    <Tags className="mr-2 h-3 w-3"/> Tag Assistant
+                                </Button>
+                               </div>
                               <FormMessage />
                             </FormItem>
                           )}
