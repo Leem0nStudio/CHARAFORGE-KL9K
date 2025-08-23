@@ -376,9 +376,14 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                             <FormItem>
                               <div className="flex justify-between items-center mb-2">
                                 <FormLabel>Character Concept</FormLabel>
-                                <Button type="button" variant="secondary" size="sm" onClick={() => setIsPackModalOpen(true)}>
-                                    <Package className="mr-2 h-4 w-4"/> Use DataPack
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsTagModalOpen(true)}>
+                                        <Tags className="mr-2 h-3 w-3"/> Assistant
+                                    </Button>
+                                    <Button type="button" variant="secondary" size="sm" onClick={() => setIsPackModalOpen(true)}>
+                                        <Package className="mr-2 h-3 w-3"/> Use DataPack
+                                    </Button>
+                                </div>
                               </div>
                                <Tabs defaultValue="visual" className="w-full">
                                 <TabsList className="grid w-full grid-cols-2">
