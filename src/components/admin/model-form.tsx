@@ -164,7 +164,8 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                         )}
                         
                         <ScrollArea className="flex-grow mt-4">
-                        <TabsContent value="manual" className="pr-4">
+                        <div className="pr-4">
+                        <TabsContent value="manual">
                              <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2 col-span-2">
                                     <Label>Name</Label>
@@ -212,7 +213,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                      <div className="space-y-2 col-span-2">
                                         <Label>ComfyUI Server URL</Label>
                                         <Input {...form.register('apiUrl')} placeholder="http://your-server-ip:8188/prompt" />
-                                        <Link href="/app/TUTORIAL_KAGGLE_COMFYUI.md" target="_blank" className="text-xs text-primary underline flex items-center gap-1"><Info className="h-3 w-3" /> How to get this? (Kaggle Guide)</Link>
+                                        <Link href="/guides/comfyui" target="_blank" className="text-xs text-primary underline flex items-center gap-1"><Info className="h-3 w-3" /> How to get this? (Kaggle Guide)</Link>
                                      </div>
                                 )}
                                 
@@ -285,7 +286,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                         </TabsContent>
                         
                         {!isEditing && (
-                             <TabsContent value="import" className="pr-4">
+                             <TabsContent value="import">
                                 <div className="space-y-4">
                                      <div className="space-y-2">
                                         <Label>Import Source</Label>
@@ -313,6 +314,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                 </div>
                              </TabsContent>
                         )}
+                        </div>
                         </ScrollArea>
                     </Tabs>
 
@@ -373,3 +375,5 @@ export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: b
         </>
     );
 }
+
+    
