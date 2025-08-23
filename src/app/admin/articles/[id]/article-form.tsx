@@ -13,9 +13,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
-import type { Article, UpsertArticle } from '@/types/article';
+import type { Article } from '@/types/article';
 import { UpsertArticleSchema } from '@/types/article';
 import { upsertArticle } from '@/app/actions/articles';
+
+// Re-exporting the type for the page component to use
+export type { Article };
 
 const slugify = (text: string) =>
   text
@@ -28,29 +31,29 @@ const slugify = (text: string) =>
     .replace(/[^\w-]+/g, '')
     .replace(/--+/g, '-');
 
+// The form now uses the base Article type, not UpsertArticle, for its props
 export function ArticleForm({ article }: { article: Article | null }) {
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm<UpsertArticle>({
+  const form = useForm<Omit<Article, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'author'>>({
     resolver: zodResolver(UpsertArticleSchema),
     defaultValues: {
       title: article?.title || '',
-      author: article?.author || 'CharaForge Team',
       slug: article?.slug || '',
       content: article?.content || '',
       status: article?.status || 'draft',
     },
   });
 
-  const onSubmit = (values: UpsertArticle) => {
+  const onSubmit = (values: Omit<Article, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'author'>) => {
     startTransition(async () => {
       const result = await upsertArticle({ id: article?.id, ...values });
       if (result.success) {
         toast({ title: 'Success!', description: result.message });
         if (!article?.id && result.articleId) {
-          router.push(`/admin/articles/${result.articleId}`);
+          router.push(`/profile/articles`);
         }
         router.refresh();
       } else {
@@ -85,11 +88,6 @@ export function ArticleForm({ article }: { article: Article | null }) {
               <Label htmlFor="slug">Slug (URL)</Label>
               <Input id="slug" {...form.register('slug')} />
               {form.formState.errors.slug && <p className="text-destructive text-sm">{form.formState.errors.slug.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="author">Author</Label>
-              <Input id="author" {...form.register('author')} />
-              {form.formState.errors.author && <p className="text-destructive text-sm">{form.formState.errors.author.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>

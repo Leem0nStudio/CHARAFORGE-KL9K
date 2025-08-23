@@ -1,6 +1,6 @@
 
 import Link from 'next/link';
-import { getArticles } from "@/app/actions/articles";
+import { getAllArticlesForAdmin } from "@/app/actions/articles";
 import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -9,14 +9,14 @@ import { PlusCircle } from "lucide-react";
 import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 
 export default async function ArticlesAdminPage() {
-  const articles = await getArticles();
+  const articles = await getAllArticlesForAdmin();
 
   return (
     <AdminPageLayout
-      title="Articles"
+      title="All Articles"
       actions={
         <Button asChild>
-          <Link href="/admin/articles/new">
+          <Link href="/profile/articles/new">
             <PlusCircle className="mr-2 h-4 w-4" /> New Article
           </Link>
         </Button>
@@ -27,6 +27,7 @@ export default async function ArticlesAdminPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Title</TableHead>
+              <TableHead>Author</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created At</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -36,6 +37,7 @@ export default async function ArticlesAdminPage() {
             {articles.map((article) => (
               <TableRow key={article.id}>
                 <TableCell className="font-medium">{article.title}</TableCell>
+                <TableCell>{article.author}</TableCell>
                 <TableCell>
                   <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
                     {article.status}
@@ -44,7 +46,7 @@ export default async function ArticlesAdminPage() {
                 <TableCell>{format(new Date(article.createdAt), "PPP")}</TableCell>
                 <TableCell className="text-right">
                   <Button asChild variant="outline" size="sm">
-                    <Link href={`/admin/articles/${article.id}`}>Edit</Link>
+                    <Link href={`/profile/articles/${article.id}`}>Edit</Link>
                   </Button>
                 </TableCell>
               </TableRow>

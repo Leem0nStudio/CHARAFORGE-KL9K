@@ -7,6 +7,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { Article, UpsertArticle } from '@/types/article';
 import { UpsertArticleSchema } from '@/types/article';
 import { verifyAndGetUid } from '@/lib/auth/server';
+import { getUserProfile } from './user';
 
 type ActionResponse = {
     success: boolean;
@@ -27,7 +28,8 @@ const toArticleObject = (doc: FirebaseFirestore.DocumentSnapshot): Article => {
 };
 
 export async function upsertArticle(data: UpsertArticle): Promise<ActionResponse> {
-    await verifyAndGetUid();
+    const uid = await verifyAndGetUid();
+    const user = await getUserProfile(uid);
 
     const validation = UpsertArticleSchema.safeParse(data);
     if (!validation.success) {
@@ -40,10 +42,19 @@ export async function upsertArticle(data: UpsertArticle): Promise<ActionResponse
     try {
         const docRef = id ? adminDb.collection('articles').doc(id) : adminDb.collection('articles').doc();
         
+        if (id) {
+            const existingDoc = await docRef.get();
+            if (!existingDoc.exists || existingDoc.data()?.userId !== uid) {
+                 return { success: false, message: 'Permission denied.' };
+            }
+        }
+        
         const docData = {
             ...rest,
             content,
             excerpt,
+            author: user?.displayName || 'Anonymous',
+            userId: uid,
             updatedAt: FieldValue.serverTimestamp(),
         };
 
@@ -54,6 +65,7 @@ export async function upsertArticle(data: UpsertArticle): Promise<ActionResponse
         }
 
         revalidatePath('/admin/articles');
+        revalidatePath('/profile/articles');
         revalidatePath(`/articles`);
         revalidatePath(`/articles/${docData.slug}`);
 
@@ -65,10 +77,16 @@ export async function upsertArticle(data: UpsertArticle): Promise<ActionResponse
 }
 
 export async function deleteArticle(id: string): Promise<ActionResponse> {
-    await verifyAndGetUid();
+    const uid = await verifyAndGetUid();
     try {
-        await adminDb.collection('articles').doc(id).delete();
+        const docRef = adminDb.collection('articles').doc(id);
+        const doc = await docRef.get();
+        if (!doc.exists || doc.data()?.userId !== uid) {
+             return { success: false, message: 'Permission denied.' };
+        }
+        await docRef.delete();
         revalidatePath('/admin/articles');
+        revalidatePath('/profile/articles');
         revalidatePath('/articles');
         return { success: true, message: 'Article deleted successfully.' };
     } catch (error) {
@@ -77,8 +95,11 @@ export async function deleteArticle(id: string): Promise<ActionResponse> {
     }
 }
 
-export async function getArticles(): Promise<Article[]> {
-    const snapshot = await adminDb.collection('articles').orderBy('createdAt', 'desc').get();
+export async function getArticlesForUser(userId: string): Promise<Article[]> {
+    const snapshot = await adminDb.collection('articles')
+      .where('userId', '==', userId)
+      .orderBy('createdAt', 'desc')
+      .get();
     return snapshot.docs.map(toArticleObject);
 }
 
@@ -88,8 +109,6 @@ export async function getArticle(id: string): Promise<Article | null> {
 }
 
 export async function getPublishedArticles(): Promise<Article[]> {
-    // Fetch all articles first, then filter and sort on the server.
-    // This avoids the need for a composite index in Firestore for this specific query.
     const snapshot = await adminDb.collection('articles').get();
     const articles = snapshot.docs.map(toArticleObject);
     
@@ -109,4 +128,9 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
         return null;
     }
     return toArticleObject(snapshot.docs[0]);
+}
+
+export async function getAllArticlesForAdmin(): Promise<Article[]> {
+    const snapshot = await adminDb.collection('articles').orderBy('createdAt', 'desc').get();
+    return snapshot.docs.map(toArticleObject);
 }

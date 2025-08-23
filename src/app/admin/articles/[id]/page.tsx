@@ -1,21 +1,17 @@
 
-import { getArticle } from '@/app/actions/articles';
-import { AdminPageLayout } from '@/components/admin/admin-page-layout';
-import { ArticleForm } from './article-form';
+'use client';
 
-interface EditArticlePageProps {
-  params: { id: string };
-}
+// This page is no longer used for user-facing editing.
+// It will now redirect to the new user profile articles page.
+// The admin will also use this new page for a consistent editing experience.
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default async function EditArticlePage({ params }: EditArticlePageProps) {
-  const { id } = params;
-  const isNew = id === 'new';
-  const article = isNew ? null : await getArticle(id);
-  const title = isNew ? 'Create Article' : `Edit: ${article?.title || 'Article'}`;
+export default function LegacyEditArticlePage() {
+    const router = useRouter();
+    useEffect(() => {
+        router.replace('/profile/articles');
+    }, [router]);
 
-  return (
-    <AdminPageLayout title={title}>
-      <ArticleForm article={article} />
-    </AdminPageLayout>
-  );
+    return null;
 }
