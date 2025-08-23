@@ -60,6 +60,7 @@ export const mainNavItems: NavItem[] = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/datapacks', label: 'DataPacks', icon: Package },
     { href: '/character-generator', label: 'Forge', icon: Swords, isPrimary: true },
+    { href: '/articles', label: 'Articles', icon: Newspaper },
     { href: '/arena', label: 'Arena', icon: Shield, requiresAuth: true },
     { href: '/profile', label: 'Profile', icon: UserCircle, requiresAuth: true },
 ];
