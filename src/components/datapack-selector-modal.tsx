@@ -291,8 +291,15 @@ function PackGallery({
     const [isLoading, setIsLoading] = useState(true);
     const [packs, setPacks] = useState<DataPack[]>([]);
     const [infoPack, setInfoPack] = useState<DataPack | null>(null);
+    const { authUser } = useAuth();
 
     useEffect(() => {
+        // Only fetch if the user is authenticated.
+        if (!authUser) {
+            setIsLoading(false);
+            return;
+        }
+
         const loadPacks = async () => {
             setIsLoading(true);
             try {
@@ -305,7 +312,7 @@ function PackGallery({
             }
         };
         loadPacks();
-    }, []);
+    }, [authUser]);
 
     if (isLoading) {
         return (

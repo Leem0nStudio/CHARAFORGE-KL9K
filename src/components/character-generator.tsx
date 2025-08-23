@@ -26,14 +26,14 @@ import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/character-generator/actions";
 import { getModels } from "@/app/actions/ai-models";
 import { getDataPackForAdmin } from "@/app/actions/datapacks";
-import { DataPackSelectorModal } from "./datapack-selector-modal";
+import { DataPackSelectorModal } from "@/components/datapack-selector-modal";
 import { cn } from "@/lib/utils";
-import { TagAssistantModal } from "./tag-assistant-modal";
-import { ModelSelectorModal } from './model-selector-modal';
+import { TagAssistantModal } from "@/components/tag-assistant-modal";
+import { ModelSelectorModal } from '@/components/model-selector-modal';
 import type { AiModel } from '@/types/ai-model';
-import { VisualModelSelector } from "./visual-model-selector";
+import { VisualModelSelector } from "@/components/visual-model-selector";
 import type { GenerationResult } from "@/types/generation";
-import { PromptEditor } from "./prompt-editor";
+import { PromptEditor } from "@/components/prompt-editor";
 import type { DataPack, PromptTemplate, Option, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
 import { textModels } from "@/lib/app-config";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -44,9 +44,9 @@ type GenerationStep = 'concept' | 'details' | 'portrait' | 'complete';
 const stepSchema = z.object({
   // Step 1: Concept
   description: z.string().min(1, { message: "A description is required to start." }).max(4000),
-  wizardData: z.record(z.string()).optional(),
+  wizardData: z.record(z.union([z.string(), z.record(z.string())])).optional(),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
-  selectedTextModel: z.custom<AiModel>(),
+  selectedTextModel: z.custom<AiModel>().optional(),
   
   // Step 2: Details & Portrait Prompt
   name: z.string().optional(),
@@ -99,6 +99,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             selectedTextModel: textModels[0],
             aspectRatio: '1:1',
             loraWeight: 0.75,
+            selectedModel: undefined,
         },
     });
 
@@ -113,7 +114,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
 
             if (Array.isArray(slotConfig)) {
                 foundOption = slotConfig.find(o => o.value === selectedValue);
-            } else if (typeof slotConfig === 'object' && slotConfig !== null) {
+            } else if (typeof slotConfig === 'object' && slotConfig !== null && !Array.isArray(slotConfig)) {
                 for (const subCategory in slotConfig) {
                     const options = (slotConfig as any)[subCategory] as Option[];
                     if (Array.isArray(options)) {
@@ -145,7 +146,9 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                 
                 setAvailableModels(userModels);
                 setAvailableLoras(userLoras);
-                form.setValue('selectedModel', userModels[0]);
+                if (userModels.length > 0) {
+                    form.setValue('selectedModel', userModels[0]);
+                }
                 
                 if (packIdFromUrl) {
                     const packData = await getDataPackForAdmin(packIdFromUrl);
@@ -179,8 +182,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                 const result = await generateCharacterSheetData({
                     description, targetLanguage,
                     engineConfig: {
-                        engineId: selectedTextModel.engine as 'gemini' | 'openrouter',
-                        modelId: selectedTextModel.hf_id,
+                        engineId: (selectedTextModel?.engine || 'gemini') as 'gemini' | 'openrouter',
+                        modelId: selectedTextModel?.hf_id || 'googleai/gemini-1.5-flash-latest',
                         userApiKey: userProfile?.preferences?.openRouterApiKey,
                     },
                 });
@@ -192,7 +195,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                     form.setValue('equipment', result.data.equipment);
                     form.setValue('physicalDescription', result.data.physicalDescription);
                     form.setValue('originalDescription', description);
-                    form.setValue('textEngine', selectedTextModel.engine);
+                    form.setValue('textEngine', selectedTextModel?.engine);
                     setCurrentStep('details');
                     toast({ title: "Details Forged!", description: "Review the generated text, then create the portrait." });
                 } else {
@@ -342,9 +345,9 @@ function ConceptStep({ form, setIsPackModalOpen, activePack, selectedTemplate, h
               control={form.control} name="description"
               render={({ field }) => (
                 <FormItem>
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
                         <FormLabel>Character Prompt</FormLabel>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                             <Button type="button" variant="outline" size="sm" onClick={() => setIsPackModalOpen(true)}>
                                 <Package className="mr-2 h-3 w-3"/> Use DataPack
                             </Button>
