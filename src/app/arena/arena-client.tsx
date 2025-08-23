@@ -10,10 +10,9 @@ import { BattleView } from '@/components/arena/battle-view';
 
 interface ArenaClientProps {
     userCharacters: Character[];
-    opponents: Character[];
 }
 
-export function ArenaClient({ userCharacters, opponents }: ArenaClientProps) {
+export function ArenaClient({ userCharacters }: ArenaClientProps) {
     const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
 
     return (
@@ -48,7 +47,6 @@ export function ArenaClient({ userCharacters, opponents }: ArenaClientProps) {
                         >
                             <BattleView
                                 playerCharacter={selectedCharacter}
-                                opponents={opponents}
                                 onExit={() => setSelectedCharacter(null)}
                             />
                         </motion.div>

@@ -13,10 +13,10 @@ async function ArenaPageContent() {
     if (playableCharacters.length === 0) {
         // This is a better user experience than showing an empty selector.
         // We can create a dedicated component for this state.
-        // For now, we can redirect or show a message.
-        // Let's assume the client will handle the "no characters" state gracefully.
+        // For now, the client will handle the "no characters" state gracefully.
     }
 
+    // Opponents are now fetched dynamically inside BattleView, so we don't pass them here.
     return <ArenaClient userCharacters={playableCharacters} />;
 }
 

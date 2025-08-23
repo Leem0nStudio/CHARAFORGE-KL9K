@@ -1,23 +1,21 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import type { Character } from '@/types/character';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { GachaCard } from '../character/gacha-card';
-import { ArrowLeft, Swords, Dna, Loader2 } from 'lucide-react';
+import { ArrowLeft, Swords, Dna, Loader2, RefreshCw } from 'lucide-react';
+import { simulateBattle, getRandomOpponent } from '@/app/arena/actions';
 
 interface BattleViewProps {
     playerCharacter: Character;
-    opponents: Character[];
     onExit: () => void;
 }
 
-function CombatantCard({ character, isPlayer = false }: { character: Character, isPlayer?: boolean }) {
+function CombatantCard({ character }: { character: Character }) {
     const stats = character.rpg.stats;
     return (
         <div className="flex flex-col items-center gap-4">
@@ -38,26 +36,40 @@ function CombatantCard({ character, isPlayer = false }: { character: Character, 
     );
 }
 
-
-export function BattleView({ playerCharacter, opponents, onExit }: BattleViewProps) {
-    const [selectedOpponent, setSelectedOpponent] = useState<Character | null>(opponents[0] || null);
-    const [battleLog, setBattleLog] = useState<string[]>(['The arena is silent. The battle is about to begin...']);
+export function BattleView({ playerCharacter, onExit }: BattleViewProps) {
+    const [opponent, setOpponent] = useState<Character | null>(null);
+    const [battleLog, setBattleLog] = useState<string[]>([]);
     const [isFighting, startFightTransition] = useTransition();
+    const [isLoadingOpponent, startOpponentTransition] = useTransition();
+    const [winnerId, setWinnerId] = useState<string | null>(null);
 
-    const handleFight = () => {
-        if (!selectedOpponent) return;
-        
-        startFightTransition(async () => {
-            // Placeholder for battle logic
-            setBattleLog(['Simulating battle...']);
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            setBattleLog(prev => [...prev, `${playerCharacter.core.name} attacks ${selectedOpponent.core.name}!`]);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setBattleLog(prev => [...prev, `${selectedOpponent.core.name} retaliates!`]);
-             await new Promise(resolve => setTimeout(resolve, 1000));
-            setBattleLog(prev => [...prev, `${playerCharacter.core.name} is victorious!`]);
+    const findNewOpponent = () => {
+        startOpponentTransition(async () => {
+            setWinnerId(null);
+            setBattleLog([]);
+            const newOpponent = await getRandomOpponent(playerCharacter.core.rarity, playerCharacter.id);
+            setOpponent(newOpponent);
+            setBattleLog([newOpponent ? 'A new challenger approaches!' : 'No opponents found.']);
         });
     };
+
+    useEffect(() => {
+        findNewOpponent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [playerCharacter]);
+
+
+    const handleFight = () => {
+        if (!opponent) return;
+        
+        startFightTransition(async () => {
+            const result = await simulateBattle(playerCharacter, opponent);
+            setBattleLog(result.log);
+            setWinnerId(result.winnerId);
+        });
+    };
+
+    const isLoading = isFighting || isLoadingOpponent;
 
     return (
         <div className="space-y-8">
@@ -66,7 +78,7 @@ export function BattleView({ playerCharacter, opponents, onExit }: BattleViewPro
             </div>
             
             <div className="grid md:grid-cols-3 gap-8 items-start">
-                <CombatantCard character={playerCharacter} isPlayer />
+                <CombatantCard character={playerCharacter} />
 
                 <div className="flex flex-col items-center gap-4">
                      <div className="font-headline text-5xl text-destructive -my-2">VS</div>
@@ -74,11 +86,18 @@ export function BattleView({ playerCharacter, opponents, onExit }: BattleViewPro
                         size="lg" 
                         className="w-full font-headline text-xl"
                         onClick={handleFight}
-                        disabled={!selectedOpponent || isFighting}
+                        disabled={!opponent || isLoading || !!winnerId}
                      >
-                        {isFighting ? <Loader2 className="mr-2 animate-spin" /> : <Swords className="mr-2" />}
+                        {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Swords className="mr-2" />}
                         FIGHT!
                     </Button>
+                    
+                    {winnerId && (
+                        <Button size="lg" className="w-full" onClick={findNewOpponent} disabled={isLoading}>
+                             <RefreshCw className="mr-2"/> Find New Opponent
+                        </Button>
+                    )}
+
                     <Card className="w-full">
                         <CardHeader>
                             <CardTitle className="text-lg">Battle Log</CardTitle>
@@ -94,38 +113,15 @@ export function BattleView({ playerCharacter, opponents, onExit }: BattleViewPro
                 </div>
 
                 <div className="flex flex-col items-center gap-4">
-                    {selectedOpponent ? (
-                        <CombatantCard character={selectedOpponent} />
+                    {opponent ? (
+                        <CombatantCard character={opponent} />
                     ) : (
-                        <div className="w-full max-w-[300px] aspect-[0.75] bg-muted/20 border-2 border-dashed rounded-lg flex items-center justify-center">
-                            <p className="text-muted-foreground">No Opponent</p>
+                        <div className="w-full max-w-[300px] aspect-[1/1.5] bg-muted/20 border-2 border-dashed rounded-lg flex items-center justify-center">
+                            {isLoadingOpponent ? <Loader2 className="h-8 w-8 animate-spin" /> : <p className="text-muted-foreground">No Opponent</p>}
                         </div>
                     )}
-                    <Select
-                        onValueChange={(id) => setSelectedOpponent(opponents.find(o => o.id === id) || null)}
-                        defaultValue={selectedOpponent?.id}
-                        disabled={isFighting}
-                    >
-                        <SelectTrigger className="w-full max-w-[300px]">
-                            <SelectValue placeholder="Select an Opponent" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {opponents.map(opp => (
-                                <SelectItem key={opp.id} value={opp.id}>
-                                    <div className="flex items-center gap-2">
-                                        <Avatar className="h-6 w-6">
-                                            <AvatarImage src={opp.visuals.imageUrl} />
-                                            <AvatarFallback>{opp.core.name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <span>{opp.core.name}</span>
-                                    </div>
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
                 </div>
             </div>
         </div>
     );
 }
-
