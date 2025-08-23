@@ -1,6 +1,4 @@
 
-'use server';
-
 import { z } from 'zod';
 
 /**
@@ -140,5 +138,3 @@ export const SaveCharacterInputSchema = z.object({
   originalPrompt: z.string().optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
-
-    
