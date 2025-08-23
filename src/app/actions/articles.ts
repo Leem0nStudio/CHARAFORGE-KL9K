@@ -88,11 +88,14 @@ export async function getArticle(id: string): Promise<Article | null> {
 }
 
 export async function getPublishedArticles(): Promise<Article[]> {
-    const snapshot = await adminDb.collection('articles')
-        .where('status', '==', 'published')
-        .orderBy('createdAt', 'desc')
-        .get();
-    return snapshot.docs.map(toArticleObject);
+    // Fetch all articles first, then filter and sort on the server.
+    // This avoids the need for a composite index in Firestore for this specific query.
+    const snapshot = await adminDb.collection('articles').get();
+    const articles = snapshot.docs.map(toArticleObject);
+    
+    return articles
+        .filter(article => article.status === 'published')
+        .sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
