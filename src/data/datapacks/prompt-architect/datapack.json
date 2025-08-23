@@ -1,6 +1,6 @@
 
 {
-    "name": "Pro-Composition",
+    "name": "Prompt Architect",
     "author": "CharaForge",
     "description": "An advanced DataPack for precise control over scene composition, using a highly granular, Danbooru-style prompt structure. Ideal for power users who want to define every aspect of the generated image.",
     "type": "free",
@@ -14,7 +14,6 @@
                 "template": "{count}, ({raceClass}), solo, full body, {pose}, {action}, {camera}, {background}, {effects}, {art_style}, {color_palette}, {resolution}, {masterpiece_quality}, {detail_level}, illustration, high resolution, {style_reference}, {wallpaper_quality}, {sharpness}, {lighting_style}"
             }
         ],
-        "slots": [],
         "characterProfileSchema": {
             "count": [
                 { "label": "Female", "value": "1girl" },
