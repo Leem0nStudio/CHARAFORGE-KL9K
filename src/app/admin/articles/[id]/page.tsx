@@ -5,13 +5,20 @@
 // It will now redirect to the new user profile articles page.
 // The admin will also use this new page for a consistent editing experience.
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
-export default function LegacyEditArticlePage() {
+export default function LegacyEditArticleRedirectorPage() {
     const router = useRouter();
+    const params = useParams();
+    const { id } = params;
+
     useEffect(() => {
-        router.replace('/profile/articles');
-    }, [router]);
+        if (id) {
+            router.replace(`/profile/articles/${id}`);
+        } else {
+            router.replace('/profile/articles');
+        }
+    }, [router, id]);
 
     return null;
 }
