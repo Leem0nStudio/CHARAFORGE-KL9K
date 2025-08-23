@@ -16,10 +16,19 @@ interface PromptTagInputProps {
 const tagSplitRegex = /,\s*(?![^()]*\))/;
 
 const parseTag = (tagStr: string): { tag: string; weight: number } => {
-    const weightMatch = tagStr.match(/^\(([^:]+)(?::([\d.]+))?\)$/);
+    const weightMatch = tagStr.match(/^\(([^:]+):([\d.]+)\)$/);
     if (weightMatch) {
-        return { tag: weightMatch[1].trim(), weight: weightMatch[2] ? parseFloat(weightMatch[2]) : 1.0 };
+        return { tag: weightMatch[1].trim(), weight: parseFloat(weightMatch[2]) };
     }
+    // Handle cases like ((tag)) or (tag)
+    const emphasisMatch = tagStr.match(/^(\(+)([^)]+)(\)+)$/);
+    if(emphasisMatch) {
+        const openParens = emphasisMatch[1].length;
+        const closeParens = emphasisMatch[3].length;
+        const parens = Math.min(openParens, closeParens);
+        return { tag: emphasisMatch[2].trim(), weight: 1.0 + (parens -1) * 0.1 };
+    }
+
     return { tag: tagStr.trim(), weight: 1.0 };
 };
 
@@ -41,13 +50,7 @@ export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProp
         const newTags = tags.map((tagStr, index) => {
             if (index === indexToChange) {
                 const parsed = parseTag(tagStr);
-                
-                let finalDelta = delta;
-                if (Math.abs(parsed.weight - 1.0) < 0.01) {
-                    finalDelta = delta > 0 ? 0.5 : -0.5;
-                }
-                
-                const newWeight = Math.max(0.1, parsed.weight + finalDelta);
+                const newWeight = Math.max(0.1, parsed.weight + delta);
                 return formatTag({ tag: parsed.tag, weight: newWeight });
             }
             return tagStr;
@@ -123,7 +126,7 @@ export function PromptTagInput({ value, onChange, disabled }: PromptTagInputProp
             </AnimatePresence>
             {tags.length === 0 && !disabled && (
                 <div className="flex h-full w-full items-center justify-center text-muted-foreground pointer-events-none">
-                    <p>Tags will appear here.</p>
+                    <p>Enter a prompt or use the Tag Assistant.</p>
                 </div>
             )}
         </div>

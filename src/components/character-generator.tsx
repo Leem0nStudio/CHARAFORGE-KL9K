@@ -33,6 +33,7 @@ import { ModelSelectorModal } from './model-selector-modal';
 import type { AiModel } from '@/types/ai-model';
 import { VisualModelSelector } from "./visual-model-selector";
 import type { GenerationResult } from "@/types/generation";
+import { PromptEditor } from "./prompt-editor";
 import type { DataPack, PromptTemplate, Option, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
 import { textModels } from "@/lib/app-config";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -77,11 +78,13 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
 
     const [isPackModalOpen, setIsPackModalOpen] = useState(false);
     const [initialPack, setInitialPack] = useState<DataPack | null>(null);
-    const [isTagModalOpen, setIsTagModalOpen] = useState(false);
     
     const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
     const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
     const [isLoadingModels, setIsLoadingModels] = useState(true);
+
+    const [activePack, setActivePack] = useState<DataPack | null>(null);
+    const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
 
     const { toast } = useToast();
     const { userProfile } = useAuth();
@@ -106,7 +109,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             if (!selectedValue) continue;
 
             const slotConfig = (pack.schema.characterProfileSchema as any)[slotId];
-            let foundOption: Option | undefined = undefined;
+            let foundOption: Option | EquipmentOption | undefined = undefined;
 
             if (Array.isArray(slotConfig)) {
                 foundOption = slotConfig.find(o => o.value === selectedValue);
@@ -125,6 +128,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
         form.setValue('description', finalPrompt, { shouldValidate: true });
         form.setValue('wizardData', wizardData);
         form.setValue('dataPackId', pack.id);
+        setActivePack(pack);
+        setSelectedTemplate(template);
         setIsPackModalOpen(false);
     }, [form]);
 
@@ -152,7 +157,11 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             } catch (error) { toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' }); }
             finally { setIsLoadingModels(false); }
         }
-        loadInitialData();
+        if (authUser) {
+          loadInitialData();
+        } else {
+            setIsLoadingModels(false);
+        }
     }, [authUser, searchParams, toast, form]);
 
     const handleNextStep = async () => {
@@ -252,13 +261,21 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
 
     const renderStep = () => {
         switch (currentStep) {
-            case 'concept': return <ConceptStep form={form} setIsPackModalOpen={setIsPackModalOpen} />;
+            case 'concept': return <ConceptStep form={form} setIsPackModalOpen={setIsPackModalOpen} activePack={activePack} selectedTemplate={selectedTemplate} handleWizardDataChange={handleWizardDataChange}/>;
             case 'details': return <DetailsStep form={form} />;
             case 'portrait': return <PortraitStep form={form} models={availableModels} loras={availableLoras} isLoadingModels={isLoadingModels} />;
             case 'complete': return <CompleteStep form={form} onSave={onSave} isSaving={isSaving} />;
             default: return null;
         }
     };
+
+    if (isLoadingModels) {
+        return (
+            <div className="flex justify-center items-center p-16">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <>
@@ -272,6 +289,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
                 >
                     <Form {...form}>
+                    <form onSubmit={(e) => e.preventDefault()}>
                     <Card className="shadow-lg">
                         <CardContent className="p-4 sm:p-6">
                             {renderStep()}
@@ -288,6 +306,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                             ) : <div></div>}
                         </CardFooter>
                     </Card>
+                    </form>
                     </Form>
                 </motion.div>
             </AnimatePresence>
@@ -297,22 +316,64 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
 }
 
 // Step 1: Concept
-function ConceptStep({ form, setIsPackModalOpen }: { form: any, setIsPackModalOpen: (isOpen: boolean) => void }) {
+function ConceptStep({ form, setIsPackModalOpen, activePack, selectedTemplate, handleWizardDataChange }: { form: any, setIsPackModalOpen: (isOpen: boolean) => void, activePack: DataPack | null, selectedTemplate: PromptTemplate | null, handleWizardDataChange: any }) {
+    const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+
+    const handleAppendTags = (tags: string[]) => {
+        const currentDesc = form.getValues('description');
+        const newTags = tags.filter((t: string) => !currentDesc.includes(t));
+        if (newTags.length > 0) {
+            const newDescription = [currentDesc.trim(), ...newTags].filter(Boolean).join(', ');
+            form.setValue('description', newDescription);
+        }
+    };
+    
     return (
+        <>
+        <TagAssistantModal
+            isOpen={isTagModalOpen}
+            onClose={() => setIsTagModalOpen(false)}
+            onAppendTags={handleAppendTags}
+            currentDescription={form.watch('description')}
+        />
         <div className="space-y-4">
             <h2 className="font-headline text-2xl flex items-center gap-2"><span className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground font-sans">1</span>The Concept</h2>
             <FormField
               control={form.control} name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Character Prompt</FormLabel>
-                  <Textarea {...field} placeholder="A grizzled space marine with a cybernetic arm, a haunted past, and a heart of gold..." className="min-h-[200px]" />
+                    <div className="flex justify-between items-center mb-2">
+                        <FormLabel>Character Prompt</FormLabel>
+                        <div className="flex items-center gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => setIsPackModalOpen(true)}>
+                                <Package className="mr-2 h-3 w-3"/> Use DataPack
+                            </Button>
+                             <Button type="button" variant="outline" size="sm" onClick={() => setIsTagModalOpen(true)}>
+                                <Tags className="mr-2 h-3 w-3"/> Tag Assistant
+                            </Button>
+                        </div>
+                    </div>
+                  
+                  <PromptEditor 
+                      value={field.value} 
+                      onChange={field.onChange}
+                      activePack={activePack}
+                      selectedTemplate={selectedTemplate}
+                      onTemplateChange={(templateName) => {
+                          if (activePack) {
+                              const newTemplate = activePack.schema.promptTemplates.find(t => t.name === templateName);
+                              if (newTemplate) {
+                                  handleWizardDataChange(form.getValues('wizardData') || {}, activePack, newTemplate);
+                              }
+                          }
+                      }}
+                  />
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="button" variant="outline" onClick={() => setIsPackModalOpen(true)}><Package className="mr-2" /> Use a DataPack Wizard</Button>
         </div>
+        </>
     );
 }
 

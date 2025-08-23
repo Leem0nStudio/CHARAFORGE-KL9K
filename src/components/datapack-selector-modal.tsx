@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -105,47 +106,13 @@ function OptionSelectModal({
     )
 }
 
-function buildPromptFromProfile(profile: Record<string, any>, pack: DataPack): string {
-    const promptTemplate = pack.schema?.promptTemplates?.[0];
-    
-    if (promptTemplate) {
-        let template = promptTemplate.template;
-        for (const key in profile) {
-            const placeholder = `{${key}}`;
-            const value = profile[key];
-            if (typeof value === 'string') {
-                 template = template.replace(placeholder, value);
-            } else if (typeof value === 'object' && value !== null) {
-                // For nested equipment slots
-                 Object.keys(value).forEach(subKey => {
-                     const subPlaceholder = `{${key}_${subKey}}`;
-                     template = template.replace(subPlaceholder, value[subKey] || '');
-                 });
-            }
-        }
-        // Clean up unused placeholders
-        return template.replace(/{[^}]+}/g, '').replace(/,\s*,/g, ',').replace(/,\s*$/g, '').trim();
-    }
-    
-    // Fallback if no template is found
-    const parts: string[] = [];
-    Object.values(profile).forEach(value => {
-        if (typeof value === 'string' && value.trim()) {
-            parts.push(value);
-        } else if (typeof value === 'object' && value !== null) {
-            parts.push(...Object.values(value).filter(Boolean) as string[]);
-        }
-    });
-    return parts.filter(Boolean).join(', ');
-}
 
-
-function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWizardComplete: (wizardData: Record<string, string>, finalPrompt: string) => void, onBack: () => void }) {
-    const { handleSubmit, watch, setValue } = useForm();
-    const formValues = watch();
+function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWizardComplete: (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => void, onBack: () => void }) {
+    const { handleSubmit, watch, setValue, getValues } = useForm();
     const [activeModal, setActiveModal] = useState<{title: string, options: (EquipmentOption | Option)[], fieldName: string} | null>(null);
 
     const schema = pack.schema?.characterProfileSchema;
+    const initialTemplate = pack.schema?.promptTemplates?.[0];
    
     useEffect(() => {
         if (!schema) return;
@@ -165,8 +132,9 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
 
 
     const onSubmit = (data: any) => {
-        const finalPrompt = buildPromptFromProfile(data, pack);
-        onWizardComplete(data, finalPrompt);
+        if (initialTemplate) {
+          onWizardComplete(data, pack, initialTemplate);
+        }
     };
     
     if (!schema) {
@@ -186,7 +154,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
         const options = (schema as any)[fieldName] as (EquipmentOption[] | Option[]);
         if (!options || !Array.isArray(options) || options.length === 0) return null;
         
-        const selectedValue = formValues[fieldName];
+        const selectedValue = getValues(fieldName as string);
         const selectedOption = options.find(o => o.value === selectedValue);
 
         return (
@@ -209,7 +177,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                         {Object.entries(slotOptions).map(([subKey, options]) => {
                              if (!options || !Array.isArray(options) || options.length === 0) return null;
                              const subFieldName = `${fieldName}.${subKey}`;
-                             const selectedValue = formValues[fieldName]?.[subKey];
+                             const selectedValue = getValues(subFieldName);
                              const selectedOption = options.find(o => o.value === selectedValue);
                              
                              return (
@@ -242,7 +210,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                         isOpen={!!activeModal}
                         onClose={() => setActiveModal(null)}
                         options={activeModal.options}
-                        currentValue={formValues[activeModal.fieldName]}
+                        currentValue={getValues(activeModal.fieldName)}
                         onSelect={(value) => setValue(activeModal.fieldName, value)}
                         title={activeModal.title}
                     />
@@ -405,7 +373,7 @@ function PackGallery({
 interface DataPackSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onPromptGenerated: (wizardData: Record<string, string>, pack: DataPack, finalPrompt: string) => void;
+    onPromptGenerated: (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => void;
     initialPack?: DataPack | null;
 }
 
@@ -429,9 +397,9 @@ export function DataPackSelectorModal({
         }
     }, [isOpen, initialPack]);
     
-    const handleWizardComplete = useCallback((wizardData: Record<string, string>, finalPrompt: string) => {
+    const handleWizardComplete = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
         if (wizardPack) {
-            onPromptGenerated(wizardData, wizardPack, finalPrompt);
+            onPromptGenerated(wizardData, wizardPack, template);
         }
         onClose();
     }, [onPromptGenerated, onClose, wizardPack]);
