@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle, CardHeader, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2, ArrowRight, Wand2, Package, ArrowLeft, Info } from 'lucide-react';
+import { Loader2, ArrowRight, Wand2, Package, ArrowLeft, Info, ChevronRight } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { DataPack, Option, PromptTemplate, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
 import { cn } from '@/lib/utils';
@@ -158,10 +158,13 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
         const selectedOption = options.find(o => o.value === selectedValue);
 
         return (
-            <Card onClick={() => setActiveModal({ title: label, options, fieldName: fieldName as string })} className="cursor-pointer hover:bg-muted/50 transition-colors h-full flex flex-col">
-                <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{label}</CardTitle></CardHeader>
-                <CardContent className="flex-grow flex items-center"><p className="text-base text-primary font-semibold">{selectedOption?.label || 'None'}</p></CardContent>
-            </Card>
+            <div onClick={() => setActiveModal({ title: label, options, fieldName: fieldName as string })} className="flex justify-between items-center p-3 rounded-md cursor-pointer hover:bg-muted/50 transition-colors">
+                <span className="text-sm text-muted-foreground">{label}</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-primary font-semibold truncate max-w-[150px]">{selectedOption?.label || 'None'}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+            </div>
         );
     };
 
@@ -171,23 +174,24 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
 
         return (
             <AccordionItem value={fieldName as string}>
-                <AccordionTrigger>{label}</AccordionTrigger>
-                <AccordionContent>
-                    <div className="grid grid-cols-2 gap-2 p-2">
-                        {Object.entries(slotOptions).map(([subKey, options]) => {
-                             if (!options || !Array.isArray(options) || options.length === 0) return null;
-                             const subFieldName = `${fieldName}.${subKey}`;
-                             const selectedValue = getValues(subFieldName);
-                             const selectedOption = options.find(o => o.value === selectedValue);
-                             
-                             return (
-                                 <div key={subKey} onClick={() => setActiveModal({ title: `${label} - ${subKey}`, options, fieldName: subFieldName })} className="p-2 border rounded-md cursor-pointer hover:bg-muted/20">
-                                     <p className="text-xs text-muted-foreground capitalize">{subKey}</p>
-                                     <p className="text-sm font-medium text-primary truncate">{selectedOption?.label || 'None'}</p>
+                <AccordionTrigger className="text-sm">{label}</AccordionTrigger>
+                <AccordionContent className="space-y-1 p-1">
+                    {Object.entries(slotOptions).map(([subKey, options]) => {
+                         if (!options || !Array.isArray(options) || options.length === 0) return null;
+                         const subFieldName = `${fieldName}.${subKey}`;
+                         const selectedValue = getValues(subFieldName);
+                         const selectedOption = options.find(o => o.value === selectedValue);
+                         
+                         return (
+                             <div key={subKey} onClick={() => setActiveModal({ title: `${label} - ${subKey}`, options, fieldName: subFieldName })} className="flex justify-between items-center p-2 rounded-md cursor-pointer hover:bg-muted/20">
+                                 <p className="text-xs text-muted-foreground capitalize">{subKey}</p>
+                                 <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium text-primary truncate max-w-[120px]">{selectedOption?.label || 'None'}</p>
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                                  </div>
-                             )
-                        })}
-                    </div>
+                             </div>
+                         )
+                    })}
                 </AccordionContent>
             </AccordionItem>
         )
@@ -220,7 +224,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                         <Accordion type="multiple" defaultValue={['general', 'appearance', 'equipment']} className="w-full">
                             <AccordionItem value="general">
                                 <AccordionTrigger>General</AccordionTrigger>
-                                <AccordionContent className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+                                <AccordionContent className="space-y-1">
                                     {renderSimpleSlot('count', 'Count')}
                                     {renderSimpleSlot('raceClass', 'Race/Class')}
                                     {renderSimpleSlot('gender', 'Gender')}
@@ -228,7 +232,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                             </AccordionItem>
                              <AccordionItem value="appearance">
                                 <AccordionTrigger>Appearance</AccordionTrigger>
-                                <AccordionContent className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+                                <AccordionContent className="space-y-1">
                                     {renderSimpleSlot('hair', 'Hair')}
                                     {renderSimpleSlot('eyes', 'Eyes')}
                                     {renderSimpleSlot('skin', 'Skin')}
@@ -238,7 +242,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                             <AccordionItem value="equipment">
                                 <AccordionTrigger>Equipment</AccordionTrigger>
                                 <AccordionContent className="pt-2">
-                                    <Accordion type="multiple" className="w-full" defaultValue={['torso', 'legs', 'hands']}>
+                                    <Accordion type="multiple" className="w-full space-y-1" defaultValue={['torso', 'legs', 'hands']}>
                                         {renderEquipmentSlot('head', 'Head')}
                                         {renderEquipmentSlot('face', 'Face')}
                                         {renderEquipmentSlot('neck', 'Neck')}
@@ -255,7 +259,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                             </AccordionItem>
                              <AccordionItem value="scene">
                                 <AccordionTrigger>Scene & Action</AccordionTrigger>
-                                <AccordionContent className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+                                <AccordionContent className="space-y-1">
                                     {renderSimpleSlot('pose', 'Pose')}
                                     {renderSimpleSlot('action', 'Action')}
                                     {renderSimpleSlot('camera', 'Camera')}

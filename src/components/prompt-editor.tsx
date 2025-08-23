@@ -9,6 +9,7 @@ import type { DataPack, PromptTemplate } from '@/types/datapack';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { PromptTagInput } from './prompt-tag-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Label } from './ui/label';
 
 
 const formatPromptText = (text: string): string => {
