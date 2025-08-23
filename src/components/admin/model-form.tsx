@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
@@ -14,9 +14,11 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, PlusCircle, Trash2, Pencil } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Pencil, Info } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from '../ui/textarea';
+import Link from 'next/link';
+import { ScrollArea } from '../ui/scroll-area';
 
 
 function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, isOpen: boolean, setIsOpen: (isOpen: boolean) => void }) {
@@ -135,16 +137,15 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-2xl">
-                <form onSubmit={form.handleSubmit(onSubmit)}>
-                    <DialogHeader>
-                        <DialogTitle>{isEditing ? `Edit: ${model.name}` : 'Add New AI Model'}</DialogTitle>
-                        <DialogDescription>
-                            {isEditing ? "Update the model's configuration." : "Add a new model or LoRA manually or by importing from a source."}
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>{isEditing ? `Edit: ${model.name}` : 'Add New AI Model'}</DialogTitle>
+                    <DialogDescription>
+                        {isEditing ? "Update the model's configuration." : "Add a new model or LoRA manually or by importing from a source."}
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="flex-grow overflow-hidden flex flex-col">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4 flex-grow flex flex-col overflow-hidden">
                         {!isEditing && (
                             <TabsList className="grid w-full grid-cols-2">
                                 <TabsTrigger value="import">Import from Source</TabsTrigger>
@@ -152,8 +153,9 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                             </TabsList>
                         )}
                         
-                        <TabsContent value="manual">
-                             <div className="py-4 grid grid-cols-2 gap-4">
+                        <ScrollArea className="flex-grow mt-4">
+                        <TabsContent value="manual" className="pr-4">
+                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2 col-span-2">
                                     <Label>Name</Label>
                                     <Input {...form.register('name')} />
@@ -199,13 +201,18 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                      <div className="space-y-2 col-span-2">
                                         <Label>ComfyUI Server URL</Label>
                                         <Input {...form.register('apiUrl')} placeholder="http://your-server-ip:8188/prompt" />
+                                        <Link href="/app/TUTORIAL_KAGGLE_COMFYUI.md" target="_blank">
+                                            <p className="text-xs text-primary underline flex items-center gap-1"><Info className="h-3 w-3" /> How to get this? (Kaggle Guide)</p>
+                                        </Link>
                                      </div>
                                 )}
                                 
-                                <div className="space-y-2 col-span-2">
-                                    <Label>{getExecutionIdLabel()}</Label>
-                                    <Input {...form.register('hf_id')} placeholder={getExecutionIdPlaceholder()} />
-                                </div>
+                                {watchEngine !== 'gemini' && (
+                                    <div className="space-y-2 col-span-2">
+                                        <Label>{getExecutionIdLabel()}</Label>
+                                        <Input {...form.register('hf_id')} placeholder={getExecutionIdPlaceholder()} />
+                                    </div>
+                                )}
                                 
                                 {(watchEngine === 'modelslab' || watchEngine === 'huggingface') && (
                                      <div className="space-y-2 col-span-2">
@@ -267,8 +274,8 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                         </TabsContent>
                         
                         {!isEditing && (
-                             <TabsContent value="import">
-                                <div className="py-4 space-y-4">
+                             <TabsContent value="import" className="pr-4">
+                                <div className="space-y-4">
                                      <div className="space-y-2">
                                         <Label>Import Source</Label>
                                         <Select onValueChange={(value: 'civitai' | 'modelslab') => setImportSource(value)} defaultValue={importSource}>
@@ -295,9 +302,10 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                 </div>
                              </TabsContent>
                         )}
+                        </ScrollArea>
                     </Tabs>
 
-                    <DialogFooter className="sm:justify-between mt-4">
+                    <DialogFooter className="sm:justify-between mt-4 border-t pt-4">
                         {isEditing && (
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
