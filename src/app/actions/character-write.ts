@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -283,7 +282,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
     throw new Error(`Invalid input for ${firstError.path.join('.')}: ${firstError.message}`);
   }
   const { 
-      name, biography, imageUrl: imageDataUri, dataPackId, tags, 
+      name, biography, imageUrl: imageDataUri, dataPackId,
       archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt
   } = validation.data;
   
@@ -318,8 +317,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
         const initialVersion = { id: characterRef.id, name: versionName, version: version };
         
         const wizardTags = wizardData ? Object.values(wizardData).map(tag => tag.trim().toLowerCase().replace(/ /g, '_')) : [];
-        const manualTags = tags ? tags.split(',').map(tag => tag.trim().toLowerCase().replace(/ /g, '_')) : [];
-        const uniqueTags = [...new Set([...wizardTags, ...manualTags].filter(Boolean))];
+        const uniqueTags = [...new Set([...wizardTags].filter(Boolean))];
 
         const characterData: Omit<Character, 'id'> = {
             core: {
@@ -489,3 +487,5 @@ export async function addCharacterExperience(characterId: string, xp: number): P
         return { success: false, message };
     }
 }
+
+    

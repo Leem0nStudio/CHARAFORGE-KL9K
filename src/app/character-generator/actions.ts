@@ -12,28 +12,9 @@ import { getUserProfile } from '../actions/user';
 import type { GenerateCharacterSheetOutput } from '@/ai/flows/character-sheet/types';
 
 
-const formatPromptTextOnServer = (text: string): string => {
-    if (!text) return '';
-    
-    // Replace underscores with spaces and handle comma spacing
-    let formattedText = text.replace(/_/g, ' ').replace(/\s*,\s*/g, ', ').trim();
-
-    // Remove leading/trailing commas
-    if (formattedText.startsWith(',')) formattedText = formattedText.substring(1).trim();
-    if (formattedText.endsWith(',')) formattedText = formattedText.slice(0, -1).trim();
-
-    // Split by comma, filter unique tags, and rejoin
-    // This regex avoids splitting inside parentheses for weighted prompts
-    const tags = formattedText.match(/(\([^)]+\)|[^,]+)/g)?.map(tag => tag.trim()).filter(Boolean) || [];
-    const uniqueTags = [...new Set(tags)];
-    
-    return uniqueTags.join(', ');
-};
-
-
 // Schema for the first step: generating the character sheet
 const GenerateSheetInputSchema = z.object({
-  description: z.string().min(1).max(4000),
+  description: z.string().min(1, "A description is required.").max(4000),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
   engineConfig: z.custom<TextEngineConfig>(),
 });
@@ -49,13 +30,12 @@ export type GenerateSheetOutput = {
 
 // Schema for the second step: generating the portrait
 const GeneratePortraitInputSchema = z.object({
-    physicalDescription: z.string().min(10, { message: "A detailed physical description is required." }).max(4000),
+    physicalDescription: z.string().min(1, { message: "A physical description is required." }).max(4000),
     negativePrompt: z.string().optional(),
     aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
     selectedModel: z.custom<AiModel>().refine(data => !!data, { message: 'A base model must be selected.' }),
     selectedLora: z.custom<AiModel>().optional().nullable(),
     loraWeight: z.number().min(0).max(2).optional(),
-    userApiKey: z.string().optional(), // Pass user API key for HF/OR
 });
 export type GeneratePortraitInput = z.infer<typeof GeneratePortraitInputSchema>;
 
@@ -70,7 +50,7 @@ export type GeneratePortraitOutput = {
 export async function generateCharacterSheetData(input: GenerateSheetInput): Promise<GenerateSheetOutput> {
     const validation = GenerateSheetInputSchema.safeParse(input);
     if (!validation.success) {
-        return { success: false, message: 'Invalid input.', error: validation.error.message };
+        return { success: false, message: 'Invalid input.', error: validation.error.errors.map(e => e.message).join(', ') };
     }
     
     let uid: string | null = null;
@@ -94,10 +74,8 @@ export async function generateCharacterSheetData(input: GenerateSheetInput): Pro
             userApiKey,
         };
         
-        const formattedDescription = formatPromptTextOnServer(description);
-
         const result = await generateCharacterSheet({ 
-            description: formattedDescription, 
+            description: description, 
             targetLanguage, 
             engineConfig: finalEngineConfig
         });
@@ -127,7 +105,7 @@ export async function generateCharacterSheetData(input: GenerateSheetInput): Pro
 export async function generateCharacterPortrait(input: GeneratePortraitInput): Promise<GeneratePortraitOutput> {
     const validation = GeneratePortraitInputSchema.safeParse(input);
     if (!validation.success) {
-        return { success: false, message: 'Invalid input.', error: validation.error.message };
+        return { success: false, message: 'Invalid input.', error: validation.error.errors.map(e => e.message).join(', ') };
     }
 
     const {
@@ -137,15 +115,27 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
         selectedModel,
         selectedLora,
         loraWeight,
-        userApiKey,
     } = validation.data;
-
-    if (!selectedModel) {
-        return { success: false, message: 'A base model must be selected for generation.' };
+    
+    let uid: string | null = null;
+    try {
+        uid = await verifyAndGetUid();
+    } catch (error) {
+        // User is not logged in.
     }
+    
+    const userProfile = uid ? await getUserProfile(uid) : null;
     
      try {
         const executionModelId = selectedModel.engine === 'gemini' ? undefined : selectedModel.hf_id;
+
+        let userApiKey: string | undefined;
+        if (selectedModel.engine === 'huggingface') {
+            userApiKey = userProfile?.preferences?.huggingFaceApiKey;
+        } else if (selectedModel.engine === 'openrouter') {
+            userApiKey = userProfile?.preferences?.openRouterApiKey;
+        }
+
 
         const imageEngineConfig: ImageEngineConfig = {
             engineId: selectedModel.engine,

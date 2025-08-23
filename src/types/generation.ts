@@ -42,7 +42,6 @@ export interface ImageEngineConfig {
 
 /**
  * The output shape of the character sheet generation flow.
- * Now includes stats and rarity.
  * Safe for client-side use.
  */
 export type GenerationResult = GenerateCharacterSheetOutput & {
@@ -52,3 +51,5 @@ export type GenerationResult = GenerateCharacterSheetOutput & {
   textEngine?: TextEngineConfig['engineId'];
   imageEngine?: ImageEngineConfig['engineId'];
 };
+
+    

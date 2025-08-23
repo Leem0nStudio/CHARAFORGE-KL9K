@@ -1,5 +1,4 @@
 
-
 import { z } from 'zod';
 
 /**
@@ -130,7 +129,6 @@ export const SaveCharacterInputSchema = z.object({
   biography: z.string(),
   imageUrl: z.string().startsWith('data:image/'),
   dataPackId: z.string().optional().nullable(),
-  tags: z.string().optional(),
   archetype: z.string().optional().nullable(),
   equipment: z.array(z.string()).optional().nullable(),
   physicalDescription: z.string().optional().nullable(),
@@ -138,6 +136,7 @@ export const SaveCharacterInputSchema = z.object({
   imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai', 'comfyui', 'modelslab']).optional(),
   wizardData: z.record(z.string()).optional().nullable(),
   originalPrompt: z.string().optional(),
-  rarity: z.number().min(1).max(5).optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
+
+    
