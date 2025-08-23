@@ -132,8 +132,8 @@ export async function getDataPacksForAdmin(): Promise<DataPack[]> {
         return {
             ...data,
             id: doc.id,
-            createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
-            updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
+            createdAt: createdAt instanceof Timestamp ? createdAt.toMillis() : new Date(createdAt).getTime(),
+            updatedAt: updatedAt instanceof Timestamp ? updatedAt.toMillis() : (updatedAt ? new Date(updatedAt).getTime() : null),
         } as DataPack;
     });
 }
@@ -153,8 +153,8 @@ export async function getDataPackForAdmin(packId: string): Promise<DataPack | nu
     return {
         ...data,
         id: doc.id,
-        createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
-        updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
+        createdAt: createdAt instanceof Timestamp ? createdAt.toMillis() : new Date(createdAt).getTime(),
+        updatedAt: updatedAt instanceof Timestamp ? updatedAt.toMillis() : (updatedAt ? new Date(updatedAt).getTime() : null),
     } as DataPack;
 }
 
@@ -175,8 +175,8 @@ export async function getPublicDataPack(packId: string): Promise<DataPack | null
         return {
             id: doc.id,
             ...data,
-            createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
-            updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
+            createdAt: createdAt instanceof Timestamp ? createdAt.toMillis() : new Date(createdAt).getTime(),
+            updatedAt: updatedAt instanceof Timestamp ? updatedAt.toMillis() : (updatedAt ? new Date(updatedAt).getTime() : null),
         } as DataPack;
 
     } catch (error) {
@@ -202,7 +202,7 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
 
     const dataPacksData = snapshot.docs.map(doc => {
         const data = doc.data();
-        // **CRITICAL FIX**: Convert Timestamps to serializable Date objects.
+        // **CRITICAL FIX**: Convert Timestamps to a serializable number (milliseconds).
         const createdAt = data.createdAt;
         const updatedAt = data.updatedAt;
         return {
@@ -419,3 +419,6 @@ export async function searchDataPacksByTag(tag: string): Promise<DataPack[]> {
     }
 }
 
+
+
+    
