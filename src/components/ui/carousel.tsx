@@ -16,17 +16,19 @@ type PropType<T> = {
 export const EmblaCarousel = <T extends { id: string }>({ slides, options, CardComponent }: PropType<T>) => {
   const [emblaRef] = useEmblaCarousel(options, [Autoplay()])
 
-  // Determine if the card is for a pack or a character
-  const isDataPack = 'author' in slides[0];
-
   return (
     <div className="embla" ref={emblaRef}>
       <div className="embla__container">
-        {slides.map((item) => (
-          <div className="embla__slide" key={item.id}>
-             <CardComponent {...(isDataPack ? { pack: item } : { character: item })} />
-          </div>
-        ))}
+        {slides.map((item) => {
+          // CRITICAL FIX: Check the type of each item individually instead of assuming
+          // all items are the same based on the first one.
+          const isDataPack = 'author' in item; 
+          return (
+            <div className="embla__slide" key={item.id}>
+              <CardComponent {...(isDataPack ? { pack: item } : { character: item })} />
+            </div>
+          );
+        })}
       </div>
     </div>
   )
