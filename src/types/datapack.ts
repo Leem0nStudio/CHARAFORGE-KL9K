@@ -17,47 +17,47 @@ export interface EquipmentSlotOptions {
 
 /**
  * Defines the available options for each part of a structured character profile.
+ * This is now the single source of truth for the schema structure.
  */
 export interface CharacterProfileSchema {
   // General
-  count?: EquipmentOption[];
-  raceClass?: EquipmentOption[];
-  gender?: EquipmentOption[];
+  count: EquipmentOption[];
+  raceClass: EquipmentOption[];
+  gender: EquipmentOption[];
 
   // Appearance
-  hair?: EquipmentOption[];
-  eyes?: EquipmentOption[];
-  skin?: EquipmentOption[];
-  facialFeatures?: EquipmentOption[];
+  hair: EquipmentOption[];
+  eyes: EquipmentOption[];
+  skin: EquipmentOption[];
+  facialFeatures: EquipmentOption[];
 
   // Equipment Slots
-  head?: EquipmentSlotOptions;
-  face?: EquipmentSlotOptions;
-  neck?: EquipmentSlotOptions;
-  shoulders?: EquipmentSlotOptions;
-  torso?: EquipmentSlotOptions;
-  arms?: EquipmentSlotOptions;
-  hands?: EquipmentSlotOptions;
-  waist?: EquipmentSlotOptions;
-  legs?: EquipmentSlotOptions;
-  feet?: EquipmentSlotOptions;
-  back?: EquipmentSlotOptions;
+  head: EquipmentSlotOptions;
+  face: EquipmentSlotOptions;
+  neck: EquipmentSlotOptions;
+  shoulders: EquipmentSlotOptions;
+  torso: EquipmentSlotOptions;
+  arms: EquipmentSlotOptions;
+  hands: EquipmentSlotOptions;
+  waist: EquipmentSlotOptions;
+  legs: EquipmentSlotOptions;
+  feet: EquipmentSlotOptions;
+  back: EquipmentSlotOptions;
 
   // Extra weapons
   weaponsExtra?: EquipmentOption[];
 
   // Scene
-  pose?: EquipmentOption[];
-  action?: EquipmentOption[];
-  camera?: EquipmentOption[];
-  background?: EquipmentOption[];
-  effects?: EquipmentOption[];
+  pose: EquipmentOption[];
+  action: EquipmentOption[];
+  camera: EquipmentOption[];
+  background: EquipmentOption[];
+  effects: EquipmentOption[];
 }
 
 // #endregion
 
-
-// Base Interfaces for type-checking in TS
+// Legacy interfaces are kept for reference but are no longer the primary structure.
 export interface Exclusion {
     slotId: string;
     optionValues: string[];
@@ -70,34 +70,17 @@ export interface Option {
     exclusions?: Exclusion[];
 }
 
-export interface Slot {
-    id: string;
-    label: string;
-    type?: 'text' | 'select';
-    options?: Option[];
-    defaultOption?: string;
-    placeholder?: string;
-    isLocked?: boolean;
-}
-
 export interface PromptTemplate {
     name: string;
     template: string;
 }
 
 /**
- * The main schema for a DataPack, now supporting both old and new systems.
+ * The main schema for a DataPack, now simplified to use the new system.
  */
 export interface DataPackSchema {
-    // Legacy system (to be deprecated)
-    slots?: Slot[];
-    
-    // New RPG Inventory system
-    characterProfileSchema?: Partial<CharacterProfileSchema>;
-    
-    // Common fields
-    promptTemplates?: PromptTemplate[];
-    tags?: string[];
+    characterProfileSchema: Partial<CharacterProfileSchema>;
+    promptTemplates: PromptTemplate[];
 }
 
 export interface DataPack {
@@ -154,17 +137,16 @@ const CharacterProfileSchemaForZod = z.object({
   camera: z.array(EquipmentOptionSchema).optional(),
   background: z.array(EquipmentOptionSchema).optional(),
   effects: z.array(EquipmentOptionSchema).optional(),
-}).passthrough().optional();
+}).passthrough();
 
 
 export const DataPackSchemaSchema = z.object({
     promptTemplates: z.array(z.object({
         name: z.string(),
         template: z.string(),
-    })).optional(),
-    characterProfileSchema: CharacterProfileSchemaForZod,
-    tags: z.array(z.string()).optional(),
-}).optional();
+    })).default([]),
+    characterProfileSchema: CharacterProfileSchemaForZod.default({}),
+});
 
 export const DataPackFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -173,7 +155,7 @@ export const DataPackFormSchema = z.object({
   type: z.enum(['free', 'premium', 'temporal']),
   price: z.number().min(0),
   tags: z.array(z.string()).optional(),
-  schema: DataPackSchemaSchema.default({ characterProfileSchema: {} }),
+  schema: DataPackSchemaSchema,
   isNsfw: z.boolean().optional(),
 });
 

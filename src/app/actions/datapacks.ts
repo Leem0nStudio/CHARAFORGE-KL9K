@@ -126,7 +126,6 @@ export async function getDataPacksForAdmin(): Promise<DataPack[]> {
     const snapshot = await adminDb.collection('datapacks').orderBy('createdAt', 'desc').get();
     return snapshot.docs.map(doc => {
         const data = doc.data();
-        // **CRITICAL FIX**: Convert Timestamps to serializable Date objects.
         const createdAt = data.createdAt;
         const updatedAt = data.updatedAt;
         return {
@@ -146,7 +145,6 @@ export async function getDataPackForAdmin(packId: string): Promise<DataPack | nu
     if (!doc.exists) return null;
 
     const data = doc.data() as any;
-    // **CRITICAL FIX**: Convert Timestamps to serializable Date objects.
     const createdAt = data.createdAt;
     const updatedAt = data.updatedAt;
 
@@ -202,7 +200,6 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
 
     const dataPacksData = snapshot.docs.map(doc => {
         const data = doc.data();
-        // **CRITICAL FIX**: Convert Timestamps to a serializable number (milliseconds).
         const createdAt = data.createdAt;
         const updatedAt = data.updatedAt;
         return {
@@ -246,8 +243,6 @@ export async function installDataPack(packId: string): Promise<{success: boolean
             return { success: false, message: "You have already installed this DataPack." };
         }
         
-        // CRITICAL FIX: Use `{ merge: true }` to prevent overwriting the user document.
-        // Use `FieldValue.arrayUnion` to safely add the new pack ID.
         await userRef.set({
             stats: { 
                 installedPacks: FieldValue.arrayUnion(packId)
@@ -339,19 +334,14 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
     const userDoc = await userRef.get();
     
     const installedPackIds = userDoc.data()?.stats?.installedPacks || [];
-
-    // All users should have access to the basic fantasy pack, even if not explicitly installed.
-    const packIdsToFetch = new Set(installedPackIds);
-
-    const uniquePackIds = Array.from(packIdsToFetch);
-
-    if (uniquePackIds.length === 0) {
+    
+    if (installedPackIds.length === 0) {
         return [];
     }
 
     try {
         const packsRef = adminDb.collection('datapacks');
-        const packsSnapshot = await packsRef.where(FieldPath.documentId(), 'in', uniquePackIds).get();
+        const packsSnapshot = await packsRef.where(FieldPath.documentId(), 'in', installedPackIds).get();
 
         if (packsSnapshot.empty) {
             return [];
@@ -408,8 +398,8 @@ export async function searchDataPacksByTag(tag: string): Promise<DataPack[]> {
             return {
                 id: doc.id,
                 ...data,
-                createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(createdAt),
-                updatedAt: updatedAt instanceof Timestamp ? updatedAt.toDate() : (updatedAt ? new Date(updatedAt) : null),
+                createdAt: createdAt instanceof Timestamp ? createdAt.toMillis() : new Date(createdAt).getTime(),
+                updatedAt: updatedAt instanceof Timestamp ? updatedAt.toMillis() : (updatedAt ? new Date(updatedAt).getTime() : null),
             } as DataPack;
         });
 
@@ -418,7 +408,3 @@ export async function searchDataPacksByTag(tag: string): Promise<DataPack[]> {
         return [];
     }
 }
-
-
-
-    

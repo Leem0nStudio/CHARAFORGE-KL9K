@@ -11,7 +11,7 @@ import { Card, CardTitle, CardHeader, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Loader2, ArrowRight, Wand2, Package, ArrowLeft, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import type { DataPack, Option, Slot, PromptTemplate, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
+import type { DataPack, Option, PromptTemplate, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import Link from 'next/link';
@@ -22,10 +22,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, isOpen: boolean, onClose: () => void }) {
     if (!pack) return null;
 
-    // Hydration for backward compatibility
     const allSlots = pack.schema?.characterProfileSchema 
         ? Object.keys(pack.schema.characterProfileSchema)
-        : pack.schema?.slots?.map(s => s.label) || [];
+        : [];
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -72,7 +71,7 @@ function OptionSelectModal({
 }: {
     isOpen: boolean;
     onClose: () => void;
-    options: (EquipmentOption | Option)[]; // Can be either new or old option type
+    options: (EquipmentOption | Option)[];
     currentValue: string;
     onSelect: (value: string) => void;
     title: string;
@@ -108,80 +107,37 @@ function OptionSelectModal({
 }
 
 function buildPromptFromProfile(profile: Record<string, any>, pack: DataPack): string {
-    // Check if we are using the new granular schema or the legacy one
-    if (pack.schema?.characterProfileSchema) {
-        // New granular prompt building logic
-        const parts: string[] = [];
-        const order: Array<keyof CharacterProfileSchema> = [
-            'count', 'raceClass', 'gender', 'hair', 'eyes', 'skin', 'facialFeatures',
-            'head', 'face', 'neck', 'shoulders', 'torso', 'arms', 'hands', 'waist',
-            'legs', 'feet', 'back', 'weaponsExtra', 'pose', 'action', 'camera', 'background', 'effects'
-        ];
-
-        order.forEach(key => {
+    const promptTemplate = pack.schema?.promptTemplates?.[0];
+    
+    if (promptTemplate) {
+        let template = promptTemplate.template;
+        for (const key in profile) {
+            const placeholder = `{${key}}`;
             const value = profile[key];
-            if (!value) return;
-
-            if (typeof value === 'string' && value.trim() !== '') {
-                parts.push(value);
-            } else if (typeof value === 'object' && !Array.isArray(value)) {
-                // This handles EquipmentSlot objects
-                Object.values(value).forEach(subVal => {
-                    if (typeof subVal === 'string' && subVal.trim() !== '') {
-                        parts.push(subVal);
-                    }
-                });
-            } else if (Array.isArray(value)) {
-                 parts.push(...value.filter(Boolean));
+            if (typeof value === 'string') {
+                 template = template.replace(placeholder, value);
+            } else if (typeof value === 'object' && value !== null) {
+                // For nested equipment slots
+                 Object.keys(value).forEach(subKey => {
+                     const subPlaceholder = `{${key}_${subKey}}`;
+                     template = template.replace(subPlaceholder, value[subKey] || '');
+                 });
             }
-        });
-
-        return parts.filter(Boolean).join(', ');
-
-    } else if (pack.schema?.promptTemplates?.[0]) {
-        // Legacy prompt template logic
-        let template = pack.schema.promptTemplates[0].template;
-        for(const key in profile) {
-            template = template.replace(`{${key}}`, profile[key] || '');
         }
-        return template;
+        // Clean up unused placeholders
+        return template.replace(/{[^}]+}/g, '').replace(/,\s*,/g, ',').replace(/,\s*$/g, '').trim();
     }
     
-    // Fallback if no schema is found
-    return Object.values(profile).filter(Boolean).join(', ');
-}
-
-// Hydrates a legacy `slots` array into a `characterProfileSchema` for UI compatibility
-function hydrateLegacySlotsToProfileSchema(slots: Slot[]): CharacterProfileSchema {
-    const profileSchema: CharacterProfileSchema = {};
-    
-    slots.forEach(slot => {
-        // Direct mapping for simple slots
-        if (slot.id in profileSchema) {
-            (profileSchema as any)[slot.id] = slot.options;
-        } else {
-             // Heuristic mapping for compatibility
-            const keyMap: Record<string, keyof CharacterProfileSchema> = {
-                'race': 'raceClass',
-                'class': 'raceClass',
-                'armor_torso': 'torso',
-                'weapon': 'hands',
-            }
-            const targetKey = keyMap[slot.id] || slot.id as keyof CharacterProfileSchema;
-            
-            if (targetKey === 'torso' || targetKey === 'hands') {
-                 if (!profileSchema[targetKey]) {
-                    profileSchema[targetKey] = {};
-                 }
-                (profileSchema[targetKey] as EquipmentSlotOptions).armor = slot.options;
-                (profileSchema[targetKey] as EquipmentSlotOptions).weapon = slot.options;
-            } else {
-                 (profileSchema as any)[targetKey] = slot.options;
-            }
+    // Fallback if no template is found
+    const parts: string[] = [];
+    Object.values(profile).forEach(value => {
+        if (typeof value === 'string' && value.trim()) {
+            parts.push(value);
+        } else if (typeof value === 'object' && value !== null) {
+            parts.push(...Object.values(value).filter(Boolean) as string[]);
         }
     });
-
-    return profileSchema;
+    return parts.filter(Boolean).join(', ');
 }
 
 
@@ -190,16 +146,14 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
     const formValues = watch();
     const [activeModal, setActiveModal] = useState<{title: string, options: (EquipmentOption | Option)[], fieldName: string} | null>(null);
 
-    // This is the core of the backward-compatibility fix.
-    const schema = pack.schema?.characterProfileSchema || (pack.schema?.slots ? hydrateLegacySlotsToProfileSchema(pack.schema.slots) : null);
+    const schema = pack.schema?.characterProfileSchema;
    
-    // Set initial default values
     useEffect(() => {
         if (!schema) return;
         Object.entries(schema).forEach(([key, value]) => {
             if (Array.isArray(value) && value.length > 0) {
                  setValue(key, value[0].value);
-            } else if (typeof value === 'object' && value !== null) {
+            } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
                 Object.entries(value).forEach(([subKey, subValue]) => {
                     if (Array.isArray(subValue) && subValue.length > 0) {
                         setValue(`${key}.${subKey}`, subValue[0].value);
@@ -208,7 +162,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
             }
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pack]);
+    }, [pack, schema, setValue]);
 
 
     const onSubmit = (data: any) => {
@@ -231,7 +185,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
     
     const renderSimpleSlot = (fieldName: keyof CharacterProfileSchema, label: string) => {
         const options = (schema as any)[fieldName] as (EquipmentOption[] | Option[]);
-        if (!options || options.length === 0) return null;
+        if (!options || !Array.isArray(options) || options.length === 0) return null;
         
         const selectedValue = formValues[fieldName];
         const selectedOption = options.find(o => o.value === selectedValue);
@@ -254,7 +208,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                 <AccordionContent>
                     <div className="grid grid-cols-2 gap-2 p-2">
                         {Object.entries(slotOptions).map(([subKey, options]) => {
-                             if (!options || options.length === 0) return null;
+                             if (!options || !Array.isArray(options) || options.length === 0) return null;
                              const subFieldName = `${fieldName}.${subKey}`;
                              const selectedValue = formValues[fieldName]?.[subKey];
                              const selectedOption = options.find(o => o.value === selectedValue);
@@ -317,7 +271,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                             <AccordionItem value="equipment">
                                 <AccordionTrigger>Equipment</AccordionTrigger>
                                 <AccordionContent className="pt-2">
-                                    <Accordion type="multiple" className="w-full">
+                                    <Accordion type="multiple" className="w-full" defaultValue={['torso', 'legs', 'hands']}>
                                         {renderEquipmentSlot('head', 'Head')}
                                         {renderEquipmentSlot('face', 'Face')}
                                         {renderEquipmentSlot('neck', 'Neck')}
@@ -372,8 +326,6 @@ function PackGallery({
             setIsLoading(true);
             try {
                 const installedPacks = await getInstalledDataPacks();
-                // This was the source of the bug. It incorrectly filtered out valid packs.
-                // By removing the filter, all installed packs will now be shown.
                 setPacks(installedPacks);
             } catch (error) {
                 console.error("Failed to load installed datapacks for selector", error);
