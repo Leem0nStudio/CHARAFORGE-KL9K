@@ -12,6 +12,26 @@ import { getUserProfile } from '../actions/user';
 import type { GenerateCharacterSheetOutput } from '@/ai/flows/character-sheet/types';
 
 
+// NEW: Server-side prompt formatting function, moved from the client.
+const formatPromptTextOnServer = (text: string): string => {
+    if (!text) return '';
+    
+    // Replace underscores with spaces and handle comma spacing
+    let formattedText = text.replace(/_/g, ' ').replace(/\s*,\s*/g, ', ').trim();
+
+    // Remove leading/trailing commas
+    if (formattedText.startsWith(',')) formattedText = formattedText.substring(1).trim();
+    if (formattedText.endsWith(',')) formattedText = formattedText.slice(0, -1).trim();
+
+    // Split by comma, filter unique tags, and rejoin
+    // This regex avoids splitting inside parentheses for weighted prompts
+    const tags = formattedText.match(/(\([^)]+\)|[^,]+)/g)?.map(tag => tag.trim()).filter(Boolean) || [];
+    const uniqueTags = [...new Set(tags)];
+    
+    return uniqueTags.join(', ');
+};
+
+
 // Schema for the first step: generating the character sheet
 const GenerateSheetInputSchema = z.object({
   description: z.string().min(10).max(4000),
@@ -74,9 +94,12 @@ export async function generateCharacterSheetData(input: GenerateSheetInput): Pro
             ...engineConfig,
             userApiKey,
         };
+        
+        // MODIFIED: Format the description on the server before sending to the AI
+        const formattedDescription = formatPromptTextOnServer(description);
 
         const result = await generateCharacterSheet({ 
-            description, 
+            description: formattedDescription, 
             targetLanguage, 
             engineConfig: finalEngineConfig
         });
@@ -91,7 +114,7 @@ export async function generateCharacterSheetData(input: GenerateSheetInput): Pro
             message: 'Character sheet generated successfully!',
             data: {
                 ...result,
-                originalDescription: description,
+                originalDescription: description, // Return the user's original, unformatted prompt
             }
         };
 

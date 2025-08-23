@@ -90,7 +90,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
   const { userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   
-  const promptEditorRef = useRef<{ format: () => void }>(null);
+  // The ref is no longer needed as the component is simpler.
+  // const promptEditorRef = useRef<{ format: () => void }>(null);
 
   const generationForm = useForm<z.infer<typeof generationFormSchema>>({
     resolver: zodResolver(generationFormSchema),
@@ -179,7 +180,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
       return;
     }
     
-    promptEditorRef.current?.format();
+    // No longer need to call format on the editor ref
+    // promptEditorRef.current?.format();
 
     setGenerationResult(null);
     setGenerationError(null);
@@ -196,6 +198,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             userApiKey: userApiKey,
       };
 
+      // The raw description is sent to the server for formatting
       const result = await generateCharacterSheetData({ 
           description: data.description,
           targetLanguage: data.targetLanguage,
@@ -399,7 +402,6 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                                 </TabsContent>
                                  <TabsContent value="text" className="mt-2">
                                     <PromptEditor 
-                                      ref={promptEditorRef}
                                       value={field.value}
                                       onChange={field.onChange}
                                       disabled={!canInteract}
