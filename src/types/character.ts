@@ -150,5 +150,3 @@ export const SaveCharacterInputSchema = z.object({
   rarity: z.number().min(1).max(5).optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
-
-    

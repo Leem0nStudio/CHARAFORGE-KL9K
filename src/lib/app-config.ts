@@ -1,5 +1,4 @@
 
-
 import { Home, Package, ScrollText, Swords, UserCircle, BarChart, Settings, Bot, LucideIcon, Download, TestTube, Film, SlidersHorizontal, Shield, Newspaper, FlaskConical } from 'lucide-react';
 import type { AiModel } from '@/types/ai-model';
 

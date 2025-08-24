@@ -261,6 +261,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                     wizardData: formData.wizardData,
                     originalPrompt: formData.originalDescription,
                     rarity: formData.rarity,
+                    birthYear: undefined, // These fields will be populated from the server-side generation
+                    weaknesses: undefined,
                 });
                 if (result.success && result.characterId) {
                     toast({ title: "Character Saved!", description: `${formData.name} is now in your armory.` });
