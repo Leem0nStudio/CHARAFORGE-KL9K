@@ -4,8 +4,8 @@
 /**
  * @fileOverview Character sheet generation AI agent.
  * This flow generates a structured character sheet from a simple description.
- * It now uses a Markov chain to generate a sequence of life events, which then
- * guides the AI in crafting a more structured and compelling biography.
+ * It now uses Markov chains for both generating a sequence of life events to guide
+ * the biography, and for generating a thematically appropriate character name.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -44,7 +44,7 @@ const lifeEventTransitions: Record<LifeEventState, Partial<Record<LifeEventState
     'New Purpose': { 'Intense Training': 0.5, 'Great Victory': 0.5 },
 };
 
-function getNextState(currentState: LifeEventState): LifeEventState {
+function getNextLifeState(currentState: LifeEventState): LifeEventState {
     const transitions = lifeEventTransitions[currentState];
     const rand = Math.random();
     let cumulativeProbability = 0;
@@ -54,7 +54,6 @@ function getNextState(currentState: LifeEventState): LifeEventState {
             return state as LifeEventState;
         }
     }
-    // Fallback to a random start if something goes wrong
     return ['Humble Beginnings', 'Noble Birth', 'Tragic Event'][Math.floor(Math.random() * 3)] as LifeEventState;
 }
 
@@ -64,10 +63,62 @@ function generateLifePath(length: number = 5): LifeEventState[] {
     path.push(currentState);
     
     for (let i = 1; i < length; i++) {
-        currentState = getNextState(currentState);
+        currentState = getNextLifeState(currentState);
         path.push(currentState);
     }
     return path;
+}
+
+// #endregion
+
+// #region Markov Chain Implementation for Name Generation
+
+const nameExamples: Record<string, string[]> = {
+    'fantasy': ['Arion', 'Elara', 'Fenris', 'Lirael', 'Kael', 'Seraphina', 'Draven', 'Isolde'],
+    'sci-fi': ['Jax', 'Cyra', 'Orion', 'Nova', 'Roric', 'Vesper', 'Kaelen', 'Xyla'],
+    'cyberpunk': ['Kain', 'Jynx', 'Raze', 'Nyx', 'Cortex', 'Echo', 'Wraith', 'Hex'],
+    'horror': ['Silas', 'Lilith', 'Malachi', 'Ravenna', 'Abaddon', 'Morwen', 'Cain', 'Seraphine'],
+    'default': ['Alex', 'Morgan', 'Jordan', 'Taylor', 'Casey', 'Riley', 'Jamie', 'Peyton'],
+};
+
+function buildNameChain(theme: string): Record<string, string[]> {
+    const chain: Record<string, string[]> = { '_start': [] };
+    const names = nameExamples[theme] || nameExamples.default;
+
+    names.forEach(name => {
+        chain['_start'].push(name[0]);
+        for (let i = 0; i < name.length - 1; i++) {
+            const char = name[i];
+            if (!chain[char]) {
+                chain[char] = [];
+            }
+            chain[char].push(name[i+1]);
+        }
+    });
+    return chain;
+}
+
+function generateName(chain: Record<string, string[]>, minLength: number, maxLength: number): string {
+    const length = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;
+    let name = chain['_start'][Math.floor(Math.random() * chain['_start'].length)];
+    
+    while (name.length < length) {
+        const lastChar = name[name.length - 1];
+        const nextChars = chain[lastChar];
+        if (!nextChars) break; 
+        const nextChar = nextChars[Math.floor(Math.random() * nextChars.length)];
+        name += nextChar;
+    }
+    return name;
+}
+
+function getThemeFromArchetype(archetype: string): string {
+    const lowerArchetype = archetype.toLowerCase();
+    if (lowerArchetype.includes('cyber') || lowerArchetype.includes('netrunner')) return 'cyberpunk';
+    if (lowerArchetype.includes('space') || lowerArchetype.includes('starship')) return 'sci-fi';
+    if (lowerArchetype.includes('vampire') || lowerArchetype.includes('investigator')) return 'horror';
+    if (lowerArchetype.includes('knight') || lowerArchetype.includes('sorcerer') || lowerArchetype.includes('elf')) return 'fantasy';
+    return 'default';
 }
 
 // #endregion
@@ -87,26 +138,36 @@ const generateCharacterSheetFlow = ai.defineFlow(
     const { description, targetLanguage, engineConfig } = input;
     const { engineId, modelId, userApiKey } = engineConfig;
     
-    // Generate the life path using the Markov Chain
     const lifePath = generateLifePath(5);
     const lifePathString = lifePath.join(' -> ');
+
+    // Use AI to determine archetype first, then generate name based on it.
+    const archetypePrompt = `Based on the following description, what is a single, concise character archetype, class, or role? (e.g., "Grizzled Detective", "Cyber-Sorcerer", "Starship Captain"). Description: "${description}"`;
+    const archetypeResponse = await ai.generate({ model: 'googleai/gemini-1.5-flash-latest', prompt: archetypePrompt });
+    const archetype = archetypeResponse.text.trim().replace(/"/g, '');
+
+    const nameTheme = getThemeFromArchetype(archetype);
+    const nameChain = buildNameChain(nameTheme);
+    const characterName = generateName(nameChain, 4, 8);
     
-    const prompt = `You are a professional writer and game master specializing in creating rich character details. Your task is to generate a complete character sheet from a user's description and a predefined narrative structure.
+    const prompt = `You are a professional writer and game master. Your task is to generate a character sheet from a user's description, a predefined name, archetype, and narrative structure.
 
     **Core Character Concept:**
     """
     ${description}
     """
     
+    **Pre-defined Information (You MUST use these):**
+    - Name: ${characterName}
+    - Archetype: ${archetype}
+    
     **Narrative Skeleton (Life Path):**
     This is the required sequence of events for the character's story. You MUST write a biography that follows this structure.
     ${lifePathString}
 
-    **Instructions for each field:**
-    - name: A fitting and creative name for the character, consistent with the concept.
-    - archetype: Based on the description, determine the character's class, role, or archetype (e.g., "Grizzled Detective", "Cyber-Sorcerer", "Starship Captain"). This is a critical field.
-    - equipment: A list of 3-5 key items, weapons, or gear the character possesses.
-    - physicalDescription: A detailed, one-paragraph description focusing only on the character's visual appearance, clothing, and gear. This will be used for an image generation prompt, so be descriptive and evocative.
+    **Instructions for remaining fields:**
+    - equipment: A list of 3-5 key items, weapons, or gear the character possesses, consistent with their archetype.
+    - physicalDescription: A detailed, one-paragraph description of the character's visual appearance, clothing, and gear. This will be used for an image generation prompt, so be descriptive and evocative.
     - biography: A detailed, multi-paragraph biography exploring the character's backstory, personality, and motivations. **CRITICAL: You MUST craft the biography to logically follow the narrative skeleton provided above.** Each event in the skeleton should be a key point in the character's story.
     
     ${targetLanguage ? `IMPORTANT: The biography MUST be written in ${targetLanguage}. All other fields should also be translated.` : 'All fields MUST be written in English.'}
@@ -145,7 +206,6 @@ const generateCharacterSheetFlow = ai.defineFlow(
         aiOutput = output;
 
     } else {
-        // Default to Gemini engine
         const finalModelId = 'googleai/gemini-1.5-flash-latest';
         const { output } = await ai.generate({
             model: finalModelId,
@@ -160,6 +220,10 @@ const generateCharacterSheetFlow = ai.defineFlow(
         aiOutput = output;
     }
     
+    // Ensure the AI doesn't override our generated name and archetype
+    aiOutput.name = characterName;
+    aiOutput.archetype = archetype;
+
     return aiOutput;
   }
 );
