@@ -9,7 +9,9 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadToStorage } from '@/services/storage';
 import { UpdateCharacterSchema, SaveCharacterInputSchema, type SaveCharacterInput } from '@/types/character';
-import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
+import { generateCharacterSheet, getNextLifeState, lifeEventTransitions } from '@/ai/flows/character-sheet/flow';
+import type { LifeEventState } from '@/ai/flows/character-sheet/flow';
+import { ai } from '@/ai/genkit';
 
 // #region Helper Functions for Stat Generation
 // This logic is now part of the server action to be used when a character's archetype changes.
@@ -348,6 +350,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 createdAt: FieldValue.serverTimestamp() as any, // Cast for transaction
                 isNsfw: false,
                 dataPackId: dataPackId || null,
+                likes: 0,
             },
             lineage: {
                 version: version,
@@ -491,6 +494,79 @@ export async function addCharacterExperience(characterId: string, xp: number): P
     }
 }
 
-    
+// New action to suggest the next timeline event
+export async function suggestNextTimelineEvent(characterId: string): Promise<ActionResponse & { data?: TimelineEvent }> {
+    const uid = await verifyAndGetUid();
+    if (!adminDb) {
+        return { success: false, message: 'Database service unavailable.' };
+    }
 
-    
+    try {
+        const characterRef = adminDb.collection('characters').doc(characterId);
+        const doc = await characterRef.get();
+        if (!doc.exists || doc.data()?.meta.userId !== uid) {
+            return { success: false, message: 'Permission denied or character not found.' };
+        }
+
+        const character = doc.data() as Character;
+        const lastEvent = character.core.timeline?.[character.core.timeline.length - 1];
+        
+        // This is a simplified way to map a title to a state. A more robust solution might use AI.
+        const findStateFromTitle = (title: string): LifeEventState | null => {
+            const lowerTitle = title.toLowerCase();
+            for (const state in lifeEventTransitions) {
+                if (lowerTitle.includes(state.toLowerCase().replace(/\s/g, ''))) {
+                    return state as LifeEventState;
+                }
+            }
+            if (lowerTitle.includes('born') || lowerTitle.includes('childhood')) return 'Humble Beginnings';
+            if (lowerTitle.includes('victory') || lowerTitle.includes('succeeded')) return 'Great Victory';
+            if (lowerTitle.includes('loss') || lowerTitle.includes('failed')) return 'Devastating Loss';
+            return null;
+        }
+
+        const lastState = lastEvent ? findStateFromTitle(lastEvent.title) : null;
+        const nextState = getNextLifeState(lastState || 'Humble Beginnings');
+
+        const prompt = `You are a creative writer. Based on the character below and a suggested life event type, generate a concise, compelling timeline event.
+
+Character Name: ${character.core.name}
+Character Archetype: ${character.core.archetype}
+Character Biography: ${character.core.biography}
+
+Last Timeline Event: ${lastEvent ? `${lastEvent.title} (${lastEvent.date})` : 'None'}
+
+Suggested Next Event Type: "${nextState}"
+
+Generate a JSON object with three fields: "date" (a creative date, like "A Year Later" or "Age 30"), "title" (a short, dramatic title for the event), and "description" (a one-sentence summary of what happened).
+`;
+        
+        const { output } = await ai.generate({
+            model: 'googleai/gemini-1.5-flash-latest',
+            prompt,
+            output: {
+                format: 'json',
+                schema: z.object({
+                    date: z.string(),
+                    title: z.string(),
+                    description: z.string(),
+                })
+            }
+        });
+
+        if (!output) {
+            throw new Error('AI failed to generate a timeline event.');
+        }
+
+        const newEvent: TimelineEvent = {
+            id: uuidv4(),
+            ...output,
+        };
+
+        return { success: true, message: 'Event suggested!', data: newEvent };
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to suggest an event.';
+        return { success: false, message };
+    }
+}

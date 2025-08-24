@@ -6,7 +6,7 @@ import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character, TimelineEvent } from '@/types/character';
-import { updateCharacter, updateCharacterTimeline } from '@/app/actions/character-write';
+import { updateCharacter, updateCharacterTimeline, suggestNextTimelineEvent } from '@/app/actions/character-write';
 import { generateCharacterSheetData } from '@/app/character-generator/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Wand2, Dna, Swords, Shield, BrainCircuit, AlertCircle, RefreshCw, Calendar, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Wand2, Dna, Swords, Shield, BrainCircuit, AlertCircle, RefreshCw, Calendar, Plus, Trash2, Sparkles } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
@@ -59,6 +59,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
     const [character, setCharacter] = useState(initialCharacter);
     const [isUpdating, startUpdateTransition] = useTransition();
     const [isRegenerating, startRegenerateTransition] = useTransition();
+    const [isSuggestingEvent, startSuggestEventTransition] = useTransition();
     
     useEffect(() => {
         setCharacter(initialCharacter);
@@ -157,6 +158,19 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
             }
         });
     };
+
+    const handleSuggestEvent = () => {
+        startSuggestEventTransition(async () => {
+            const result = await suggestNextTimelineEvent(character.id);
+            if (result.success && result.data) {
+                append(result.data);
+                toast({ title: 'Event Suggested!', description: 'A new event has been added to your timeline.' });
+            } else {
+                toast({ variant: 'destructive', title: 'Suggestion Failed', description: result.message });
+            }
+        });
+    };
+
 
     const addNewEvent = () => {
         append({ id: uuidv4(), date: '', title: '', description: '' });
@@ -307,14 +321,20 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                                 ))
                             ) : (
                                 <div className="text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
-                                    <p>No timeline events added yet.</p>
+                                    <p>No timeline events added yet. Add one manually or let the AI suggest one.</p>
                                 </div>
                             )}
                         </div>
                         <div className="flex justify-between items-center pt-4 border-t">
-                            <Button type="button" variant="outline" onClick={addNewEvent} disabled={isUpdating}>
-                                <Plus className="mr-2" /> Add Event
-                            </Button>
+                             <div className="flex gap-2">
+                                <Button type="button" variant="outline" onClick={addNewEvent} disabled={isUpdating}>
+                                    <Plus className="mr-2" /> Add Manually
+                                </Button>
+                                <Button type="button" variant="outline" onClick={handleSuggestEvent} disabled={isSuggestingEvent}>
+                                    {isSuggestingEvent ? <Loader2 className="mr-2 animate-spin" /> : <Sparkles className="mr-2 text-yellow-400"/>}
+                                    Suggest Event
+                                </Button>
+                            </div>
                             <Button type="submit" disabled={isUpdating || !timelineForm.formState.isDirty}>
                                 {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Save Timeline

@@ -19,7 +19,7 @@ import type { Character } from '@/types/character';
 
 // #region Markov Chain Implementation for Life Events
 
-type LifeEventState = 
+export type LifeEventState = 
     | 'Humble Beginnings' 
     | 'Tragic Event' 
     | 'Noble Birth'
@@ -31,7 +31,8 @@ type LifeEventState =
     | 'Redemption'
     | 'New Purpose';
 
-const lifeEventTransitions: Record<LifeEventState, Partial<Record<LifeEventState, number>>> = {
+// Exported for reuse in other server actions
+export const lifeEventTransitions: Record<LifeEventState, Partial<Record<LifeEventState, number>>> = {
     'Humble Beginnings': { 'Intense Training': 0.4, 'Discovery of Power': 0.4, 'Tragic Event': 0.2 },
     'Noble Birth': { 'Intense Training': 0.6, 'Betrayal': 0.3, 'Tragic Event': 0.1 },
     'Tragic Event': { 'Intense Training': 0.5, 'Devastating Loss': 0.3, 'New Purpose': 0.2 },
@@ -44,7 +45,8 @@ const lifeEventTransitions: Record<LifeEventState, Partial<Record<LifeEventState
     'New Purpose': { 'Intense Training': 0.5, 'Great Victory': 0.5 },
 };
 
-function getNextLifeState(currentState: LifeEventState): LifeEventState {
+// Exported for reuse in other server actions
+export function getNextLifeState(currentState: LifeEventState): LifeEventState {
     const transitions = lifeEventTransitions[currentState];
     const rand = Math.random();
     let cumulativeProbability = 0;
@@ -54,6 +56,7 @@ function getNextLifeState(currentState: LifeEventState): LifeEventState {
             return state as LifeEventState;
         }
     }
+    // Fallback to a random starting state if no transition is chosen
     return ['Humble Beginnings', 'Noble Birth', 'Tragic Event'][Math.floor(Math.random() * 3)] as LifeEventState;
 }
 
@@ -227,5 +230,3 @@ const generateCharacterSheetFlow = ai.defineFlow(
     return aiOutput;
   }
 );
-
-    
