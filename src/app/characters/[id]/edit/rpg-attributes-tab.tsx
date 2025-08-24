@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { Character } from '@/types/character';
