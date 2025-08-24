@@ -162,6 +162,10 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
     return (
         <>
             <form onSubmit={handleSubmit(onSubmit)} className="relative flex flex-col flex-grow min-h-0">
+                 <DialogHeader className="sr-only">
+                    <DialogTitle>DataPack Wizard: {pack.name}</DialogTitle>
+                    <DialogDescription>Configure options for the selected DataPack.</DialogDescription>
+                 </DialogHeader>
                  {activeModal && (
                     <OptionSelectModal
                         isOpen={!!activeModal}
@@ -179,8 +183,8 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                     </Button>
                 </div>
                 <div className="flex-grow my-2 min-h-0">
-                    <ScrollArea className="h-full pr-3 -mr-3">
-                        <div className="space-y-4 pb-20">
+                    <ScrollArea className="h-full pr-3 -mr-3 pb-16">
+                        <div className="space-y-4">
                             <Accordion type="multiple" defaultValue={['general', 'appearance', 'equipment']} className="w-full">
                                 <AccordionItem value="general">
                                     <AccordionTrigger>General</AccordionTrigger>
