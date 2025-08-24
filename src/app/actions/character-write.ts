@@ -10,7 +10,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadToStorage } from '@/services/storage';
 import { UpdateCharacterSchema, SaveCharacterInputSchema, type SaveCharacterInput } from '@/types/character';
-import { generateCharacterSheet, getNextLifeState, lifeEventTransitions } from '@/ai/flows/character-sheet/flow';
+import { generateCharacterSheet, getNextLifeState } from '@/ai/flows/character-sheet/flow';
 import type { LifeEventState } from '@/ai/flows/character-sheet/flow';
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -281,7 +281,8 @@ export async function saveCharacter(input: SaveCharacterInput) {
   }
   const { 
       name, biography, imageUrl: imageDataUri, dataPackId,
-      archetype, equipment, physicalDescription, textEngine, imageEngine, wizardData, originalPrompt, rarity
+      archetype, equipment, physicalDescription, textEngine, imageEngine, 
+      wizardData, originalPrompt, rarity, birthYear, weaknesses
   } = validation.data;
   
   const userId = await verifyAndGetUid();
@@ -318,10 +319,11 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 alignment: 'True Neutral',
                 equipment: equipment || null,
                 physicalDescription: physicalDescription || null,
-                birthYear: 'Year 1',
+                birthYear: birthYear || 'Year 1',
                 timeline: [],
                 tags: uniqueTags,
                 rarity: 1, // Start at rarity 1, will be updated after dice roll
+                weaknesses: weaknesses || 'None',
             },
             visuals: {
                 imageUrl: storageUrl,
@@ -501,14 +503,11 @@ export async function suggestNextTimelineEvent(characterId: string): Promise<Act
         // This is a simplified way to map a title to a state. A more robust solution might use AI.
         const findStateFromTitle = (title: string): LifeEventState | null => {
             const lowerTitle = title.toLowerCase();
-            for (const state in lifeEventTransitions) {
-                if (lowerTitle.includes(state.toLowerCase().replace(/\s/g, ''))) {
-                    return state as LifeEventState;
-                }
-            }
             if (lowerTitle.includes('born') || lowerTitle.includes('childhood')) return 'Humble Beginnings';
             if (lowerTitle.includes('victory') || lowerTitle.includes('succeeded')) return 'Great Victory';
             if (lowerTitle.includes('loss') || lowerTitle.includes('failed')) return 'Devastating Loss';
+            if (lowerTitle.includes('betray')) return 'Betrayal';
+            if (lowerTitle.includes('train')) return 'Intense Training';
             return null;
         }
 
@@ -628,3 +627,5 @@ export async function rollForCharacterStats(characterId: string): Promise<Action
         return { success: false, message };
     }
 }
+
+    

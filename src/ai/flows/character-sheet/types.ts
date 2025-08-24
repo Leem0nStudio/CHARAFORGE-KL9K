@@ -25,5 +25,9 @@ export const GenerateCharacterSheetOutputSchema = z.object({
   equipment: z.array(z.string()).describe("A list of the character's key equipment or weapons.").optional(),
   physicalDescription: z.string().describe("A detailed physical description suitable for an image prompt.").optional(),
   biography: z.string().describe("The character's detailed, narrative biography.").optional(),
+  birthYear: z.string().describe("The character's generated birth year or era.").optional(),
+  weaknesses: z.string().describe("A comma-separated string of character weaknesses.").optional(),
 });
 export type GenerateCharacterSheetOutput = z.infer<typeof GenerateCharacterSheetOutputSchema>;
+
+    

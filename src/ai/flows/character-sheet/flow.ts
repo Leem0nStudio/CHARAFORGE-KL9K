@@ -48,6 +48,10 @@ const lifeEventTransitions: Record<LifeEventState, Partial<Record<LifeEventState
 // Exported for reuse in other server actions
 export async function getNextLifeState(currentState: LifeEventState): Promise<LifeEventState> {
     const transitions = lifeEventTransitions[currentState];
+    if (!transitions) {
+        // Fallback for safety, though every state should be defined.
+        return ['Humble Beginnings', 'Noble Birth', 'Tragic Event'][Math.floor(Math.random() * 3)] as LifeEventState;
+    }
     const rand = Math.random();
     let cumulativeProbability = 0;
     for (const state in transitions) {
@@ -60,26 +64,13 @@ export async function getNextLifeState(currentState: LifeEventState): Promise<Li
     return ['Humble Beginnings', 'Noble Birth', 'Tragic Event'][Math.floor(Math.random() * 3)] as LifeEventState;
 }
 
-function generateLifePath(length: number = 5): LifeEventState[] {
-    const path: LifeEventState[] = [];
-    let currentState: LifeEventState = ['Humble Beginnings', 'Noble Birth', 'Tragic Event'][Math.floor(Math.random() * 3)] as LifeEventState;
-    path.push(currentState);
-    
-    for (let i = 1; i < length; i++) {
-        // This function is not async, but we can await it here if needed in future.
-        // For now, direct call is fine since getNextLifeState is simple.
-        // In a real scenario, we might need to handle the promise.
-        // However, for this fix, we just need to satisfy the export condition.
-        // The implementation can remain effectively synchronous.
-        currentState = getNextLifeState_internal(currentState);
-        path.push(currentState);
-    }
-    return path;
-}
-
 // Internal synchronous version for use within this file
 function getNextLifeState_internal(currentState: LifeEventState): LifeEventState {
     const transitions = lifeEventTransitions[currentState];
+    if (!transitions) {
+        // Fallback for safety
+        return ['Humble Beginnings', 'Noble Birth', 'Tragic Event'][Math.floor(Math.random() * 3)] as LifeEventState;
+    }
     const rand = Math.random();
     let cumulativeProbability = 0;
     for (const state in transitions) {
@@ -89,6 +80,18 @@ function getNextLifeState_internal(currentState: LifeEventState): LifeEventState
         }
     }
     return ['Humble Beginnings', 'Noble Birth', 'Tragic Event'][Math.floor(Math.random() * 3)] as LifeEventState;
+}
+
+function generateLifePath(length: number = 5): LifeEventState[] {
+    const path: LifeEventState[] = [];
+    let currentState: LifeEventState = ['Humble Beginnings', 'Noble Birth', 'Tragic Event'][Math.floor(Math.random() * 3)] as LifeEventState;
+    path.push(currentState);
+    
+    for (let i = 1; i < length; i++) {
+        currentState = getNextLifeState_internal(currentState);
+        path.push(currentState);
+    }
+    return path;
 }
 
 
@@ -192,6 +195,8 @@ const generateCharacterSheetFlow = ai.defineFlow(
     - equipment: A list of 3-5 key items, weapons, or gear the character possesses, consistent with their archetype.
     - physicalDescription: A detailed, one-paragraph description of the character's visual appearance, clothing, and gear. This will be used for an image generation prompt, so be descriptive and evocative.
     - biography: A detailed, multi-paragraph biography exploring the character's backstory, personality, and motivations. **CRITICAL: You MUST craft the biography to logically follow the narrative skeleton provided above.** Each event in the skeleton should be a key point in the character's story.
+    - birthYear: A creative and thematically appropriate birth year, era, or age for the character (e.g., "Year of the Twin Comets", "Age 35", "9th Cycle of the Neon Era").
+    - weaknesses: A short, comma-separated string of 2-3 thematic weaknesses or vices (e.g., "Avarice, Fear of heights, Overconfidence").
     
     ${targetLanguage ? `IMPORTANT: The biography MUST be written in ${targetLanguage}. All other fields should also be translated.` : 'All fields MUST be written in English.'}
     `;
@@ -250,3 +255,5 @@ const generateCharacterSheetFlow = ai.defineFlow(
     return aiOutput;
   }
 );
+
+    

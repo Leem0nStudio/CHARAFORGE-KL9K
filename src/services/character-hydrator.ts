@@ -74,6 +74,7 @@ export function toCharacterObject(docId: string, data: DocumentData): Character 
         isPlayable: data.rpg?.isPlayable ?? !!(data.core?.archetype || data.archetype),
         level: data.rpg?.level || 1,
         experience: data.rpg?.experience || 0,
+        willpower: data.rpg?.willpower || { current: 10, max: 10 },
         skills: data.rpg?.skills || [],
         statsStatus: data.rpg?.statsStatus || 'pending',
         skillsStatus: data.rpg?.skillsStatus || 'pending',
@@ -93,3 +94,5 @@ export function toCharacterObject(docId: string, data: DocumentData): Character 
         rpg: { ...defaultRpg, ...data.rpg }
     } as Character;
 }
+
+    

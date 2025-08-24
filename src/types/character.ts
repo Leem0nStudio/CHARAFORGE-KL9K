@@ -141,6 +141,8 @@ export const SaveCharacterInputSchema = z.object({
   archetype: z.string().optional().nullable(),
   equipment: z.array(z.string()).optional().nullable(),
   physicalDescription: z.string().optional().nullable(),
+  birthYear: z.string().optional().nullable(),
+  weaknesses: z.string().optional().nullable(),
   textEngine: z.enum(['gemini', 'openrouter']).optional(),
   imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai', 'comfyui', 'modelslab']).optional(),
   wizardData: z.record(z.union([z.string(), z.record(z.string())])).optional().nullable(),
@@ -148,3 +150,5 @@ export const SaveCharacterInputSchema = z.object({
   rarity: z.number().min(1).max(5).optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
+
+    
