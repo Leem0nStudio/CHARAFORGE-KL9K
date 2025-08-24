@@ -1,5 +1,4 @@
 
-
 /**
  * @fileoverview This service provides a centralized function for converting
  * Firestore document data into a fully-typed and serializable `Character` object.
@@ -48,6 +47,7 @@ export function toCharacterObject(docId: string, data: DocumentData): Character 
         isNsfw: data.isNsfw || false,
         dataPackId: data.dataPackId || null,
         createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(),
+        likes: data.likes || 0,
     };
     const defaultLineage = {
         version: data.version || 1,
@@ -85,7 +85,7 @@ export function toCharacterObject(docId: string, data: DocumentData): Character 
         id: docId,
         core: { ...defaultCore, ...data.core },
         visuals: { ...defaultVisuals, ...data.visuals },
-        meta: { ...defaultMeta, ...data.meta, createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date() },
+        meta: { ...defaultMeta, ...data.meta, createdAt: createdAt instanceof Timestamp ? createdAt.toDate() : new Date(), likes: data.meta?.likes ?? 0 },
         lineage: { ...defaultLineage, ...data.lineage },
         settings: { ...defaultSettings, ...data.settings },
         generation: { ...defaultGeneration, ...data.generation },

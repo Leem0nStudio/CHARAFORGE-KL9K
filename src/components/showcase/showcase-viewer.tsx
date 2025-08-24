@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Image from 'next/image';
@@ -13,10 +12,12 @@ import { ArrowLeft, Edit, Share2, Dna, Swords as SwordsIcon, Shield, BrainCircui
 import { StatItem } from './stat-item';
 import { StarRating } from './star-rating';
 import { motion } from 'framer-motion';
+import { LikeButton } from './like-button';
 
 interface ShowcaseViewerProps {
     character: Character;
     currentUserId: string | null;
+    isLikedInitially: boolean;
 }
 
 function SkillDisplay({ skill }: { skill: Character['rpg']['skills'][0]}) {
@@ -41,7 +42,7 @@ function SkillDisplay({ skill }: { skill: Character['rpg']['skills'][0]}) {
 }
 
 
-export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps) {
+export function ShowcaseViewer({ character, currentUserId, isLikedInitially }: ShowcaseViewerProps) {
     const isOwner = character.meta.userId === currentUserId;
     const showcaseImage = character.visuals.showcaseImageUrl || character.visuals.imageUrl;
     const backgroundImage = character.visuals.imageUrl;
@@ -158,10 +159,15 @@ export function ShowcaseViewer({ character, currentUserId }: ShowcaseViewerProps
                             )}
 
                              <div className="flex gap-2 pt-4">
-                                <Button className="flex-1" variant="secondary"><Share2 className="mr-2"/>Share</Button>
+                                <LikeButton 
+                                    characterId={character.id}
+                                    initialLikes={character.meta.likes}
+                                    isLikedInitially={isLikedInitially}
+                                    currentUserId={currentUserId}
+                                />
                                 {isOwner && (
                                     <Button asChild className="flex-1">
-                                        <Link href={`/characters/${character.id}/edit`}><Edit className="mr-2"/> Edit in Workshop</Link>
+                                        <Link href={`/characters/${character.id}/edit`}><Edit className="mr-2"/> Edit</Link>
                                     </Button>
                                 )}
                             </div>

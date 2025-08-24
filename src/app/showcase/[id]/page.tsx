@@ -1,9 +1,9 @@
 
-
 'use server';
 
 import { notFound } from 'next/navigation';
 import { getCharacter } from '@/app/actions/character-read';
+import { getCharacterLikeStatus } from '@/app/actions/social';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { ShowcaseViewer } from '@/components/showcase/showcase-viewer';
 
@@ -14,8 +14,10 @@ export default async function ShowcasePage({ params }: { params: { id: string } 
   }
 
   let currentUserId: string | null = null;
+  let isLiked = false;
   try {
     currentUserId = await verifyAndGetUid();
+    isLiked = await getCharacterLikeStatus(character.id, currentUserId);
   } catch(e) {
     // User is not logged in, which is fine for public pages
   }
@@ -29,6 +31,7 @@ export default async function ShowcasePage({ params }: { params: { id: string } 
     <ShowcaseViewer 
       character={character}
       currentUserId={currentUserId}
+      isLikedInitially={isLiked}
     />
   );
 }

@@ -81,6 +81,7 @@ export type Character = {
     isNsfw: boolean;
     dataPackId: string | null;
     dataPackName?: string | null; // Denormalized for display
+    likes: number; // Number of likes
   };
 
   // Versioning and branching information.

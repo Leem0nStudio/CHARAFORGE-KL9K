@@ -1,5 +1,4 @@
 
-
 import type { UserInfo, UserMetadata } from 'firebase/auth';
 
 /**
@@ -8,6 +7,8 @@ import type { UserInfo, UserMetadata } from 'firebase/auth';
 export interface UserStats {
   charactersCreated: number;
   totalLikes: number;
+  followers: number; // Number of users following this user
+  following: number; // Number of users this user is following
   collectionsCreated: number;
   installedPacks: string[];
   installedModels: string[]; // Updated to track installed models
