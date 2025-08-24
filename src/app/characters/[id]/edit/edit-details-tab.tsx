@@ -6,7 +6,7 @@ import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character, TimelineEvent } from '@/types/character';
-import { updateCharacter, updateCharacterTimeline, suggestNextTimelineEvent } from '@/app/actions/character-write';
+import { updateCharacter, updateCharacterTimeline, suggestNextTimelineEvent, generateDialogue } from '@/app/actions/character-write';
 import { generateCharacterSheetData } from '@/app/character-generator/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Wand2, Dna, Swords, Shield, BrainCircuit, AlertCircle, RefreshCw, Calendar, Plus, Trash2, Sparkles } from 'lucide-react';
+import { Loader2, Wand2, Dna, Swords, Shield, BrainCircuit, AlertCircle, RefreshCw, Calendar, Plus, Trash2, Sparkles, MessageSquareQuote } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
@@ -60,6 +60,8 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
     const [isUpdating, startUpdateTransition] = useTransition();
     const [isRegenerating, startRegenerateTransition] = useTransition();
     const [isSuggestingEvent, startSuggestEventTransition] = useTransition();
+    const [isGeneratingDialogue, startDialogueTransition] = useTransition();
+    const [dialogueLines, setDialogueLines] = useState<string[]>([]);
     
     useEffect(() => {
         setCharacter(initialCharacter);
@@ -171,6 +173,18 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
         });
     };
 
+    const handleGenerateDialogue = () => {
+        startDialogueTransition(async () => {
+            const result = await generateDialogue(character.id);
+            if (result.success && result.dialogueLines) {
+                setDialogueLines(result.dialogueLines);
+                toast({ title: 'Dialogue Generated!', description: 'Characteristic phrases for your character have been created.' });
+            } else {
+                toast({ variant: 'destructive', title: 'Dialogue Failed', description: result.message });
+            }
+        });
+    };
+
 
     const addNewEvent = () => {
         append({ id: uuidv4(), date: '', title: '', description: '' });
@@ -272,6 +286,31 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                     </form>
                 </CardContent>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Character Voice</CardTitle>
+                    <CardDescription>
+                        Generate characteristic dialogue lines to define your character's personality and voice.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {dialogueLines.length > 0 && (
+                            <div className="space-y-2 rounded-lg border p-4 bg-muted/50">
+                                {dialogueLines.map((line, index) => (
+                                    <p key={index} className="italic text-muted-foreground">"{line}"</p>
+                                ))}
+                            </div>
+                        )}
+                         <Button onClick={handleGenerateDialogue} disabled={isGeneratingDialogue} variant="outline">
+                            {isGeneratingDialogue ? <Loader2 className="mr-2 animate-spin" /> : <MessageSquareQuote className="mr-2 text-primary"/>}
+                            Generate Catchphrases
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
 
             <Card>
                 <CardHeader>

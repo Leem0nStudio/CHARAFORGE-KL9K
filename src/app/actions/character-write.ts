@@ -12,6 +12,8 @@ import { UpdateCharacterSchema, SaveCharacterInputSchema, type SaveCharacterInpu
 import { generateCharacterSheet, getNextLifeState, lifeEventTransitions } from '@/ai/flows/character-sheet/flow';
 import type { LifeEventState } from '@/ai/flows/character-sheet/flow';
 import { ai } from '@/ai/genkit';
+import { z } from 'zod';
+import { generateDialogueFlow } from '@/ai/flows/dialogue-generation/flow';
 
 // #region Helper Functions for Stat Generation
 // This logic is now part of the server action to be used when a character's archetype changes.
@@ -567,6 +569,40 @@ Generate a JSON object with three fields: "date" (a creative date, like "A Year 
 
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to suggest an event.';
+        return { success: false, message };
+    }
+}
+
+
+export async function generateDialogue(characterId: string): Promise<ActionResponse & { dialogueLines?: string[] }> {
+    const uid = await verifyAndGetUid();
+    if (!adminDb) {
+        return { success: false, message: 'Database service unavailable.' };
+    }
+
+    try {
+        const characterRef = adminDb.collection('characters').doc(characterId);
+        const doc = await characterRef.get();
+        if (!doc.exists || doc.data()?.meta.userId !== uid) {
+            return { success: false, message: 'Permission denied or character not found.' };
+        }
+
+        const character = doc.data() as Character;
+        
+        const result = await generateDialogueFlow({
+            name: character.core.name,
+            archetype: character.core.archetype || 'Adventurer',
+            biography: character.core.biography,
+        });
+
+        if (!result.dialogueLines || result.dialogueLines.length === 0) {
+            throw new Error('AI failed to generate any dialogue.');
+        }
+
+        return { success: true, message: 'Dialogue generated!', dialogueLines: result.dialogueLines };
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to generate dialogue.';
         return { success: false, message };
     }
 }
