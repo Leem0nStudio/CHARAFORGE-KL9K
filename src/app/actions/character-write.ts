@@ -245,25 +245,17 @@ export async function updateCharacter(
       'core.birthYear': birthYear || null,
     };
     
-    const hasClassChanged = existingData.core.archetype !== (archetype || null);
+    // Check if the archetype has changed.
+    const hasArchetypeChanged = existingData.core.archetype !== (archetype || null);
     
-    if (hasClassChanged) {
-        if (archetype) {
-            const newStats = generateBalancedStats(archetype);
-            const newRarity = calculateRarity(newStats);
-            updates['rpg.stats'] = newStats;
-            updates['core.rarity'] = newRarity;
-            updates['rpg.isPlayable'] = true;
-        } else {
-            // Reset stats if class is removed
-            updates['rpg.stats'] = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
-            updates['core.rarity'] = 1;
-            updates['rpg.isPlayable'] = false;
-        }
-        
-        // Reset skills whenever the class changes, as they become irrelevant.
+    if (hasArchetypeChanged) {
+        // If the archetype is changed, reset stats and skills so the user must re-roll.
+        updates['rpg.stats'] = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
+        updates['core.rarity'] = 1;
+        updates['rpg.isPlayable'] = !!archetype;
         updates['rpg.skills'] = [];
         updates['rpg.skillsStatus'] = 'pending';
+        updates['rpg.statsStatus'] = 'pending';
     }
   
     await characterRef.update(updates);
@@ -304,16 +296,6 @@ export async function saveCharacter(input: SaveCharacterInput) {
     const userRef = adminDb.collection('users').doc(userId);
     
     const isPlayable = !!archetype;
-    let finalStats: RpgAttributes['stats'] = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
-    let finalRarity: Character['core']['rarity'] = rarity || 1;
-
-    if (archetype) {
-        finalStats = generateBalancedStats(archetype);
-        // Only override rarity if it wasn't explicitly passed (e.g. from the new generator flow)
-        if (!rarity) {
-             finalRarity = calculateRarity(finalStats);
-        }
-    }
     
     await adminDb.runTransaction(async (transaction) => {
         const userDoc = await transaction.get(userRef);
@@ -337,7 +319,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 birthYear: 'Year 1',
                 timeline: [],
                 tags: uniqueTags,
-                rarity: finalRarity,
+                rarity: 1, // Start at rarity 1, will be updated after dice roll
             },
             visuals: {
                 imageUrl: storageUrl,
@@ -377,9 +359,9 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 level: 1,
                 experience: 0,
                 skills: [],
-                statsStatus: isPlayable ? 'complete' : 'pending',
+                statsStatus: isPlayable ? 'pending' : 'complete',
                 skillsStatus: 'pending',
-                stats: finalStats,
+                stats: { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 },
             }
         };
 
@@ -607,4 +589,39 @@ export async function generateDialogue(characterId: string): Promise<ActionRespo
     }
 }
 
-    
+export async function rollForCharacterStats(characterId: string): Promise<ActionResponse & { newStats?: RpgAttributes['stats'] }> {
+    const uid = await verifyAndGetUid();
+    if (!adminDb) {
+        return { success: false, message: "Database service unavailable." };
+    }
+
+    try {
+        const characterRef = adminDb.collection('characters').doc(characterId);
+        const characterDoc = await characterRef.get();
+        const characterData = characterDoc.data();
+
+        if (!characterDoc.exists || characterData?.meta.userId !== uid) {
+            return { success: false, message: "Permission denied or character not found." };
+        }
+        if (!characterData.core.archetype) {
+            return { success: false, message: "Character must have an Archetype to roll for stats." };
+        }
+
+        const newStats = generateBalancedStats(characterData.core.archetype);
+        const newRarity = calculateRarity(newStats);
+
+        await characterRef.update({
+            'rpg.stats': newStats,
+            'core.rarity': newRarity,
+            'rpg.statsStatus': 'complete',
+        });
+        
+        revalidatePath(`/characters/${characterId}/edit`);
+
+        return { success: true, message: "Stats rolled successfully!", newStats };
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to roll for stats.";
+        return { success: false, message };
+    }
+}
