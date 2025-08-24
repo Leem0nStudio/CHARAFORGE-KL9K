@@ -202,7 +202,7 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
 
     return (
         <>
-            <DialogHeader>
+             <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
                     <Wand2 className="h-6 w-6 text-primary" /> {pack.name} Wizard
                 </DialogTitle>
@@ -221,57 +221,59 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                         title={activeModal.title}
                     />
                 )}
-                <ScrollArea className="flex-grow my-4 pr-3 -mr-3">
-                    <div className="space-y-4">
-                        <Accordion type="multiple" defaultValue={['general', 'appearance', 'equipment']} className="w-full">
-                            <AccordionItem value="general">
-                                <AccordionTrigger>General</AccordionTrigger>
-                                <AccordionContent className="space-y-1">
-                                    {renderSimpleSlot('count', 'Count')}
-                                    {renderSimpleSlot('raceClass', 'Race/Class')}
-                                    {renderSimpleSlot('gender', 'Gender')}
-                                </AccordionContent>
-                            </AccordionItem>
-                             <AccordionItem value="appearance">
-                                <AccordionTrigger>Appearance</AccordionTrigger>
-                                <AccordionContent className="space-y-1">
-                                    {renderSimpleSlot('hair', 'Hair')}
-                                    {renderSimpleSlot('eyes', 'Eyes')}
-                                    {renderSimpleSlot('skin', 'Skin')}
-                                    {renderSimpleSlot('facialFeatures', 'Facial Features')}
-                                </AccordionContent>
-                            </AccordionItem>
-                            <AccordionItem value="equipment">
-                                <AccordionTrigger>Equipment</AccordionTrigger>
-                                <AccordionContent className="pt-2">
-                                    <Accordion type="multiple" className="w-full space-y-1" defaultValue={['torso', 'legs', 'hands']}>
-                                        {renderEquipmentSlot('head', 'Head')}
-                                        {renderEquipmentSlot('face', 'Face')}
-                                        {renderEquipmentSlot('neck', 'Neck')}
-                                        {renderEquipmentSlot('shoulders', 'Shoulders')}
-                                        {renderEquipmentSlot('torso', 'Torso')}
-                                        {renderEquipmentSlot('arms', 'Arms')}
-                                        {renderEquipmentSlot('hands', 'Hands')}
-                                        {renderEquipmentSlot('waist', 'Waist')}
-                                        {renderEquipmentSlot('legs', 'Legs')}
-                                        {renderEquipmentSlot('feet', 'Feet')}
-                                        {renderEquipmentSlot('back', 'Back')}
-                                    </Accordion>
-                                </AccordionContent>
-                            </AccordionItem>
-                             <AccordionItem value="scene">
-                                <AccordionTrigger>Scene & Action</AccordionTrigger>
-                                <AccordionContent className="space-y-1">
-                                    {renderSimpleSlot('pose', 'Pose')}
-                                    {renderSimpleSlot('action', 'Action')}
-                                    {renderSimpleSlot('camera', 'Camera')}
-                                    {renderSimpleSlot('background', 'Background')}
-                                    {renderSimpleSlot('effects', 'Effects')}
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
-                    </div>
-                </ScrollArea>
+                <div className="flex-grow my-4 min-h-0">
+                    <ScrollArea className="h-full pr-3 -mr-3">
+                        <div className="space-y-4">
+                            <Accordion type="multiple" defaultValue={['general', 'appearance', 'equipment']} className="w-full">
+                                <AccordionItem value="general">
+                                    <AccordionTrigger>General</AccordionTrigger>
+                                    <AccordionContent className="space-y-1">
+                                        {renderSimpleSlot('count', 'Count')}
+                                        {renderSimpleSlot('raceClass', 'Race/Class')}
+                                        {renderSimpleSlot('gender', 'Gender')}
+                                    </AccordionContent>
+                                </AccordionItem>
+                                 <AccordionItem value="appearance">
+                                    <AccordionTrigger>Appearance</AccordionTrigger>
+                                    <AccordionContent className="space-y-1">
+                                        {renderSimpleSlot('hair', 'Hair')}
+                                        {renderSimpleSlot('eyes', 'Eyes')}
+                                        {renderSimpleSlot('skin', 'Skin')}
+                                        {renderSimpleSlot('facialFeatures', 'Facial Features')}
+                                    </AccordionContent>
+                                </AccordionItem>
+                                <AccordionItem value="equipment">
+                                    <AccordionTrigger>Equipment</AccordionTrigger>
+                                    <AccordionContent className="pt-2">
+                                        <Accordion type="multiple" className="w-full space-y-1" defaultValue={['torso', 'legs', 'hands']}>
+                                            {renderEquipmentSlot('head', 'Head')}
+                                            {renderEquipmentSlot('face', 'Face')}
+                                            {renderEquipmentSlot('neck', 'Neck')}
+                                            {renderEquipmentSlot('shoulders', 'Shoulders')}
+                                            {renderEquipmentSlot('torso', 'Torso')}
+                                            {renderEquipmentSlot('arms', 'Arms')}
+                                            {renderEquipmentSlot('hands', 'Hands')}
+                                            {renderEquipmentSlot('waist', 'Waist')}
+                                            {renderEquipmentSlot('legs', 'Legs')}
+                                            {renderEquipmentSlot('feet', 'Feet')}
+                                            {renderEquipmentSlot('back', 'Back')}
+                                        </Accordion>
+                                    </AccordionContent>
+                                </AccordionItem>
+                                 <AccordionItem value="scene">
+                                    <AccordionTrigger>Scene & Action</AccordionTrigger>
+                                    <AccordionContent className="space-y-1">
+                                        {renderSimpleSlot('pose', 'Pose')}
+                                        {renderSimpleSlot('action', 'Action')}
+                                        {renderSimpleSlot('camera', 'Camera')}
+                                        {renderSimpleSlot('background', 'Background')}
+                                        {renderSimpleSlot('effects', 'Effects')}
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        </div>
+                    </ScrollArea>
+                </div>
                 <DialogFooter className="flex-none pt-4 border-t mt-auto">
                     <Button type="button" variant="ghost" onClick={onBack}>
                         <ArrowLeft className="mr-2" /> Back
@@ -421,5 +423,3 @@ export function DataPackSelectorModal({
         </Dialog>
     )
 }
-
-    
