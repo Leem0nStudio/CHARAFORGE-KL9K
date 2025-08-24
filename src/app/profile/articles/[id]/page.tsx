@@ -4,7 +4,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { getArticle } from '@/app/actions/articles';
-import { ArticleForm, type Article } from '@/app/admin/articles/[id]/article-form';
+import { ArticleForm, type Article } from './article-form';
 import { BackButton } from '@/components/back-button';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';

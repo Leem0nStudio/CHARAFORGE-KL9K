@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
 import type { DataPack } from '@/types/datapack';
-import type { Article } from '@/types/article';
+import type { ArticleWithCover } from '@/components/article/article-card';
 import { motion } from 'framer-motion';
 import { ArrowRight, Package, Wand2, Trophy, Image as ImageIcon, Sparkles, Newspaper } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
@@ -24,7 +24,7 @@ type HomePageClientProps = {
     featuredCreations: Character[];
     topCreators: UserProfile[];
     newDataPacks: DataPack[];
-    latestArticles: Article[];
+    latestArticles: ArticleWithCover[];
     heroCharacter: Character | null;
 }
 

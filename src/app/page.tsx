@@ -6,6 +6,7 @@ import { getPublicDataPacks } from '@/app/actions/datapacks';
 import { getPublishedArticles } from '@/app/actions/articles';
 import { HomePageClient } from '@/components/home-page-client';
 import type { Character } from '@/types/character';
+import type { ArticleWithCover } from '@/components/article/article-card';
 
 export default async function Home() {
     const [featuredCharacters, topCreators, newDataPacks, latestArticles] = await Promise.all([
@@ -14,6 +15,17 @@ export default async function Home() {
         getPublicDataPacks(),
         getPublishedArticles(),
     ]);
+    
+    const extractCoverImage = (content: string): string | null => {
+        const match = content.match(/\!\[.*?\]\((.*?)\)/);
+        return match ? match[1] : null;
+    };
+
+    const articlesWithCovers: ArticleWithCover[] = latestArticles.map(article => ({
+        ...article,
+        coverImageUrl: extractCoverImage(article.content),
+    }));
+
 
     // Optimize hero character selection on the server
     const heroCharacter = (() => {
@@ -29,7 +41,7 @@ export default async function Home() {
             featuredCreations={featuredCharacters} 
             topCreators={topCreators} 
             newDataPacks={newDataPacks}
-            latestArticles={latestArticles.slice(0, 3)} // Pass only the 3 most recent articles
+            latestArticles={articlesWithCovers.slice(0, 3)} // Pass only the 3 most recent articles
             heroCharacter={heroCharacter}
         />
     );

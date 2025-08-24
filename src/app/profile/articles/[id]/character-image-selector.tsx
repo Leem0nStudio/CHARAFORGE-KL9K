@@ -107,4 +107,3 @@ export function CharacterImageSelectorDialog({ isOpen, onClose, onImageSelect }:
         </Dialog>
     );
 }
-
