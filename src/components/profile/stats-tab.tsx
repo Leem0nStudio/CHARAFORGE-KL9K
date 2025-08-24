@@ -1,9 +1,8 @@
 
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Swords, Heart, Package, Gem, Calendar } from 'lucide-react';
+import { User, Swords, Heart, Package, Gem, Calendar, UserPlus, UserCheck } from 'lucide-react';
 import type { UserProfile } from '@/types/user';
 import { format } from 'date-fns';
 import { StatCard } from '@/components/ui/stat-card';
@@ -12,15 +11,12 @@ export function StatsTab({ userStats }: { userStats?: UserProfile['stats'] }) {
     const memberSince = userStats?.memberSince;
     let memberSinceDate = 'N/A';
     
-    // **CRITICAL FIX**: The data from the server is now a number (milliseconds).
-    // This check handles that correctly.
     if (typeof memberSince === 'number') {
       const date = new Date(memberSince);
       if (!isNaN(date.getTime())) {
           memberSinceDate = format(date, 'PPP');
       }
     } else if (memberSince) {
-      // Fallback for older data that might still be a string or other type
       const date = new Date(memberSince);
       if (!isNaN(date.getTime())) {
           memberSinceDate = format(date, 'PPP');
@@ -38,8 +34,8 @@ export function StatsTab({ userStats }: { userStats?: UserProfile['stats'] }) {
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <StatCard icon={<Swords />} label="Characters Created" value={userStats.charactersCreated || 0} />
                         <StatCard icon={<Heart />} label="Total Likes Received" value={userStats.totalLikes || 0} />
-                        <StatCard icon={<Gem />} label="Subscription Tier" value={userStats.subscriptionTier || 'free'} />
-                        <StatCard icon={<User />} label="Collections Created" value={userStats.collectionsCreated || 0} />
+                        <StatCard icon={<UserPlus />} label="Followers" value={userStats.followers || 0} />
+                        <StatCard icon={<UserCheck />} label="Following" value={userStats.following || 0} />
                         <StatCard icon={<Package />} label="DataPacks Installed" value={userStats.installedPacks?.length || 0} />
                         <StatCard icon={<Calendar />} label="Member Since" value={memberSinceDate} />
                     </div>
@@ -50,6 +46,3 @@ export function StatsTab({ userStats }: { userStats?: UserProfile['stats'] }) {
         </Card>
     );
 }
-
-    
-    

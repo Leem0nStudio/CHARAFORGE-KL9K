@@ -4,7 +4,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Star } from 'lucide-react';
+import { Star, Heart } from 'lucide-react';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
 
@@ -52,6 +52,11 @@ export function GachaCard({ character }: GachaCardProps) {
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         />
                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                         <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <div className="flex items-center gap-1.5 bg-background/80 backdrop-blur-sm text-sm font-semibold px-2 py-1 rounded-full">
+                                <Heart className="text-destructive fill-destructive w-4 h-4"/> {character.meta.likes || 0}
+                            </div>
+                        </div>
                     </div>
                     
                     <div className="absolute bottom-3 left-3 right-3 text-white">
