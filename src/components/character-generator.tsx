@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useTransition, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback, useTransition, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -11,32 +11,41 @@ import { z } from "zod";
 import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown, Star, CaseSensitive, Pencil, Braces, ArrowLeft, ArrowRight, BrainCircuit } from "lucide-react";
 
 import { 
-    Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
+    Button,
+    Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
     Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
-    Input, Textarea, Alert, AlertDescription, AlertTitle, Badge,
-    RadioGroup, RadioGroupItem, Slider, Tabs, TabsContent, TabsList, TabsTrigger,
+    Input,
+    Textarea,
+    Alert, AlertDescription, AlertTitle,
+    Badge,
+    RadioGroup, RadioGroupItem,
+    Slider,
+    Tabs, TabsContent, TabsList, TabsTrigger,
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
-    ScrollArea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-    Label, Switch, Skeleton
+    ScrollArea,
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+    Label,
+    Switch,
 } from "@/components/ui";
-
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/character-generator/actions";
 import { getModels } from "@/app/actions/ai-models";
-import { getDataPackForAdmin, getInstalledDataPacks } from "@/app/actions/datapacks";
+import { getDataPackForAdmin } from "@/app/actions/datapacks";
+import { Skeleton } from "./ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TagAssistantModal } from "@/components/tag-assistant-modal";
 import { ModelSelectorModal } from '@/components/model-selector-modal';
 import type { AiModel } from '@/types/ai-model';
 import { VisualModelSelector } from "@/components/visual-model-selector";
 import { PromptEditor } from "@/components/prompt-editor";
-import type { DataPack, PromptTemplate, Option, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
-import { textModels, rpgArchetypes } from "@/lib/app-config";
+import type { DataPack, PromptTemplate, Option, Slot, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
+import { textModels, rpgArchetypes, geminiImagePlaceholder } from "@/lib/app-config";
 import type { User as FirebaseUser } from "firebase/auth";
 import { AnimatePresence, motion } from 'framer-motion';
-import { DataPackSelector } from "./datapack-selector";
+import { DataPackSelector } from "../components/datapack-selector";
+
 
 type GenerationStep = 'concept' | 'details' | 'portrait' | 'complete';
 type View = 'generator' | 'datapack-selector' | 'datapack-wizard';
@@ -98,7 +107,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             selectedTextModel: textModels[0],
             aspectRatio: '1:1',
             loraWeight: 0.75,
-            selectedModel: undefined,
+            selectedModel: geminiImagePlaceholder, // Safe default
         },
     });
 
@@ -145,6 +154,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                 
                 setAvailableModels(userModels);
                 setAvailableLoras(userLoras);
+                // Set a default model only if models are available, otherwise stick with placeholder
                 if (userModels.length > 0) {
                     form.setValue('selectedModel', userModels[0]);
                 }
@@ -318,7 +328,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
         }
     }
 
-    if (isLoadingModels) {
+    if (isLoadingModels && authUser) {
         return (
             <div className="flex justify-center items-center p-16">
                 <Loader2 className="h-8 w-8 animate-spin" />

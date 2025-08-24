@@ -337,12 +337,16 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
     
     const installedPackIds = userDoc.data()?.stats?.installedPacks || [];
     
+    // Optimization: If the user has no installed packs, return immediately.
     if (installedPackIds.length === 0) {
         return [];
     }
 
     try {
         const packsRef = adminDb.collection('datapacks');
+        // Firestore 'in' queries are limited to 30 items per query.
+        // For simplicity, we assume users won't have more than 30 packs.
+        // A more robust solution would batch this for users with many packs.
         const packsSnapshot = await packsRef.where(FieldPath.documentId(), 'in', installedPackIds).get();
 
         if (packsSnapshot.empty) {
@@ -410,5 +414,3 @@ export async function searchDataPacksByTag(tag: string): Promise<DataPack[]> {
         return [];
     }
 }
-
-    

@@ -269,7 +269,14 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
 export async function getModels(type: 'model' | 'lora', uid?: string): Promise<AiModel[]> {
     if (!adminDb) return [];
     
+    // Use a Map to handle merging system and user models, ensuring no duplicates.
     const allModels = new Map<string, AiModel>();
+
+    // Add static system models first (like Gemini).
+    const staticModels = type === 'model' ? imageModels : [];
+    staticModels.forEach(model => {
+        allModels.set(model.id, model);
+    });
 
     const processSnapshot = (snapshot: FirebaseFirestore.QuerySnapshot) => {
         snapshot.docs.forEach(doc => {
@@ -280,6 +287,8 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
                 createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
                 updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
             } as AiModel;
+            // The Map ensures that if a system model was somehow added to Firestore,
+            // the static definition from app-config is not overwritten.
             if (!allModels.has(model.id)) {
                 allModels.set(model.id, model);
             }
@@ -287,13 +296,7 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
     };
 
     try {
-        const staticModels = type === 'model' ? imageModels : [];
-        staticModels.forEach(model => {
-            if (!allModels.has(model.id)) {
-                allModels.set(model.id, model);
-            }
-        });
-
+        // Fetch all system-wide models from Firestore
         const systemModelsSnapshot = await adminDb
           .collection('ai_models')
           .where('type', '==', type)
@@ -302,21 +305,35 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
           .get();
         processSnapshot(systemModelsSnapshot);
 
+        // If a user is logged in, fetch their personal models
         if (uid) {
             const userModelsSnapshot = await adminDb
                 .collection('ai_models')
                 .where('userId', '==', uid)
-                .where('type', '==', type)
                 .orderBy('createdAt', 'desc')
                 .get();
-            processSnapshot(userModelsSnapshot);
+            // Filter by type client-side since Firestore doesn't allow inequality on different fields
+            userModelsSnapshot.docs.forEach(doc => {
+                if(doc.data().type === type) {
+                    const data = doc.data();
+                    const model: AiModel = {
+                        ...data,
+                        id: doc.id,
+                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+                        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+                    } as AiModel;
+                    if (!allModels.has(model.id)) {
+                        allModels.set(model.id, model);
+                    }
+                }
+            });
         }
         
         return Array.from(allModels.values()).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     } catch (error) {
         console.error(`Error fetching ${type}s:`, error);
-        return [];
+        return []; // Return empty array on error to prevent crashes
     }
 }
 
@@ -359,5 +376,3 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
-
-    
