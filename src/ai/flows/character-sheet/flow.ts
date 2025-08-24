@@ -31,8 +31,8 @@ export type LifeEventState =
     | 'Redemption'
     | 'New Purpose';
 
-// Exported for reuse in other server actions
-export const lifeEventTransitions: Record<LifeEventState, Partial<Record<LifeEventState, number>>> = {
+// This is now private to this module to satisfy 'use server' constraints.
+const lifeEventTransitions: Record<LifeEventState, Partial<Record<LifeEventState, number>>> = {
     'Humble Beginnings': { 'Intense Training': 0.4, 'Discovery of Power': 0.4, 'Tragic Event': 0.2 },
     'Noble Birth': { 'Intense Training': 0.6, 'Betrayal': 0.3, 'Tragic Event': 0.1 },
     'Tragic Event': { 'Intense Training': 0.5, 'Devastating Loss': 0.3, 'New Purpose': 0.2 },
