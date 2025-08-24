@@ -25,21 +25,21 @@ import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
 import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/character-generator/actions";
 import { getModels } from "@/app/actions/ai-models";
-import { getDataPackForAdmin } from "@/app/actions/datapacks";
-import { DataPackSelectorModal } from "@/components/datapack-selector-modal";
+import { getDataPackForAdmin, getInstalledDataPacks } from "@/app/actions/datapacks";
 import { cn } from "@/lib/utils";
 import { TagAssistantModal } from "@/components/tag-assistant-modal";
 import { ModelSelectorModal } from '@/components/model-selector-modal';
 import type { AiModel } from '@/types/ai-model';
 import { VisualModelSelector } from "@/components/visual-model-selector";
-import type { GenerationResult } from "@/types/generation";
 import { PromptEditor } from "@/components/prompt-editor";
 import type { DataPack, PromptTemplate, Option, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
 import { textModels, rpgArchetypes } from "@/lib/app-config";
 import type { User as FirebaseUser } from "firebase/auth";
 import { AnimatePresence, motion } from 'framer-motion';
+import { DataPackSelector } from "./datapack-selector";
 
 type GenerationStep = 'concept' | 'details' | 'portrait' | 'complete';
+type View = 'generator' | 'datapack-selector' | 'datapack-wizard';
 
 const stepSchema = z.object({
   // Step 1: Concept
@@ -73,13 +73,11 @@ const stepSchema = z.object({
 
 export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null }) {
     const searchParams = useSearchParams();
+    const [currentView, setCurrentView] = useState<View>('generator');
     const [currentStep, setCurrentStep] = useState<GenerationStep>('concept');
     const [isProcessing, startProcessingTransition] = useTransition();
     const [isSaving, startSavingTransition] = useTransition();
 
-    const [isPackModalOpen, setIsPackModalOpen] = useState(false);
-    const [initialPack, setInitialPack] = useState<DataPack | null>(null);
-    
     const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
     const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
     const [isLoadingModels, setIsLoadingModels] = useState(true);
@@ -104,7 +102,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
         },
     });
 
-    const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
+    const handleWizardComplete = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
         let finalPrompt = template.template || '';
         for (const slotId in wizardData) {
             const selectedValue = wizardData[slotId];
@@ -132,7 +130,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
         form.setValue('dataPackId', pack.id);
         setActivePack(pack);
         setSelectedTemplate(template);
-        setIsPackModalOpen(false);
+        setCurrentView('generator');
     }, [form]);
 
     useEffect(() => {
@@ -154,8 +152,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
                 if (packIdFromUrl) {
                     const packData = await getDataPackForAdmin(packIdFromUrl);
                     if (packData) {
-                        setInitialPack(packData);
-                        setIsPackModalOpen(true);
+                        setActivePack(packData);
+                        setCurrentView('datapack-wizard');
                     }
                 }
             } catch (error) { toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' }); }
@@ -266,13 +264,59 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
 
     const renderStep = () => {
         switch (currentStep) {
-            case 'concept': return <ConceptStep form={form} setIsPackModalOpen={setIsPackModalOpen} activePack={activePack} selectedTemplate={selectedTemplate} handleWizardDataChange={handleWizardDataChange}/>;
+            case 'concept': return <ConceptStep form={form} onUseDataPack={() => setCurrentView('datapack-selector')} activePack={activePack} selectedTemplate={selectedTemplate} handleWizardDataChange={handleWizardComplete}/>;
             case 'details': return <DetailsStep form={form} />;
             case 'portrait': return <PortraitStep form={form} models={availableModels} loras={availableLoras} isLoadingModels={isLoadingModels} />;
             case 'complete': return <CompleteStep form={form} onSave={onSave} isSaving={isSaving} />;
             default: return null;
         }
     };
+    
+    const renderContent = () => {
+        switch(currentView) {
+            case 'generator':
+                return (
+                    <motion.div
+                        key="generator"
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 50 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="w-full"
+                    >
+                         <Form {...form}>
+                            <form onSubmit={(e) => e.preventDefault()}>
+                            <Card className="shadow-lg">
+                                <CardContent className="p-4 sm:p-6">
+                                    {renderStep()}
+                                </CardContent>
+                                <CardFooter className="pt-4 border-t flex justify-between">
+                                    <Button variant="outline" onClick={() => setCurrentStep(prev => prev === 'details' ? 'concept' : prev === 'portrait' ? 'details' : 'portrait')} disabled={currentStep === 'concept' || isProcessing}>
+                                        <ArrowLeft /> Back
+                                    </Button>
+                                    {currentStep !== 'complete' ? (
+                                        <Button onClick={handleNextStep} disabled={isProcessing || !authUser}>
+                                            {isProcessing ? <Loader2 className="animate-spin" /> : currentStep === 'portrait' ? <Wand2/> : <ArrowRight />}
+                                            {isProcessing ? 'Forging...' : (currentStep === 'concept' ? 'Next: Generate Details' : currentStep === 'details' ? 'Next: Generate Portrait' : 'Generate Portrait')}
+                                        </Button>
+                                    ) : <div></div>}
+                                </CardFooter>
+                            </Card>
+                            </form>
+                        </Form>
+                    </motion.div>
+                );
+            case 'datapack-selector':
+                return <DataPackSelector onBack={() => setCurrentView('generator')} onSelectPack={(pack) => { setActivePack(pack); setCurrentView('datapack-wizard'); }} />;
+            case 'datapack-wizard':
+                if (!activePack) {
+                    setCurrentView('datapack-selector');
+                    return null;
+                }
+                return <DataPackSelector.Wizard pack={activePack} onWizardComplete={handleWizardComplete} onBack={() => setCurrentView('datapack-selector')} />;
+            default: return null;
+        }
+    }
 
     if (isLoadingModels) {
         return (
@@ -283,45 +327,14 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
     }
 
     return (
-        <>
-            <DataPackSelectorModal isOpen={isPackModalOpen} onClose={() => setIsPackModalOpen(false)} onPromptGenerated={handleWizardDataChange} initialPack={initialPack} />
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={currentStep}
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -50 }}
-                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                >
-                    <Form {...form}>
-                    <form onSubmit={(e) => e.preventDefault()}>
-                    <Card className="shadow-lg">
-                        <CardContent className="p-4 sm:p-6">
-                            {renderStep()}
-                        </CardContent>
-                        <CardFooter className="pt-4 border-t flex justify-between">
-                            <Button variant="outline" onClick={() => setCurrentStep(prev => prev === 'details' ? 'concept' : prev === 'portrait' ? 'details' : 'portrait')} disabled={currentStep === 'concept' || isProcessing}>
-                                <ArrowLeft /> Back
-                            </Button>
-                            {currentStep !== 'complete' ? (
-                                <Button onClick={handleNextStep} disabled={isProcessing || !authUser}>
-                                    {isProcessing ? <Loader2 className="animate-spin" /> : currentStep === 'portrait' ? <Wand2/> : <ArrowRight />}
-                                    {isProcessing ? 'Forging...' : (currentStep === 'concept' ? 'Next: Generate Details' : currentStep === 'details' ? 'Next: Generate Portrait' : 'Generate Portrait')}
-                                </Button>
-                            ) : <div></div>}
-                        </CardFooter>
-                    </Card>
-                    </form>
-                    </Form>
-                </motion.div>
-            </AnimatePresence>
-            {!authUser && <Alert className="mt-4"><AlertCircle className="h-4 w-4" /><AlertTitle>Heads up!</AlertTitle><AlertDescription>You need to be logged in to generate and save characters.</AlertDescription></Alert>}
-        </>
+        <AnimatePresence mode="wait">
+            {renderContent()}
+        </AnimatePresence>
     );
 }
 
 // Step 1: Concept
-function ConceptStep({ form, setIsPackModalOpen, activePack, selectedTemplate, handleWizardDataChange }: { form: any, setIsPackModalOpen: (isOpen: boolean) => void, activePack: DataPack | null, selectedTemplate: PromptTemplate | null, handleWizardDataChange: any }) {
+function ConceptStep({ form, onUseDataPack, activePack, selectedTemplate, handleWizardDataChange }: { form: any, onUseDataPack: () => void, activePack: DataPack | null, selectedTemplate: PromptTemplate | null, handleWizardDataChange: any }) {
     const [isTagModalOpen, setIsTagModalOpen] = useState(false);
 
     const handleAppendTags = (tags: string[]) => {
@@ -363,7 +376,7 @@ function ConceptStep({ form, setIsPackModalOpen, activePack, selectedTemplate, h
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
                         <FormLabel>Character Prompt</FormLabel>
                         <div className="flex items-center gap-2 shrink-0">
-                            <Button type="button" variant="outline" size="sm" onClick={() => setIsPackModalOpen(true)}>
+                            <Button type="button" variant="outline" size="sm" onClick={onUseDataPack}>
                                 <Package className="mr-2 h-3 w-3"/> Use DataPack
                             </Button>
                              <Button type="button" variant="outline" size="sm" onClick={() => setIsTagModalOpen(true)}>

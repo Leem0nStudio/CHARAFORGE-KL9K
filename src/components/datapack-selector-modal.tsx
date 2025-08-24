@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -21,6 +20,11 @@ import { getSlotCategory } from '@/lib/app-config';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useAuth } from '@/hooks/use-auth';
 import { DataPackCard } from '@/components/datapack/datapack-card';
+
+// This file is no longer used for the generator flow.
+// It is kept for potential use in other parts of the application
+// where a modal-based pack selector might be useful.
+// The new full-screen flow is handled by `datapack-selector.tsx`.
 
 function OptionSelectModal({
     isOpen,
@@ -242,142 +246,5 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                 </div>
             </form>
         </>
-    )
-}
-
-function PackGallery({ 
-    onChoosePack,
-}: { 
-    onChoosePack: (pack: DataPack) => void,
-}) {
-    const [isLoading, setIsLoading] = useState(true);
-    const [packs, setPacks] = useState<DataPack[]>([]);
-    const { authUser } = useAuth();
-
-    useEffect(() => {
-        if (!authUser) {
-            setIsLoading(false);
-            return;
-        }
-
-        const loadPacks = async () => {
-            setIsLoading(true);
-            try {
-                const installedPacks = await getInstalledDataPacks();
-                setPacks(installedPacks);
-            } catch (error) {
-                console.error("Failed to load installed datapacks for selector", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        loadPacks();
-    }, [authUser]);
-
-    if (isLoading) {
-        return (
-            <div className="flex-grow flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-        )
-    }
-
-    if (packs.length === 0) {
-        return (
-            <div className="flex flex-col h-full items-center justify-center">
-                <Alert className="mt-4">
-                    <Package className="h-4 w-4" />
-                    <AlertTitle>Your collection is empty!</AlertTitle>
-                    <AlertDescription>
-                        Visit the catalog to add some creative packs.
-                        <Button asChild variant="link" className="p-0 h-auto ml-1"><Link href="/datapacks">Go to Catalog</Link></Button>
-                    </AlertDescription>
-                </Alert>
-            </div>
-        )
-    }
-    
-    return (
-        <>
-             <div className="flex-grow min-h-0 py-4">
-                <ScrollArea className="h-full pr-4 -mr-4">
-                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {packs.map(pack => (
-                           <div key={pack.id} onClick={() => onChoosePack(pack)}>
-                               <DataPackCard pack={pack} isCompact={true} />
-                           </div>
-                        ))}
-                     </div>
-                </ScrollArea>
-             </div>
-        </>
-    );
-}
-
-
-interface DataPackSelectorModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onPromptGenerated: (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => void;
-    initialPack?: DataPack | null;
-}
-
-
-export function DataPackSelectorModal({ 
-    isOpen, 
-    onClose, 
-    onPromptGenerated,
-    initialPack,
-}: DataPackSelectorModalProps) {
-    const [wizardPack, setWizardPack] = useState<DataPack | null>(null);
-
-    useEffect(() => {
-        if (isOpen && initialPack) {
-            setWizardPack(initialPack);
-        }
-        if (!isOpen) {
-            setTimeout(() => {
-                setWizardPack(null);
-            }, 300);
-        }
-    }, [isOpen, initialPack]);
-    
-    const handleWizardComplete = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-        if (wizardPack) {
-            onPromptGenerated(wizardData, wizardPack, template);
-        }
-        onClose();
-    }, [onPromptGenerated, onClose, wizardPack]);
-    
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className={cn("max-h-[90vh] flex flex-col", wizardPack ? "sm:max-w-md" : "sm:max-w-4xl")}>
-                {wizardPack ? (
-                    <WizardGrid pack={wizardPack} onWizardComplete={handleWizardComplete} onBack={() => setWizardPack(null)} />
-                ) : (
-                    <>
-                    <div className="flex-shrink-0">
-                        <DialogHeader>
-                            <DialogTitle className="font-headline text-3xl">Select DataPack</DialogTitle>
-                            <DialogDescription>
-                                Choose one of your installed packs to start building a prompt.
-                            </DialogDescription>
-                        </DialogHeader>
-                    </div>
-                    
-                    <PackGallery onChoosePack={setWizardPack} />
-                    
-                     <div className="flex-shrink-0 pt-4 border-t">
-                        <DialogFooter>
-                            <p className="text-sm text-muted-foreground mr-auto">Need more options?</p>
-                             <Button asChild variant="outline">
-                                <Link href="/datapacks">Browse Full Catalog</Link>
-                            </Button>
-                        </DialogFooter>
-                    </div>
-                    </>
-                )}
-            </DialogContent>
-        </Dialog>
     )
 }
