@@ -202,21 +202,6 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
 
     return (
         <>
-             <DialogHeader>
-                <div className="flex items-center gap-4">
-                     <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={onBack}>
-                        <ArrowLeft />
-                    </Button>
-                    <div>
-                        <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
-                            {pack.name} Wizard
-                        </DialogTitle>
-                        <DialogDescription>
-                            Configure the character's profile by selecting from the available options.
-                        </DialogDescription>
-                    </div>
-                </div>
-            </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="relative flex flex-col flex-grow min-h-0">
                  {activeModal && (
                     <OptionSelectModal
@@ -228,7 +213,13 @@ function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWiza
                         title={activeModal.title}
                     />
                 )}
-                <div className="flex-grow my-4 min-h-0">
+                 <div className="flex-shrink-0 mb-2">
+                    <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={onBack}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to DataPacks
+                    </Button>
+                </div>
+                <div className="flex-grow my-2 min-h-0">
                     <ScrollArea className="h-full pr-3 -mr-3">
                         <div className="space-y-4 pb-20">
                             <Accordion type="multiple" defaultValue={['general', 'appearance', 'equipment']} className="w-full">
