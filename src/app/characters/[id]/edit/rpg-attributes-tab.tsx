@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Character } from '@/types/character';
@@ -50,7 +51,7 @@ export function RpgAttributesTab({ character }: { character: Character }) {
             </CardHeader>
             <CardContent>
                 {isPlayable ? (
-                    <div className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                             <h3 className="font-semibold flex items-center gap-2"><Dna className="text-primary"/> Base Stats</h3>
                             {statsAreSet ? (

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -20,48 +21,6 @@ import { getSlotCategory } from '@/lib/app-config';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useAuth } from '@/hooks/use-auth';
 import { DataPackCard } from '@/components/datapack/datapack-card';
-
-function DataPackInfoDialog({ pack, isOpen, onClose }: { pack: DataPack | null, isOpen: boolean, onClose: () => void }) {
-    if (!pack) return null;
-
-    const allSlots = pack.schema?.characterProfileSchema 
-        ? Object.keys(pack.schema.characterProfileSchema)
-        : [];
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle className="font-headline text-2xl">{pack.name}</DialogTitle>
-                    <DialogDescription>{pack.description}</DialogDescription>
-                </DialogHeader>
-                 <ScrollArea className="max-h-[60vh] -mx-6 px-6 py-4">
-                     <div className="space-y-6">
-                        {allSlots.length > 0 && (
-                             <div>
-                                <h4 className="font-semibold mb-2">Available Options</h4>
-                                 <div className="flex flex-wrap gap-2">
-                                     {allSlots.map((slotKey) => (
-                                        <Badge 
-                                            key={slotKey} 
-                                            variant="outline"
-                                            data-category={getSlotCategory(slotKey)}
-                                        >
-                                            {slotKey}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </ScrollArea>
-                <DialogFooter>
-                    <Button onClick={onClose}>Close</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
 
 function OptionSelectModal({
     isOpen,
@@ -110,7 +69,7 @@ function OptionSelectModal({
 
 
 function WizardGrid({ pack, onWizardComplete, onBack }: { pack: DataPack, onWizardComplete: (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => void, onBack: () => void }) {
-    const { handleSubmit, watch, setValue, getValues } = useForm();
+    const { handleSubmit, setValue, getValues } = useForm();
     const [activeModal, setActiveModal] = useState<{title: string, options: (EquipmentOption | Option)[], fieldName: string} | null>(null);
 
     const schema = pack.schema?.characterProfileSchema;
