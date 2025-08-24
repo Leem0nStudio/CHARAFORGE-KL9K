@@ -13,7 +13,6 @@ import '@/ai/flows/datapack-schema/flow';
 import '@/ai/flows/danbooru-tag-suggestion/flow';
 import '@/ai/flows/story-generation/flow';
 import '@/ai/flows/hf-model-suggestion/flow';
-import '@/ai/flows/rpg-attributes/flow';
 import '@/ai/flows/dialogue-generation/flow';
 
 
