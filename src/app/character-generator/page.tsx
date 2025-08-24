@@ -2,9 +2,8 @@
 'use client';
 
 import { CharacterGenerator } from '@/components/character-generator';
-import { BackButton } from '@/components/back-button';
 import { motion } from 'framer-motion';
-import { Suspense, useEffect } from 'react';
+import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
@@ -12,16 +11,6 @@ import { useRouter } from 'next/navigation';
 function CharacterGeneratorWrapper() {
   const { authUser, loading } = useAuth();
   const router = useRouter();
-
-  // We no longer redirect if the user is not logged in.
-  // The CharacterGenerator component will handle the UI for unauthenticated users.
-  /*
-  useEffect(() => {
-    if (!loading && !authUser) {
-      router.push('/login');
-    }
-  }, [authUser, loading, router]);
-  */
 
   if (loading) {
     return (
@@ -59,5 +48,3 @@ export default function CharacterGeneratorPage() {
     </Suspense>
   );
 }
-
-    

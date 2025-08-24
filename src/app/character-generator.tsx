@@ -8,11 +8,11 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown, Star, CaseSensitive, Pencil, Braces } from "lucide-react";
+import { Wand2, Loader2, FileText, Save, AlertCircle, Image as ImageIcon, Check, Package, Square, RectangleHorizontal, RectangleVertical, Tags, Settings, User, Pilcrow, Shield, Swords, Info, Text, GripVertical, ChevronDown, Star, CaseSensitive, Pencil, Braces, ArrowLeft, ArrowRight, BrainCircuit } from "lucide-react";
 
 import { 
     Button,
-    Card, CardContent, CardDescription, CardHeader, CardTitle,
+    Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
     Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
     Input,
     Textarea,
@@ -30,642 +30,512 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { saveCharacter } from "@/app/actions/character-write";
-import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/actions/generation";
+import { generateCharacterSheetData, generateCharacterPortrait } from "@/app/character-generator/actions";
 import { getModels } from "@/app/actions/ai-models";
 import { getDataPackForAdmin } from "@/app/actions/datapacks";
 import { Skeleton } from "./ui/skeleton";
-import { DataPackSelectorModal } from "./datapack-selector-modal";
 import { cn } from "@/lib/utils";
-import { TagAssistantModal } from "./tag-assistant-modal";
-import { ModelSelectorModal } from './model-selector-modal';
+import { TagAssistantModal } from "@/components/tag-assistant-modal";
+import { ModelSelectorModal } from '@/components/model-selector-modal';
 import type { AiModel } from '@/types/ai-model';
-import { VisualModelSelector } from "./visual-model-selector";
-import type { GenerationResult } from "@/types/generation";
-import { PromptEditor } from "./prompt-editor";
-import { PromptTagInput } from './prompt-tag-input';
-import type { DataPack, PromptTemplate, Option, Slot } from '@/types/datapack';
-import { textModels } from "@/lib/app-config";
+import { VisualModelSelector } from "@/components/visual-model-selector";
+import { PromptEditor } from "@/components/prompt-editor";
+import type { DataPack, PromptTemplate, Option, Slot, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
+import { textModels, rpgArchetypes } from "@/lib/app-config";
 import type { User as FirebaseUser } from "firebase/auth";
+import { AnimatePresence, motion } from 'framer-motion';
+import { DataPackSelector } from "../components/datapack-selector";
 
 
-const generationFormSchema = z.object({
-  description: z.string().min(10, {
-    message: "Please enter a more detailed description or use a datapack.",
-  }).max(4000, {
-    message: "Description must not be longer than 4000 characters."
-  }),
-  wizardData: z.record(z.string()).optional(),
-  physicalDescription: z.string().optional(),
-  tags: z.string().optional(),
+type GenerationStep = 'concept' | 'details' | 'portrait' | 'complete';
+type View = 'generator' | 'datapack-selector' | 'datapack-wizard';
+
+const stepSchema = z.object({
+  // Step 1: Concept
+  description: z.string().min(1, { message: "A description is required to start." }).max(4000),
+  wizardData: z.record(z.union([z.string(), z.record(z.string())])).optional(),
   targetLanguage: z.enum(['English', 'Spanish', 'French', 'German']).default('English'),
+  selectedTextModel: z.custom<AiModel>().optional(),
+  
+  // Step 2: Details & Portrait Prompt
+  name: z.string().optional(),
+  archetype: z.string().optional(),
+  biography: z.string().optional(),
+  equipment: z.array(z.string()).optional(),
+  physicalDescription: z.string().optional(),
+  
+  // Step 3: Portrait Generation
   aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
-  selectedModel: z.custom<AiModel>().refine(data => !!data, {
-    message: "A base model must be selected.",
-  }),
+  selectedModel: z.custom<AiModel>().optional(),
   selectedLora: z.custom<AiModel>().optional().nullable(),
   loraWeight: z.number().min(0).max(2).optional(),
-  rarity: z.number().min(1).max(5).default(1),
+  imageUrl: z.string().optional(),
+  
+  // Meta
+  originalDescription: z.string().optional(),
+  dataPackId: z.string().optional().nullable(),
+  textEngine: z.string().optional(),
+  imageEngine: z.string().optional(),
+  rarity: z.number().min(1).max(5).optional(),
 });
 
+
 export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null }) {
-  const searchParams = useSearchParams();
-  const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null);
-  const [isGenerating, startGenerationTransition] = useTransition();
-  const [isSaving, startSavingTransition] = useTransition();
-  const [generationError, setGenerationError] = useState<string | null>(null);
+    const searchParams = useSearchParams();
+    const [currentView, setCurrentView] = useState<View>('generator');
+    const [currentStep, setCurrentStep] = useState<GenerationStep>('concept');
+    const [isProcessing, startProcessingTransition] = useTransition();
+    const [isSaving, startSavingTransition] = useTransition();
 
-  const [isPackModalOpen, setIsPackModalOpen] = useState(false);
-  const [initialPack, setInitialPack] = useState<DataPack | null>(null);
-  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
-  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
-  const [modelModalType, setModelModalType] = useState<'model' | 'lora' | 'text'>('model');
-  
-  const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
-  const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
-  const [isLoadingModels, setIsLoadingModels] = useState(true);
-  const [selectedTextModel, setSelectedTextModel] = useState<AiModel>(textModels[0]);
-  
-  const [activePack, setActivePack] = useState<DataPack | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
-  
-  const { toast } = useToast();
-  const { userProfile, loading: authLoading } = useAuth();
-  const router = useRouter();
-  
-  const promptEditorRef = useRef<{ format: () => void }>(null);
+    const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
+    const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
+    const [isLoadingModels, setIsLoadingModels] = useState(true);
 
-  const generationForm = useForm<z.infer<typeof generationFormSchema>>({
-    resolver: zodResolver(generationFormSchema),
-    defaultValues: {
-      description: "",
-      physicalDescription: "",
-      tags: "",
-      targetLanguage: 'English',
-      aspectRatio: '1:1',
-      loraWeight: 0.75,
-      selectedModel: undefined,
-      selectedLora: null,
-      rarity: 1,
-    },
-  });
+    const [activePack, setActivePack] = useState<DataPack | null>(null);
+    const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
 
-  const handleWizardDataChange = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-    let finalPrompt = template.template || '';
-    
-    for (const slotId in wizardData) {
-        const selectedValue = wizardData[slotId];
-        const slot = pack.schema.slots.find(s => s.id === slotId);
-        const option = slot?.options?.find(o => o.value === selectedValue);
-        
-        const replacementValue = option?.value || selectedValue || '';
-        finalPrompt = finalPrompt.replace(`{${slotId}}`, replacementValue);
-    }
+    const { toast } = useToast();
+    const { userProfile } = useAuth();
+    const router = useRouter();
 
-    const finalTags = Object.values(wizardData)
-      .map(value => pack.schema.slots.flatMap(s => s.options ?? []).find(o => o.value === value)?.tags ?? [value])
-      .flat()
-      .filter(Boolean)
-      .join(', ');
+    const form = useForm<z.infer<typeof stepSchema>>({
+        resolver: zodResolver(stepSchema),
+        defaultValues: {
+            description: "",
+            wizardData: {},
+            targetLanguage: 'English',
+            selectedTextModel: textModels[0],
+            aspectRatio: '1:1',
+            loraWeight: 0.75,
+            selectedModel: undefined,
+        },
+    });
 
-    generationForm.setValue('description', finalPrompt, { shouldValidate: true });
-    generationForm.setValue('tags', finalTags);
-    generationForm.setValue('wizardData', wizardData);
-    
-    setActivePack(pack);
-    setSelectedTemplate(template);
-    setIsPackModalOpen(false);
-}, [generationForm]);
-  
-  
-  useEffect(() => {
-    async function loadInitialData() {
-        setIsLoadingModels(true);
-        try {
-            const packIdFromUrl = searchParams.get('packId');
-            
-            const [userModels, userLoras, initialPackData] = await Promise.all([
-                authUser ? getModels('model', authUser.uid) : getModels('model'),
-                authUser ? getModels('lora', authUser.uid) : getModels('lora'),
-                packIdFromUrl ? getDataPackForAdmin(packIdFromUrl) : Promise.resolve(null),
-            ]);
-            
-            setAvailableModels(userModels);
-            setAvailableLoras(userLoras);
-            
-            const currentModel = generationForm.getValues('selectedModel');
-            if ((!currentModel || !userModels.find(m => m.id === currentModel.id)) && userModels.length > 0) {
-                generationForm.setValue('selectedModel', userModels[0]);
+    const handleWizardComplete = useCallback((wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
+        let finalPrompt = template.template || '';
+        for (const slotId in wizardData) {
+            const selectedValue = wizardData[slotId];
+            if (!selectedValue) continue;
+
+            const slotConfig = (pack.schema.characterProfileSchema as any)[slotId];
+            let foundOption: Option | EquipmentOption | undefined = undefined;
+
+            if (Array.isArray(slotConfig)) {
+                foundOption = slotConfig.find(o => o.value === selectedValue);
+            } else if (typeof slotConfig === 'object' && slotConfig !== null && !Array.isArray(slotConfig)) {
+                for (const subCategory in slotConfig) {
+                    const options = (slotConfig as any)[subCategory] as Option[];
+                    if (Array.isArray(options)) {
+                        const option = options.find(o => o.value === selectedValue);
+                        if (option) { foundOption = option; break; }
+                    }
+                }
             }
-            
-            if (initialPackData) {
-                setInitialPack(initialPackData);
-                setIsPackModalOpen(true);
-            }
+            finalPrompt = finalPrompt.replace(`{${slotId}}`, foundOption?.value || selectedValue);
+        }
+        finalPrompt = finalPrompt.replace(/\{[a-zA-Z_]+\}/g, '').replace(/,\s*,/g, ',').replace(/, ,/g,',').trim();
+        form.setValue('description', finalPrompt, { shouldValidate: true });
+        form.setValue('wizardData', wizardData);
+        form.setValue('dataPackId', pack.id);
+        setActivePack(pack);
+        setSelectedTemplate(template);
+        setCurrentView('generator');
+    }, [form]);
 
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' });
-        } finally {
+    useEffect(() => {
+        async function loadInitialData() {
+            setIsLoadingModels(true);
+            try {
+                const [userModels, userLoras, packIdFromUrl] = await Promise.all([
+                    authUser ? getModels('model', authUser.uid) : getModels('model'),
+                    authUser ? getModels('lora', authUser.uid) : getModels('lora'),
+                    Promise.resolve(searchParams.get('packId')),
+                ]);
+                
+                setAvailableModels(userModels);
+                setAvailableLoras(userLoras);
+                if (userModels.length > 0) {
+                    form.setValue('selectedModel', userModels[0]);
+                }
+                
+                if (packIdFromUrl) {
+                    const packData = await getDataPackForAdmin(packIdFromUrl);
+                    if (packData) {
+                        setActivePack(packData);
+                        setCurrentView('datapack-wizard');
+                    }
+                }
+            } catch (error) { toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' }); }
+            finally { setIsLoadingModels(false); }
+        }
+        if (authUser) {
+          loadInitialData();
+        } else {
             setIsLoadingModels(false);
         }
-    }
-    loadInitialData();
-  }, [authUser, toast, generationForm, searchParams]);
+    }, [authUser, searchParams, toast, form]);
 
-  useEffect(() => {
-    if (generationResult?.physicalDescription) {
-        generationForm.setValue('physicalDescription', generationResult.physicalDescription);
-    }
-  }, [generationResult, generationForm]);
-  
-
-  const handleAppendTags = (tags: string[]) => {
-    const currentDesc = generationForm.getValues('description');
-    const newTags = tags.filter(t => !currentDesc.includes(t));
-    if (newTags.length > 0) {
-        const newDescription = [currentDesc.trim(), ...newTags].filter(Boolean).join(', ');
-        generationForm.setValue('description', newDescription);
-    }
-  };
-
-  const onGenerateSheet = useCallback(async (data: z.infer<typeof generationFormSchema>) => {
-    if (!authUser) {
-      toast({ variant: "destructive", title: "Authentication Required", description: "Please log in to generate a character." });
-      return;
-    }
-    
-    promptEditorRef.current?.format();
-
-    setGenerationResult(null);
-    setGenerationError(null);
-
-    startGenerationTransition(async () => {
-        let userApiKey: string | undefined;
-        if (selectedTextModel.engine === 'openrouter') {
-             userApiKey = userProfile?.preferences?.openRouterApiKey;
+    const handleNextStep = async () => {
+        if (!authUser) {
+            toast({ variant: "destructive", title: "Authentication Required", description: "Please log in to generate a character." });
+            return;
         }
 
-      const engineConfig = {
-            engineId: selectedTextModel.engine,
-            modelId: selectedTextModel.hf_id,
-            userApiKey: userApiKey,
-      };
+        if (currentStep === 'concept') {
+            const isValid = await form.trigger('description');
+            if (!isValid) return;
 
-      const result = await generateCharacterSheetData({ 
-          description: data.description,
-          targetLanguage: data.targetLanguage,
-          engineConfig: engineConfig,
-      });
-      
-      if (result.success && result.data) {
-        setGenerationResult({
-          ...result.data,
-          dataPackId: activePack?.id,
-          textEngine: selectedTextModel.engine,
-        });
-        toast({ title: "Character Sheet Generated!", description: "Review the details and then generate the portrait." });
-      } else {
-        const errorMessage = result.error || "An unknown error occurred during generation.";
-        setGenerationError(errorMessage);
-        toast({ variant: "destructive", title: "Generation Failed", description: errorMessage });
-      }
-    });
-  }, [authUser, toast, activePack, userProfile, selectedTextModel]);
-  
-  const onGeneratePortrait = useCallback(async () => {
-    if (!authUser || !generationResult) return;
-    
-    startGenerationTransition(async () => {
-        const data = generationForm.getValues();
-        
-        let userApiKey: string | undefined;
-        if (data.selectedModel.engine === 'huggingface') {
-            userApiKey = userProfile?.preferences?.huggingFaceApiKey;
-        } else if (data.selectedModel.engine === 'openrouter') {
-            userApiKey = userProfile?.preferences?.openRouterApiKey;
-        }
+            startProcessingTransition(async () => {
+                const { description, targetLanguage, selectedTextModel } = form.getValues();
+                const result = await generateCharacterSheetData({
+                    description, targetLanguage,
+                    engineConfig: {
+                        engineId: (selectedTextModel?.engine || 'gemini') as 'gemini' | 'openrouter',
+                        modelId: selectedTextModel?.hf_id || 'googleai/gemini-1.5-flash-latest',
+                        userApiKey: userProfile?.preferences?.openRouterApiKey,
+                    },
+                });
 
-        const result = await generateCharacterPortrait({
-             physicalDescription: data.physicalDescription || generationResult.physicalDescription || '',
-             aspectRatio: data.aspectRatio,
-             selectedModel: data.selectedModel,
-             selectedLora: data.selectedLora,
-             loraWeight: data.loraWeight,
-             userApiKey: userApiKey,
-        });
-        
-        if (result.success && result.imageUrl) {
-            setGenerationResult(prev => prev ? { ...prev, imageUrl: result.imageUrl, imageEngine: data.selectedModel.engine } : null);
-            toast({ title: "Portrait Generated!", description: "The character image is now ready."});
-        } else {
-             const errorMessage = result.error || "An unknown error occurred during portrait generation.";
-             setGenerationError(errorMessage);
-             toast({ variant: "destructive", title: "Portrait Failed", description: errorMessage });
-        }
-    });
-  }, [authUser, toast, generationResult, generationForm, userProfile]);
-
-
-  async function onSave() {
-    if (!generationResult || !generationResult.imageUrl || !authUser) {
-         toast({
-            variant: "destructive",
-            title: "Save Failed",
-            description: "Character data is incomplete, image not generated, or you are not logged in.",
-        });
-        return;
-    }
-    const formData = generationForm.getValues();
-
-    startSavingTransition(async () => {
-      try {
-        const result = await saveCharacter({
-          name: generationResult.name,
-          biography: generationResult.biography || '',
-          imageUrl: generationResult.imageUrl!,
-          dataPackId: generationResult.dataPackId,
-          tags: formData.tags,
-          archetype: generationResult.archetype,
-          equipment: generationResult.equipment,
-          physicalDescription: formData.physicalDescription || generationResult.physicalDescription,
-          textEngine: generationResult.textEngine,
-          imageEngine: generationResult.imageEngine,
-          wizardData: formData.wizardData,
-          originalPrompt: generationResult.originalDescription,
-          rarity: formData.rarity,
-        });
-
-        if (result.success && result.characterId) {
-             toast({
-              title: "Character Saved!",
-              description: `${generationResult.name} has been saved. Redirecting to the workshop...`,
+                if (result.success && result.data) {
+                    form.setValue('name', result.data.name);
+                    form.setValue('archetype', result.data.archetype);
+                    form.setValue('biography', result.data.biography);
+                    form.setValue('equipment', result.data.equipment);
+                    form.setValue('physicalDescription', result.data.physicalDescription);
+                    form.setValue('originalDescription', description);
+                    form.setValue('textEngine', selectedTextModel?.engine);
+                    setCurrentStep('details');
+                    toast({ title: "Details Forged!", description: "Review the generated text, then create the portrait." });
+                } else {
+                    toast({ variant: "destructive", title: "Generation Failed", description: result.error });
+                }
             });
-            router.push(`/characters/${result.characterId}/edit`);
-        } else {
-            throw new Error("Failed to save character or get a valid ID back.");
         }
 
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Could not save your character. Please try again.";
-        toast({
-          variant: "destructive",
-          title: "Save Failed",
-          description: errorMessage,
+        if (currentStep === 'details') {
+             const isValid = await form.trigger('physicalDescription');
+             if(!isValid) {
+                 toast({ variant: "destructive", title: "Image Prompt Required", description: "The physical description can't be empty." });
+                 return;
+             }
+             setCurrentStep('portrait');
+        }
+
+        if (currentStep === 'portrait') {
+            const isValid = await form.trigger('selectedModel');
+            if (!isValid) {
+                toast({ variant: "destructive", title: "Model Required", description: "Please select a base model for generation." });
+                return;
+            };
+
+            startProcessingTransition(async () => {
+                const result = await generateCharacterPortrait(form.getValues());
+                if (result.success && result.imageUrl) {
+                    form.setValue('imageUrl', result.imageUrl);
+                    form.setValue('imageEngine', form.getValues('selectedModel')?.engine);
+                    setCurrentStep('complete');
+                    toast({ title: "Portrait Generated!", description: "Your character is ready to be saved." });
+                } else {
+                    toast({ variant: "destructive", title: "Portrait Failed", description: result.error });
+                }
+            });
+        }
+    };
+    
+    async function onSave() {
+        if (!authUser) return;
+        const formData = form.getValues();
+        startSavingTransition(async () => {
+            try {
+                const result = await saveCharacter({
+                    name: formData.name || 'Unnamed',
+                    biography: formData.biography || '',
+                    imageUrl: formData.imageUrl!,
+                    dataPackId: formData.dataPackId,
+                    archetype: formData.archetype,
+                    equipment: formData.equipment,
+                    physicalDescription: formData.physicalDescription,
+                    textEngine: formData.textEngine as any,
+                    imageEngine: formData.imageEngine as any,
+                    wizardData: formData.wizardData,
+                    originalPrompt: formData.originalDescription,
+                    rarity: formData.rarity,
+                });
+                if (result.success && result.characterId) {
+                    toast({ title: "Character Saved!", description: `${formData.name} is now in your armory.` });
+                    router.push(`/characters/${result.characterId}/edit`);
+                } else { throw new Error("Failed to save character."); }
+            } catch (err: unknown) {
+                toast({ variant: "destructive", title: "Save Failed", description: err instanceof Error ? err.message : "An unknown error occurred." });
+            }
         });
-      }
-    });
-  }
-  
-  const handleOpenModelModal = (type: 'model' | 'lora' | 'text') => {
-      setModelModalType(type);
-      setIsModelModalOpen(true);
-  }
-
-  const handleModelSelect = (model: AiModel) => {
-    if (model.type === 'model' && modelModalType !== 'text') {
-        generationForm.setValue('selectedModel', model, { shouldValidate: true });
-        if (model.engine !== 'huggingface' && model.engine !== 'vertexai' && model.engine !== 'modelslab') {
-            generationForm.setValue('selectedLora', null); 
-        }
-    } else if (model.type === 'lora') {
-        generationForm.setValue('selectedLora', model);
-        generationForm.setValue('loraWeight', 0.75);
-    } else if (modelModalType === 'text') {
-        setSelectedTextModel(model);
     }
-    setIsModelModalOpen(false);
-  }
 
-  const isUiLoading = isGenerating || isSaving || authLoading || isLoadingModels;
-  const canInteract = !isUiLoading && !!authUser;
-  const watchPhysicalDescription = generationForm.watch('physicalDescription');
-  const selectedModel = generationForm.watch('selectedModel');
-  const selectedLora = generationForm.watch('selectedLora');
-  
-  const loraCompatible = selectedModel?.engine === 'huggingface' || selectedModel?.engine === 'vertexai' || selectedModel?.engine === 'modelslab';
-
-  return (
-    <>
-    <DataPackSelectorModal 
-      isOpen={isPackModalOpen}
-      onClose={() => setIsPackModalOpen(false)}
-      onPromptGenerated={handleWizardDataChange}
-      initialPack={initialPack}
-    />
-    <TagAssistantModal
-        isOpen={isTagModalOpen}
-        onClose={() => setIsTagModalOpen(false)}
-        onAppendTags={handleAppendTags}
-        currentDescription={generationForm.watch('description')}
-    />
-    <ModelSelectorModal
-        isOpen={isModelModalOpen}
-        onClose={() => setIsModelModalOpen(false)}
-        onSelect={handleModelSelect}
-        type={modelModalType}
-        models={modelModalType === 'model' ? availableModels : modelModalType === 'text' ? textModels : availableLoras}
-        isLoading={isLoadingModels}
-    />
-    <div className="grid gap-8 lg:grid-cols-5 items-start">
-      <div className="lg:col-span-2 flex flex-col gap-4">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-headline text-3xl">1. The Forge</CardTitle>
-            <CardDescription>
-              Provide a description or use a DataPack, then adjust the AI settings.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...generationForm}>
-              <form onSubmit={generationForm.handleSubmit(onGenerateSheet)} className="space-y-6">
-                
-                <Tabs defaultValue="prompt">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="prompt">Prompt</TabsTrigger>
-                        <TabsTrigger value="settings">AI Settings</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="prompt" className="pt-4">
-                        <FormField
-                          control={generationForm.control}
-                          name="description"
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex justify-between items-center mb-2">
-                                <FormLabel>Character Concept</FormLabel>
-                                <div className="flex items-center gap-2">
-                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsPackModalOpen(true)}>
-                                        <Package className="mr-2 h-3 w-3"/> Use DataPack
+    const renderStep = () => {
+        switch (currentStep) {
+            case 'concept': return <ConceptStep form={form} onUseDataPack={() => setCurrentView('datapack-selector')} activePack={activePack} selectedTemplate={selectedTemplate} handleWizardDataChange={handleWizardComplete}/>;
+            case 'details': return <DetailsStep form={form} />;
+            case 'portrait': return <PortraitStep form={form} models={availableModels} loras={availableLoras} isLoadingModels={isLoadingModels} />;
+            case 'complete': return <CompleteStep form={form} onSave={onSave} isSaving={isSaving} />;
+            default: return null;
+        }
+    };
+    
+    const renderContent = () => {
+        switch(currentView) {
+            case 'generator':
+                return (
+                    <motion.div
+                        key="generator"
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 50 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="w-full"
+                    >
+                         <Form {...form}>
+                            <form onSubmit={(e) => e.preventDefault()}>
+                            <Card className="shadow-lg">
+                                <CardContent className="p-4 sm:p-6">
+                                    {renderStep()}
+                                </CardContent>
+                                <CardFooter className="pt-4 border-t flex justify-between">
+                                    <Button variant="outline" onClick={() => setCurrentStep(prev => prev === 'details' ? 'concept' : prev === 'portrait' ? 'details' : 'portrait')} disabled={currentStep === 'concept' || isProcessing}>
+                                        <ArrowLeft /> Back
                                     </Button>
-                                </div>
-                              </div>
-                               {activePack && selectedTemplate && (
-                                    <Select 
-                                      onValueChange={(value) => {
-                                        const newTemplate = activePack.schema.promptTemplates.find(t => t.name === value);
-                                        if (newTemplate) {
-                                            handleWizardDataChange(generationForm.getValues('wizardData') || {}, activePack, newTemplate);
-                                        }
-                                      }}
-                                      defaultValue={selectedTemplate.name}
-                                    >
-                                        <SelectTrigger className="mb-2">
-                                            <SelectValue placeholder="Select a prompt template..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {activePack.schema.promptTemplates.map(t => (
-                                                <SelectItem key={t.name} value={t.name}>{t.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                              <FormControl>
-                                  <Tabs defaultValue="visual" className="w-full">
-                                    <TabsList className="grid w-full grid-cols-2">
-                                        <TabsTrigger value="visual"><Pencil className="mr-2"/>Visual Editor</TabsTrigger>
-                                        <TabsTrigger value="text"><Braces className="mr-2"/>Text Editor</TabsTrigger>
-                                    </TabsList>
-                                    <TabsContent value="visual" className="mt-2">
-                                         <PromptTagInput
-                                            value={field.value}
-                                            onChange={field.onChange}
-                                            disabled={!canInteract}
-                                        />
-                                    </TabsContent>
-                                     <TabsContent value="text" className="mt-2">
-                                        <PromptEditor 
-                                          ref={promptEditorRef}
-                                          value={field.value}
-                                          onChange={field.onChange}
-                                          disabled={!canInteract}
-                                        />
-                                    </TabsContent>
-                                </Tabs>
-                              </FormControl>
-                               <div className="flex items-center justify-between mt-2">
-                                {activePack ? (
-                                  <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
-                                    <Package className="h-3 w-3" />
-                                    Using: {activePack.name}
-                                  </Badge>
-                                ) : <div />}
-                                <Button type="button" variant="link" size="sm" onClick={() => setIsTagModalOpen(true)} className="px-1">
-                                    <Tags className="mr-2 h-3 w-3"/> Tag Assistant
-                                </Button>
-                               </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                    </TabsContent>
-                    <TabsContent value="settings" className="space-y-6 pt-4">
-                       <FormField
-                          control={generationForm.control}
-                          name="aspectRatio"
-                          render={({ field }) => (
-                            <FormItem className="space-y-3">
-                              <FormLabel>Aspect Ratio</FormLabel>
-                               <FormControl>
-                                  <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="grid grid-cols-3 gap-2"
-                                    disabled={!canInteract}
-                                  >
-                                    <FormItem><FormControl><RadioGroupItem value="1:1" id="square" className="sr-only" /></FormControl><FormLabel htmlFor="square" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === '1:1' && "border-primary")}><Square className="mb-2 h-5 w-5" /><span className="text-xs">Square</span></FormLabel></FormItem>
-                                     <FormItem><FormControl><RadioGroupItem value="16:9" id="landscape" className="sr-only" /></FormControl><FormLabel htmlFor="landscape" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === '16:9' && "border-primary")}><RectangleHorizontal className="mb-2 h-5 w-5" /><span className="text-xs">Landscape</span></FormLabel></FormItem>
-                                     <FormItem><FormControl><RadioGroupItem value="9:16" id="portrait" className="sr-only" /></FormControl><FormLabel htmlFor="portrait" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === '9:16' && "border-primary")}><RectangleVertical className="mb-2 h-5 w-5" /><span className="text-xs">Portrait</span></FormLabel></FormItem>
-                                  </RadioGroup>
-                               </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                         
-                        <Accordion type="single" collapsible defaultValue="engine">
-                            <AccordionItem value="engine">
-                                <AccordionTrigger>AI Settings</AccordionTrigger>
-                                <AccordionContent className="space-y-4 pt-2">
-                                     <VisualModelSelector
-                                        label="Text Model (LLM)"
-                                        model={selectedTextModel}
-                                        onOpen={() => handleOpenModelModal('text')}
-                                        disabled={!canInteract}
-                                        isLoading={false}
-                                    />
-                                    <VisualModelSelector
-                                        label="Image Model"
-                                        model={selectedModel}
-                                        onOpen={() => handleOpenModelModal('model')}
-                                        disabled={!canInteract}
-                                        isLoading={isLoadingModels}
-                                    />
-                                    <VisualModelSelector
-                                        label="LoRA (Optional)"
-                                        model={selectedLora}
-                                        onOpen={() => handleOpenModelModal('lora')}
-                                        disabled={!canInteract || !loraCompatible || availableLoras.length === 0}
-                                        isLoading={isLoadingModels}
-                                    />
-                                    {selectedLora && loraCompatible && (
-                                        <div className="space-y-4 rounded-md border p-4 bg-muted/20">
-                                             <Controller
-                                                control={generationForm.control}
-                                                name="loraWeight"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <div className="flex justify-between"><FormLabel>LoRA Weight</FormLabel><span className="text-sm font-medium">{field.value?.toFixed(2)}</span></div>
-                                                        <FormControl><Slider defaultValue={[field.value || 0.75]} max={2} step={0.05} onValueChange={(value) => field.onChange(value[0])} disabled={!canInteract}/></FormControl>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                    )}
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
-                    </TabsContent>
-                </Tabs>
-                <div className="pt-4">
-                    <Button type="submit" size="lg" className="w-full font-headline text-lg" disabled={!canInteract}>
-                        {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Forging Details...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Forge Character</>)}
-                    </Button>
-                </div>
-                {!authUser && !authLoading && <p className="text-xs text-center text-muted-foreground">You must be logged in to forge a character.</p>}
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </div>
+                                    {currentStep !== 'complete' ? (
+                                        <Button onClick={handleNextStep} disabled={isProcessing || !authUser}>
+                                            {isProcessing ? <Loader2 className="animate-spin" /> : currentStep === 'portrait' ? <Wand2/> : <ArrowRight />}
+                                            {isProcessing ? 'Forging...' : (currentStep === 'concept' ? 'Next: Generate Details' : currentStep === 'details' ? 'Next: Generate Portrait' : 'Generate Portrait')}
+                                        </Button>
+                                    ) : <div></div>}
+                                </CardFooter>
+                            </Card>
+                            </form>
+                        </Form>
+                    </motion.div>
+                );
+            case 'datapack-selector':
+                return <DataPackSelector onBack={() => setCurrentView('generator')} onSelectPack={(pack) => { setActivePack(pack); setCurrentView('datapack-wizard'); }} />;
+            case 'datapack-wizard':
+                if (!activePack) {
+                    setCurrentView('datapack-selector');
+                    return null;
+                }
+                return <DataPackSelector.Wizard pack={activePack} onWizardComplete={handleWizardComplete} onBack={() => setCurrentView('datapack-selector')} />;
+            default: return null;
+        }
+    }
 
-      <div className="lg:col-span-3">
-        <Card className="min-h-full shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-headline text-3xl">2. Generated Character</CardTitle>
-            <CardDescription>
-              Review the generated character. Once you're happy, generate the portrait and save.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isGenerating && !generationResult && (
-               <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
-                    <Loader2 className="h-12 w-12 mb-4 animate-spin text-primary" />
-                    <p className="text-lg font-medium font-headline tracking-wider">Forging your character...</p>
-                    <p className="text-sm">This may take a moment. The AI is hard at work.</p>
-              </div>
-            )}
+    if (isLoadingModels) {
+        return (
+            <div className="flex justify-center items-center p-16">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
+    }
 
-            {!isGenerating && !generationResult && (
-               <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 min-h-[400px] border-2 border-dashed rounded-lg bg-card/50">
-                {generationError ? (
-                   <Alert variant="destructive" className="text-left w-full max-w-sm">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>Generation Error</AlertTitle>
-                      <AlertDescription>
-                         <p className="mb-4">{generationError}</p>
-                      </AlertDescription>
-                  </Alert>
-                ) : (
-                  <>
-                    <FileText className="h-12 w-12 mb-4 text-primary" />
-                    <p className="text-lg font-medium font-headline tracking-wider">Your character's story awaits</p>
-                    <p className="text-sm">Fill out the form to begin the creation process.</p>
-                  </>
-                )}
-              </div>
-            )}
-            {generationResult && (
-               <div className="grid gap-8 md:grid-cols-5">
-                  <div className="md:col-span-2 space-y-4">
-                     <h3 className="font-headline text-2xl flex items-center"><ImageIcon className="w-5 h-5 mr-2 text-primary" /> Portrait</h3>
-                      <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-primary/50 shadow-lg bg-muted/20 p-1">
-                          {isGenerating && !generationResult.imageUrl && (
-                              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
-                                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                  <p className="mt-2 text-sm">Generating portrait...</p>
-                              </div>
-                          )}
-                          {generationResult.imageUrl ? (
-                             <>
-                                <Image
-                                  src={generationResult.imageUrl}
-                                  alt="Generated character portrait"
-                                  fill
-                                  sizes="100vw"
-                                  className="object-contain"
-                                />
-                                <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-green-600 text-white text-xs font-bold py-1 px-2 rounded-full shadow">
-                                  <Check className="w-3 h-3"/>
-                                  Ready to Save
-                               </div>
-                             </>
-                          ) : (
-                            !isGenerating && (
-                                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4 gap-4">
-                                     <div className="w-full space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <Label htmlFor="physicalDescription" className="flex items-center gap-1.5 text-xs"><Info className="h-3 w-3"/> Image Prompt</Label>
-                                        </div>
-                                        <Textarea 
-                                            id="physicalDescription"
-                                            value={watchPhysicalDescription || ''}
-                                            onChange={(e) => generationForm.setValue('physicalDescription', e.target.value)}
-                                            className="h-32 text-xs" 
-                                        />
-                                     </div>
-                                    <Button onClick={onGeneratePortrait} disabled={isGenerating}>
-                                         <Wand2 className="mr-2" /> Generate Portrait
-                                    </Button>
-                                </div>
-                            )
-                          )}
-                      </div>
-                  </div>
+    return (
+        <AnimatePresence mode="wait">
+            {renderContent()}
+        </AnimatePresence>
+    );
+}
 
-                  <div className="md:col-span-3">
-                        <div className="space-y-4">
-                            <div className="flex items-baseline gap-2">
-                                <User className="h-6 w-6 text-primary shrink-0"/>
-                                <div>
-                                    <h4 className="text-sm font-semibold text-muted-foreground">Name</h4>
-                                    <p className="text-lg font-bold">{generationResult.name}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                                <Shield className="h-6 w-6 text-primary shrink-0"/>
-                                <div>
-                                    <h4 className="text-sm font-semibold text-muted-foreground">Archetype</h4>
-                                    <p className="text-lg font-bold">{generationResult.archetype}</p>
-                                </div>
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-2"><Swords className="h-4 w-4 text-primary"/> Equipment</h4>
-                                <ul className="list-disc list-inside text-card-foreground space-y-1 text-sm">
-                                    {generationResult.equipment?.map((item, i) => <li key={i}>{item}</li>)}
-                                </ul>
-                            </div>
-                             <div>
-                                <h4 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-2"><FileText className="h-4 w-4 text-primary"/> Biography</h4>
-                                 <ScrollArea className="h-48 pr-4 border rounded-md p-3 bg-muted/20">
-                                    <p className="text-sm whitespace-pre-wrap">{generationResult.biography}</p>
-                                </ScrollArea>
-                            </div>
-                        </div>
+// Step 1: Concept
+function ConceptStep({ form, onUseDataPack, activePack, selectedTemplate, handleWizardDataChange }: { form: any, onUseDataPack: () => void, activePack: DataPack | null, selectedTemplate: PromptTemplate | null, handleWizardDataChange: any }) {
+    const [isTagModalOpen, setIsTagModalOpen] = useState(false);
 
-                        <div className="mt-6">
-                            <Button onClick={onSave} className="w-full" disabled={!canInteract || isSaving || !generationResult.imageUrl}>
-                              {isSaving ? (
-                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
-                              ) : (
-                                <><Save className="mr-2 h-4 w-4" /> Save to Gallery</>
-                              )}
+    const handleAppendTags = (tags: string[]) => {
+        const currentDesc = form.getValues('description');
+        const newTags = tags.filter((t: string) => !currentDesc.includes(t));
+        if (newTags.length > 0) {
+            const newDescription = [currentDesc.trim(), ...newTags].filter(Boolean).join(', ');
+            form.setValue('description', newDescription);
+        }
+    };
+    
+    const handleArchetypeSelect = (value: string) => {
+        const currentDesc = form.getValues('description');
+        const pattern = new RegExp(`^(${rpgArchetypes.join('|')})\\,?\\s*`, 'i');
+        const cleanedDesc = currentDesc.replace(pattern, '').trim();
+
+        if (value && value !== 'none') {
+            const newDesc = `${value}, ${cleanedDesc}`;
+            form.setValue('description', newDesc, { shouldValidate: true });
+        } else {
+            form.setValue('description', cleanedDesc, { shouldValidate: true });
+        }
+    };
+
+    return (
+        <>
+        <TagAssistantModal
+            isOpen={isTagModalOpen}
+            onClose={() => setIsTagModalOpen(false)}
+            onAppendTags={handleAppendTags}
+            currentDescription={form.watch('description')}
+        />
+        <div className="space-y-4">
+            <h2 className="font-headline text-2xl flex items-center gap-2"><span className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground font-sans">1</span>The Concept</h2>
+            <FormField
+              control={form.control} name="description"
+              render={({ field }) => (
+                <FormItem>
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
+                        <FormLabel>Character Prompt</FormLabel>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <Button type="button" variant="outline" size="sm" onClick={onUseDataPack}>
+                                <Package className="mr-2 h-3 w-3"/> Use DataPack
+                            </Button>
+                             <Button type="button" variant="outline" size="sm" onClick={() => setIsTagModalOpen(true)}>
+                                <Tags className="mr-2 h-3 w-3"/> Tag Assistant
                             </Button>
                         </div>
-                  </div>
-               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-    </>
-  );
+                    </div>
+                  
+                  <PromptEditor 
+                      value={field.value} 
+                      onChange={field.onChange}
+                      activePack={activePack}
+                      selectedTemplate={selectedTemplate}
+                      onTemplateChange={(templateName) => {
+                          if (activePack) {
+                              const newTemplate = activePack.schema.promptTemplates.find(t => t.name === templateName);
+                              if (newTemplate) {
+                                  handleWizardDataChange(form.getValues('wizardData') || {}, activePack, newTemplate);
+                              }
+                          }
+                      }}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <div className="space-y-2">
+                <Label>System Class (Recommended)</Label>
+                <Select onValueChange={handleArchetypeSelect}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Inject a class to improve consistency..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="none">No Class</SelectItem>
+                        {rpgArchetypes.map(archetype => (
+                            <SelectItem key={archetype} value={archetype}>{archetype}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                 <p className="text-xs text-muted-foreground">This will be added to the start of your prompt.</p>
+            </div>
+        </div>
+        </>
+    );
+}
+
+// Step 2: Details
+function DetailsStep({ form }: { form: any }) {
+    return (
+        <div className="space-y-6">
+            <h2 className="font-headline text-2xl flex items-center gap-2"><span className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground font-sans">2</span>The Details</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="name" render={({ field }) => <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>} />
+                <FormField control={form.control} name="archetype" render={({ field }) => <FormItem><FormLabel>Archetype</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>} />
+            </div>
+             <FormField control={form.control} name="biography"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Biography</FormLabel>
+                  <Textarea {...field} className="min-h-[150px]" />
+                </FormItem>
+              )}
+            />
+            <FormField control={form.control} name="physicalDescription"
+              render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Image Prompt (Editable)</FormLabel>
+                    <Alert><Info className="h-4 w-4" /><AlertDescription>This text will be used to generate the image. You can edit it to refine the portrait.</AlertDescription></Alert>
+                    <Textarea {...field} className="min-h-[150px] font-mono text-xs mt-2" />
+                </FormItem>
+              )}
+            />
+        </div>
+    );
+}
+
+// Step 3: Portrait
+function PortraitStep({ form, models, loras, isLoadingModels }: { form: any, models: AiModel[], loras: AiModel[], isLoadingModels: boolean }) {
+    const [modelModalType, setModelModalType] = useState<'model' | 'lora' | 'text'>('model');
+    const [isModelModalOpen, setIsModelModalOpen] = useState(false);
+    
+    const handleOpenModelModal = (type: 'model' | 'lora') => {
+        setModelModalType(type);
+        setIsModelModalOpen(true);
+    }
+    const handleModelSelect = (model: AiModel) => {
+        if (model.type === 'model') form.setValue('selectedModel', model, { shouldValidate: true });
+        else if (model.type === 'lora') form.setValue('selectedLora', model);
+        setIsModelModalOpen(false);
+    }
+
+    const selectedModel = form.watch('selectedModel');
+    const selectedLora = form.watch('selectedLora');
+    const loraCompatible = selectedModel?.engine === 'huggingface' || selectedModel?.engine === 'vertexai' || selectedModel?.engine === 'modelslab';
+    
+    return (
+        <>
+        <ModelSelectorModal isOpen={isModelModalOpen} onClose={() => setIsModelModalOpen(false)} onSelect={handleModelSelect} type={modelModalType} models={modelModalType === 'model' ? models : loras} isLoading={isLoadingModels} />
+        <div className="space-y-6">
+            <h2 className="font-headline text-2xl flex items-center gap-2"><span className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground font-sans">3</span>The Portrait</h2>
+            <div className="grid md:grid-cols-2 gap-6 items-start">
+                 <FormField
+                  control={form.control} name="aspectRatio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Aspect Ratio</FormLabel>
+                      <FormControl>
+                        <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-3 gap-2 pt-2">
+                           <FormItem><FormControl><RadioGroupItem value="1:1" id="square" className="sr-only" /></FormControl><FormLabel htmlFor="square" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === '1:1' && "border-primary")}><Square className="mb-2 h-5 w-5" /><span className="text-xs">Square</span></FormLabel></FormItem>
+                           <FormItem><FormControl><RadioGroupItem value="16:9" id="landscape" className="sr-only" /></FormControl><FormLabel htmlFor="landscape" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === '16:9' && "border-primary")}><RectangleHorizontal className="mb-2 h-5 w-5" /><span className="text-xs">Landscape</span></FormLabel></FormItem>
+                           <FormItem><FormControl><RadioGroupItem value="9:16" id="portrait" className="sr-only" /></FormControl><FormLabel htmlFor="portrait" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-center", field.value === '9:16' && "border-primary")}><RectangleVertical className="mb-2 h-5 w-5" /><span className="text-xs">Portrait</span></FormLabel></FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                 <div className="space-y-4">
+                     <VisualModelSelector label="Image Model" model={selectedModel} onOpen={() => handleOpenModelModal('model')} disabled={false} isLoading={isLoadingModels} />
+                     <VisualModelSelector label="LoRA (Optional)" model={selectedLora} onOpen={() => handleOpenModelModal('lora')} disabled={!loraCompatible || loras.length === 0} isLoading={isLoadingModels} />
+                      {selectedLora && loraCompatible && (
+                        <FormField control={form.control} name="loraWeight" render={({ field }) => (
+                            <FormItem><div className="flex justify-between"><FormLabel>LoRA Weight</FormLabel><span className="text-sm font-medium">{field.value?.toFixed(2)}</span></div><FormControl><Slider defaultValue={[field.value || 0.75]} max={2} step={0.05} onValueChange={(value) => field.onChange(value[0])} /></FormControl></FormItem>
+                         )} />
+                      )}
+                </div>
+            </div>
+        </div>
+        </>
+    );
+}
+
+// Step 4: Complete
+function CompleteStep({ form, onSave, isSaving }: { form: any, onSave: () => void, isSaving: boolean }) {
+    const { name, archetype, biography, equipment, imageUrl } = form.getValues();
+    return (
+        <div className="space-y-6">
+            <h2 className="font-headline text-2xl flex items-center gap-2"><Check className="h-8 w-8 text-green-500"/>Forge Complete!</h2>
+            <div className="grid md:grid-cols-5 gap-6 items-start">
+                <div className="md:col-span-2">
+                    <Image src={imageUrl} alt={name} width={512} height={512} className="rounded-lg border-2 border-primary/50 shadow-lg object-contain" />
+                </div>
+                <div className="md:col-span-3 space-y-4">
+                    <h3 className="text-xl font-bold">{name}</h3>
+                    <Badge>{archetype}</Badge>
+                    <ScrollArea className="h-40 border rounded-md p-3"><p className="text-sm text-muted-foreground whitespace-pre-wrap">{biography}</p></ScrollArea>
+                    <Button onClick={onSave} disabled={isSaving} size="lg" className="w-full">
+                        {isSaving ? <Loader2 className="animate-spin" /> : <Save />} Save to Armory
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
 }
