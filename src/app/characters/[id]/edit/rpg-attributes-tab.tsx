@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Character } from '@/types/character';
@@ -51,11 +50,11 @@ export function RpgAttributesTab({ character }: { character: Character }) {
             </CardHeader>
             <CardContent>
                 {isPlayable ? (
-                    <div className="grid lg:grid-cols-3 gap-8">
+                    <div className="space-y-6">
                         <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                             <h3 className="font-semibold flex items-center gap-2"><Dna className="text-primary"/> Base Stats</h3>
                             {statsAreSet ? (
-                                <div className="grid grid-cols-3 gap-2">
+                                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                                     <StatDisplay label="STR" value={rpg.stats.strength} />
                                     <StatDisplay label="DEX" value={rpg.stats.dexterity} />
                                     <StatDisplay label="CON" value={rpg.stats.constitution} />
@@ -67,7 +66,7 @@ export function RpgAttributesTab({ character }: { character: Character }) {
                                 <p className="text-sm text-muted-foreground">Stats are generated automatically when you save the character with an Archetype.</p>
                             )}
                         </div>
-                        <div className="lg:col-span-2 space-y-4 p-4 rounded-lg border bg-muted/30">
+                        <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                             <h3 className="font-semibold flex items-center gap-2"><Swords className="text-primary"/> Combat Skills</h3>
                             {skillsAreSet ? (
                                 <div className="space-y-2">
