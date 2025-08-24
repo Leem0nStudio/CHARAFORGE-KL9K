@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useForm, Controller } from 'react-hook-form';
 import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { Button } from '@/components/ui/button';
-import { Card, CardTitle, CardHeader, CardContent } from '@/components/ui/card';
+import { Card, CardTitle, CardHeader, CardContent, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Loader2, ArrowRight, Package, ArrowLeft, ChevronRight } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -318,3 +318,5 @@ export function DataPackSelector({ onSelectPack, onBack }: DataPackSelectorProps
 }
 
 DataPackSelector.Wizard = DataPackWizard;
+
+    
