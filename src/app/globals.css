@@ -1,68 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Exo+2:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 222 22% 12%; /* Dark, almost black */
+    --background: 222 47% 11%; /* #111827 */
     --foreground: 0 0% 98%;
 
-    --card: 222 22% 16%;
+    --card: 222 47% 14%;
     --card-foreground: 0 0% 98%;
-    --card-highlight: 222 22% 20%;
+    --card-highlight: 222 47% 16%;
 
-    --popover: 222 22% 8%;
+    --popover: 222 47% 8%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 195 85% 55%; /* Vibrant cyan/sky blue */
-    --primary-foreground: 222 22% 10%;
-    --primary-hover: 195 85% 60%;
+    --primary: 221 63% 33%; /* #1E3A8A */
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 221 63% 40%;
 
-    --secondary: 222 22% 25%;
+    --secondary: 222 47% 20%;
     --secondary-foreground: 0 0% 95%;
-    --secondary-hover: 222 22% 30%;
+    --secondary-hover: 222 47% 25%;
     
-    --muted: 222 22% 20%;
-    --muted-foreground: 222 22% 65%;
+    --muted: 222 47% 16%;
+    --muted-foreground: 222 47% 65%;
 
-    --accent: 222 22% 25%;
-    --accent-foreground: 0 0% 95%;
+    --accent: 39 91% 52%; /* #F59E0B */
+    --accent-foreground: 222 47% 8%;
 
     --destructive: 0 63% 45%;
     --destructive-foreground: 0 0% 100%;
     --destructive-hover: 0 63% 50%;
 
-    --border: 222 22% 20%;
-    --input: 222 22% 18%;
-    --ring: 195 85% 60%;
+    --border: 222 47% 16%;
+    --input: 222 47% 15%;
+    --ring: 39 91% 55%;
     
     --radius: 1rem;
   }
 
   .dark {
-    --background: 222 22% 12%;
+    --background: 222 47% 11%; /* #111827 */
     --foreground: 0 0% 98%;
-    --card: 222 22% 16%;
+    --card: 222 47% 14%;
     --card-foreground: 0 0% 98%;
-    --card-highlight: 222 22% 20%;
-    --popover: 222 22% 8%;
+    --card-highlight: 222 47% 16%;
+    --popover: 222 47% 8%;
     --popover-foreground: 0 0% 98%;
-    --primary: 195 85% 55%;
-    --primary-foreground: 222 22% 10%;
-    --primary-hover: 195 85% 60%;
-    --secondary: 222 22% 25%;
+    --primary: 221 63% 33%; /* #1E3A8A */
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 221 63% 40%;
+    --secondary: 222 47% 20%;
     --secondary-foreground: 0 0% 95%;
-    --secondary-hover: 222 22% 30%;
-    --muted: 222 22% 20%;
-    --muted-foreground: 222 22% 65%;
-    --accent: 222 22% 25%;
-    --accent-foreground: 0 0% 95%;
+    --secondary-hover: 222 47% 25%;
+    --muted: 222 47% 16%;
+    --muted-foreground: 222 47% 65%;
+    --accent: 39 91% 52%; /* #F59E0B */
+    --accent-foreground: 222 47% 8%;
     --destructive: 0 63% 45%;
     --destructive-foreground: 0 0% 100%;
     --destructive-hover: 0 63% 50%;
-    --border: 222 22% 20%;
-    --input: 222 22% 18%;
-    --ring: 195 85% 60%;
+    --border: 222 47% 16%;
+    --input: 222 47% 15%;
+    --ring: 39 91% 55%;
   }
 }
 
@@ -72,6 +74,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Exo 2', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

@@ -16,8 +16,8 @@ const config = {
     },
     extend: {
       fontFamily: {
-        sans: ['var(--font-body)', 'sans-serif'],
-        headline: ['var(--font-headline)', 'sans-serif'],
+        sans: ['var(--font-body)'],
+        headline: ['var(--font-headline)'],
       },
       colors: {
         border: 'hsl(var(--border))',

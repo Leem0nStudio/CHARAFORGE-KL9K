@@ -38,7 +38,7 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('min-h-screen bg-background font-sans antialiased', exo2.variable, bebasNeue.variable)}>
+      <body className={cn('min-h-screen bg-background antialiased', exo2.variable, bebasNeue.variable)}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
