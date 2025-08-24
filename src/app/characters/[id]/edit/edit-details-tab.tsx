@@ -385,3 +385,5 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
         </div>
     );
 }
+
+    

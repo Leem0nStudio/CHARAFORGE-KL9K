@@ -46,7 +46,7 @@ export const lifeEventTransitions: Record<LifeEventState, Partial<Record<LifeEve
 };
 
 // Exported for reuse in other server actions
-export function getNextLifeState(currentState: LifeEventState): LifeEventState {
+export async function getNextLifeState(currentState: LifeEventState): Promise<LifeEventState> {
     const transitions = lifeEventTransitions[currentState];
     const rand = Math.random();
     let cumulativeProbability = 0;
@@ -66,11 +66,31 @@ function generateLifePath(length: number = 5): LifeEventState[] {
     path.push(currentState);
     
     for (let i = 1; i < length; i++) {
-        currentState = getNextLifeState(currentState);
+        // This function is not async, but we can await it here if needed in future.
+        // For now, direct call is fine since getNextLifeState is simple.
+        // In a real scenario, we might need to handle the promise.
+        // However, for this fix, we just need to satisfy the export condition.
+        // The implementation can remain effectively synchronous.
+        currentState = getNextLifeState_internal(currentState);
         path.push(currentState);
     }
     return path;
 }
+
+// Internal synchronous version for use within this file
+function getNextLifeState_internal(currentState: LifeEventState): LifeEventState {
+    const transitions = lifeEventTransitions[currentState];
+    const rand = Math.random();
+    let cumulativeProbability = 0;
+    for (const state in transitions) {
+        cumulativeProbability += transitions[state as LifeEventState]!;
+        if (rand < cumulativeProbability) {
+            return state as LifeEventState;
+        }
+    }
+    return ['Humble Beginnings', 'Noble Birth', 'Tragic Event'][Math.floor(Math.random() * 3)] as LifeEventState;
+}
+
 
 // #endregion
 
