@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Image from 'next/image';
@@ -8,11 +9,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import type { Character } from '@/types/character';
-import { ArrowLeft, Edit, Share2, Dna, Swords as SwordsIcon, Shield, BrainCircuit, BarChart3, Info } from 'lucide-react';
+import { ArrowLeft, Edit, Share2, Dna, Swords as SwordsIcon, Shield, BrainCircuit, BarChart3, Info, User } from 'lucide-react';
 import { StatItem } from './stat-item';
 import { StarRating } from './star-rating';
 import { motion } from 'framer-motion';
 import { LikeButton } from './like-button';
+import { FollowButton } from '../user/follow-button';
 
 interface ShowcaseViewerProps {
     character: Character;
@@ -81,15 +83,15 @@ export function ShowcaseViewer({ character, currentUserId, isLikedInitially }: S
             </div>
 
             {/* Main Content - Mobile First (Flex Column) then Grid for larger screens */}
-            <motion.div 
-                className="relative z-10 flex flex-col md:grid md:grid-cols-2 lg:grid-cols-3 gap-8 min-h-screen items-center container py-16 md:py-0"
+             <motion.div 
+                className="relative z-10 grid md:grid-cols-2 lg:grid-cols-[2fr_1fr] gap-8 min-h-screen container py-16 md:py-8"
                 initial="hidden"
                 animate="visible"
                 variants={containerVariants}
             >
-                {/* Character Image */}
+                {/* Character Image & Actions */}
                 <motion.div 
-                    className="lg:col-span-2 flex items-center justify-center w-full"
+                    className="flex flex-col items-center justify-center w-full gap-4 md:order-2 lg:order-1"
                     variants={itemVariants}
                 >
                     <Image
@@ -100,15 +102,39 @@ export function ShowcaseViewer({ character, currentUserId, isLikedInitially }: S
                         className="object-contain max-h-[60vh] md:max-h-[80vh] w-auto drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)]"
                         priority
                     />
+                    {/* Action Bar */}
+                     <div className="w-full max-w-sm flex gap-2 pt-4">
+                        <LikeButton 
+                            characterId={character.id}
+                            initialLikes={character.meta.likes}
+                            isLikedInitially={isLikedInitially}
+                            currentUserId={currentUserId}
+                        />
+                        {currentUserId && character.meta.userId !== currentUserId && (
+                           <FollowButton
+                                currentUserId={currentUserId}
+                                profileUserId={character.meta.userId}
+                                isFollowingInitially={false} // This needs a server fetch to be accurate
+                            />
+                        )}
+                        {isOwner && (
+                            <Button asChild className="flex-1">
+                                <Link href={`/characters/${character.id}/edit`}><Edit className="mr-2"/> Edit</Link>
+                            </Button>
+                        )}
+                    </div>
                 </motion.div>
 
                 {/* Info Panel */}
-                <motion.div className="w-full" variants={itemVariants}>
+                <motion.div className="w-full md:order-1 lg:order-2" variants={itemVariants}>
                      <Card className="bg-card/80 backdrop-blur-md">
                         <ScrollArea className="h-full max-h-[85vh]">
                         <CardContent className="p-6 space-y-4">
                             <div>
                                 <h1 className="text-3xl font-headline tracking-wider">{character.core.name}</h1>
+                                 <Link href={`/users/${character.meta.userId}`} className="text-sm text-muted-foreground hover:text-primary flex items-center gap-2 mb-2">
+                                     <User className="w-4 h-4"/> by {character.meta.userName}
+                                 </Link>
                                 <div className="flex items-center justify-between">
                                     <StarRating rating={character.core.rarity || 3} />
                                     <div className="text-right">
@@ -157,21 +183,6 @@ export function ShowcaseViewer({ character, currentUserId, isLikedInitially }: S
                                  </div>
                                 </>
                             )}
-
-                             <div className="flex gap-2 pt-4">
-                                <LikeButton 
-                                    characterId={character.id}
-                                    initialLikes={character.meta.likes}
-                                    isLikedInitially={isLikedInitially}
-                                    currentUserId={currentUserId}
-                                />
-                                {isOwner && (
-                                    <Button asChild className="flex-1">
-                                        <Link href={`/characters/${character.id}/edit`}><Edit className="mr-2"/> Edit</Link>
-                                    </Button>
-                                )}
-                            </div>
-
                         </CardContent>
                         </ScrollArea>
                     </Card>
