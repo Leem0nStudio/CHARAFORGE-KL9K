@@ -147,8 +147,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             setIsLoadingModels(true);
             try {
                 const [userModels, userLoras, packIdFromUrl] = await Promise.all([
-                    authUser ? getModels('model', authUser.uid) : getModels('model'),
-                    authUser ? getModels('lora', authUser.uid) : getModels('lora'),
+                    getModels('model', authUser?.uid),
+                    getModels('lora', authUser?.uid),
                     Promise.resolve(searchParams.get('packId')),
                 ]);
                 
@@ -169,11 +169,8 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
             } catch (error) { toast({ variant: 'destructive', title: 'Error', description: 'Could not load required data.' }); }
             finally { setIsLoadingModels(false); }
         }
-        if (authUser) {
-          loadInitialData();
-        } else {
-            setIsLoadingModels(false);
-        }
+        loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authUser, searchParams, toast, form]);
 
     const handleNextStep = async () => {
@@ -330,7 +327,7 @@ export function CharacterGenerator({ authUser }: { authUser: FirebaseUser | null
         }
     }
 
-    if (isLoadingModels && authUser) {
+    if (isLoadingModels) {
         return (
             <div className="flex justify-center items-center p-16">
                 <Loader2 className="h-8 w-8 animate-spin" />
