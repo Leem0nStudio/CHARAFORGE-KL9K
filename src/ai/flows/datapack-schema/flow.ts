@@ -22,28 +22,33 @@ const prompt = ai.definePrompt({
   input: { schema: GenerateDataPackSchemaInputSchema },
   output: { schema: GenerateDataPackSchemaOutputSchema },
   model: 'googleai/gemini-1.5-flash-latest',
-  prompt: `You are an expert game designer and prompt engineer. Your task is to generate a complete DataPack, including metadata and a YAML schema, based on a user's concept.
+  prompt: `You are a world-class expert in prompt engineering for high-quality image generation and a lead game designer. Your task is to generate a complete, professional-grade DataPack, including all metadata and a detailed YAML schema, based on a user's core concept.
 
 Concept: {{{concept}}}
 
-Instructions:
-1.  **Name**: Generate a short, compelling, and marketable name for the DataPack.
-2.  **Description**: Write a concise, one-to-two sentence description that explains the theme and purpose of the DataPack.
-3.  **Tags**: Generate an array of 5-7 relevant, single-word, lowercase tags that categorize the datapack.
-4.  **YAML Content**: Your entire YAML output MUST be a single, valid YAML document string within the 'yamlContent' field. Do NOT include any other text or explanations outside of the YAML content.
-    *   **CRITICAL - COMPLETE ALL SECTIONS**: You MUST generate thematically appropriate options for ALL of the following sections and their sub-sections. Do not leave any section empty.
-        *   **General**: You MUST generate options for 'raceClass' and 'gender'.
-        *   **Appearance**: You MUST generate options for 'hair', 'eyes', 'skin', and 'facialFeatures'.
-        *   **Equipment**: You MUST generate options for ALL equipment slots: 'head', 'face', 'neck', 'shoulders', 'torso', 'arms', 'hands', 'waist', 'legs', 'feet', 'back'. Each slot should contain thematically appropriate 'clothing', 'armor', 'accessory', or 'weapon' options.
-        *   **Scene & Action**: You MUST generate options for 'pose', 'action', 'camera', 'background', and 'effects'.
-    *   **Prompt Templates**: Generate 2-3 diverse and detailed 'promptTemplates'. Each template MUST use a wide variety of placeholders (e.g., {raceClass}, {torso_armor}, {head_accessory}, {legs_clothing}, etc.) that correspond to the slots you will define.
-    *   **Character Profile Schema**:
-        *   **GRANULARITY IS KEY**: You MUST create separate, granular slots for different parts of the character, especially for clothing and equipment. Instead of one 'clothing' slot, you MUST create specific slots like 'head', 'torso', 'legs', 'feet', 'hands'.
-        *   For EVERY slot, provide 4-5 creative, thematically consistent options.
-        *   **CRITICAL**: The 'value' for each option MUST be a single, concise line of text. Do NOT use multi-line strings for values.
-    *   **Mandatory Archetype Slot**: It is MANDATORY that one of the slots you generate is for the character's class or archetype (e.g., id: 'raceClass', 'class', or 'role'), as this is required by the game system.
+**CRITICAL INSTRUCTIONS FOR QUALITY:**
+Your output must be flawless and adhere to these rules. Failure to do so results in a poor user experience.
 
-Example of a high-quality YAML structure:
+1.  **Metadata Generation:**
+    *   **Name:** Generate a short, compelling, and marketable name for the DataPack.
+    *   **Description:** Write a concise, one-to-two sentence description that explains the theme and purpose of the DataPack.
+    *   **Tags:** Generate an array of 5-7 relevant, single-word, lowercase tags that categorize the datapack.
+
+2.  **YAML Content Generation (The Core Task):**
+    *   The 'yamlContent' field MUST contain a single, valid YAML document string. Do not include any other text or explanations outside of the YAML content itself.
+    *   **Prompt Templates:**
+        *   You MUST generate 2-3 diverse and highly detailed 'promptTemplates'.
+        *   Each template MUST use a wide variety of placeholders (e.g., {raceClass}, {torso_armor}, {head_accessory}, {legs_clothing}, etc.) that correspond to the slots you will define below.
+    *   **Character Profile Schema (Prompt Engineering Best Practices):**
+        *   **FULL COMPLETION IS MANDATORY:** You MUST generate thematically appropriate options for EVERY SECTION AND SUB-SECTION listed below. Do NOT leave any section empty. This includes all equipment slots from head to feet.
+        *   **GRANULARITY IS KEY**: You MUST use the provided granular slot structure. For equipment, this means defining options for 'head', 'torso', 'legs', 'feet', 'hands', etc., each with sub-categories like 'clothing', 'armor', 'accessory'.
+        *   **RICH DESCRIPTIVE VALUES (MOST IMPORTANT RULE):** For every option, the 'value' field MUST be a descriptive, multi-word phrase suitable for a high-quality image prompt. DO NOT use single words. Good examples: "ornate obsidian plate armor", "tattered shadow robes with glowing runes", "long flowing white hair with silver clasps". Bad examples: "armor", "robes", "hair". Each 'value' must add significant visual detail.
+        *   **THEMATIC CONSISTENCY:** All generated options, from race to background, must be perfectly aligned with the user's initial 'concept'.
+        *   **MANDATORY ARCHETYPE SLOT:** It is MANDATORY that one of the primary slots is for the character's class or archetype (e.g., 'raceClass', 'class', or 'role'), as this is a cornerstone of character creation.
+        *   **PROVIDE 4-5 OPTIONS PER SLOT/SUB-SLOT.**
+
+Example of a high-quality YAML structure for a "Solar Knight" concept:
+'''yaml
 promptTemplates:
   - name: "Cinematic Portrait"
     template: "cinematic portrait of a {raceClass} with {hair}, {eyes}, wearing {torso_armor} and {head_accessory}, in {background}, {effects} lighting"
@@ -52,27 +57,30 @@ promptTemplates:
 characterProfileSchema:
   raceClass:
     - label: "Solar Knight"
-      value: "a noble solar knight"
+      value: "a noble solar knight with faint glowing skin"
     - label: "Void Warlock"
-      value: "a mysterious void warlock"
+      value: "a mysterious void warlock clad in shadowy silks"
+    - label: "Sunstone Templar"
+      value: "a sunstone templar in inscribed golden armor"
   hair:
     - label: "Flowing White"
-      value: "long flowing white hair"
+      value: "long flowing white hair made of pure light"
     - label: "Short & Spiky"
-      value: "short, spiky black hair"
+      value: "short, spiky black hair that absorbs light"
   torso:
     armor:
       - label: "Obsidian Plate"
-        value: "ornate obsidian plate armor"
+        value: "ornate, polished obsidian plate armor with gold filigree"
       - label: "Shadow Robes"
-        value: "tattered shadow robes"
+        value: "tattered, multi-layered shadow robes with glowing purple runes"
   head:
     accessory:
       - label: "Horned Helmet"
-        value: "a large horned helmet"
-      - label: "Blindfold"
-        value: "a simple black blindfold"
-  # ... and so on for ALL other slots (legs, feet, hands, etc.)
+        value: "a large, imposing horned helmet with intricate carvings"
+      - label: "Simple Blindfold"
+        value: "a simple black silk blindfold covering the eyes"
+  # ... and so on for ALL other slots (legs, feet, hands, background, pose, etc.)
+'''
 `,
 });
 
