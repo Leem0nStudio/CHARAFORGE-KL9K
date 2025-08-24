@@ -67,6 +67,7 @@ export type Character = {
     timeline: TimelineEvent[];
     tags: string[];
     rarity: 1 | 2 | 3 | 4 | 5;
+    weaknesses?: string;
   };
 
   // Visual assets of the character.
@@ -129,6 +130,7 @@ export const UpdateCharacterSchema = z.object({
   equipment: z.array(z.string()).optional(),
   physicalDescription: z.string().optional(),
   birthYear: z.string().optional(),
+  weaknesses: z.string().optional(),
 });
 
 export const SaveCharacterInputSchema = z.object({

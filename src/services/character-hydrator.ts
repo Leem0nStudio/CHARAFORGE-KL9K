@@ -32,6 +32,7 @@ export function toCharacterObject(docId: string, data: DocumentData): Character 
         timeline: data.timeline || [],
         tags: data.tags || [],
         rarity: data.rarity || 3,
+        weaknesses: data.weaknesses || '',
     };
     const defaultVisuals = {
         imageUrl: data.imageUrl || '',

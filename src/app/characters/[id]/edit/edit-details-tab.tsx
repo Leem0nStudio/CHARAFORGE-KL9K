@@ -37,6 +37,7 @@ const FormSchema = z.object({
   alignment: z.enum(alignmentOptions),
   physicalDescription: z.string().optional(),
   birthYear: z.string().optional(),
+  weaknesses: z.string().optional(),
 });
 type FormValues = z.infer<typeof FormSchema>;
 
@@ -78,6 +79,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
             alignment: character.core.alignment || 'True Neutral',
             physicalDescription: character.core.physicalDescription || character.generation?.originalPrompt,
             birthYear: character.core.birthYear || 'Year 1',
+            weaknesses: character.core.weaknesses || '',
         },
     });
 
@@ -259,6 +261,10 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                                     )}
                                 />
                             </div>
+                             <div className="space-y-2 col-span-full">
+                                <Label htmlFor="weaknesses">Weaknesses & Vices (comma-separated)</Label>
+                                <Input id="weaknesses" {...form.register('weaknesses')} placeholder="e.g., Fear of heights, Avarice, Sunlight" />
+                            </div>
                         </div>
                         
                         <div className="space-y-2">
@@ -314,9 +320,9 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Character Timeline</CardTitle>
+                    <CardTitle>Character Timeline & Backgrounds</CardTitle>
                     <CardDescription>
-                        Map out the key events in your character's life. This adds depth and consistency for story generation.
+                        Map out key events, allies, resources, and influences. This adds depth for story generation.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -385,5 +391,3 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
         </div>
     );
 }
-
-    

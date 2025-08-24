@@ -226,7 +226,7 @@ export async function updateCharacter(
         };
     }
     
-    const { name, biography, alignment, archetype, equipment, physicalDescription, birthYear } = validatedFields.data;
+    const { name, biography, alignment, archetype, equipment, physicalDescription, birthYear, weaknesses } = validatedFields.data;
     const characterRef = adminDb.collection('characters').doc(characterId);
     
     const characterDoc = await characterRef.get();
@@ -244,6 +244,7 @@ export async function updateCharacter(
       'core.equipment': equipment || null,
       'core.physicalDescription': physicalDescription || null,
       'core.birthYear': birthYear || null,
+      'core.weaknesses': weaknesses || null,
     };
     
     // Check if the archetype has changed.
