@@ -103,7 +103,12 @@ export const processUploadedImage = onObjectFinalized({
         if (characterData?.rpg?.isPlayable) {
             logger.info(`Character is playable. Triggering RPG attribute generation for ${characterId}...`);
             const queue = getFunctions().taskQueue('triggerRpgGeneration');
-            await queue.enqueue({ characterId });
+            // Pass all required data to the task queue.
+            await queue.enqueue({ 
+                characterId: characterId,
+                archetype: characterData.core.archetype,
+                biography: characterData.core.biography,
+            });
         } else {
             logger.info(`Character ${characterId} is not playable. Skipping RPG attribute generation.`);
         }

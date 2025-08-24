@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Image from 'next/image';
@@ -178,7 +177,11 @@ export function ShowcaseViewer({ character, currentUserId, isLikedInitially }: S
                                   <div className="space-y-4">
                                      <h3 className="font-semibold text-muted-foreground flex items-center gap-2"><SwordsIcon className="w-4 h-4"/> Skills</h3>
                                       <div className="space-y-3">
-                                        {character.rpg.skills.map((skill) => <SkillDisplay key={skill.id} skill={skill} />)}
+                                        {character.rpg.skills.length > 0 ? (
+                                            character.rpg.skills.map((skill) => <SkillDisplay key={skill.id} skill={skill} />)
+                                        ) : (
+                                            <p className="text-xs text-muted-foreground text-center py-4">No skills generated yet. Process an image in the editor to generate them.</p>
+                                        )}
                                       </div>
                                  </div>
                                 </>

@@ -53,32 +53,24 @@ const generateSkillsPrompt = ai.definePrompt({
  * A server action that generates RPG skills for a character and saves them to Firestore.
  * This function is intended to be called by a Cloud Function trigger.
  * @param {string} characterId The ID of the character to generate skills for.
+ * @param {string} archetype The character's archetype.
+ * @param {string} biography The character's biography.
  * @returns {Promise<{success: boolean, message: string}>} A promise that resolves to a success or failure message.
  */
-export async function generateAndSaveSkills(characterId: string): Promise<{ success: boolean; message: string }> {
+export async function generateAndSaveSkills(characterId: string, archetype: string, biography: string): Promise<{ success: boolean; message: string }> {
   if (!adminDb) {
     throw new Error('Database service is unavailable.');
   }
 
   const characterRef = adminDb.collection('characters').doc(characterId);
-  await characterRef.update({ 'rpg.skillsStatus': 'pending' });
-
+  
   try {
-    const characterDoc = await characterRef.get();
-    if (!characterDoc.exists) {
-      throw new Error(`Character with ID ${characterId} not found.`);
-    }
-    const characterData = characterDoc.data() as Character;
-
-    if (!characterData.core.archetype) {
-      await characterRef.update({ 'rpg.skillsStatus': 'failed' });
-      return { success: false, message: 'Character has no archetype set.' };
-    }
+    await characterRef.update({ 'rpg.skillsStatus': 'pending' });
 
     const { output } = await generateSkillsPrompt({
       characterId,
-      archetype: characterData.core.archetype,
-      biography: characterData.core.biography,
+      archetype,
+      biography,
     });
     
     if (!output || !output.skills || output.skills.length === 0) {
@@ -95,7 +87,10 @@ export async function generateAndSaveSkills(characterId: string): Promise<{ succ
       'rpg.skillsStatus': 'complete',
     });
 
-    return { success: true, message: `Successfully generated ${skillsWithIds.length} skills for ${characterData.core.name}.` };
+    const characterDoc = await characterRef.get();
+    const characterName = characterDoc.data()?.core.name || 'Unknown Character';
+
+    return { success: true, message: `Successfully generated ${skillsWithIds.length} skills for ${characterName}.` };
 
   } catch (error: any) {
     console.error(`Error generating skills for character ${characterId}:`, error);

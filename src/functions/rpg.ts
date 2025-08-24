@@ -16,17 +16,19 @@ if (getApps().length === 0) {
 }
 
 export const triggerRpgGeneration = onTaskDispatched(async (request) => {
-    const { characterId } = request.data as { characterId?: string };
+    // The data now includes archetype and biography directly from the calling function.
+    const { characterId, archetype, biography } = request.data as { characterId?: string, archetype?: string, biography?: string };
 
-    if (!characterId) {
-        logger.error("Task queue message is missing 'characterId'.", { data: request.data });
+    if (!characterId || !archetype || !biography) {
+        logger.error("Task queue message is missing required data ('characterId', 'archetype', or 'biography').", { data: request.data });
         return;
     }
 
     logger.info(`Received task to generate RPG attributes for character: ${characterId}`);
     
     try {
-        const result = await generateAndSaveSkills(characterId);
+        // Pass the received data directly to the generation action.
+        const result = await generateAndSaveSkills(characterId, archetype, biography);
         if (result.success) {
             logger.info(`Successfully processed RPG attributes for character ${characterId}. Message: ${result.message}`);
         } else {
