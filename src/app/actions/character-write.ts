@@ -528,7 +528,7 @@ export async function suggestNextTimelineEvent(characterId: string): Promise<Act
         }
 
         const lastState = lastEvent ? findStateFromTitle(lastEvent.title) : null;
-        const nextState = getNextLifeState(lastState || 'Humble Beginnings');
+        const nextState = await getNextLifeState(lastState || 'Humble Beginnings');
 
         const prompt = `You are a creative writer. Based on the character below and a suggested life event type, generate a concise, compelling timeline event.
 

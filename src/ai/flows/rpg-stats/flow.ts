@@ -32,3 +32,5 @@ export const generateStatsFlow = ai.defineFlow(
     throw new Error('This flow is deprecated and should not be called. Stat generation is now deterministic and skill generation is a separate process.');
   }
 );
+
+  

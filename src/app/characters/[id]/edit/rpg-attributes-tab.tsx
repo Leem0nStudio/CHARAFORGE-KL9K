@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import type { Character } from '@/types/character';
@@ -27,7 +26,7 @@ function SkillDisplay({ skill }: { skill: Character['rpg']['skills'][0]}) {
         <div className="p-3 border rounded-lg bg-background">
             <div className="flex justify-between items-start">
                 <h4 className="font-semibold text-sm">{skill.name}</h4>
-                 <div className="flex items-center gap-1">
+                 <div className="flex items-center gap-1.5">
                      <span className="text-xs font-bold text-primary">{skill.power}</span>
                      {iconMap[skill.type]}
                  </div>
@@ -104,3 +103,5 @@ export function RpgAttributesTab({ character }: { character: Character }) {
         </div>
     );
 }
+
+  
