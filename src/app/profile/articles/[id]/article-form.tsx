@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Bold, Italic, Code, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Bold, Italic, Code, Link as LinkIcon, Image as ImageIcon, Save } from 'lucide-react';
 import type { Article } from '@/types/article';
 import { UpsertArticleSchema } from '@/types/article';
 import { upsertArticle } from '@/app/actions/articles';
@@ -103,7 +103,7 @@ export function ArticleForm({ article }: { article: Article | null }) {
   return (
     <>
     <CharacterImageSelectorDialog isOpen={isSelectorOpen} onClose={() => setIsSelectorOpen(false)} onImageSelect={handleImageInsert} />
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-24 sm:pb-0">
        <Card>
         <CardHeader>
           <CardTitle>Article Metadata</CardTitle>
@@ -159,11 +159,19 @@ export function ArticleForm({ article }: { article: Article | null }) {
         </CardContent>
       </Card>
       
-      <div className="flex justify-end">
+      <div className="hidden sm:flex justify-end">
         <Button type="submit" disabled={isPending || !form.formState.isDirty}>
           {isPending && <Loader2 className="animate-spin mr-2" />}
           {article ? 'Save Changes' : 'Create Article'}
         </Button>
+      </div>
+
+       {/* Mobile Action Footer */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm p-4 border-t z-10">
+          <Button type="submit" className="w-full" disabled={isPending || !form.formState.isDirty}>
+                {isPending ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2"/>}
+                {article ? 'Save Changes' : 'Create Article'}
+            </Button>
       </div>
     </form>
     </>
