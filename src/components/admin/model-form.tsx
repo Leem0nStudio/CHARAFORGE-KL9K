@@ -1,3 +1,5 @@
+
+      
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -22,6 +24,7 @@ import { ScrollArea } from '../ui/scroll-area';
 
 const engineDescriptions: Record<string, string> = {
     comfyui: "For self-hosted ComfyUI or A1111 servers. Requires a direct URL to the server's API.",
+    rundiffusion: "For private, high-performance RunDiffusion servers. Requires the session's API URL.",
     vertexai: "For fine-tuned models hosted on Google Cloud's Vertex AI Endpoints. Maximum scalability.",
     gemini: "Google's powerful, general-purpose model for high-quality image generation. No configuration needed.",
     huggingface: "Use any public text-to-image model from the Hugging Face Hub via its Inference API.",
@@ -59,14 +62,14 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
     const onSubmit = (values: UpsertAiModel) => {
         startTransition(async () => {
             let finalValues = { ...values };
-            if (values.engine === 'comfyui' && typeof values.comfyWorkflow === 'string' && values.comfyWorkflow.trim()) {
+            if ((values.engine === 'comfyui' || values.engine === 'rundiffusion') && typeof values.comfyWorkflow === 'string' && values.comfyWorkflow.trim()) {
                 try {
                     finalValues.comfyWorkflow = JSON.parse(values.comfyWorkflow);
                 } catch (e) {
                     toast({ variant: 'destructive', title: 'Invalid JSON', description: 'The ComfyUI workflow is not valid JSON.' });
                     return;
                 }
-            } else if (values.engine !== 'comfyui') {
+            } else if (values.engine !== 'comfyui' && values.engine !== 'rundiffusion') {
                  finalValues.comfyWorkflow = undefined;
             }
 
@@ -129,6 +132,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
         switch(watchEngine) {
             case 'vertexai': return 'Vertex AI Endpoint ID';
             case 'comfyui': return 'Default Base Model Filename';
+            case 'rundiffusion': return 'Default Base Model Filename';
             case 'huggingface': return 'Hugging Face Model ID';
             case 'modelslab': return 'ModelsLab Model ID';
             default: return 'Execution ID';
@@ -138,6 +142,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
         switch(watchEngine) {
             case 'vertexai': return 'e.g., 1234567890123456789';
             case 'comfyui': return 'e.g., v1-5-pruned-emaonly.safetensors';
+            case 'rundiffusion': return 'e.g., epicrealism_naturalSinRC1.safetensors';
             case 'huggingface': return 'e.g., stabilityai/sdxl';
             case 'modelslab': return 'e.g., 12345 or model-slug';
             default: return 'Enter ID';
@@ -196,6 +201,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="comfyui">ComfyUI / A1111</SelectItem>
+                                                    <SelectItem value="rundiffusion">RunDiffusion</SelectItem>
                                                     <SelectItem value="vertexai">Vertex AI</SelectItem>
                                                     <SelectItem value="gemini">Gemini</SelectItem>
                                                     <SelectItem value="huggingface">Hugging Face</SelectItem>
@@ -208,11 +214,16 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                      <p className="text-xs text-muted-foreground">{engineDescriptions[watchEngine]}</p>
                                 </div>
 
-                                {watchEngine === 'comfyui' && (
+                                {(watchEngine === 'comfyui' || watchEngine === 'rundiffusion') && (
                                      <div className="space-y-2 col-span-2">
-                                        <Label>ComfyUI Server URL</Label>
+                                        <Label>Server URL</Label>
                                         <Input {...form.register('apiUrl')} placeholder="http://your-server-ip:8188/prompt" />
-                                        <Link href="/guides/comfyui" target="_blank" className="text-xs text-primary underline flex items-center gap-1"><Info className="h-3 w-3" /> How to get this? (Kaggle Guide)</Link>
+                                        {watchEngine === 'comfyui' && (
+                                            <Link href="/guides/comfyui" target="_blank" className="text-xs text-primary underline flex items-center gap-1"><Info className="h-3 w-3" /> How to get this? (Kaggle Guide)</Link>
+                                        )}
+                                         {watchEngine === 'rundiffusion' && (
+                                            <p className="text-xs text-muted-foreground">The API URL for your active RunDiffusion session.</p>
+                                        )}
                                      </div>
                                 )}
                                 
@@ -264,7 +275,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                                     </div>
                                 )}
 
-                                {watchEngine === 'comfyui' && (
+                                {(watchEngine === 'comfyui' || watchEngine === 'rundiffusion') && (
                                      <div className="space-y-2 col-span-2">
                                         <Label>ComfyUI Workflow (JSON)</Label>
                                         <Controller
@@ -374,3 +385,5 @@ export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: b
         </>
     );
 }
+
+    

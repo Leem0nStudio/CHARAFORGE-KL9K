@@ -1,4 +1,5 @@
 
+      
 'use server';
 
 /**
@@ -296,9 +297,9 @@ const generateCharacterImageFlow = ai.defineFlow(
             loraWeight: lora?.weight
         });
 
-    } else if (engineId === 'comfyui') {
+    } else if (engineId === 'comfyui' || engineId === 'rundiffusion') {
         if (!engineConfig.apiUrl || !engineConfig.comfyWorkflow) {
-             throw new Error("ComfyUI engine requires an API URL and a workflow JSON.");
+             throw new Error("ComfyUI/RunDiffusion engine requires an API URL and a workflow JSON.");
         }
         imageUrl = await queryComfyUI({
             apiUrl: engineConfig.apiUrl,
@@ -437,4 +438,6 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
+    
+
     

@@ -1,4 +1,5 @@
 
+      
 /**
  * @fileoverview This file contains data types related to the AI generation process
  * that are safe to be used in Client Components. It avoids importing server-only
@@ -26,7 +27,7 @@ export type TextEngineConfig = z.infer<typeof TextEngineConfigSchema>;
  * Safe for client-side use.
  */
 export interface ImageEngineConfig {
-  engineId: 'huggingface' | 'gemini' | 'openrouter' | 'vertexai' | 'comfyui' | 'modelslab';
+  engineId: 'huggingface' | 'gemini' | 'openrouter' | 'vertexai' | 'comfyui' | 'modelslab' | 'rundiffusion';
   modelId?: string;
   aspectRatio: '1:1' | '16:9' | '9:16';
   lora?: {
@@ -52,4 +53,5 @@ export type GenerationResult = GenerateCharacterSheetOutput & {
   imageEngine?: ImageEngineConfig['engineId'];
 };
 
+    
     

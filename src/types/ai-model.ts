@@ -1,4 +1,5 @@
 
+      
 import { z } from 'zod';
 
 interface AiModelVersion {
@@ -14,7 +15,7 @@ export interface AiModel {
   id: string;
   name: string;
   type: 'model' | 'lora';
-  engine: 'huggingface' | 'gemini' | 'openrouter' | 'vertexai' | 'comfyui' | 'modelslab';
+  engine: 'huggingface' | 'gemini' | 'openrouter' | 'vertexai' | 'comfyui' | 'modelslab' | 'rundiffusion';
   hf_id: string; // Used for various IDs: HF ID, Vertex Endpoint ID, ModelsLab Model ID etc.
   civitaiModelId?: string;
   modelslabModelId?: string; 
@@ -43,7 +44,7 @@ export const UpsertModelSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, 'Name is required'),
   type: z.enum(['model', 'lora']),
-  engine: z.enum(['huggingface', 'gemini', 'openrouter', 'vertexai', 'comfyui', 'modelslab']),
+  engine: z.enum(['huggingface', 'gemini', 'openrouter', 'vertexai', 'comfyui', 'modelslab', 'rundiffusion']),
   hf_id: z.string().optional(), // Now optional at the base level
   civitaiModelId: z.string().optional(),
   modelslabModelId: z.string().optional(), 
@@ -67,7 +68,7 @@ export const UpsertModelSchema = z.object({
   apiUrl: z.string().optional(),
   comfyWorkflow: z.any().optional(),
 }).refine(data => {
-    const requiredEngines = ['huggingface', 'vertexai', 'comfyui', 'modelslab'];
+    const requiredEngines = ['huggingface', 'vertexai', 'comfyui', 'modelslab', 'rundiffusion'];
     if (requiredEngines.includes(data.engine)) {
         return !!data.hf_id;
     }
@@ -79,3 +80,5 @@ export const UpsertModelSchema = z.object({
 
 
 export type UpsertAiModel = z.infer<typeof UpsertModelSchema>;
+
+    

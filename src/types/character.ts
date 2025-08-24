@@ -1,4 +1,5 @@
 
+      
 'use server';
 
 import { z } from 'zod';
@@ -111,7 +112,7 @@ export type Character = {
   // Information about the AI engines used for generation.
   generation: {
     textEngine?: 'gemini' | 'openrouter';
-    imageEngine?: 'gemini' | 'openrouter' | 'huggingface' | 'vertexai' | 'comfyui' | 'modelslab';
+    imageEngine?: 'gemini' | 'openrouter' | 'huggingface' | 'vertexai' | 'comfyui' | 'modelslab' | 'rundiffusion';
     wizardData?: Record<string, any> | null;
     originalPrompt?: string; // The original simple text prompt
   }
@@ -144,9 +145,11 @@ export const SaveCharacterInputSchema = z.object({
   birthYear: z.string().optional().nullable(),
   weaknesses: z.string().optional().nullable(),
   textEngine: z.enum(['gemini', 'openrouter']).optional(),
-  imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai', 'comfyui', 'modelslab']).optional(),
+  imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai', 'comfyui', 'modelslab', 'rundiffusion']).optional(),
   wizardData: z.record(z.union([z.string(), z.record(z.string())])).optional().nullable(),
   originalPrompt: z.string().optional(),
   rarity: z.number().min(1).max(5).optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
+
+    
