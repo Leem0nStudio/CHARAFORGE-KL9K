@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -142,30 +141,30 @@ export function EditDataPackForm({ packId }: { packId: string }) {
   return (
     <FormProvider {...form}>
     <form onSubmit={form.handleSubmit(onSubmit)} className="pb-24 sm:pb-0">
-       <div className="hidden sm:flex items-center justify-end gap-2 mb-4">
-            {initialData && (
-                 <AlertDialog>
-                     <AlertDialogTrigger asChild>
-                        <Button type="button" variant="destructive" disabled={isPending}>Delete</Button>
-                     </AlertDialogTrigger>
-                     <AlertDialogContent>
-                         <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
-                         <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
-                         <AlertDialogFooter>
-                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                             <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive-hover">
-                                 {isPending && <Loader2 className="animate-spin mr-2"/>}
-                                 Continue
-                             </AlertDialogAction>
-                         </AlertDialogFooter>
-                     </AlertDialogContent>
-                 </AlertDialog>
-             )}
-            <Button type="submit" disabled={isPending || (!form.formState.isDirty && !!initialData)}>
-                {isPending && <Loader2 className="animate-spin mr-2" />}
-                {initialData ? 'Save Changes' : 'Create DataPack'}
-            </Button>
-        </div>
+      <div className="hidden sm:flex items-center justify-end gap-2 mb-4">
+        {initialData && (
+              <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="destructive" disabled={isPending}>Delete</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                      <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
+                      <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
+                      <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive-hover">
+                              {isPending && <Loader2 className="animate-spin mr-2"/>}
+                              Continue
+                          </AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
+          )}
+        <Button type="submit" disabled={isPending || (!form.formState.isDirty && !!initialData)}>
+            {isPending && <Loader2 className="animate-spin mr-2" />}
+            {initialData ? 'Save Changes' : 'Create DataPack'}
+        </Button>
+      </div>
 
       <Tabs defaultValue="metadata">
         <TabsList className="grid w-full grid-cols-2">
