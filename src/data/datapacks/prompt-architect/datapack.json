@@ -34,10 +34,8 @@
             ],
             "facialFeatures": [
                 { "label": "Sharp and Striking", "value": "sharp and striking facial features" },
-                { "label": "Soft and Youthful", "value": "soft and youthful facial features" }
-            ],
-            "expression": [
-                { "label": "Neutral and Confident", "value": "neutral yet confident expression" },
+                { "label": "Soft and Youthful", "value": "soft and youthful facial features" },
+                { "label": "Neutral and Confident Expression", "value": "neutral yet confident expression" },
                 { "label": "Smirking", "value": "smirking" }
             ],
             "hands": {
@@ -78,17 +76,18 @@
                 { "label": "Isometric View", "value": "isometric view" },
                 { "label": "Front View", "value": "front view" }
             ],
-            "art_style": [
-                { "label": "2D-HD Style", "value": "2D-HD style, 32-bit color palette, crisp edges, no anti-aliasing" },
-                { "label": "Photorealistic", "value": "photorealistic, sharp focus" },
-                { "label": "Anime CG", "value": "anime CG, official art, game CG" }
+            "background": [
+                { "label": "Sci-Fi Hangar", "value": "in a sci-fi hangar bay" },
+                { "label": "Gothic Cathedral", "value": "in a gothic cathedral" }
             ],
             "effects": [
                 { "label": "Dramatic Lighting", "value": "dramatic lighting" },
                 { "label": "Studio Lighting", "value": "studio lighting" }
             ],
-            "resolution": [
-                { "label": "4K", "value": "4k resolution" }
+            "art_style": [
+                { "label": "2D-HD Style", "value": "2D-HD style, 32-bit color palette, crisp edges, no anti-aliasing" },
+                { "label": "Photorealistic", "value": "photorealistic, sharp focus" },
+                { "label": "Anime CG", "value": "anime CG, official art, game CG" }
             ],
             "masterpiece_quality": [
                 { "label": "Masterpiece", "value": "masterpiece, best quality, amazing quality, very detailed" },
