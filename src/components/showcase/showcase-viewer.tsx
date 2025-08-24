@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Image from 'next/image';
@@ -8,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import type { Character } from '@/types/character';
-import { ArrowLeft, Edit, Share2, Dna, Swords as SwordsIcon, Shield, BrainCircuit, BarChart3, Info, User } from 'lucide-react';
+import { ArrowLeft, Edit, Share2, Dna, Swords as SwordsIcon, Shield, BrainCircuit, BarChart3, Info, User, Heart } from 'lucide-react';
 import { StatItem } from './stat-item';
 import { StarRating } from './star-rating';
 import { motion } from 'framer-motion';
@@ -47,6 +48,7 @@ export function ShowcaseViewer({ character, currentUserId, isLikedInitially }: S
     const isOwner = character.meta.userId === currentUserId;
     const showcaseImage = character.visuals.showcaseImageUrl || character.visuals.imageUrl;
     const backgroundImage = character.visuals.imageUrl;
+    const willpower = character.rpg.willpower;
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -148,9 +150,8 @@ export function ShowcaseViewer({ character, currentUserId, isLikedInitially }: S
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <StatItem label="Archetype" value={character.core.archetype || 'N/A'} />
                                 <StatItem label="Alignment" value={character.core.alignment} />
-                                <StatItem label="Birth Year" value={character.core.birthYear || 'Unknown'} />
-                                <StatItem label="Text Engine" value={character.generation.textEngine || 'N/A'} />
-                                <StatItem label="Image Engine" value={character.generation.imageEngine || 'N/A'} />
+                                <StatItem label="Willpower" value={`${willpower?.current || 0} / ${willpower?.max || 0}`} />
+                                <StatItem label="Likes" value={character.meta.likes.toString()} icon={<Heart className="text-destructive"/>} />
                             </div>
                             
                              <div>

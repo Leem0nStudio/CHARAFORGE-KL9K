@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { adminDb } from '@/lib/firebase/server';
@@ -52,6 +53,45 @@ export async function getRandomOpponent(playerRarity: number, excludeId: string)
     }
 }
 
+
+/**
+ * Simulates a battle round using the D10 dice pool system.
+ * @param attacker The attacking character.
+ * @param defender The defending character.
+ * @returns An object containing the attack log and damage dealt.
+ */
+function simulateRound(attacker: Character, defender: Character): { roundLog: string[]; damage: number } {
+    const roundLog: string[] = [];
+    
+    // Determine dice pools
+    const attackSkill = attacker.rpg.skills.find(s => s.type === 'attack');
+    const defenseSkill = defender.rpg.skills.find(s => s.type === 'defense');
+    const attackPool = (attacker.rpg.stats.strength || 5) + (attackSkill?.power || 0);
+    const defensePool = (defender.rpg.stats.dexterity || 5) + (defenseSkill?.power || 0);
+
+    // Roll dice and count successes (>= 6)
+    const rollD10 = () => Math.floor(Math.random() * 10) + 1;
+    const attackRolls = Array(attackPool).fill(0).map(rollD10);
+    const defenseRolls = Array(defensePool).fill(0).map(rollD10);
+    
+    const attackSuccesses = attackRolls.filter(r => r >= 6).length;
+    const defenseSuccesses = defenseRolls.filter(r => r >= 6).length;
+
+    roundLog.push(`${attacker.core.name} attacks with ${attackPool} dice (${attackSuccesses} successes).`);
+    roundLog.push(`${defender.core.name} defends with ${defensePool} dice (${defenseSuccesses} successes).`);
+
+    const netSuccesses = Math.max(0, attackSuccesses - defenseSuccesses);
+    
+    if (netSuccesses > 0) {
+        roundLog.push(`The attack hits with ${netSuccesses} net successes, dealing ${netSuccesses} damage!`);
+    } else {
+        roundLog.push(`${defender.core.name} successfully defends the attack!`);
+    }
+    
+    return { roundLog, damage: netSuccesses };
+}
+
+
 /**
  * Simulates a battle and returns the log and winner.
  * @param player Player's character object.
@@ -60,32 +100,27 @@ export async function getRandomOpponent(playerRarity: number, excludeId: string)
  */
 export async function simulateBattle(player: Character, opponent: Character): Promise<{ log: string[]; winnerId: string; xpGained: number }> {
     const log: string[] = [];
-    let playerHp = (player.rpg.stats.constitution || 5) * 10;
-    let opponentHp = (opponent.rpg.stats.constitution || 5) * 10;
+    let playerHp = (player.rpg.stats.constitution || 5) * 2; // More health for longer fights
+    let opponentHp = (opponent.rpg.stats.constitution || 5) * 2;
 
     log.push(`${player.core.name} (HP: ${playerHp}) faces ${opponent.core.name} (HP: ${opponentHp})!`);
     log.push('The battle begins!');
     
-    const calculateDamage = (attacker: Character) => {
-        const baseDamage = attacker.rpg.stats.strength || 5;
-        const critChance = (attacker.rpg.stats.dexterity || 5) / 20; // e.g., 10 DEX = 50% crit chance for 1.5x damage
-        const isCrit = Math.random() < critChance;
-        const damage = isCrit ? Math.floor(baseDamage * 1.5) : baseDamage;
-        if(isCrit) log.push('Critical Hit!');
-        return damage;
-    }
-
     while (playerHp > 0 && opponentHp > 0) {
         // Player's turn
-        const playerDamage = calculateDamage(player);
-        opponentHp -= playerDamage;
-        log.push(`${player.core.name} attacks for ${playerDamage} damage! ${opponent.core.name} has ${Math.max(0, opponentHp)} HP remaining.`);
+        log.push(`--- ${player.core.name}'s Turn ---`);
+        const playerAttack = simulateRound(player, opponent);
+        opponentHp -= playerAttack.damage;
+        log.push(...playerAttack.roundLog);
+        log.push(`${opponent.core.name} has ${Math.max(0, opponentHp)} HP remaining.`);
         if (opponentHp <= 0) break;
 
         // Opponent's turn
-        const opponentDamage = calculateDamage(opponent);
-        playerHp -= opponentDamage;
-        log.push(`${opponent.core.name} retaliates for ${opponentDamage} damage! ${player.core.name} has ${Math.max(0, playerHp)} HP remaining.`);
+        log.push(`--- ${opponent.core.name}'s Turn ---`);
+        const opponentAttack = simulateRound(opponent, player);
+        playerHp -= opponentAttack.damage;
+        log.push(...opponentAttack.roundLog);
+        log.push(`${player.core.name} has ${Math.max(0, playerHp)} HP remaining.`);
     }
     
     let winnerId = '';

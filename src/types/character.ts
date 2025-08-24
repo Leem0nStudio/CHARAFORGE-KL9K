@@ -1,4 +1,6 @@
 
+'use server';
+
 import { z } from 'zod';
 
 /**
@@ -27,6 +29,10 @@ export interface RpgAttributes {
         intelligence: number;
         wisdom: number;
         charisma: number;
+    };
+    willpower: {
+      current: number;
+      max: number;
     };
     skills: {
         id: string; // ID of the skill

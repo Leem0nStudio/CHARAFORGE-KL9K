@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -7,8 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { GachaCard } from '../character/gacha-card';
-import { ArrowLeft, Swords, Dna, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Swords, Dna, Loader2, RefreshCw, BarChart3, Star, Heart } from 'lucide-react';
 import { simulateBattle, getRandomOpponent } from './actions';
+import { StatItem } from '@/components/showcase/stat-item';
+import { Separator } from '@/components/ui/separator';
 
 interface BattleViewProps {
     playerCharacter: Character;
@@ -17,24 +20,49 @@ interface BattleViewProps {
 
 function CombatantCard({ character }: { character: Character }) {
     const stats = character.rpg.stats;
+    const willpower = character.rpg.willpower;
+
     return (
         <div className="flex flex-col items-center gap-4">
             <div className="w-full max-w-[300px]">
                 <GachaCard character={character} />
             </div>
-            <Card className="w-full max-w-[300px] bg-card/50">
+             <Card className="w-full max-w-[300px] bg-card/50">
                  <CardContent className="p-3">
                      <p className="font-semibold text-center text-lg">{character.core.name}</p>
+                      <div className="flex justify-center my-1"><StarRating rating={character.core.rarity} /></div>
+                     <Separator className="my-2"/>
                      <div className="grid grid-cols-3 gap-2 mt-2 text-center">
-                        <div className="p-1 border rounded-md"><span className="text-xs text-muted-foreground">STR</span><p>{stats.strength}</p></div>
-                        <div className="p-1 border rounded-md"><span className="text-xs text-muted-foreground">DEX</span><p>{stats.dexterity}</p></div>
-                        <div className="p-1 border rounded-md"><span className="text-xs text-muted-foreground">INT</span><p>{stats.intelligence}</p></div>
+                        <div className="p-1 border rounded-md bg-background/50"><span className="text-xs text-muted-foreground">STR</span><p>{stats.strength}</p></div>
+                        <div className="p-1 border rounded-md bg-background/50"><span className="text-xs text-muted-foreground">DEX</span><p>{stats.dexterity}</p></div>
+                        <div className="p-1 border rounded-md bg-background/50"><span className="text-xs text-muted-foreground">CON</span><p>{stats.constitution}</p></div>
+                        <div className="p-1 border rounded-md bg-background/50"><span className="text-xs text-muted-foreground">INT</span><p>{stats.intelligence}</p></div>
+                        <div className="p-1 border rounded-md bg-background/50"><span className="text-xs text-muted-foreground">WIS</span><p>{stats.wisdom}</p></div>
+                        <div className="p-1 border rounded-md bg-background/50"><span className="text-xs text-muted-foreground">CHA</span><p>{stats.charisma}</p></div>
+                     </div>
+                     <div className="grid grid-cols-2 gap-2 mt-2">
+                        <StatItem label="Willpower" value={`${willpower?.current || 0} / ${willpower?.max || 0}`} />
+                        <StatItem label="Likes" value={character.meta.likes.toString()} icon={<Heart className="text-destructive"/>} />
                      </div>
                 </CardContent>
             </Card>
         </div>
     );
 }
+
+function StarRating({ rating }: { rating: number }) {
+    return (
+        <div className="flex items-center">
+            {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                    key={i}
+                    className={`w-4 h-4 ${i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'}`}
+                />
+            ))}
+        </div>
+    );
+}
+
 
 export function BattleView({ playerCharacter, onExit }: BattleViewProps) {
     const [opponent, setOpponent] = useState<Character | null>(null);
@@ -100,7 +128,7 @@ export function BattleView({ playerCharacter, onExit }: BattleViewProps) {
 
                     <Card className="w-full">
                         <CardHeader>
-                            <CardTitle className="text-lg">Battle Log</CardTitle>
+                            <CardTitle className="text-lg flex items-center gap-2"><BarChart3/> Battle Log</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <ScrollArea className="h-48">
@@ -116,7 +144,7 @@ export function BattleView({ playerCharacter, onExit }: BattleViewProps) {
                     {opponent ? (
                         <CombatantCard character={opponent} />
                     ) : (
-                        <div className="w-full max-w-[300px] aspect-[1/1.5] bg-muted/20 border-2 border-dashed rounded-lg flex items-center justify-center">
+                        <div className="w-full max-w-[300px] aspect-[3/4] bg-muted/20 border-2 border-dashed rounded-lg flex items-center justify-center">
                             {isLoadingOpponent ? <Loader2 className="h-8 w-8 animate-spin" /> : <p className="text-muted-foreground">No Opponent</p>}
                         </div>
                     )}

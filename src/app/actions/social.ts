@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { adminDb } from '@/lib/firebase/server';
@@ -35,12 +36,19 @@ export async function likeCharacter(characterId: string): Promise<ActionResponse
             if (likeDoc.exists) return; // User has already liked
 
             transaction.set(getLikeRef(characterId, uid), { likedAt: FieldValue.serverTimestamp() });
+            
+            // Increment like count on the character
             transaction.update(characterRef, { 'meta.likes': FieldValue.increment(1) });
+            
+            // Increment total likes for the author
             transaction.update(authorRef, { 'stats.totalLikes': FieldValue.increment(1) });
+            
+            // Restore one point of willpower to the character who received the like
+            transaction.update(characterRef, { 'rpg.willpower.current': FieldValue.increment(1) });
         });
         
         revalidatePath(`/showcase/${characterId}`);
-        return { success: true, message: "Character liked!" };
+        return { success: true, message: "Character liked! Willpower restored." };
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, message: "Failed to like character.", error: message };
@@ -65,6 +73,7 @@ export async function unlikeCharacter(characterId: string): Promise<ActionRespon
             transaction.delete(getLikeRef(characterId, uid));
             transaction.update(characterRef, { 'meta.likes': FieldValue.increment(-1) });
             transaction.update(authorRef, { 'stats.totalLikes': FieldValue.increment(-1) });
+            // Note: We don't remove willpower on unlike to prevent abuse.
         });
         
         revalidatePath(`/showcase/${characterId}`);

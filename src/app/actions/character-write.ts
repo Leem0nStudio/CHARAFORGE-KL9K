@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -358,6 +359,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 isPlayable: isPlayable,
                 level: 1,
                 experience: 0,
+                willpower: { current: 10, max: 10 },
                 skills: [],
                 statsStatus: isPlayable ? 'pending' : 'complete',
                 skillsStatus: 'pending',
