@@ -66,8 +66,21 @@ function simulateRound(attacker: Character, defender: Character): { roundLog: st
     // Determine dice pools
     const attackSkill = attacker.rpg.skills.find(s => s.type === 'attack');
     const defenseSkill = defender.rpg.skills.find(s => s.type === 'defense');
-    const attackPool = (attacker.rpg.stats.strength || 5) + (attackSkill?.power || 0);
-    const defensePool = (defender.rpg.stats.dexterity || 5) + (defenseSkill?.power || 0);
+    
+    let attackPool = attacker.rpg.stats.strength || 5;
+    let defensePool = defender.rpg.stats.dexterity || 5;
+    
+    let attackActionDescription = `${attacker.core.name} attacks`;
+    if (attackSkill) {
+        attackPool += attackSkill.power;
+        attackActionDescription = `${attacker.core.name} uses ${attackSkill.name}`;
+    }
+    
+    let defenseActionDescription = `${defender.core.name} defends`;
+     if (defenseSkill) {
+        defensePool += defenseSkill.power;
+        defenseActionDescription = `${defender.core.name} uses ${defenseSkill.name}`;
+    }
 
     // Roll dice and count successes (>= 6)
     const rollD10 = () => Math.floor(Math.random() * 10) + 1;
@@ -77,15 +90,15 @@ function simulateRound(attacker: Character, defender: Character): { roundLog: st
     const attackSuccesses = attackRolls.filter(r => r >= 6).length;
     const defenseSuccesses = defenseRolls.filter(r => r >= 6).length;
 
-    roundLog.push(`${attacker.core.name} attacks with ${attackPool} dice (${attackSuccesses} successes).`);
-    roundLog.push(`${defender.core.name} defends with ${defensePool} dice (${defenseSuccesses} successes).`);
+    roundLog.push(`${attackActionDescription} with ${attackPool} dice (${attackSuccesses} successes).`);
+    roundLog.push(`${defenseActionDescription} with ${defensePool} dice (${defenseSuccesses} successes).`);
 
     const netSuccesses = Math.max(0, attackSuccesses - defenseSuccesses);
     
     if (netSuccesses > 0) {
         roundLog.push(`The attack hits with ${netSuccesses} net successes, dealing ${netSuccesses} damage!`);
     } else {
-        roundLog.push(`${defender.core.name} successfully defends the attack!`);
+        roundLog.push(`${defender.core.name} successfully blocks the attack!`);
     }
     
     return { roundLog, damage: netSuccesses };

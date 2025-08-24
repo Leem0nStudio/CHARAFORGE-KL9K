@@ -144,7 +144,7 @@ export function BattleView({ playerCharacter, onExit }: BattleViewProps) {
                     {opponent ? (
                         <CombatantCard character={opponent} />
                     ) : (
-                        <div className="w-full max-w-[300px] aspect-[3/4] bg-muted/20 border-2 border-dashed rounded-lg flex items-center justify-center">
+                        <div className="w-full max-w-[300px] aspect-[1/1.5] bg-muted/20 border-2 border-dashed rounded-lg flex items-center justify-center">
                             {isLoadingOpponent ? <Loader2 className="h-8 w-8 animate-spin" /> : <p className="text-muted-foreground">No Opponent</p>}
                         </div>
                     )}

@@ -15,6 +15,8 @@ import { StarRating } from './star-rating';
 import { motion } from 'framer-motion';
 import { LikeButton } from './like-button';
 import { FollowButton } from '../user/follow-button';
+import { checkRelationship } from '@/app/actions/social';
+import { useEffect, useState } from 'react';
 
 interface ShowcaseViewerProps {
     character: Character;
@@ -49,6 +51,15 @@ export function ShowcaseViewer({ character, currentUserId, isLikedInitially }: S
     const showcaseImage = character.visuals.showcaseImageUrl || character.visuals.imageUrl;
     const backgroundImage = character.visuals.imageUrl;
     const willpower = character.rpg.willpower;
+
+    const [isFollowing, setIsFollowing] = useState(false);
+
+    useEffect(() => {
+        if (currentUserId && character.meta.userId !== currentUserId) {
+            checkRelationship(currentUserId, character.meta.userId).then(rel => setIsFollowing(rel.isFollowing));
+        }
+    }, [currentUserId, character.meta.userId]);
+
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -115,7 +126,7 @@ export function ShowcaseViewer({ character, currentUserId, isLikedInitially }: S
                            <FollowButton
                                 currentUserId={currentUserId}
                                 profileUserId={character.meta.userId}
-                                isFollowingInitially={false} // This needs a server fetch to be accurate
+                                isFollowingInitially={isFollowing}
                             />
                         )}
                         {isOwner && (
