@@ -49,6 +49,7 @@ import { ModelSelectorModal } from './model-selector-modal';
 import { PromptEditor } from './prompt-editor';
 import { TagAssistantModal } from './tag-assistant-modal';
 import { cn } from '@/lib/utils';
+import { CharacterRevealScreen } from './character/character-reveal-screen';
 
 type GenerationStep = 'concept' | 'details' | 'portrait' | 'complete';
 type View = 'generator' | 'datapack-selector' | 'datapack-wizard';
@@ -326,6 +327,7 @@ export function CharacterGenerator() {
   const [currentStep, setCurrentStep] = useState<GenerationStep>('concept');
   const [isProcessing, startProcessingTransition] = useTransition();
   const [isSaving, startSavingTransition] = useTransition();
+  const [showReveal, setShowReveal] = useState(false);
 
   const [availableModels, setAvailableModels] = useState<AiModel[]>([]);
   const [availableLoras, setAvailableLoras] = useState<AiModel[]>([]);
@@ -522,7 +524,11 @@ export function CharacterGenerator() {
         if (result.success && result.imageUrl) {
           form.setValue('imageUrl', result.imageUrl);
           form.setValue('imageEngine', form.getValues('selectedModel')?.engine);
-          setCurrentStep('complete');
+          setShowReveal(true);
+          setTimeout(() => {
+            setShowReveal(false);
+            setCurrentStep('complete');
+          }, 5000);
         } else {
           toast({
             variant: 'destructive',
@@ -606,6 +612,9 @@ export function CharacterGenerator() {
   };
 
   const renderContent = () => {
+    if (showReveal) {
+        return <CharacterRevealScreen imageUrl={form.getValues('imageUrl')!} />
+    }
     switch (currentView) {
       case 'generator':
         return (
