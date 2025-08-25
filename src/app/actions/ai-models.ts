@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -295,37 +296,39 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
     };
 
     try {
-        // Fetch all system-wide models from Firestore
-        const systemModelsSnapshot = await adminDb
+        // Fetch all system-wide (non-user-specific) models from Firestore
+        const systemModelsQuery = adminDb
           .collection('ai_models')
-          .where('type', '==', type)
-          .where('userId', '==', null)
-          .orderBy('createdAt', 'desc')
-          .get();
-        processSnapshot(systemModelsSnapshot);
+          .where('type', '==', type);
+          
+        const systemModelsSnapshot = await systemModelsQuery.get();
+        
+        systemModelsSnapshot.docs.forEach(doc => {
+            // Add to map only if it doesn't have a userId, ensuring system/admin models are included.
+            if (!doc.data().userId) {
+                const data = doc.data();
+                const model: AiModel = {
+                    ...data,
+                    id: doc.id,
+                    createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+                    updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+                } as AiModel;
+                if (!allModels.has(model.id)) {
+                    allModels.set(model.id, model);
+                }
+            }
+        });
+
 
         // If a user is logged in, fetch their personal models
         if (uid) {
             const userModelsSnapshot = await adminDb
                 .collection('ai_models')
                 .where('userId', '==', uid)
+                .where('type', '==', type) // Firestore allows this combination
                 .orderBy('createdAt', 'desc')
                 .get();
-            // Filter by type client-side since Firestore doesn't allow inequality on different fields
-            userModelsSnapshot.docs.forEach(doc => {
-                if(doc.data().type === type) {
-                    const data = doc.data();
-                    const model: AiModel = {
-                        ...data,
-                        id: doc.id,
-                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-                        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
-                    } as AiModel;
-                    if (!allModels.has(model.id)) {
-                        allModels.set(model.id, model);
-                    }
-                }
-            });
+            processSnapshot(userModelsSnapshot);
         }
         
         return Array.from(allModels.values()).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
