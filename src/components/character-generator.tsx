@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useTransition } from 'react';
+import { useState, useEffect, useCallback, useTransition, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Wand2, Loader2, Save, ArrowLeft, ArrowRight, CaseSensitive, Package, Tags, Image as ImageIcon } from 'lucide-react';
+import { Wand2, Loader2, Save, ArrowLeft, ArrowRight, CaseSensitive, Package, Tags, Image as ImageIcon, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react';
 
 import {
   Button,
@@ -32,7 +32,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@/components/ui';
-import { useToast } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { saveCharacter } from '@/app/actions/character-write';
 import {
@@ -53,6 +53,7 @@ import { VisualModelSelector } from './visual-model-selector';
 import { ModelSelectorModal } from './model-selector-modal';
 import { PromptEditor } from './prompt-editor';
 import { TagAssistantModal } from './tag-assistant-modal';
+import { cn } from '@/lib/utils';
 
 type GenerationStep = 'concept' | 'details' | 'portrait' | 'complete';
 type View = 'generator' | 'datapack-selector' | 'datapack-wizard';
@@ -199,6 +200,12 @@ function PortraitStep({ form, models, loras, isLoadingModels }: { form: any, mod
   const [isLoraModalOpen, setIsLoraModalOpen] = useState(false);
   const selectedLora = watch('selectedLora');
 
+  const aspectRatioOptions = [
+    { value: '1:1', label: 'Square', icon: <Square className="w-8 h-8" /> },
+    { value: '16:9', label: 'Landscape', icon: <RectangleHorizontal className="w-8 h-8" /> },
+    { value: '9:16', label: 'Portrait', icon: <RectangleVertical className="w-8 h-8" /> },
+  ];
+
   return (
     <div className="space-y-4">
       <ModelSelectorModal 
@@ -273,16 +280,21 @@ function PortraitStep({ form, models, loras, isLoadingModels }: { form: any, mod
             control={control}
             render={({ field }) => (
                 <div className="flex gap-2 mt-2">
-                    {['1:1', '16:9', '9:16'].map(ratio => (
-                        <Button 
-                            key={ratio}
+                    {aspectRatioOptions.map(option => (
+                        <button 
+                            key={option.value}
                             type="button" 
-                            variant={field.value === ratio ? 'default' : 'secondary'}
-                            onClick={() => field.onChange(ratio)}
-                            className="flex-1"
+                            onClick={() => field.onChange(option.value)}
+                            className={cn(
+                                "flex-1 flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-colors",
+                                field.value === option.value 
+                                    ? "bg-primary/10 border-primary text-primary"
+                                    : "bg-muted/50 border-transparent hover:border-muted-foreground/50"
+                            )}
                         >
-                            {ratio}
-                        </Button>
+                            {option.icon}
+                            <span className="text-xs font-medium mt-1">{option.label}</span>
+                        </button>
                     ))}
                 </div>
             )}
