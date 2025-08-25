@@ -96,23 +96,6 @@ export const processUploadedImage = onObjectFinalized({
         });
         logger.log(`Successfully updated Firestore for character '${characterId}'.`);
         
-        const characterDoc = await characterRef.get();
-        const characterData = characterDoc.data();
-
-        // Trigger RPG attribute generation if the character is playable
-        if (characterData?.rpg?.isPlayable) {
-            logger.info(`Character is playable. Triggering RPG attribute generation for ${characterId}...`);
-            const queue = getFunctions().taskQueue('triggerRpgGeneration');
-            // Pass all required data to the task queue.
-            await queue.enqueue({ 
-                characterId: characterId,
-                archetype: characterData.core.archetype,
-                biography: characterData.core.biography,
-            });
-        } else {
-            logger.info(`Character ${characterId} is not playable. Skipping RPG attribute generation.`);
-        }
-        
         await bucket.file(filePath).delete();
         logger.log(`Successfully deleted raw file: '${filePath}'.`);
 

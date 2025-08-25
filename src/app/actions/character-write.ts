@@ -16,6 +16,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { generateDialogueFlow } from '@/ai/flows/dialogue-generation/flow';
 import { generateSpeech } from '@/ai/flows/text-to-speech/flow';
+import { generateAndSaveSkills } from './rpg';
 
 // #region Helper Functions for Stat Generation
 // This logic is now part of the server action to be used when a character's archetype changes.
@@ -601,7 +602,7 @@ export async function rollForCharacterStats(characterId: string): Promise<Action
     try {
         const characterRef = adminDb.collection('characters').doc(characterId);
         const characterDoc = await characterRef.get();
-        const characterData = characterDoc.data();
+        const characterData = characterDoc.data() as Character;
 
         if (!characterDoc.exists || characterData?.meta.userId !== uid) {
             return { success: false, message: "Permission denied or character not found." };
@@ -617,14 +618,19 @@ export async function rollForCharacterStats(characterId: string): Promise<Action
             'rpg.stats': newStats,
             'core.rarity': newRarity,
             'rpg.statsStatus': 'complete',
+            'rpg.skillsStatus': 'pending', // Set skills to pending to be generated
         });
+        
+        // Trigger skill generation immediately after stats are set.
+        await generateAndSaveSkills(characterId, characterData.core.archetype, characterData.core.biography);
         
         revalidatePath(`/characters/${characterId}/edit`);
 
-        return { success: true, message: "Stats rolled successfully!", newStats };
+        return { success: true, message: "Stats and skills generated successfully!", newStats };
 
     } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to roll for stats.";
+        await adminDb.collection('characters').doc(characterId).update({ 'rpg.statsStatus': 'failed', 'rpg.skillsStatus': 'failed' });
         return { success: false, message };
     }
 }
