@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -10,30 +9,32 @@ import { cn } from '@/lib/utils';
 import { Swords, Star } from 'lucide-react';
 import { rpgArchetypes } from '@/lib/app-config';
 
-const ElementIcon: React.FC<{ archetype: string | null }> = ({ archetype }) => {
-    const symbolMap: Record<string, React.ReactNode> = {
-        Warrior: <Swords className="text-red-400" />,
-        Fighter: <Swords className="text-red-400" />,
-        Paladin: <Swords className="text-yellow-400" />,
-        Barbarian: <Swords className="text-orange-400" />,
-        Mage: <span className="text-xl">🔮</span>,
-        Sorcerer: <span className="text-xl">🔮</span>,
-        Warlock: <span className="text-xl">👿</span>,
-        Wizard: <span className="text-xl">📜</span>,
-        Rogue: <span className="text-xl">🗡️</span>,
-        Ranger: <span className="text-xl">🏹</span>,
-        Bard: <span className="text-xl">🎼</span>,
-        Cleric: <span className="text-xl">✝️</span>,
-        Druid: <span className="text-xl">🌿</span>,
-        Monk: <span className="text-xl">🧘</span>,
-        Artificer: <span className="text-xl">🛠️</span>,
+const PathIcon: React.FC<{ path: string | null }> = ({ path }) => {
+    const iconMap: Record<string, React.ReactNode> = {
+      All: <Star className="text-yellow-400" />,
+      Warrior: <Swords className="text-red-400" />,
+      Fighter: <Swords className="text-red-400" />,
+      Paladin: <Swords className="text-red-400" />,
+      Barbarian: <Swords className="text-red-400" />,
+      Mage: <span className="text-xl">🧙</span>,
+      Sorcerer: <span className="text-xl">🔮</span>,
+      Warlock: <span className="text-xl">👿</span>,
+      Wizard: <span className="text-xl">📜</span>,
+      Rogue: <span className="text-xl">🗡️</span>,
+      Ranger: <span className="text-xl">🏹</span>,
+      Bard: <span className="text-xl">🎼</span>,
+      Cleric: <span className="text-xl">✝️</span>,
+      Druid: <span className="text-xl">🌿</span>,
+      Monk: <span className="text-xl">🧘</span>,
+      Artificer: <span className="text-xl">🛠️</span>,
     };
+    if (!path) return <Star className="text-slate-400"/>;
     return (
-      <div className="w-6 h-6 grid place-content-center" title={archetype || 'N/A'} aria-label={archetype || 'N/A'}>
-        {archetype && symbolMap[archetype] || <Star className="text-slate-400"/>}
+      <div className="w-6 h-6 grid place-content-center" title={path} aria-label={path}>
+        {iconMap[path] || <Star className="text-slate-400"/>}
       </div>
     );
-};
+  };
 
 const StarsDisplay: React.FC<{ count: number }> = ({ count }) => (
     <div className="flex gap-0.5">
@@ -61,7 +62,7 @@ export const CharacterIndexCard: React.FC<{ character: Character }> = ({ charact
             className="relative rounded-2xl overflow-hidden ring-1 ring-white/10 bg-gradient-to-b from-slate-700/20 to-slate-900/40 backdrop-blur-sm"
         >
             <div className="absolute left-2 top-2 z-10 w-7 h-7 grid place-content-center rounded-full bg-black/40 ring-1 ring-white/20">
-                <ElementIcon archetype={character.core.archetype} />
+                <PathIcon path={character.core.archetype} />
             </div>
 
             <div className="aspect-[4/5] w-full bg-slate-800">

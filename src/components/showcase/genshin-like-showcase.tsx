@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -10,6 +9,32 @@ import { LikeButton } from './like-button';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
+
+const PathIcon: React.FC<{ path: string | null }> = ({ path }) => {
+    const iconMap: Record<string, React.ReactNode> = {
+      Warrior: <Swords className="text-red-400" />,
+      Fighter: <Swords className="text-red-400" />,
+      Paladin: <Swords className="text-red-400" />,
+      Barbarian: <Swords className="text-red-400" />,
+      Mage: <span className="text-xl">🧙</span>,
+      Sorcerer: <span className="text-xl">🔮</span>,
+      Warlock: <span className="text-xl">👿</span>,
+      Wizard: <span className="text-xl">📜</span>,
+      Rogue: <span className="text-xl">🗡️</span>,
+      Ranger: <span className="text-xl">🏹</span>,
+      Bard: <span className="text-xl">🎼</span>,
+      Cleric: <span className="text-xl">✝️</span>,
+      Druid: <span className="text-xl">🌿</span>,
+      Monk: <span className="text-xl">🧘</span>,
+      Artificer: <span className="text-xl">🛠️</span>,
+    };
+    if (!path) return <Dna className="text-slate-400"/>;
+    return (
+      <div className="w-6 h-6 grid place-content-center" title={path} aria-label={path}>
+        {iconMap[path] || <Dna className="text-slate-400"/>}
+      </div>
+    );
+};
 
 function ActionButton({ children, variant = "solid", asChild = false, href }: { children: React.ReactNode; variant?: "solid" | "ghost"; asChild?: boolean; href?: string; }) {
   const base = "px-4 py-2 rounded-xl border text-sm font-medium tracking-wide backdrop-blur";
@@ -79,7 +104,10 @@ export function GenshinLikeShowcase({ character, currentUserId, isLikedInitially
         {/* LEFT PANEL */}
         <div className="bg-card/80 rounded-2xl border border-border/50 shadow-2xl flex flex-col overflow-hidden backdrop-blur-sm">
           <div className="px-5 pt-4 pb-3 border-b border-border/50">
-            <p className="text-[10px] uppercase tracking-widest text-primary/80">{character.core.archetype || "Adventurer"}</p>
+             <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-primary/80">
+                <PathIcon path={character.core.archetype} />
+                <span>{character.core.archetype || "Adventurer"}</span>
+            </div>
             <div className="mt-1 flex items-center gap-3">
               <div className="h-12 w-12 rounded-full bg-muted border border-primary/30 flex items-center justify-center">
                  <User className="h-8 w-8 text-primary/70" />
