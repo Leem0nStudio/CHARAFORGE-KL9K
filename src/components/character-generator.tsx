@@ -1,22 +1,38 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Wand2, Loader2, Save, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Wand2, Loader2, Save, ArrowLeft, ArrowRight, CaseSensitive, Package, Tags, Image as ImageIcon } from 'lucide-react';
 
 import {
   Button,
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
+  CardHeader,
+  CardTitle,
   Form,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Slider,
+  Textarea,
+  Alert,
+  AlertDescription,
+  AlertTitle,
 } from '@/components/ui';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-auth';
 import { useAuth } from '@/hooks/use-auth';
 import { saveCharacter } from '@/app/actions/character-write';
 import {
@@ -33,12 +49,10 @@ import {
 import type { DataPack, PromptTemplate } from '@/types/datapack';
 import { AnimatePresence, motion } from 'framer-motion';
 import { DataPackSelector } from '../components/datapack-selector';
-
-import { ConceptStep } from './generator/concept-step';
-import { DetailsStep } from './generator/details-step';
-import { PortraitStep } from './generator/portrait-step';
-import { CompleteStep } from './generator/complete-step';
-
+import { VisualModelSelector } from './visual-model-selector';
+import { ModelSelectorModal } from './model-selector-modal';
+import { PromptEditor } from './prompt-editor';
+import { TagAssistantModal } from './tag-assistant-modal';
 
 type GenerationStep = 'concept' | 'details' | 'portrait' | 'complete';
 type View = 'generator' | 'datapack-selector' | 'datapack-wizard';
@@ -76,6 +90,227 @@ const stepSchema = z.object({
   imageEngine: z.string().optional(),
   rarity: z.number().min(1).max(5).optional(),
 });
+
+
+// Step 1: Concept Step Component
+function ConceptStep({ form, onUseDataPack, activePack, selectedTemplate, handleWizardDataChange }: { form: any, onUseDataPack: () => void, activePack: DataPack | null, selectedTemplate: PromptTemplate | null, handleWizardDataChange: any }) {
+  const { control, getValues } = form;
+  const [isTagAssistantOpen, setIsTagAssistantOpen] = useState(false);
+  const promptEditorRef = React.useRef<{ format: () => void }>(null);
+
+  const handleAppendTags = (tags: string[]) => {
+    const currentValue = getValues('description') || '';
+    const newPrompt = [currentValue, ...tags].filter(Boolean).join(', ');
+    form.setValue('description', newPrompt);
+  };
+
+  return (
+    <div className="space-y-4">
+      <Controller
+        name="description"
+        control={control}
+        render={({ field }) => (
+          <PromptEditor
+            ref={promptEditorRef}
+            value={field.value}
+            onChange={field.onChange}
+            activePack={activePack}
+            selectedTemplate={selectedTemplate}
+            onTemplateChange={(templateName: string) => {
+              if (activePack) {
+                const newTemplate = activePack.schema.promptTemplates.find(t => t.name === templateName);
+                if (newTemplate) {
+                  handleWizardDataChange(getValues('wizardData'), activePack, newTemplate);
+                }
+              }
+            }}
+          />
+        )}
+      />
+      <div className="flex justify-between items-center">
+        <Button type="button" variant="outline" onClick={() => onUseDataPack()}>
+          <Package className="mr-2"/> Use DataPack
+        </Button>
+        <Button type="button" variant="outline" onClick={() => setIsTagAssistantOpen(true)}>
+          <Tags className="mr-2"/> Tag Assistant
+        </Button>
+      </div>
+       <TagAssistantModal 
+          isOpen={isTagAssistantOpen}
+          onClose={() => setIsTagAssistantOpen(false)}
+          onAppendTags={handleAppendTags}
+          currentDescription={getValues('description')}
+      />
+      <div>
+        <Label>Text Generation Model</Label>
+        <Controller
+            name="selectedTextModel"
+            control={control}
+            render={({ field }) => (
+                 <Select onValueChange={(value) => {
+                    const model = textModels.find(m => m.hf_id === value);
+                    field.onChange(model);
+                 }} defaultValue={field.value?.hf_id}>
+                    <SelectTrigger>{field.value?.name || 'Select a model'}</SelectTrigger>
+                    <SelectContent>
+                        {textModels.map(model => (
+                            <SelectItem key={model.id} value={model.hf_id}>{model.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            )}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Step 2: Details Step Component
+function DetailsStep({ form }: { form: any }) {
+  const { register, control } = form;
+  return (
+    <div className="space-y-4">
+        <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" {...register('name')} />
+            </div>
+            <div className="space-y-1">
+                <Label htmlFor="archetype">Archetype</Label>
+                <Input id="archetype" {...register('archetype')} />
+            </div>
+        </div>
+      <div className="space-y-1">
+        <Label htmlFor="biography">Biography</Label>
+        <Textarea id="biography" {...register('biography')} className="min-h-[150px]"/>
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="physicalDescription">Image Prompt (Physical Description)</Label>
+        <Textarea id="physicalDescription" {...register('physicalDescription')} className="min-h-[100px]"/>
+      </div>
+    </div>
+  );
+}
+
+// Step 3: Portrait Step Component
+function PortraitStep({ form, models, loras, isLoadingModels }: { form: any, models: AiModel[], loras: AiModel[], isLoadingModels: boolean }) {
+  const { control, watch } = form;
+  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
+  const [isLoraModalOpen, setIsLoraModalOpen] = useState(false);
+  const selectedLora = watch('selectedLora');
+
+  return (
+    <div className="space-y-4">
+      <ModelSelectorModal 
+        isOpen={isModelModalOpen}
+        onClose={() => setIsModelModalOpen(false)}
+        onSelect={(model) => form.setValue('selectedModel', model)}
+        type="model"
+        models={models}
+        isLoading={isLoadingModels}
+      />
+       <ModelSelectorModal 
+        isOpen={isLoraModalOpen}
+        onClose={() => setIsLoraModalOpen(false)}
+        onSelect={(lora) => form.setValue('selectedLora', lora)}
+        type="lora"
+        models={loras}
+        isLoading={isLoadingModels}
+      />
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+        <Controller
+            name="selectedModel"
+            control={control}
+            render={({ field }) => (
+                <VisualModelSelector 
+                    label="Base Model"
+                    model={field.value}
+                    onOpen={() => setIsModelModalOpen(true)}
+                    disabled={isLoadingModels}
+                    isLoading={isLoadingModels}
+                />
+            )}
+        />
+         <Controller
+            name="selectedLora"
+            control={control}
+            render={({ field }) => (
+                <VisualModelSelector 
+                    label="Style LoRA (Optional)"
+                    model={field.value}
+                    onOpen={() => setIsLoraModalOpen(true)}
+                    disabled={isLoadingModels}
+                    isLoading={isLoadingModels}
+                />
+            )}
+        />
+      </div>
+
+       {selectedLora && (
+          <div className="space-y-2">
+            <Label>LoRA Strength: {watch('loraWeight')}</Label>
+            <Controller
+              name="loraWeight"
+              control={control}
+              render={({ field }) => (
+                <Slider
+                  value={[field.value ?? 0.75]}
+                  onValueChange={(value) => field.onChange(value[0])}
+                  min={0}
+                  max={2}
+                  step={0.05}
+                />
+              )}
+            />
+          </div>
+        )}
+
+      <div>
+        <Label>Aspect Ratio</Label>
+         <Controller
+            name="aspectRatio"
+            control={control}
+            render={({ field }) => (
+                <div className="flex gap-2 mt-2">
+                    {['1:1', '16:9', '9:16'].map(ratio => (
+                        <Button 
+                            key={ratio}
+                            type="button" 
+                            variant={field.value === ratio ? 'default' : 'secondary'}
+                            onClick={() => field.onChange(ratio)}
+                            className="flex-1"
+                        >
+                            {ratio}
+                        </Button>
+                    ))}
+                </div>
+            )}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Step 4: Complete Step Component
+function CompleteStep({ form, onSave, isSaving }: { form: any, onSave: () => void, isSaving: boolean }) {
+  const { watch } = form;
+  const imageUrl = watch('imageUrl');
+
+  return (
+    <div className="text-center space-y-4">
+        <h2 className="text-2xl font-bold font-headline">Character Forged!</h2>
+         <div className="relative aspect-square max-w-sm mx-auto rounded-lg overflow-hidden border-2 border-primary/50 shadow-lg">
+          {imageUrl ? <Image src={imageUrl} alt="Generated Character Portrait" layout="fill" objectFit="cover" /> : <div className="bg-muted w-full h-full flex items-center justify-center"><ImageIcon className="w-16 h-16 text-muted-foreground"/></div>}
+        </div>
+        <p className="text-muted-foreground">Your character, {watch('name')}, is ready. You can now save them to your gallery.</p>
+        <Button size="lg" onClick={onSave} disabled={isSaving}>
+            {isSaving ? <Loader2 className="mr-2 animate-spin"/> : <Save className="mr-2"/>}
+            Save to My Characters
+        </Button>
+    </div>
+  );
+}
 
 
 export function CharacterGenerator() {
@@ -197,7 +432,7 @@ export function CharacterGenerator() {
     }
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser, searchParams, toast, form]);
+  }, [authUser, searchParams, toast]);
 
   const handleNextStep = async () => {
     if (!authUser) {
