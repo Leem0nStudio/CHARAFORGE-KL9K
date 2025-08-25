@@ -6,7 +6,7 @@ import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character, TimelineEvent } from '@/types/character';
-import { updateCharacter, updateCharacterTimeline, suggestNextTimelineEvent, generateDialogue } from '@/app/actions/character-write';
+import { updateCharacter, updateCharacterTimeline, suggestNextTimelineEvent, generateDialogue, narrateBiography } from '@/app/actions/character-write';
 import { generateCharacterSheetData } from '@/app/character-generator/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Wand2, Dna, Swords, Shield, BrainCircuit, AlertCircle, RefreshCw, Calendar, Plus, Trash2, Sparkles, MessageSquareQuote } from 'lucide-react';
+import { Loader2, Wand2, Dna, Swords, Shield, BrainCircuit, AlertCircle, RefreshCw, Calendar, Plus, Trash2, Sparkles, MessageSquareQuote, Volume2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
@@ -62,7 +62,9 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
     const [isRegenerating, startRegenerateTransition] = useTransition();
     const [isSuggestingEvent, startSuggestEventTransition] = useTransition();
     const [isGeneratingDialogue, startDialogueTransition] = useTransition();
+    const [isNarratingBio, startNarrationTransition] = useTransition();
     const [dialogueLines, setDialogueLines] = useState<string[]>([]);
+    const [biographyAudioUrl, setBiographyAudioUrl] = useState<string | null>(null);
     
     useEffect(() => {
         setCharacter(initialCharacter);
@@ -187,6 +189,18 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
         });
     };
 
+    const handleNarrateBio = () => {
+        startNarrationTransition(async () => {
+            const result = await narrateBiography(character.id);
+            if (result.success && result.audioUrl) {
+                setBiographyAudioUrl(result.audioUrl);
+                toast({ title: 'Narration Complete!', description: 'The character\'s biography is ready to be heard.' });
+            } else {
+                toast({ variant: 'destructive', title: 'Narration Failed', description: result.message });
+            }
+        })
+    }
+
 
     const addNewEvent = () => {
         append({ id: uuidv4(), date: '', title: '', description: '' });
@@ -275,11 +289,22 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                         <div className="space-y-2">
                             <div className="flex justify-between items-center">
                                 <Label htmlFor="biography">Biography</Label>
-                                <Button type="button" variant="outline" size="sm" onClick={handleRegenerateBio} disabled={isRegenerating}>
-                                    {isRegenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
-                                    Regenerate All Text
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button type="button" variant="outline" size="sm" onClick={handleNarrateBio} disabled={isNarratingBio || !character.core.biography}>
+                                        {isNarratingBio ? <Loader2 className="mr-2 animate-spin" /> : <Volume2 className="mr-2 text-primary" />}
+                                        Narrate
+                                    </Button>
+                                    <Button type="button" variant="outline" size="sm" onClick={handleRegenerateBio} disabled={isRegenerating}>
+                                        {isRegenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
+                                        Regenerate
+                                    </Button>
+                                </div>
                             </div>
+                             {biographyAudioUrl && (
+                                <audio controls src={biographyAudioUrl} className="w-full mt-2">
+                                    Your browser does not support the audio element.
+                                </audio>
+                            )}
                             <Textarea id="biography" {...form.register('biography')} className="min-h-[250px] w-full" />
                             {form.formState.errors.biography && <p className="text-sm font-medium text-destructive">{form.formState.errors.biography.message}</p>}
                         </div>

@@ -15,6 +15,7 @@ import type { LifeEventState } from '@/ai/flows/character-sheet/flow';
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { generateDialogueFlow } from '@/ai/flows/dialogue-generation/flow';
+import { generateSpeech } from '@/ai/flows/text-to-speech/flow';
 
 // #region Helper Functions for Stat Generation
 // This logic is now part of the server action to be used when a character's archetype changes.
@@ -281,8 +282,8 @@ export async function saveCharacter(input: SaveCharacterInput) {
   }
   const { 
       name, biography, imageUrl: imageDataUri, dataPackId,
-      archetype, equipment, physicalDescription, textEngine, imageEngine, 
-      wizardData, originalPrompt, rarity, birthYear, weaknesses
+      archetype, equipment, physicalDescription, birthYear, weaknesses, 
+      textEngine, imageEngine, wizardData, originalPrompt, rarity
   } = validation.data;
   
   const userId = await verifyAndGetUid();
@@ -320,10 +321,10 @@ export async function saveCharacter(input: SaveCharacterInput) {
                 equipment: equipment || null,
                 physicalDescription: physicalDescription || null,
                 birthYear: birthYear || 'Year 1',
+                weaknesses: weaknesses || 'None',
                 timeline: [],
                 tags: uniqueTags,
                 rarity: 1, // Start at rarity 1, will be updated after dice roll
-                weaknesses: weaknesses || 'None',
             },
             visuals: {
                 imageUrl: storageUrl,
@@ -628,5 +629,36 @@ export async function rollForCharacterStats(characterId: string): Promise<Action
     }
 }
 
+export async function narrateBiography(characterId: string): Promise<ActionResponse & { audioUrl?: string }> {
+    const uid = await verifyAndGetUid();
+    if (!adminDb) {
+        return { success: false, message: "Database service unavailable." };
+    }
+
+    try {
+        const characterRef = adminDb.collection('characters').doc(characterId);
+        const doc = await characterRef.get();
+        if (!doc.exists || doc.data()?.meta.userId !== uid) {
+            return { success: false, message: "Permission denied or character not found." };
+        }
+
+        const character = doc.data() as Character;
+        if (!character.core.biography) {
+            return { success: false, message: "This character has no biography to narrate." };
+        }
+        
+        const { audioDataUri } = await generateSpeech({ textToNarrate: character.core.biography });
+
+        if (!audioDataUri) {
+            throw new Error('The AI failed to generate any audio.');
+        }
+
+        return { success: true, message: 'Biography narrated successfully!', audioUrl: audioDataUri };
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to narrate biography.";
+        return { success: false, message, error: message };
+    }
+}
     
     
