@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -66,14 +67,13 @@ export function LikeButton({ characterId, initialLikes, isLikedInitially, curren
     };
 
     return (
-        <Button 
-            variant="secondary" 
-            className="flex-1"
+        <button 
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 bg-black/30 hover:bg-black/50"
             onClick={isLiked ? handleUnlike : handleLike}
             disabled={isPending || !currentUserId}
         >
-            <Heart className={cn("mr-2", isLiked && "fill-destructive text-destructive")} />
-            {likeCount}
-        </Button>
+            <Heart className={cn("h-[18px] w-[18px]", isLiked && "fill-destructive text-destructive")} />
+            <span className="text-sm font-semibold">{likeCount} Like</span>
+        </button>
     );
 }
