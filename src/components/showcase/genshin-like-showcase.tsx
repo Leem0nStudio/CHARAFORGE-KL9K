@@ -5,10 +5,11 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Character } from '@/types/character';
-import { Heart, Edit, User, ArrowLeft, X, Swords, Shield, BrainCircuit } from 'lucide-react';
+import { Heart, Edit, User, ArrowLeft, X, Swords, Shield, BrainCircuit, Dna } from 'lucide-react';
 import { LikeButton } from './like-button';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
+import { Separator } from '../ui/separator';
 
 function ActionButton({ children, variant = "solid", asChild = false, href }: { children: React.ReactNode; variant?: "solid" | "ghost"; asChild?: boolean; href?: string; }) {
   const base = "px-4 py-2 rounded-xl border text-sm font-medium tracking-wide backdrop-blur";
@@ -61,6 +62,7 @@ const skillIcons = {
 
 export function GenshinLikeShowcase({ character, currentUserId, isLikedInitially }: ShowcaseProps) {
   const isOwner = character.meta.userId === currentUserId;
+  const rpgStats = character.rpg.stats;
 
   return (
     <main className="min-h-screen w-full bg-background text-foreground overflow-hidden relative">
@@ -141,18 +143,45 @@ export function GenshinLikeShowcase({ character, currentUserId, isLikedInitially
 
         {/* RIGHT PANEL */}
         <aside className="bg-card/80 rounded-2xl border border-border/50 shadow-2xl p-4 flex flex-col backdrop-blur-sm">
-          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Skills</h3>
-          {character.rpg.skills.length > 0 ? (
-            character.rpg.skills.map(skill => (
-                <TalentItem key={skill.id} level={skill.power} title={skill.name} icon={skillIcons[skill.type]} type={skill.type} />
-            ))
-          ) : (
-             <div className="text-center text-muted-foreground text-sm mt-8">
-                This character has no defined skills.
-            </div>
-          )}
+          <div className="flex flex-col gap-y-4">
+             <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3">Skills</h3>
+                {character.rpg.skills.length > 0 ? (
+                    character.rpg.skills.map(skill => (
+                        <TalentItem key={skill.id} level={skill.power} title={skill.name} icon={skillIcons[skill.type]} type={skill.type} />
+                    ))
+                ) : (
+                    <div className="text-center text-muted-foreground text-sm mt-8">
+                        This character has no defined skills.
+                    </div>
+                )}
+             </div>
+
+             {character.rpg.isPlayable && (
+                 <>
+                    <Separator className="my-2" />
+                    <div>
+                        <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2"><Dna/> Base Stats</h3>
+                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                             <div className="flex flex-col items-center p-1.5 bg-background/50 rounded-md border border-border"><span className="text-muted-foreground">STR</span><b className="text-primary text-base">{rpgStats.strength}</b></div>
+                             <div className="flex flex-col items-center p-1.5 bg-background/50 rounded-md border border-border"><span className="text-muted-foreground">DEX</span><b className="text-primary text-base">{rpgStats.dexterity}</b></div>
+                             <div className="flex flex-col items-center p-1.5 bg-background/50 rounded-md border border-border"><span className="text-muted-foreground">CON</span><b className="text-primary text-base">{rpgStats.constitution}</b></div>
+                             <div className="flex flex-col items-center p-1.5 bg-background/50 rounded-md border border-border"><span className="text-muted-foreground">INT</span><b className="text-primary text-base">{rpgStats.intelligence}</b></div>
+                             <div className="flex flex-col items-center p-1.5 bg-background/50 rounded-md border border-border"><span className="text-muted-foreground">WIS</span><b className="text-primary text-base">{rpgStats.wisdom}</b></div>
+                             <div className="flex flex-col items-center p-1.5 bg-background/50 rounded-md border border-border"><span className="text-muted-foreground">CHA</span><b className="text-primary text-base">{rpgStats.charisma}</b></div>
+                        </div>
+                    </div>
+                 </>
+             )}
+          </div>
         </aside>
       </section>
     </main>
   );
+}
+
+interface ShowcaseProps {
+    character: Character;
+    currentUserId: string | null;
+    isLikedInitially: boolean;
 }
