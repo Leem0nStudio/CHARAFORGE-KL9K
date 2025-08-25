@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 
 interface GachaCardProps {
     character: Character;
+    disableLink?: boolean;
 }
 
 const rarityStyles: Record<number, string> = {
@@ -25,9 +26,61 @@ const rarityGlow: Record<number, string> = {
     5: 'shadow-[0_0_20px_5px] shadow-yellow-500/40 animate-pulse-glow', // Legendary
 }
 
-export function GachaCard({ character }: GachaCardProps) {
+export function GachaCard({ character, disableLink = false }: GachaCardProps) {
     const rarity = character.core.rarity || 3;
     
+    const CardContent = (
+         <div className={cn(
+            'relative h-full overflow-hidden rounded-lg border-2 bg-gradient-to-br p-1.5 transition-all duration-300',
+            rarityStyles[rarity],
+            rarityGlow[rarity],
+            !disableLink && 'group'
+        )}>
+            <div className="relative aspect-[3/4] w-full bg-card-highlight rounded-md overflow-hidden">
+                <Image
+                    src={character.visuals.imageUrl}
+                    alt={character.core.name}
+                    fill
+                    className={cn("object-cover w-full transition-transform duration-300", !disableLink && "group-hover:scale-110")}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1.5 bg-background/80 backdrop-blur-sm text-sm font-semibold px-2 py-1 rounded-full">
+                        <Heart className="text-destructive fill-destructive w-4 h-4"/> {character.meta.likes || 0}
+                    </div>
+                </div>
+            </div>
+            
+            <div className="absolute bottom-3 left-3 right-3 text-white">
+                    <h3 className="font-bold text-lg leading-tight drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] truncate font-headline">{character.core.name}</h3>
+                    <div className="flex items-center mt-1 drop-shadow-md">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={cn(
+                            "w-4 h-4",
+                            i < rarity ? 'text-yellow-400 fill-yellow-400' : 'text-black/30'
+                        )}/>
+                    ))}
+                    </div>
+            </div>
+        </div>
+    );
+
+    if (disableLink) {
+        return (
+             <motion.div
+                key={character.id}
+                variants={{
+                    hidden: { opacity: 0, scale: 0.9 },
+                    visible: { opacity: 1, scale: 1 },
+                }}
+                className="h-full"
+            >
+                {CardContent}
+            </motion.div>
+        )
+    }
+
     return (
         <motion.div
             key={character.id}
@@ -37,40 +90,8 @@ export function GachaCard({ character }: GachaCardProps) {
             }}
             className="h-full"
         >
-            <Link href={`/showcase/${character.id}`} className="block h-full group">
-                <div className={cn(
-                    'relative h-full overflow-hidden rounded-lg border-2 bg-gradient-to-br p-1.5 transition-all duration-300',
-                    rarityStyles[rarity],
-                    rarityGlow[rarity],
-                )}>
-                    <div className="relative aspect-[3/4] w-full bg-card-highlight rounded-md overflow-hidden">
-                        <Image
-                            src={character.visuals.imageUrl}
-                            alt={character.core.name}
-                            fill
-                            className="object-cover w-full transition-transform duration-300 group-hover:scale-110"
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        />
-                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-                         <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                             <div className="flex items-center gap-1.5 bg-background/80 backdrop-blur-sm text-sm font-semibold px-2 py-1 rounded-full">
-                                <Heart className="text-destructive fill-destructive w-4 h-4"/> {character.meta.likes || 0}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div className="absolute bottom-3 left-3 right-3 text-white">
-                         <h3 className="font-bold text-lg leading-tight drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] truncate font-headline">{character.core.name}</h3>
-                         <div className="flex items-center mt-1 drop-shadow-md">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <Star key={i} className={cn(
-                                    "w-4 h-4",
-                                    i < rarity ? 'text-yellow-400 fill-yellow-400' : 'text-black/30'
-                                )}/>
-                            ))}
-                         </div>
-                    </div>
-                </div>
+            <Link href={`/showcase/${character.id}`} className="block h-full">
+                {CardContent}
             </Link>
         </motion.div>
     );

@@ -27,7 +27,7 @@ export function CharacterSelector({ characters, onSelectCharacter }: CharacterSe
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pr-4">
                             {characters.map(char => (
                                 <div key={char.id} onClick={() => onSelectCharacter(char)} className="cursor-pointer">
-                                    <GachaCard character={char} />
+                                    <GachaCard character={char} disableLink={true} />
                                 </div>
                             ))}
                         </div>
