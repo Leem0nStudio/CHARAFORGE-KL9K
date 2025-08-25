@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
@@ -33,7 +32,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pathname = headers().get('x-next-pathname') || '';
+  const headersList = headers();
+  const pathname = headersList.get('x-next-pathname') || '';
   const isAdminRoute = pathname.startsWith('/admin');
 
   return (
@@ -50,7 +50,7 @@ export default function RootLayout({
               {!isAdminRoute && <SiteHeader />}
               <main className="flex-1">{children}</main>
               {!isAdminRoute && <SiteFooter />}
-              {!isAdminRoute && <MobileBottomNav />}
+              <MobileBottomNav />
             </div>
           </AuthProvider>
           <Toaster />

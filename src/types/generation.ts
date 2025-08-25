@@ -1,5 +1,3 @@
-
-      
 /**
  * @fileoverview This file contains data types related to the AI generation process
  * that are safe to be used in Client Components. It avoids importing server-only
@@ -7,8 +5,6 @@
  */
 
 import { z } from 'zod';
-import type { AiModel } from './ai-model';
-import type { Character } from './character';
 import type { GenerateCharacterSheetOutput } from '@/ai/flows/character-sheet/types';
 
 /**
@@ -52,6 +48,3 @@ export type GenerationResult = GenerateCharacterSheetOutput & {
   textEngine?: TextEngineConfig['engineId'];
   imageEngine?: ImageEngineConfig['engineId'];
 };
-
-    
-    

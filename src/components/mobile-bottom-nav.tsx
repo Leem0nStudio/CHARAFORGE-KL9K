@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import Link from 'next/link';
@@ -12,7 +10,6 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const { authUser } = useAuth();
   
-  // Do not render the main navigation bar on admin routes
   if (pathname.startsWith('/admin')) {
     return null;
   }

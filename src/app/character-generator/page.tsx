@@ -1,25 +1,14 @@
 
-'use client';
-
 import { CharacterGenerator } from '@/components/character-generator';
 import { motion } from 'framer-motion';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
 
 function CharacterGeneratorWrapper() {
-  const { authUser, loading } = useAuth();
-  const router = useRouter();
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen w-full">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
+  // The logic to get the authenticated user should happen here,
+  // on the server, and be passed down to the client component.
+  // For now, we pass null as the client `useAuth` hook will handle it.
+  
   return (
     <motion.div
       className="container py-8"
@@ -31,7 +20,7 @@ function CharacterGeneratorWrapper() {
              <h1 className="text-3xl font-bold tracking-tight font-headline">Character Generator</h1>
              <p className="text-muted-foreground">Bring your vision to life. Describe your character, or use a DataPack to get started.</p>
         </div>
-        <CharacterGenerator authUser={authUser}/>
+        <CharacterGenerator />
     </motion.div>
   )
 }

@@ -6,7 +6,6 @@ import { notFound, redirect } from 'next/navigation';
 import { getCharacter } from '@/app/actions/character-read';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { BackButton } from '@/components/back-button';
-import type { Character } from '@/types/character';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EditDetailsTab } from './edit-details-tab';
 import { EditGalleryTab } from './edit-gallery-tab';
@@ -18,16 +17,20 @@ import { Loader2 } from 'lucide-react';
 async function EditCharacterTabs({ characterId, defaultTab }: { characterId: string; defaultTab: string }) {
   let uid: string;
   try {
+    // First, verify authentication. If this fails, it will throw,
+    // and the error boundary will catch it correctly, redirecting to login.
     uid = await verifyAndGetUid();
   } catch (error) {
-    // If auth fails for any reason (expired, invalid, missing cookie), redirect to login.
+    // The most common error from verifyAndGetUid is a session issue.
     redirect('/login?reason=session-expired');
   }
 
+  // If authentication succeeds, proceed to fetch the character data.
   const character = await getCharacter(characterId);
 
+  // Now, check if the character exists and belongs to the authenticated user.
   if (!character || character.meta.userId !== uid) {
-    // If character doesn't exist or doesn't belong to the user, show 404.
+    // If not, trigger a 404 Not Found page.
     notFound();
   }
 
@@ -67,7 +70,9 @@ export default async function EditCharacterPage({
   params: { id: string };
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
-  const defaultTab = searchParams?.tab === 'sharing' ? 'sharing' : 'details';
+  const defaultTab = typeof searchParams?.tab === 'string' ? searchParams.tab : 'details';
+  const validTabs = ['details', 'gallery', 'rpg', 'versions', 'sharing'];
+  const finalDefaultTab = validTabs.includes(defaultTab) ? defaultTab : 'details';
 
   return (
     <div className="container py-8">
@@ -81,7 +86,7 @@ export default async function EditCharacterPage({
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         }>
-          <EditCharacterTabs characterId={params.id} defaultTab={defaultTab} />
+          <EditCharacterTabs characterId={params.id} defaultTab={finalDefaultTab} />
         </Suspense>
       </div>
     </div>
