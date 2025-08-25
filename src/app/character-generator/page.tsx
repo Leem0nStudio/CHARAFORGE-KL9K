@@ -1,3 +1,4 @@
+'use client';
 
 import { CharacterGenerator } from '@/components/character-generator';
 import { motion } from 'framer-motion';
