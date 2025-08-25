@@ -14,10 +14,8 @@ import {
   Button,
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
   Form,
   Input,
   Label,
@@ -28,9 +26,6 @@ import {
   SelectValue,
   Slider,
   Textarea,
-  Alert,
-  AlertDescription,
-  AlertTitle,
 } from '@/components/ui';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -488,11 +483,6 @@ export function CharacterGenerator() {
           form.setValue('originalDescription', description);
           form.setValue('textEngine', selectedTextModel?.engine);
           setCurrentStep('details');
-          toast({
-            title: 'Details Forged!',
-            description:
-              'Review the generated text, then create the portrait.',
-          });
         } else {
           toast({
             variant: 'destructive',
@@ -533,10 +523,6 @@ export function CharacterGenerator() {
           form.setValue('imageUrl', result.imageUrl);
           form.setValue('imageEngine', form.getValues('selectedModel')?.engine);
           setCurrentStep('complete');
-          toast({
-            title: 'Portrait Generated!',
-            description: 'Your character is ready to be saved.',
-          });
         } else {
           toast({
             variant: 'destructive',
@@ -639,6 +625,7 @@ export function CharacterGenerator() {
                   </CardContent>
                   <CardFooter className="pt-4 border-t flex justify-between">
                     <Button
+                      type="button"
                       variant="outline"
                       onClick={() =>
                         setCurrentStep((prev) =>
@@ -665,9 +652,9 @@ export function CharacterGenerator() {
                         {isProcessing
                           ? 'Forging...'
                           : currentStep === 'concept'
-                          ? 'Next: Generate Details'
+                          ? 'Next: Details'
                           : currentStep === 'details'
-                          ? 'Next: Generate Portrait'
+                          ? 'Next: Portrait'
                           : 'Generate Portrait'}
                       </Button>
                     ) : (
