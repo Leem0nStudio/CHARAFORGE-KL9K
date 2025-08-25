@@ -139,9 +139,9 @@ export function ShowcaseViewer({ character, currentUserId, isLikedInitially }: S
 
                 {/* Info Panel */}
                 <motion.div className="w-full md:order-1 lg:order-2" variants={itemVariants}>
-                     <Card className="bg-card/80 backdrop-blur-md">
+                     <Card className="bg-card/80 backdrop-blur-md h-full">
                         <ScrollArea className="h-full max-h-[85vh]">
-                        <CardContent className="p-6 space-y-4">
+                        <CardContent className="p-6 space-y-4 flex flex-col">
                             <div>
                                 <h1 className="text-3xl font-headline tracking-wider">{character.core.name}</h1>
                                  <Link href={`/users/${character.meta.userId}`} className="text-sm text-muted-foreground hover:text-primary flex items-center gap-2 mb-2">
