@@ -24,6 +24,7 @@ export default function CharactersPage() {
   const router = useRouter();
 
   const fetchCharacters = useCallback(async () => {
+    if (!authUser) return;
     setLoading(true);
     setError(null);
     try {
@@ -36,7 +37,7 @@ export default function CharactersPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [authUser]);
 
   useEffect(() => {
     if (authLoading) return;

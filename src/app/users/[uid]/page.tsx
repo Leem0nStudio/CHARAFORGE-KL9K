@@ -10,7 +10,7 @@ import { BackButton } from '@/components/back-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Swords, Heart } from 'lucide-react';
-import { GachaCard } from '@/components/character/gacha-card';
+import { CharacterIndexCard } from '@/components/character/character-index-card';
 import { FollowButton } from '@/components/user/follow-button';
 
 export default async function UserProfilePage({ params }: { params: { uid: string } }) {
@@ -89,7 +89,7 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
                      {userCreations.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {userCreations.map(creation => (
-                                <GachaCard key={creation.id} character={creation} />
+                                <CharacterIndexCard key={creation.id} character={creation} />
                             ))}
                         </div>
                     ) : (

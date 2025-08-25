@@ -1,10 +1,9 @@
 
-
 'use client';
 
 import { motion } from 'framer-motion';
 import type { Character } from '@/types/character';
-import { GachaCard } from './gacha-card';
+import { CharacterIndexCard } from './character-index-card';
 
 interface CharacterCardProps {
     character: Character;
@@ -20,7 +19,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
             }}
             className="h-full group"
         >
-            <GachaCard character={character} />
+            <CharacterIndexCard character={character} />
         </motion.div>
     );
 }
