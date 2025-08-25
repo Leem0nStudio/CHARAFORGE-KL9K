@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useTransition, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useTransition, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
