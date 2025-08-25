@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useCallback } from 'react';
 import type { Character } from '@/types/character';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +11,7 @@ import { ArrowLeft, Swords, Dna, Loader2, RefreshCw, BarChart3, Star, Heart } fr
 import { simulateBattle, getRandomOpponent } from './actions';
 import { StatItem } from '@/components/showcase/stat-item';
 import { Separator } from '@/components/ui/separator';
+import { StarRating } from '@/components/showcase/star-rating';
 
 interface BattleViewProps {
     playerCharacter: Character;
@@ -50,20 +50,6 @@ function CombatantCard({ character }: { character: Character }) {
     );
 }
 
-function StarRating({ rating }: { rating: number }) {
-    return (
-        <div className="flex items-center">
-            {Array.from({ length: 5 }).map((_, i) => (
-                <Star
-                    key={i}
-                    className={`w-4 h-4 ${i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'}`}
-                />
-            ))}
-        </div>
-    );
-}
-
-
 export function BattleView({ playerCharacter, onExit }: BattleViewProps) {
     const [opponent, setOpponent] = useState<Character | null>(null);
     const [battleLog, setBattleLog] = useState<string[]>([]);
@@ -71,20 +57,21 @@ export function BattleView({ playerCharacter, onExit }: BattleViewProps) {
     const [isLoadingOpponent, startOpponentTransition] = useTransition();
     const [winnerId, setWinnerId] = useState<string | null>(null);
 
-    const findNewOpponent = () => {
+    const findNewOpponent = useCallback(() => {
         startOpponentTransition(async () => {
             setWinnerId(null);
             setBattleLog([]);
             const newOpponent = await getRandomOpponent(playerCharacter.core.rarity, playerCharacter.id);
             setOpponent(newOpponent);
-            setBattleLog([newOpponent ? 'A new challenger approaches!' : 'No opponents found.']);
+            setBattleLog([newOpponent ? 'A new challenger approaches!' : 'No opponents found for this rarity level.']);
         });
-    };
+    // CRITICAL FIX: Add playerCharacter.id to the dependency array.
+    // This prevents an infinite loop where the effect re-runs on every render because `playerCharacter` is a new object.
+    }, [playerCharacter.id, playerCharacter.core.rarity]);
 
     useEffect(() => {
         findNewOpponent();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [playerCharacter]);
+    }, [findNewOpponent]);
 
 
     const handleFight = () => {
@@ -145,7 +132,7 @@ export function BattleView({ playerCharacter, onExit }: BattleViewProps) {
                         <CombatantCard character={opponent} />
                     ) : (
                         <div className="w-full max-w-[300px] aspect-[1/1.5] bg-muted/20 border-2 border-dashed rounded-lg flex items-center justify-center">
-                            {isLoadingOpponent ? <Loader2 className="h-8 w-8 animate-spin" /> : <p className="text-muted-foreground">No Opponent</p>}
+                            {isLoadingOpponent ? <Loader2 className="h-8 w-8 animate-spin" /> : <p className="text-muted-foreground text-center p-4">Searching for opponent...</p>}
                         </div>
                     )}
                 </div>
