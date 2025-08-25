@@ -1,7 +1,7 @@
 
-
 'use server';
 
+import { Suspense } from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { getCharacter } from '@/app/actions/character-read';
 import { verifyAndGetUid } from '@/lib/auth/server';
@@ -13,91 +13,77 @@ import { EditGalleryTab } from './edit-gallery-tab';
 import { EditVersionsTab } from './edit-versions-tab';
 import { EditSharingTab } from './edit-sharing-tab';
 import { RpgAttributesTab } from './rpg-attributes-tab';
+import { Loader2 } from 'lucide-react';
 
-
-async function getCharacterForEdit(characterId: string): Promise<Character> {
+async function EditCharacterTabs({ characterId, defaultTab }: { characterId: string; defaultTab: string }) {
   let uid: string;
   try {
-      uid = await verifyAndGetUid();
+    uid = await verifyAndGetUid();
   } catch (error) {
-      // This is the key change. If token verification fails, redirect to login.
-      if (error instanceof Error && (error.message.includes('expired') || error.message.includes('User session not found') || error.message.includes('Invalid') )) {
-          redirect('/login?reason=session-expired');
-      }
-      // For other unexpected errors, we still throw to let Next.js handle it.
-      throw error;
+    // If auth fails for any reason (expired, invalid, missing cookie), redirect to login.
+    redirect('/login?reason=session-expired');
   }
 
   const character = await getCharacter(characterId);
 
-  if (!character) {
+  if (!character || character.meta.userId !== uid) {
+    // If character doesn't exist or doesn't belong to the user, show 404.
     notFound();
   }
-  
-  if (character.meta.userId !== uid) {
-     // If the user is authenticated but doesn't own the character, treat it as not found.
-     notFound();
-  }
-  
-  return character;
+
+  return (
+    <Tabs defaultValue={defaultTab} className="w-full">
+      <TabsList className="grid w-full grid-cols-5">
+        <TabsTrigger value="details">Details & Lore</TabsTrigger>
+        <TabsTrigger value="gallery">Gallery</TabsTrigger>
+        <TabsTrigger value="rpg">RPG Attributes</TabsTrigger>
+        <TabsTrigger value="versions">Versions</TabsTrigger>
+        <TabsTrigger value="sharing">Sharing</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="details">
+        <EditDetailsTab character={character} />
+      </TabsContent>
+      <TabsContent value="gallery">
+        <EditGalleryTab character={character} />
+      </TabsContent>
+      <TabsContent value="rpg">
+        <RpgAttributesTab character={character} />
+      </TabsContent>
+      <TabsContent value="versions">
+        <EditVersionsTab character={character} />
+      </TabsContent>
+      <TabsContent value="sharing">
+        <EditSharingTab character={character} />
+      </TabsContent>
+    </Tabs>
+  );
 }
 
-export default async function EditCharacterPage({ 
-    params,
-    searchParams 
-}: { 
-    params: { id: string },
-    searchParams?: { [key: string]: string | string[] | undefined }
+export default async function EditCharacterPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }) {
-  try {
-    const character = await getCharacterForEdit(params.id);
-    const defaultTab = searchParams?.tab === 'sharing' ? 'sharing' : 'details';
-    
-    return (
-      <div className="container py-8">
-          <BackButton 
-              title="Character Workshop"
-              description="Refine, regenerate, and manage every aspect of your creation."
-          />
-          <div className="max-w-4xl mx-auto mt-8">
-              <Tabs defaultValue={defaultTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="details">Details & Lore</TabsTrigger>
-                    <TabsTrigger value="gallery">Gallery</TabsTrigger>
-                    <TabsTrigger value="rpg">RPG Attributes</TabsTrigger>
-                    <TabsTrigger value="versions">Versions</TabsTrigger>
-                    <TabsTrigger value="sharing">Sharing</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="details">
-                    <EditDetailsTab character={character} />
-                </TabsContent>
-                <TabsContent value="gallery">
-                    <EditGalleryTab character={character} />
-                </TabsContent>
-                <TabsContent value="rpg">
-                    <RpgAttributesTab character={character} />
-                </TabsContent>
-                <TabsContent value="versions">
-                    <EditVersionsTab character={character} />
-                </TabsContent>
-                <TabsContent value="sharing">
-                    <EditSharingTab character={character} />
-                </TabsContent>
-              </Tabs>
-          </div>
+  const defaultTab = searchParams?.tab === 'sharing' ? 'sharing' : 'details';
+
+  return (
+    <div className="container py-8">
+      <BackButton
+        title="Character Workshop"
+        description="Refine, regenerate, and manage every aspect of your creation."
+      />
+      <div className="max-w-4xl mx-auto mt-8">
+        <Suspense fallback={
+            <div className="flex justify-center items-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+          <EditCharacterTabs characterId={params.id} defaultTab={defaultTab} />
+        </Suspense>
       </div>
-    );
-  } catch (error: any) {
-     // This will catch the redirect call and prevent the page from crashing.
-     // It also handles the `notFound()` case.
-     if (error?.digest?.includes('NEXT_NOT_FOUND') || error?.digest?.includes('NEXT_REDIRECT')) {
-        throw error;
-     }
-     
-     // For any other unexpected errors, log them and then show a not found page.
-     console.error("Failed to render edit page:", error);
-     notFound();
-  }
+    </div>
+  );
 }
-    
