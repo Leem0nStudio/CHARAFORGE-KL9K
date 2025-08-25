@@ -186,7 +186,7 @@ export function ShowcaseViewer({ character, currentUserId, isLikedInitially }: S
                                         <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">CHA</span><b className="text-primary">{character.rpg.stats.charisma}</b></div>
                                     </div>
                                  </div>
-                                  <div className="space-y-4">
+                                  <div className="flex flex-col gap-y-4">
                                      <h3 className="font-semibold text-muted-foreground flex items-center gap-2"><SwordsIcon className="w-4 h-4"/> Skills</h3>
                                       <div className="space-y-3">
                                         {character.rpg.skills.length > 0 ? (
