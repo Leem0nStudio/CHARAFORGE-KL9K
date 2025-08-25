@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { cookies } from 'next/headers';
@@ -43,5 +42,3 @@ export async function verifyAndGetUid(): Promise<string> {
     throw new Error('Invalid or expired user session. Please log in again.');
   }
 }
-
-    
