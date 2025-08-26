@@ -30,6 +30,7 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
   }
 
   const communityCreations = await getCreationsForDataPack(pack.id);
+  const allSlots = Object.keys(pack.schema?.characterProfileSchema || {});
 
   return (
     <div className="container py-8">
@@ -112,13 +113,13 @@ export default async function DataPackDetailPage({ params }: DataPackDetailPageP
                 </CardHeader>
                  <CardContent>
                     <div className="flex flex-wrap gap-2">
-                         {Array.isArray(pack.schema?.slots) && pack.schema.slots.map((slot) => (
+                         {allSlots.map((slot) => (
                             <Badge 
-                                key={slot.id} 
+                                key={slot} 
                                 variant="outline"
-                                data-category={getSlotCategory(slot.id)}
+                                data-category={getSlotCategory(slot)}
                             >
-                                {slot.label}
+                                {slot.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}
                             </Badge>
                         ))}
                     </div>
