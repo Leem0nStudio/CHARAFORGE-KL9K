@@ -1,14 +1,13 @@
 
 'use client';
 
-import { useFormContext, Controller, useFieldArray } from 'react-hook-form';
+import { useFormContext, Controller, useFieldArray, useWatch } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { DataPackFormValues, DataPackSchema } from '@/types/datapack';
+import type { DataPackFormValues, DataPackSchema, CharacterProfileSchema } from '@/types/datapack';
 import { AiGeneratorDialog } from './ai-generator-dialog';
 import { Loader2, Trash2, Wand2, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -51,6 +50,15 @@ function OptionEditor({ control, namePrefix }: { control: any, namePrefix: strin
     );
 }
 
+function SimpleSlotEditor({ control, slotName }: { control: any, slotName: keyof CharacterProfileSchema }) {
+    return (
+        <div className="space-y-2">
+            <Label className="capitalize">{slotName.replace(/([A-Z])/g, ' $1')}</Label>
+            <OptionEditor control={control} namePrefix={`schema.characterProfileSchema.${slotName}`} />
+        </div>
+    );
+}
+
 
 function EquipmentSlotAccordion({ control }: { control: any }) {
     const equipmentSlots: Array<keyof Omit<DataPackFormValues['schema']['characterProfileSchema'], 'count' | 'raceClass' | 'gender' | 'hair' | 'eyes' | 'skin' | 'facialFeatures' | 'weaponsExtra' | 'pose' | 'action' | 'camera' | 'background' | 'effects'>> = 
@@ -86,6 +94,24 @@ export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating
       control,
       name: "schema.promptTemplates",
   });
+  
+  // Watch the entire schema to trigger re-renders when data is loaded
+  const characterProfileSchema = useWatch({ control, name: 'schema.characterProfileSchema' });
+
+  // Define which slots are "simple" (direct array of options) vs "complex" (nested objects)
+  const simpleSlots: (keyof CharacterProfileSchema)[] = ['count', 'raceClass', 'gender', 'hair', 'eyes', 'skin', 'facialFeatures', 'weaponsExtra', 'pose', 'action', 'camera', 'background', 'effects'];
+  const equipmentSlots: (keyof CharacterProfileSchema)[] = ['head', 'face', 'neck', 'shoulders', 'torso', 'arms', 'hands', 'waist', 'legs', 'feet', 'back'];
+
+  const getSlotsForCategory = (category: 'General' | 'Appearance' | 'Equipment' | 'Scene') => {
+      switch(category) {
+          case 'General': return ['count', 'raceClass'];
+          case 'Appearance': return ['gender', 'hair', 'eyes', 'skin', 'facialFeatures'];
+          case 'Equipment': return equipmentSlots;
+          case 'Scene': return ['weaponsExtra', 'pose', 'action', 'camera', 'background', 'effects'];
+          default: return [];
+      }
+  };
+
 
   return (
     <Card>
@@ -131,21 +157,20 @@ export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating
             </Button>
         </div>
 
-        {/* General Section */}
+         {/* General Section */}
         <div className="space-y-4 p-4 border rounded-md">
           <h3 className="font-semibold text-lg">General</h3>
-           <div className="space-y-1"><Label>Count</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.count" /></div>
-           <div className="space-y-1"><Label>Race/Class</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.raceClass" /></div>
+          {getSlotsForCategory('General').map(slot => 
+            characterProfileSchema?.[slot] && <SimpleSlotEditor key={slot} control={control} slotName={slot as keyof CharacterProfileSchema} />
+          )}
         </div>
 
         {/* Appearance Section */}
         <div className="space-y-4 p-4 border rounded-md">
           <h3 className="font-semibold text-lg">Appearance</h3>
-           <div className="space-y-1"><Label>Gender</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.gender" /></div>
-           <div className="space-y-1"><Label>Hair</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.hair" /></div>
-           <div className="space-y-1"><Label>Eyes</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.eyes" /></div>
-           <div className="space-y-1"><Label>Skin</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.skin" /></div>
-           <div className="space-y-1"><Label>Facial Features</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.facialFeatures" /></div>
+          {getSlotsForCategory('Appearance').map(slot => 
+            characterProfileSchema?.[slot] && <SimpleSlotEditor key={slot} control={control} slotName={slot as keyof CharacterProfileSchema} />
+          )}
         </div>
         
         {/* Equipment Section */}
@@ -158,12 +183,9 @@ export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating
         <div className="space-y-4 p-4 border rounded-md">
           <h3 className="font-semibold text-lg">Scene & Action</h3>
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-1"><Label>Extra Weapons</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.weaponsExtra" /></div>
-            <div className="space-y-1"><Label>Pose</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.pose" /></div>
-            <div className="space-y-1"><Label>Action</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.action" /></div>
-            <div className="space-y-1"><Label>Camera</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.camera" /></div>
-            <div className="space-y-1"><Label>Background</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.background" /></div>
-            <div className="space-y-1"><Label>Effects</Label><OptionEditor control={control} namePrefix="schema.characterProfileSchema.effects" /></div>
+             {getSlotsForCategory('Scene').map(slot => 
+                characterProfileSchema?.[slot] && <SimpleSlotEditor key={slot} control={control} slotName={slot as keyof CharacterProfileSchema} />
+             )}
           </div>
         </div>
 
