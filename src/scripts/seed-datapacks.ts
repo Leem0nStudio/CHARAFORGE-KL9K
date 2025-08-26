@@ -2,7 +2,7 @@
 require('dotenv').config({ path: './.env' });
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
-import { getFirestore, CollectionReference, Query, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore, Query, FieldValue } from 'firebase-admin/firestore';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
