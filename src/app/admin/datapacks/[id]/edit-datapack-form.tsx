@@ -200,71 +200,12 @@ export function EditDataPackForm({ packId }: { packId: string }) {
 
   return (
     <FormProvider {...form}>
-    <form onSubmit={form.handleSubmit(onSubmit)} className="pb-24 sm:pb-0">
-      <div className="hidden sm:flex items-center justify-end gap-2 mb-4">
-        {initialData && (
-              <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button type="button" variant="destructive" disabled={isPending}>Delete</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                      <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
-                      <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
-                      <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive-hover">
-                              {isPending && <Loader2 className="animate-spin mr-2"/>}
-                              Continue
-                          </AlertDialogAction>
-                      </AlertDialogFooter>
-                  </AlertDialogContent>
-              </AlertDialog>
-          )}
-        <Button type="submit" disabled={isPending || (!form.formState.isDirty && !!initialData)}>
-            {isPending && <Loader2 className="animate-spin mr-2" />}
-            {initialData ? 'Save Changes' : 'Create DataPack'}
-        </Button>
-      </div>
-
-      <Tabs defaultValue={packId === 'new' ? 'import' : 'metadata'}>
-        <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="import" disabled={packId !== 'new'}>Import</TabsTrigger>
-            <TabsTrigger value="metadata">Metadata</TabsTrigger>
-            <TabsTrigger value="schema">Schema Editor</TabsTrigger>
-        </TabsList>
-         <TabsContent value="import">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Import from Files</CardTitle>
-                    <CardDescription>Create a new DataPack by uploading a collection of .txt wildcard files.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ImportTab onImportSuccess={(newPackId) => router.push(`/admin/datapacks/${newPackId}`)} />
-                </CardContent>
-            </Card>
-        </TabsContent>
-        <TabsContent value="metadata">
-            <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} />
-        </TabsContent>
-        <TabsContent value="schema">
-            <DataPackSchemaEditor 
-                form={form} 
-                onAiSchemaGenerated={handleAiSchemaGenerated}
-                isAiGenerating={isAiGenerating}
-                onAiGeneratingChange={setIsAiGenerating}
-            />
-        </TabsContent>
-      </Tabs>
-
-      {/* Mobile Action Footer */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm p-4 border-t z-10">
-          <div className="flex items-center gap-2">
-            {initialData && (
+      <div className="pb-24 sm:pb-0">
+        <div className="hidden sm:flex items-center justify-end gap-2 mb-4">
+          {initialData && (
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button type="button" variant="destructive" className="flex-1" disabled={isPending}>
-                          <Trash2 className="mr-2"/> Delete
-                        </Button>
+                      <Button type="button" variant="destructive" disabled={isPending}>Delete</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
@@ -279,13 +220,76 @@ export function EditDataPackForm({ packId }: { packId: string }) {
                     </AlertDialogContent>
                 </AlertDialog>
             )}
-            <Button type="submit" className="flex-1" disabled={isPending || (!form.formState.isDirty && !!initialData)}>
-                {isPending ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2"/>}
-                {initialData ? 'Save' : 'Create'}
-            </Button>
-          </div>
+          <Button onClick={form.handleSubmit(onSubmit)} disabled={isPending || (!form.formState.isDirty && !!initialData)}>
+              {isPending && <Loader2 className="animate-spin mr-2" />}
+              {initialData ? 'Save Changes' : 'Create DataPack'}
+          </Button>
+        </div>
+
+        <Tabs defaultValue={packId === 'new' ? 'import' : 'metadata'}>
+          <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="import" disabled={packId !== 'new'}>Import</TabsTrigger>
+              <TabsTrigger value="metadata">Metadata</TabsTrigger>
+              <TabsTrigger value="schema">Schema Editor</TabsTrigger>
+          </TabsList>
+          <TabsContent value="import">
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Import from Files</CardTitle>
+                      <CardDescription>Create a new DataPack by uploading a collection of .txt wildcard files.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <ImportTab onImportSuccess={(newPackId) => router.push(`/admin/datapacks/${newPackId}`)} />
+                  </CardContent>
+              </Card>
+          </TabsContent>
+          <TabsContent value="metadata">
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} />
+            </form>
+          </TabsContent>
+          <TabsContent value="schema">
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <DataPackSchemaEditor 
+                  form={form} 
+                  onAiSchemaGenerated={handleAiSchemaGenerated}
+                  isAiGenerating={isAiGenerating}
+                  onAiGeneratingChange={setIsAiGenerating}
+              />
+            </form>
+          </TabsContent>
+        </Tabs>
+
+        {/* Mobile Action Footer */}
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm p-4 border-t z-10">
+            <div className="flex items-center gap-2">
+              {initialData && (
+                  <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                          <Button type="button" variant="destructive" className="flex-1" disabled={isPending}>
+                            <Trash2 className="mr-2"/> Delete
+                          </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
+                          <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive-hover">
+                                  {isPending && <Loader2 className="animate-spin mr-2"/>}
+                                  Continue
+                              </AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                  </AlertDialog>
+              )}
+              <Button onClick={form.handleSubmit(onSubmit)} className="flex-1" disabled={isPending || (!form.formState.isDirty && !!initialData)}>
+                  {isPending ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2"/>}
+                  {initialData ? 'Save' : 'Create'}
+              </Button>
+            </div>
+        </div>
       </div>
-    </form>
     </FormProvider>
   );
 }
