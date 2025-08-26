@@ -1,11 +1,21 @@
 
+
 import { Suspense } from 'react';
 import { getCharacters } from '@/app/actions/character-read';
 import { ArenaClient } from './arena-client';
 import { Loader2 } from 'lucide-react';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { verifyAndGetUid } from '@/lib/auth/server';
 
 async function ArenaPageContent() {
+    try {
+        // Secure the page by verifying the user session first.
+        await verifyAndGetUid();
+    } catch (error) {
+        // If verifyAndGetUid throws (no session), redirect to login.
+        redirect('/login?reason=unauthenticated');
+    }
+    
     // Fetch all characters and then filter for playable ones.
     const allCharacters = await getCharacters();
     const playableCharacters = allCharacters.filter(c => c.rpg.isPlayable && c.rpg.statsStatus === 'complete');
