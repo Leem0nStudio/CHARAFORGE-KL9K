@@ -364,18 +364,18 @@ export function CharacterGenerator() {
         const selectedValue = wizardData[slotId];
         if (!selectedValue) continue;
 
-        const slotConfig = (pack.schema.characterProfileSchema as any)[slotId];
+        const slotData = (pack.schema.characterProfileSchema as any)[slotId];
         let foundOption: { value: string } | undefined = undefined;
 
-        if (Array.isArray(slotConfig)) {
-          foundOption = slotConfig.find((o) => o.value === selectedValue);
+        if (Array.isArray(slotData)) {
+          foundOption = slotData.find((o) => o.value === selectedValue);
         } else if (
-          typeof slotConfig === 'object' &&
-          slotConfig !== null &&
-          !Array.isArray(slotConfig)
+          typeof slotData === 'object' &&
+          slotData !== null &&
+          !Array.isArray(slotData)
         ) {
-          for (const subCategory in slotConfig) {
-            const options = (slotConfig as any)[subCategory] as { value: string }[];
+          for (const subCategory in slotData) {
+            const options = (slotData as any)[subCategory] as { value: string }[];
             if (Array.isArray(options)) {
               const option = options.find((o) => o.value === selectedValue);
               if (option) {
