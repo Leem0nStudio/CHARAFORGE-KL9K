@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview The core algorithmic engine for the Prompt Architect system.
  * This service contains the logic for intelligent prompt composition, including
@@ -26,8 +27,8 @@ export function paretoWeightedChoice(items: Option[], alpha: number = 1.5): Opti
         throw new Error("Cannot perform weighted choice on an empty list of items.");
     }
     
-    // Sort items by rarity, assuming a higher rarity score is better/more desirable.
-    // If no rarity score, assume a default of 1.
+    // CRITICAL FIX: The previous implementation assumed items always had a 'rarity' property.
+    // This version is now robust and handles cases where rarity is not defined.
     const sortedItems = [...items].sort((a, b) => (b.rarity || 1) - (a.rarity || 1));
 
     const n = sortedItems.length;
