@@ -33,7 +33,7 @@ import { formatDataPackSchemaFromAI } from './ai-schema-adapter';
 function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => void }) {
     const [isProcessing, startTransition] = useTransition();
     const { toast } = useToast();
-    const [files, setFiles] = useState<FileList | null>(null);
+    const [file, setFile] = useState<File | null>(null);
 
     const handleImport = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -43,8 +43,8 @@ function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => v
             toast({ variant: 'destructive', title: 'Error', description: 'DataPack name is required.' });
             return;
         }
-        if (!files || files.length === 0) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please select at least one wildcard file.' });
+        if (!file) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select a .zip file.' });
             return;
         }
         
@@ -66,21 +66,20 @@ function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => v
                 <Input name="name" id="name" placeholder="e.g., The Genesis Engine" required/>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="wildcardFiles">Wildcard Files (.txt)</Label>
+                <Label htmlFor="wildcardFiles">Wildcard Archive (.zip)</Label>
                 <Input 
                   name="wildcardFiles" 
                   id="wildcardFiles" 
                   type="file" 
-                  multiple 
-                  accept=".txt" 
-                  onChange={(e) => setFiles(e.target.files)}
+                  accept=".zip,application/zip,application/x-zip-compressed"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">Select all .txt files for your wildcards. The filename will become the slot name.</p>
+                <p className="text-xs text-muted-foreground">Select a .zip file containing your wildcard files. Subfolders will be interpreted as nested slots (e.g., `torso/armor.txt`).</p>
             </div>
             <Button type="submit" disabled={isProcessing}>
                 {isProcessing ? <Loader2 className="animate-spin mr-2"/> : <FileUp className="mr-2"/>}
-                Create from Files
+                Create from Zip
             </Button>
         </form>
     )
@@ -201,42 +200,44 @@ export function EditDataPackForm({ packId }: { packId: string }) {
   return (
     <FormProvider {...form}>
       <div className="pb-24 sm:pb-0">
-        <div className="hidden sm:flex items-center justify-end gap-2 mb-4">
-          {initialData && (
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button type="button" variant="destructive" disabled={isPending}>Delete</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
-                        <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive-hover">
-                                {isPending && <Loader2 className="animate-spin mr-2"/>}
-                                Continue
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            )}
-          <Button onClick={form.handleSubmit(onSubmit)} disabled={isPending || (!form.formState.isDirty && !!initialData)}>
-              {isPending && <Loader2 className="animate-spin mr-2" />}
-              {initialData ? 'Save Changes' : 'Create DataPack'}
-          </Button>
-        </div>
-
         <Tabs defaultValue={packId === 'new' ? 'import' : 'metadata'}>
-          <TabsList className="grid w-full grid-cols-3">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+             <TabsList>
               <TabsTrigger value="import" disabled={packId !== 'new'}>Import</TabsTrigger>
               <TabsTrigger value="metadata">Metadata</TabsTrigger>
               <TabsTrigger value="schema">Schema Editor</TabsTrigger>
-          </TabsList>
+            </TabsList>
+            <div className="hidden sm:flex items-center justify-end gap-2">
+                {initialData && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                            <Button type="button" variant="destructive" disabled={isPending}>Delete</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
+                                <AlertDialogDescription>This will permanently delete the DataPack. This action cannot be undone.</AlertDialogDescription>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive-hover">
+                                        {isPending && <Loader2 className="animate-spin mr-2"/>}
+                                        Continue
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                <Button onClick={form.handleSubmit(onSubmit)} disabled={isPending || (!form.formState.isDirty && !!initialData)}>
+                    {isPending && <Loader2 className="animate-spin mr-2" />}
+                    {initialData ? 'Save Changes' : 'Create DataPack'}
+                </Button>
+            </div>
+          </div>
+         
           <TabsContent value="import">
               <Card>
                   <CardHeader>
-                      <CardTitle>Import from Files</CardTitle>
-                      <CardDescription>Create a new DataPack by uploading a collection of .txt wildcard files.</CardDescription>
+                      <CardTitle>Import from Zip</CardTitle>
+                      <CardDescription>Create a new DataPack by uploading a .zip archive of your wildcard files.</CardDescription>
                   </CardHeader>
                   <CardContent>
                       <ImportTab onImportSuccess={(newPackId) => router.push(`/admin/datapacks/${newPackId}`)} />
@@ -244,19 +245,15 @@ export function EditDataPackForm({ packId }: { packId: string }) {
               </Card>
           </TabsContent>
           <TabsContent value="metadata">
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} />
-            </form>
+            <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} />
           </TabsContent>
           <TabsContent value="schema">
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <DataPackSchemaEditor 
-                  form={form} 
-                  onAiSchemaGenerated={handleAiSchemaGenerated}
-                  isAiGenerating={isAiGenerating}
-                  onAiGeneratingChange={setIsAiGenerating}
-              />
-            </form>
+            <DataPackSchemaEditor 
+                form={form} 
+                onAiSchemaGenerated={handleAiSchemaGenerated}
+                isAiGenerating={isAiGenerating}
+                onAiGeneratingChange={setIsAiGenerating}
+            />
           </TabsContent>
         </Tabs>
 

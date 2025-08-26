@@ -1,16 +1,16 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import { FieldValue, Timestamp, FieldPath } from 'firebase-admin/firestore';
-import type { DataPack, UpsertDataPack, DataPackSchema, Option } from '@/types/datapack';
+import type { DataPack, UpsertDataPack, DataPackSchema, Option, EquipmentSlotOptions } from '@/types/datapack';
 import { UpsertDataPackSchema } from '@/types/datapack';
 import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { uploadToStorage } from '@/services/storage';
+import AdmZip from 'adm-zip';
 
 export type ActionResponse = {
     success: boolean;
@@ -22,14 +22,18 @@ export type ActionResponse = {
 export async function createDataPackFromFiles(formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     const packName = formData.get('name') as string;
-    const files = formData.getAll('wildcardFiles') as File[];
+    const zipFile = formData.get('wildcardFiles') as File | null;
 
     if (!packName) {
         return { success: false, message: "DataPack name is required." };
     }
-    if (!files || files.length === 0) {
-        return { success: false, message: "At least one wildcard file is required." };
+    if (!zipFile || zipFile.size === 0) {
+        return { success: false, message: "A .zip file is required." };
     }
+     if (zipFile.type !== 'application/zip' && zipFile.type !== 'application/x-zip-compressed') {
+        return { success: false, message: 'Invalid file type. Please upload a .zip file.' };
+    }
+
 
     try {
         if (!adminDb) throw new Error('Database service is unavailable.');
@@ -39,28 +43,51 @@ export async function createDataPackFromFiles(formData: FormData): Promise<Actio
             characterProfileSchema: {},
         };
 
-        for (const file of files) {
-            if (file.name.endsWith('.txt')) {
-                const slotName = file.name.replace('.txt', '');
-                const content = await file.text();
-                const options: Option[] = content
+        const fileBuffer = Buffer.from(await zipFile.arrayBuffer());
+        const zip = new AdmZip(fileBuffer);
+        const zipEntries = zip.getEntries();
+        let fileCount = 0;
+
+        for (const entry of zipEntries) {
+            if (entry.isDirectory || !entry.name.endsWith('.txt')) continue;
+            
+            fileCount++;
+            const content = entry.getData().toString('utf8');
+            const options: Option[] = content
                     .split(/\r?\n/)
                     .map(line => line.trim())
                     .filter(Boolean)
                     .map(line => ({ label: line, value: line }));
+            
+            if (options.length === 0) continue;
+
+            const pathParts = entry.entryName.replace('.txt', '').split('/');
+            
+            if (pathParts.length === 1) { // Root file, e.g., hair.txt
+                const slotName = pathParts[0];
+                (schema.characterProfileSchema as any)[slotName] = options;
+            } else if (pathParts.length === 2) { // Nested file, e.g., torso/armor.txt
+                const parentSlot = pathParts[0] as keyof DataPack['schema']['characterProfileSchema'];
+                const childSlot = pathParts[1] as keyof EquipmentSlotOptions;
                 
-                if (options.length > 0) {
-                    (schema.characterProfileSchema as any)[slotName] = options;
+                if (!(schema.characterProfileSchema as any)[parentSlot]) {
+                     (schema.characterProfileSchema as any)[parentSlot] = {};
                 }
+                
+                (schema.characterProfileSchema as any)[parentSlot][childSlot] = options;
             }
         }
         
+        if (fileCount === 0) {
+            return { success: false, message: 'The uploaded zip file does not contain any .txt files.'}
+        }
+
         const docRef = adminDb.collection('datapacks').doc();
         const docData = {
             id: docRef.id,
             name: packName,
             author: "Imported",
-            description: `DataPack imported from local files on ${new Date().toLocaleDateString()}`,
+            description: `DataPack imported from a zip file on ${new Date().toLocaleDateString()}`,
             type: 'free',
             price: 0,
             tags: ['imported'],
@@ -75,7 +102,7 @@ export async function createDataPackFromFiles(formData: FormData): Promise<Actio
         
         revalidatePath('/admin/datapacks');
 
-        return { success: true, message: `DataPack "${packName}" created successfully from ${files.length} files.`, packId: docRef.id };
+        return { success: true, message: `DataPack "${packName}" created successfully from ${fileCount} files.`, packId: docRef.id };
 
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred during import.";
