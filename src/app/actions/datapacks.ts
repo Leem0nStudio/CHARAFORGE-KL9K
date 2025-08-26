@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { adminDb } from '@/lib/firebase/server';
 import { getStorage } from 'firebase-admin/storage';
 import { FieldValue, Timestamp, FieldPath } from 'firebase-admin/firestore';
-import type { DataPack, UpsertDataPack } from '@/types/datapack';
+import type { DataPack, UpsertDataPack, DataPackSchema, Option } from '@/types/datapack';
 import { UpsertDataPackSchema } from '@/types/datapack';
 import type { Character } from '@/types/character';
 import { verifyAndGetUid } from '@/lib/auth/server';
@@ -18,6 +18,71 @@ export type ActionResponse = {
     error?: string;
     packId?: string;
 };
+
+export async function createDataPackFromFiles(formData: FormData): Promise<ActionResponse> {
+    const uid = await verifyAndGetUid();
+    const packName = formData.get('name') as string;
+    const files = formData.getAll('wildcardFiles') as File[];
+
+    if (!packName) {
+        return { success: false, message: "DataPack name is required." };
+    }
+    if (!files || files.length === 0) {
+        return { success: false, message: "At least one wildcard file is required." };
+    }
+
+    try {
+        if (!adminDb) throw new Error('Database service is unavailable.');
+
+        const schema: DataPackSchema = {
+            promptTemplates: [],
+            characterProfileSchema: {},
+        };
+
+        for (const file of files) {
+            if (file.name.endsWith('.txt')) {
+                const slotName = file.name.replace('.txt', '');
+                const content = await file.text();
+                const options: Option[] = content
+                    .split(/\r?\n/)
+                    .map(line => line.trim())
+                    .filter(Boolean)
+                    .map(line => ({ label: line, value: line }));
+                
+                if (options.length > 0) {
+                    (schema.characterProfileSchema as any)[slotName] = options;
+                }
+            }
+        }
+        
+        const docRef = adminDb.collection('datapacks').doc();
+        const docData = {
+            id: docRef.id,
+            name: packName,
+            author: "Imported",
+            description: `DataPack imported from local files on ${new Date().toLocaleDateString()}`,
+            type: 'free',
+            price: 0,
+            tags: ['imported'],
+            isNsfw: false,
+            schema: schema,
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+            coverImageUrl: null,
+        };
+
+        await docRef.set(docData);
+        
+        revalidatePath('/admin/datapacks');
+
+        return { success: true, message: `DataPack "${packName}" created successfully from ${files.length} files.`, packId: docRef.id };
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "An unknown error occurred during import.";
+        return { success: false, message: "File import failed.", error: message };
+    }
+}
+
 
 export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer): Promise<ActionResponse> {
     try {

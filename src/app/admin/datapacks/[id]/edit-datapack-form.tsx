@@ -1,13 +1,16 @@
+
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { upsertDataPack, deleteDataPack, getDataPackForAdmin } from '@/app/actions/datapacks';
+import { upsertDataPack, deleteDataPack, getDataPackForAdmin, createDataPackFromFiles } from '@/app/actions/datapacks';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Loader2, Trash2, Save } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, Trash2, Save, FileUp } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +28,62 @@ import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
 import { DataPackMetadataForm } from './datapack-metadata-form';
 import { DataPackSchemaEditor } from './datapack-schema-editor';
 import { formatDataPackSchemaFromAI } from './ai-schema-adapter';
+
+function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => void }) {
+    const [isProcessing, startTransition] = useTransition();
+    const { toast } = useToast();
+    const [files, setFiles] = useState<FileList | null>(null);
+
+    const handleImport = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        
+        if (!formData.get('name')) {
+            toast({ variant: 'destructive', title: 'Error', description: 'DataPack name is required.' });
+            return;
+        }
+        if (!files || files.length === 0) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select at least one wildcard file.' });
+            return;
+        }
+        
+        startTransition(async () => {
+            const result = await createDataPackFromFiles(formData);
+            if (result.success && result.packId) {
+                toast({ title: 'Success!', description: result.message });
+                onImportSuccess(result.packId);
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: result.error || result.message });
+            }
+        });
+    }
+
+    return (
+        <form onSubmit={handleImport} className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="name">New DataPack Name</Label>
+                <Input name="name" id="name" placeholder="e.g., The Genesis Engine" required/>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="wildcardFiles">Wildcard Files (.txt)</Label>
+                <Input 
+                  name="wildcardFiles" 
+                  id="wildcardFiles" 
+                  type="file" 
+                  multiple 
+                  accept=".txt" 
+                  onChange={(e) => setFiles(e.target.files)}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">Select all .txt files for your wildcards. The filename will become the slot name.</p>
+            </div>
+            <Button type="submit" disabled={isProcessing}>
+                {isProcessing ? <Loader2 className="animate-spin mr-2"/> : <FileUp className="mr-2"/>}
+                Create from Files
+            </Button>
+        </form>
+    )
+}
 
 // This component now fetches its own data.
 export function EditDataPackForm({ packId }: { packId: string }) {
@@ -166,11 +225,23 @@ export function EditDataPackForm({ packId }: { packId: string }) {
         </Button>
       </div>
 
-      <Tabs defaultValue="metadata">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue={packId === 'new' ? 'import' : 'metadata'}>
+        <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="import" disabled={packId !== 'new'}>Import</TabsTrigger>
             <TabsTrigger value="metadata">Metadata</TabsTrigger>
-            <TabsTrigger value="schema">Wildcard Editor</TabsTrigger>
+            <TabsTrigger value="schema">Schema Editor</TabsTrigger>
         </TabsList>
+         <TabsContent value="import">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Import from Files</CardTitle>
+                    <CardDescription>Create a new DataPack by uploading a collection of .txt wildcard files.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ImportTab onImportSuccess={(newPackId) => router.push(`/admin/datapacks/${newPackId}`)} />
+                </CardContent>
+            </Card>
+        </TabsContent>
         <TabsContent value="metadata">
             <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} />
         </TabsContent>
