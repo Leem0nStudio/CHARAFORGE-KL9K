@@ -1,4 +1,3 @@
-
 {
     "name": "Prompt Architect",
     "author": "CharaForge",
@@ -10,8 +9,20 @@
     "schema": {
         "promptTemplates": [
             {
-                "name": "Full Composition Prompt",
-                "template": "{count}, ({raceClass}), solo, full body, {pose}, {action}, {camera}, {background}, {effects}, {art_style}, {color_palette}, {resolution}, {masterpiece_quality}, {detail_level}, illustration, high resolution, {style_reference}, {wallpaper_quality}, {sharpness}, {lighting_style}"
+                "name": "character_focus",
+                "template": "A masterpiece portrait of a {race}, {facial_features}, with {hair} and {eyes}, wearing {head_clothing}, {torso_clothing}, and {neck_accessory}. {lighting} with a {mood} atmosphere, {art_style}."
+            },
+            {
+                "name": "scene_focus",
+                "template": "A breathtaking {art_style} scene of a {location}, {scene_detail}. The {weather} creates a {mood} mood under {lighting}."
+            },
+            {
+                "name": "action_focus",
+                "template": "Dynamic action shot of a {race} {action}, wielding a {hands_weapon}, wearing {torso_armor}, {legs_armor}, and {feet_armor}. {effects} fill the scene, {camera} captures the intensity. {art_style}."
+            },
+            {
+                "name": "integrated",
+                "template": "In a {location} under {lighting}, a {race} with {hair} is {action}. They are wearing {torso_armor} and {legs_clothing}, creating a {mood} scene. {art_style}, {masterpiece_quality}."
             }
         ],
         "characterProfileSchema": {
@@ -19,7 +30,7 @@
                 { "label": "Female", "value": "1girl" },
                 { "label": "Male", "value": "1boy" }
             ],
-            "raceClass": [
+            "race": [
                 { "label": "Naga Warrior", "value": "Naga Warrior, serpentine lower body, long muscular snake tail, tall and sinuous frame, bronze skin" },
                 { "label": "Cyborg Ninja", "value": "Cyborg Ninja, glowing cybernetic lines, muscular build" },
                 { "label": "Gothic Vampire", "value": "Gothic Vampire, pale skin, sharp features" }
@@ -32,7 +43,7 @@
                 { "label": "Glowing Golden Eyes", "value": "glowing golden eyes with slit pupils" },
                 { "label": "Crimson Red Eyes", "value": "crimson red eyes" }
             ],
-            "facialFeatures": [
+            "facial_features": [
                 { "label": "Sharp and Striking", "value": "sharp and striking facial features" },
                 { "label": "Soft and Youthful", "value": "soft and youthful facial features" },
                 { "label": "Neutral and Confident Expression", "value": "neutral yet confident expression" },
@@ -43,6 +54,10 @@
                     { "label": "Sharp Claws", "value": "sharp claws" },
                     { "label": "Human Hands", "value": "normal hands" },
                     { "label": "Ring", "value": "ring" }
+                ],
+                "weapon": [
+                    { "label": "crescent blade", "value": "crescent blade" },
+                    { "label": "crystal spear", "value": "crystal spear" }
                 ]
             },
             "torso": {
@@ -76,7 +91,7 @@
                 { "label": "Isometric View", "value": "isometric view" },
                 { "label": "Front View", "value": "front view" }
             ],
-            "background": [
+            "location": [
                 { "label": "Sci-Fi Hangar", "value": "in a sci-fi hangar bay" },
                 { "label": "Gothic Cathedral", "value": "in a gothic cathedral" }
             ],

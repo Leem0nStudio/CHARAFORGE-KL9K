@@ -92,7 +92,7 @@ export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating
       <CardHeader className="flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
            <CardTitle className={cn("transition-colors", isAiGenerating && "text-primary")}>
-             Wildcard Editor
+             Schema Content
            </CardTitle>
            {isAiGenerating && <Loader2 className="animate-spin text-primary" />}
         </div>

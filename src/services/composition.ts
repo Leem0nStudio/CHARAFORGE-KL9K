@@ -117,32 +117,31 @@ export function expandTemplate(template: string, datasets: Datasets, recursionLi
         return template;
     }
 
-    let needsAnotherPass = true;
-    let currentTemplate = template;
+    let needsAnotherPass = false;
     
-    // First, resolve all the choice syntax like {a|b|c}
-    currentTemplate = currentTemplate.replace(/\{([^}]+?)\}/g, (match, content) => {
-        if (content.includes('|')) {
-            const options = content.split('|');
+    const expanded = template.replace(PLACEHOLDER_RE, (match, key) => {
+        key = key.trim();
+        
+        // Handle choice syntax first {a|b|c}
+        if (key.includes('|')) {
+            const options = key.split('|');
+            needsAnotherPass = true;
             return options[Math.floor(Math.random() * options.length)].trim();
         }
-        return match; // Keep regular placeholders for the next step
-    });
-
-    // Now, resolve the dataset placeholders
-    const expanded = currentTemplate.replace(PLACEHOLDER_RE, (match, key) => {
-        key = key.trim();
+        
+        // Handle dataset placeholders
         if (datasets[key] && datasets[key].length > 0) {
-            // Using paretoWeightedChoice for selection
             const chosenOption = paretoWeightedChoice(datasets[key]);
-            needsAnotherPass = true; // A replacement was made, may need another pass for nested placeholders
+            needsAnotherPass = true;
             return chosenOption.value;
         }
-        return match; // Return placeholder if not found
+
+        // Return placeholder if not found
+        return match;
     });
 
     // If any replacements were made, recurse to handle nested placeholders
-    if (needsAnotherPass && expanded !== currentTemplate) {
+    if (needsAnotherPass && expanded !== template) {
         return expandTemplate(expanded, datasets, recursionLimit - 1);
     }
     
