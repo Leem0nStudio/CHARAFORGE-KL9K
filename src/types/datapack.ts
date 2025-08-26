@@ -6,7 +6,7 @@ import { z } from 'zod';
 /**
  * Represents the different types of gear that can be equipped in a single body slot.
  */
-export type EquipmentOption = { label: string; value: string };
+export type EquipmentOption = { label: string; value: string; rarity?: number };
 
 export interface EquipmentSlotOptions {
   clothing?: EquipmentOption[];
@@ -68,6 +68,7 @@ export interface Option {
     value: string;
     tags?: string[];
     exclusions?: Exclusion[];
+    rarity?: number;
 }
 
 export interface PromptTemplate {
@@ -103,6 +104,7 @@ export interface DataPack {
 const EquipmentOptionSchema = z.object({
   label: z.string(),
   value: z.string(),
+  rarity: z.number().optional(),
 });
 
 const EquipmentSlotOptionsSchema = z.object({
