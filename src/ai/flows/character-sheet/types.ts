@@ -1,4 +1,3 @@
-
 /**
  * @fileOverview Data schemas and types for the character sheet generation flow.
  */
