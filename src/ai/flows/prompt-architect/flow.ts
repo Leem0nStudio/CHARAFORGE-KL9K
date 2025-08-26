@@ -31,13 +31,16 @@ const generateArchitectPromptFlow = ai.defineFlow(
     
     // 1. Load all available wildcards and module templates from Firestore.
     const datasets = await loadDatasetsFromFirestore();
-    const modulesSnapshot = await adminDb.collection('datapacks').where('name', '==', 'Prompt Architect').limit(1).get();
     
-    if (modulesSnapshot.empty) {
+    // CRITICAL FIX: Fetch the document directly by its known ID ('prompt-architect')
+    // This is more reliable and efficient than querying by name.
+    const moduleDoc = await adminDb.collection('datapacks').doc('prompt-architect').get();
+    
+    if (!moduleDoc.exists) {
         throw new Error("Could not find the 'Prompt Architect' DataPack containing the required focus modules.");
     }
-    const moduleData = modulesSnapshot.docs[0].data();
-    const templates = moduleData.schema?.promptTemplates || [];
+    const moduleData = moduleDoc.data();
+    const templates = moduleData?.schema?.promptTemplates || [];
     const focusTemplate = templates.find((t: any) => t.name.toLowerCase().replace(/ /g, '_') === focusModule);
 
     if (!focusTemplate) {
