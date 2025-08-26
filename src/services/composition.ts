@@ -24,11 +24,12 @@ type Datasets = Record<string, Option[]>;
  */
 export function paretoWeightedChoice(items: Option[], alpha: number = 1.5): Option {
     if (!items || items.length === 0) {
-        throw new Error("Cannot perform weighted choice on an empty list of items.");
+        // Return a default empty option to prevent crashes.
+        return { label: '', value: '' };
     }
     
-    // CRITICAL FIX: The previous implementation assumed items always had a 'rarity' property.
-    // This version is now robust and handles cases where rarity is not defined.
+    // The previous implementation assumed items always had a 'rarity' property.
+    // This version is now robust and handles cases where rarity is not defined by assigning a default.
     const sortedItems = [...items].sort((a, b) => (b.rarity || 1) - (a.rarity || 1));
 
     const n = sortedItems.length;
