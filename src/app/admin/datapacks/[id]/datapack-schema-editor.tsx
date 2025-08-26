@@ -61,7 +61,7 @@ function EquipmentSlotAccordion({ control }: { control: any }) {
             {equipmentSlots.map(slotName => (
                 <AccordionItem key={slotName} value={slotName}>
                     <AccordionTrigger className="capitalize text-base font-semibold border bg-muted/50 px-4 rounded-md">
-                        {slotName}
+                        {slotName.replace(/([A-Z])/g, ' $1')}
                     </AccordionTrigger>
                     <AccordionContent className="p-4 border rounded-b-md space-y-4">
                        <div className="space-y-1"><Label className="font-mono text-xs">Clothing</Label><OptionEditor control={control} namePrefix={`schema.characterProfileSchema.${slotName}.clothing`} /></div>
@@ -92,7 +92,7 @@ export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating
       <CardHeader className="flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
            <CardTitle className={cn("transition-colors", isAiGenerating && "text-primary")}>
-             Schema Content
+             Wildcard Editor
            </CardTitle>
            {isAiGenerating && <Loader2 className="animate-spin text-primary" />}
         </div>
@@ -102,7 +102,7 @@ export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating
         
         {/* Prompt Templates Section */}
         <div className="space-y-4 p-4 border rounded-md">
-            <h3 className="font-semibold text-lg">Prompt Templates</h3>
+            <h3 className="font-semibold text-lg">Prompt Templates (Narrative Modules)</h3>
             <div className="space-y-2">
                  {fields.map((field, index) => (
                     <div key={field.id} className="grid grid-cols-[1fr_auto] gap-2 items-end">

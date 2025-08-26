@@ -1,5 +1,4 @@
 
-      
 import { z } from 'zod';
 
 interface AiModelVersion {
@@ -80,5 +79,3 @@ export const UpsertModelSchema = z.object({
 
 
 export type UpsertAiModel = z.infer<typeof UpsertModelSchema>;
-
-    

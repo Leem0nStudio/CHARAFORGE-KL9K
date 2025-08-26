@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { syncModelToStorage } from '@/app/admin/models/actions';
-import { User, SlidersHorizontal, Download } from 'lucide-react';
+import { User, SlidersHorizontal, Download, FlaskConical } from 'lucide-react';
 
 // This component is defined and used only within this file.
 
@@ -73,7 +73,7 @@ export function ModelCard({ model }: { model: AiModel }) {
                      {isMixedModel && (
                          <div className="absolute top-2 left-2">
                              <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/50">
-                                <SlidersHorizontal className="mr-1.5"/> Mixed
+                                <FlaskConical className="mr-1.5"/> Mixed
                              </Badge>
                          </div>
                      )}

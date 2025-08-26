@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -169,7 +170,7 @@ export function EditDataPackForm({ packId }: { packId: string }) {
       <Tabs defaultValue="metadata">
         <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="metadata">Metadata</TabsTrigger>
-            <TabsTrigger value="schema">Schema Editor</TabsTrigger>
+            <TabsTrigger value="schema">Wildcard Editor</TabsTrigger>
         </TabsList>
         <TabsContent value="metadata">
             <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} />

@@ -70,7 +70,7 @@ export const adminNavItems: NavItem[] = [
     { href: '/admin/datapacks', label: 'DataPacks', icon: Package },
     { href: '/admin/articles', label: 'Articles', icon: Newspaper },
     { href: '/admin/models', label: 'AI Models', icon: Bot },
-    { href: '/admin/mixer', label: 'Model Mixer', icon: FlaskConical },
+    { href: '/admin/mixer', label: 'Prompt Architect', icon: FlaskConical },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

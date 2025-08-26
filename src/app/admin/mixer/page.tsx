@@ -48,23 +48,23 @@ export default function ModelMixerPage() {
         })
     }
 
-    const exampleScript = `+MKF, https://civitai.com/models/135477/molkeun-furry-mix
-+SXL, https://civitai.com/models/360745/sonicdiffusionxl
-CM MKF + SXL 0.5 _TEMP_A
+    const exampleScript = `+MODEL_A, civitai:12345
++LORA_B, civitai:67890
+MERGE(MODEL_A, LORA_B, 0.7) -> TEMP_1
 
-+ALP, https://civitai.com/models/471691/alphonse-white-datura-style-pony
-CM _TEMP_A + ALP 0.7 MyFinalModel
++MODEL_C, hf:stabilityai/sd-xl-base-1.0
+MERGE(TEMP_1, MODEL_C, 0.5) -> MyFinalModel
 
-PR MyFinalModel MyFinalPrunedModel`;
+SAVE MyFinalModel`;
 
     return (
-        <AdminPageLayout title="Universal Model Mixer" actions={<div />}>
+        <AdminPageLayout title="Model & Prompt Mixer" actions={<div />}>
             <Card>
                 <CardHeader>
                     <CardTitle>Create a New Merged Model</CardTitle>
                     <CardDescription>
-                        Define a complex merge using the Universal Model Merge Scripter syntax. 
-                        This plan will be saved and can be executed by a backend process (e.g., on Kaggle).
+                        Define a complex merge using a composition script. 
+                        This plan will be saved and can be executed by a backend process.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -84,7 +84,7 @@ PR MyFinalModel MyFinalPrunedModel`;
                                </div>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="mergeScript">Merge Plan Script</Label>
+                                <Label htmlFor="mergeScript">Composition Script</Label>
                                 <Textarea 
                                     id="mergeScript" 
                                     {...form.register('mergeScript')} 
