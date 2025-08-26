@@ -1,104 +1,101 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, SlidersHorizontal } from 'lucide-react';
+import { Loader2, Wand2, Dices } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { z } from 'zod';
-import { createMixedModel } from './actions';
+import { generateArchitectPrompt } from './actions';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const MixerFormSchema = z.object({
-  name: z.string().min(3, 'A name for the final merged model is required.'),
-  mergeScript: z.string().min(10, 'A merge plan script is required.'),
-  hfRepo: z.string().optional(),
-});
-
-type MixerFormValues = z.infer<typeof MixerFormSchema>;
-
-export default function ModelMixerPage() {
+export default function PromptArchitectStudioPage() {
     const [isProcessing, startTransition] = useTransition();
     const { toast } = useToast();
+    
+    const [prompt, setPrompt] = useState('');
+    const [seed, setSeed] = useState<number | null>(null);
+    const [focusModule, setFocusModule] = useState('integrated');
 
-    const form = useForm<MixerFormValues>({
-        resolver: zodResolver(MixerFormSchema),
-        defaultValues: {
-            name: '',
-            mergeScript: '',
-            hfRepo: '',
-        },
-    });
-
-    const onSubmit = (data: MixerFormValues) => {
+    const handleGenerate = (seedOverride?: number) => {
         startTransition(async () => {
-            const result = await createMixedModel(data);
-            if(result.success) {
-                toast({ title: 'Mix Job Queued!', description: result.message });
-                form.reset();
+            const finalSeed = seedOverride ?? seed ?? undefined;
+            const result = await generateArchitectPrompt({ 
+                focusModule: focusModule as any, 
+                seed: finalSeed 
+            });
+
+            if(result.success && result.data) {
+                setPrompt(result.data.prompt);
+                setSeed(result.data.seed);
+                toast({ title: 'Prompt Generated!', description: `Generated with seed: ${result.data.seed}`});
             } else {
                 toast({ variant: 'destructive', title: 'Error', description: result.error });
             }
-        })
-    }
-
-    const exampleScript = `+MODEL_A, civitai:12345
-+LORA_B, civitai:67890
-MERGE(MODEL_A, LORA_B, 0.7) -> TEMP_1
-
-+MODEL_C, hf:stabilityai/sd-xl-base-1.0
-MERGE(TEMP_1, MODEL_C, 0.5) -> MyFinalModel
-
-SAVE MyFinalModel`;
+        });
+    };
 
     return (
-        <AdminPageLayout title="Model & Prompt Mixer" actions={<div />}>
+        <AdminPageLayout title="Prompt Architect Studio" actions={<div />}>
             <Card>
                 <CardHeader>
-                    <CardTitle>Create a New Merged Model</CardTitle>
+                    <CardTitle>Narrative Prompt Composer</CardTitle>
                     <CardDescription>
-                        Define a complex merge using a composition script. 
-                        This plan will be saved and can be executed by a backend process.
+                        Use the intelligent composition engine to generate high-quality, narrative prompts. 
+                        Select a focus module and let the architect build the story.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                       <div className="grid md:grid-cols-2 gap-8">
-                            <div className="space-y-4">
-                               <div className="space-y-2">
-                                   <Label htmlFor="name">Final Model Name</Label>
-                                   <Input id="name" {...form.register('name')} placeholder="e.g., MyAwesomeAnimeMixV3" />
-                                   <p className="text-xs text-muted-foreground">The name of the final model file produced by the script.</p>
-                                   {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
-                               </div>
-                                <div className="space-y-2">
-                                   <Label htmlFor="hfRepo">Hugging Face Repo (Optional)</Label>
-                                   <Input id="hfRepo" {...form.register('hfRepo')} placeholder="YourUsername/YourModelRepo" />
-                                   <p className="text-xs text-muted-foreground">If provided, the script can upload the result here.</p>
-                               </div>
+                   <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="flex-1">
+                                <label className="text-sm font-medium">Focus Module</label>
+                                <Select value={focusModule} onValueChange={setFocusModule}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a focus..."/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="character_focus">Character Focus</SelectItem>
+                                        <SelectItem value="scene_focus">Scene Focus</SelectItem>
+                                        <SelectItem value="action_focus">Action Focus</SelectItem>
+                                        <SelectItem value="integrated">Integrated</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="mergeScript">Composition Script</Label>
-                                <Textarea 
-                                    id="mergeScript" 
-                                    {...form.register('mergeScript')} 
-                                    placeholder={exampleScript}
-                                    className="min-h-[250px] font-mono text-xs"
+                           <div className="flex-1">
+                                <label className="text-sm font-medium">Seed (Optional)</label>
+                                <Input 
+                                    type="number"
+                                    value={seed ?? ''}
+                                    onChange={(e) => setSeed(e.target.value ? Number(e.target.value) : null)}
+                                    placeholder="Leave empty for random"
                                 />
-                                {form.formState.errors.mergeScript && <p className="text-sm text-destructive">{form.formState.errors.mergeScript.message}</p>}
-                            </div>
-                       </div>
+                           </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                             <Button onClick={() => handleGenerate()} disabled={isProcessing} className="flex-1">
+                                {isProcessing ? <Loader2 className="animate-spin mr-2"/> : <Wand2 className="mr-2"/>}
+                                {seed ? 'Generate with Seed' : 'Generate'}
+                            </Button>
+                             <Button onClick={() => handleGenerate(Math.floor(Math.random() * 1e9))} variant="secondary" disabled={isProcessing}>
+                                <Dices className="mr-2"/>
+                                Random Seed
+                            </Button>
+                        </div>
                        
-                       <Button type="submit" disabled={isProcessing}>
-                           {isProcessing ? <Loader2 className="animate-spin mr-2"/> : <SlidersHorizontal className="mr-2"/>}
-                           Queue Mix Job
-                       </Button>
-                   </form>
+                        <div>
+                             <label className="text-sm font-medium">Generated Prompt</label>
+                             <Textarea 
+                                value={prompt}
+                                readOnly
+                                rows={8}
+                                className="w-full bg-muted/50 font-mono text-sm"
+                                placeholder="Your generated narrative prompt will appear here..."
+                             />
+                        </div>
+                   </div>
                 </CardContent>
             </Card>
         </AdminPageLayout>
