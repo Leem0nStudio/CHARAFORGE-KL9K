@@ -7,71 +7,39 @@ import { useForm, Controller } from 'react-hook-form';
 import { getInstalledDataPacks } from '@/app/actions/datapacks';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle, CardHeader, CardContent, CardDescription } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Loader2, ArrowRight, Package, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Loader2, ArrowRight, Package, ArrowLeft, Info, ChevronRight, Wand2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { DataPack, Option, PromptTemplate, CharacterProfileSchema, EquipmentSlotOptions, EquipmentOption } from '@/types/datapack';
 import { ScrollArea } from './ui/scroll-area';
 import Link from 'next/link';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useAuth } from '@/hooks/use-auth';
 import { DataPackCard } from '@/components/datapack/datapack-card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
-function OptionSelectModal({
-    isOpen,
-    onClose,
-    options,
-    currentValue,
-    onSelect,
-    title,
-}: {
-    isOpen: boolean;
-    onClose: () => void;
-    options: (EquipmentOption | Option)[];
-    currentValue: string;
-    onSelect: (value: string) => void;
-    title: string;
-}) {
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle className="font-headline text-2xl">{title}</DialogTitle>
-                    <DialogDescription>Select an option for this category.</DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                     <div className="flex flex-wrap gap-2 pt-2">
-                         {options.map((option) => (
-                             <Button
-                                 key={option.value}
-                                 type="button"
-                                 variant={currentValue === option.value ? 'default' : 'secondary'}
-                                 onClick={() => {
-                                     onSelect(option.value);
-                                     onClose();
-                                 }}
-                                 className="rounded-full"
-                             >
-                                 {option.label}
-                             </Button>
-                         ))}
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
-    )
-}
+
+// Represents the top-level categories in the new cascader UI
+type TopLevelCategory = 'general' | 'appearance' | 'equipment' | 'scene';
+
+// Defines which profile schema keys belong to which top-level category
+const categoryMapping: Record<TopLevelCategory, (keyof CharacterProfileSchema)[]> = {
+    general: ['count', 'raceClass', 'gender'],
+    appearance: ['hair', 'eyes', 'skin', 'facialFeatures'],
+    equipment: ['head', 'face', 'neck', 'shoulders', 'torso', 'arms', 'hands', 'waist', 'legs', 'feet', 'back', 'weaponsExtra'],
+    scene: ['pose', 'action', 'camera', 'background', 'effects'],
+};
+
 
 function DataPackWizard({ pack, onWizardComplete, onBack }: { pack: DataPack, onWizardComplete: (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => void, onBack: () => void }) {
-    const { handleSubmit, setValue, getValues } = useForm();
-    const [activeModal, setActiveModal] = useState<{title: string, options: (EquipmentOption | Option)[], fieldName: string} | null>(null);
+    const { handleSubmit, setValue, watch, getValues } = useForm();
+    const [activeCategory, setActiveCategory] = useState<TopLevelCategory>('general');
+    const [activeSlot, setActiveSlot] = useState<keyof CharacterProfileSchema | null>(null);
 
     const schema = pack.schema?.characterProfileSchema;
     const initialTemplate = pack.schema?.promptTemplates?.[0];
-   
+
     useEffect(() => {
+        // Set default values for all slots when the component mounts
         if (!schema) return;
         Object.entries(schema).forEach(([key, value]) => {
             if (Array.isArray(value) && value.length > 0) {
@@ -85,8 +53,18 @@ function DataPackWizard({ pack, onWizardComplete, onBack }: { pack: DataPack, on
             }
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pack, schema, setValue]);
+    }, [pack, schema]);
 
+    if (!schema) {
+         return (
+             <div className="flex-grow flex items-center justify-center">
+                <Alert variant="destructive">
+                  <AlertTitle>Invalid DataPack</AlertTitle>
+                  <AlertDescription>This DataPack does not have a valid schema.</AlertDescription>
+                </Alert>
+            </div>
+        )
+    }
 
     const onSubmit = (data: any) => {
         if (initialTemplate) {
@@ -94,88 +72,104 @@ function DataPackWizard({ pack, onWizardComplete, onBack }: { pack: DataPack, on
         }
     };
     
-    if (!schema) {
+    // Function to render the list of slots for the active top-level category
+    const renderSlotColumn = () => {
+        const slotsForCategory = categoryMapping[activeCategory];
         return (
-             <div className="flex-grow flex items-center justify-center">
-                <Alert variant="destructive">
-                  <AlertTitle>Invalid DataPack</AlertTitle>
-                  <AlertDescription>
-                    This DataPack does not have a valid schema. Please correct it in the admin panel.
-                  </AlertDescription>
-                </Alert>
-            </div>
-        )
-    }
-    
-    const renderSimpleSlot = (fieldName: keyof CharacterProfileSchema, label: string) => {
-        const options = (schema as any)[fieldName] as (EquipmentOption[] | Option[]);
-        if (!options || !Array.isArray(options) || options.length === 0) return null;
-        
-        const selectedValue = getValues(fieldName as string);
-        const selectedOption = options.find(o => o.value === selectedValue);
+            <div className="flex flex-col gap-1 pr-2">
+                {slotsForCategory.map(slotKey => {
+                    const slotData = (schema as any)[slotKey];
+                    if (!slotData) return null; // Skip if slot is not in schema
+                    
+                    const isComplex = typeof slotData === 'object' && !Array.isArray(slotData);
+                    const hasOptions = isComplex ? Object.values(slotData).some(arr => Array.isArray(arr) && arr.length > 0) : Array.isArray(slotData) && slotData.length > 0;
+                    if (!hasOptions) return null;
 
-        return (
-            <div onClick={() => setActiveModal({ title: label, options, fieldName: fieldName as string })} className="flex justify-between items-center p-3 rounded-md cursor-pointer hover:bg-muted/50 transition-colors">
-                <span className="text-sm text-muted-foreground">{label}</span>
-                <div className="flex items-center gap-2">
-                    <span className="text-sm text-primary font-semibold truncate max-w-[150px]">{selectedOption?.label || 'None'}</span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
+                    return (
+                        <button 
+                            key={slotKey}
+                            type="button" 
+                            onClick={() => setActiveSlot(slotKey)}
+                            className={cn(
+                                "w-full text-left p-2 rounded-md text-sm transition-colors flex justify-between items-center",
+                                activeSlot === slotKey ? "bg-primary/20" : "hover:bg-muted/50"
+                            )}
+                        >
+                            <span className="capitalize">{slotKey.replace(/([A-Z])/g, ' $1')}</span>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground"/>
+                        </button>
+                    );
+                })}
             </div>
         );
     };
 
-    const renderEquipmentSlot = (fieldName: keyof CharacterProfileSchema, label: string) => {
-        const slotOptions = (schema as any)[fieldName] as EquipmentSlotOptions;
-        if (!slotOptions || Object.values(slotOptions).every(arr => !arr || arr.length === 0)) return null;
+    // Function to render the options for the selected slot
+    const renderOptionsColumn = () => {
+        if (!activeSlot) return <div className="flex items-center justify-center h-full text-muted-foreground"><p>Select a category</p></div>;
+        
+        const slotData = (schema as any)[activeSlot];
+        if (!slotData) return null;
+
+        const isComplex = typeof slotData === 'object' && !Array.isArray(slotData);
 
         return (
-            <AccordionItem value={fieldName as string}>
-                <AccordionTrigger className="text-sm">{label}</AccordionTrigger>
-                <AccordionContent className="space-y-1 p-1">
-                    {Object.entries(slotOptions).map(([subKey, options]) => {
-                         if (!options || !Array.isArray(options) || options.length === 0) return null;
-                         const subFieldName = `${fieldName}.${subKey}`;
-                         const selectedValue = getValues(subFieldName);
-                         const selectedOption = options.find(o => o.value === selectedValue);
-                         
+            <div className="flex flex-col gap-2 pr-2">
+                {isComplex ? (
+                     Object.entries(slotData).map(([subKey, options]) => {
+                         if (!Array.isArray(options) || options.length === 0) return null;
+                         const fieldName = `${activeSlot}.${subKey}`;
                          return (
-                             <div key={subKey} onClick={() => setActiveModal({ title: `${label} - ${subKey}`, options, fieldName: subFieldName })} className="flex justify-between items-center p-2 rounded-md cursor-pointer hover:bg-muted/20">
-                                 <p className="text-xs text-muted-foreground capitalize">{subKey}</p>
-                                 <div className="flex items-center gap-2">
-                                    <p className="text-sm font-medium text-primary truncate max-w-[120px]">{selectedOption?.label || 'None'}</p>
-                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                             <div key={subKey}>
+                                 <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-1 capitalize">{subKey}</h4>
+                                 <div className="flex flex-wrap gap-1">
+                                     {options.map((opt: Option) => (
+                                         <Button 
+                                             key={opt.value} 
+                                             type="button"
+                                             variant={watch(fieldName) === opt.value ? 'default' : 'secondary'}
+                                             size="sm"
+                                             onClick={() => setValue(fieldName, opt.value)}
+                                             className="rounded-full"
+                                         >
+                                             {opt.label}
+                                         </Button>
+                                     ))}
                                  </div>
                              </div>
                          )
-                    })}
-                </AccordionContent>
-            </AccordionItem>
-        )
+                     })
+                ) : (
+                     <div className="flex flex-wrap gap-1">
+                        {(slotData as Option[]).map(opt => (
+                             <Button 
+                                 key={opt.value} 
+                                 type="button"
+                                 variant={watch(activeSlot as string) === opt.value ? 'default' : 'secondary'}
+                                 size="sm"
+                                 onClick={() => setValue(activeSlot as string, opt.value)}
+                                 className="rounded-full"
+                             >
+                                 {opt.label}
+                             </Button>
+                         ))}
+                    </div>
+                )}
+            </div>
+        );
     }
 
     return (
-        <>
-        <motion.div
+         <motion.div
             key="wizard"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="w-full"
+            className="w-full flex flex-col h-[70vh]"
         >
-            {activeModal && (
-                <OptionSelectModal
-                    isOpen={!!activeModal}
-                    onClose={() => setActiveModal(null)}
-                    options={activeModal.options}
-                    currentValue={getValues(activeModal.fieldName)}
-                    onSelect={(value) => setValue(activeModal.fieldName, value)}
-                    title={activeModal.title}
-                />
-            )}
-            <div className="flex items-center justify-between mb-4">
-                <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={onBack}>
+            <div className="flex-shrink-0 flex items-center justify-between mb-4">
+                 <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={onBack}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to DataPacks
                 </Button>
@@ -183,63 +177,43 @@ function DataPackWizard({ pack, onWizardComplete, onBack }: { pack: DataPack, on
                     Generate Prompt <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
             </div>
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline text-2xl">{pack.name} Wizard</CardTitle>
-                    <CardDescription>Configure the options for your character.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Accordion type="multiple" defaultValue={['general', 'appearance', 'equipment']} className="w-full">
-                        <AccordionItem value="general">
-                            <AccordionTrigger>General</AccordionTrigger>
-                            <AccordionContent className="space-y-1">
-                                {renderSimpleSlot('count', 'Count')}
-                                {renderSimpleSlot('raceClass', 'Race/Class')}
-                                {renderSimpleSlot('gender', 'Gender')}
-                            </AccordionContent>
-                        </AccordionItem>
-                            <AccordionItem value="appearance">
-                            <AccordionTrigger>Appearance</AccordionTrigger>
-                            <AccordionContent className="space-y-1">
-                                {renderSimpleSlot('hair', 'Hair')}
-                                {renderSimpleSlot('eyes', 'Eyes')}
-                                {renderSimpleSlot('skin', 'Skin')}
-                                {renderSimpleSlot('facialFeatures', 'Facial Features')}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="equipment">
-                            <AccordionTrigger>Equipment</AccordionTrigger>
-                            <AccordionContent className="pt-2">
-                                <Accordion type="multiple" className="w-full space-y-1" defaultValue={['torso', 'legs', 'hands']}>
-                                    {renderEquipmentSlot('head', 'Head')}
-                                    {renderEquipmentSlot('face', 'Face')}
-                                    {renderEquipmentSlot('neck', 'Neck')}
-                                    {renderEquipmentSlot('shoulders', 'Shoulders')}
-                                    {renderEquipmentSlot('torso', 'Torso')}
-                                    {renderEquipmentSlot('arms', 'Arms')}
-                                    {renderEquipmentSlot('hands', 'Hands')}
-                                    {renderEquipmentSlot('waist', 'Waist')}
-                                    {renderEquipmentSlot('legs', 'Legs')}
-                                    {renderEquipmentSlot('feet', 'Feet')}
-                                    {renderEquipmentSlot('back', 'Back')}
-                                </Accordion>
-                            </AccordionContent>
-                        </AccordionItem>
-                            <AccordionItem value="scene">
-                            <AccordionTrigger>Scene & Action</AccordionTrigger>
-                            <AccordionContent className="space-y-1">
-                                {renderSimpleSlot('pose', 'Pose')}
-                                {renderSimpleSlot('action', 'Action')}
-                                {renderSimpleSlot('camera', 'Camera')}
-                                {renderSimpleSlot('background', 'Background')}
-                                {renderSimpleSlot('effects', 'Effects')}
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                </CardContent>
+
+            <Card className="flex-grow grid grid-cols-1 md:grid-cols-3 overflow-hidden">
+                {/* Column 1: Top-level Categories */}
+                <div className="bg-muted/30 p-2 space-y-1">
+                    {Object.keys(categoryMapping).map(cat => (
+                        <button 
+                            key={cat} 
+                            type="button"
+                            onClick={() => {
+                                setActiveCategory(cat as TopLevelCategory);
+                                setActiveSlot(null); // Reset slot selection when category changes
+                            }}
+                            className={cn(
+                                "w-full text-left p-2 rounded-md font-semibold text-sm transition-colors",
+                                activeCategory === cat ? "bg-primary/20 text-primary" : "hover:bg-muted/50"
+                            )}
+                        >
+                            <span className="capitalize">{cat}</span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Column 2: Slots */}
+                <ScrollArea className="md:border-l md:border-r">
+                    <div className="p-2">
+                        {renderSlotColumn()}
+                    </div>
+                </ScrollArea>
+                
+                {/* Column 3: Options */}
+                <ScrollArea>
+                    <div className="p-4">
+                        {renderOptionsColumn()}
+                    </div>
+                </ScrollArea>
             </Card>
         </motion.div>
-        </>
     );
 }
 
@@ -287,7 +261,7 @@ function PackGallery({ onChoosePack, onBack }: { onChoosePack: (pack: DataPack) 
                     ) : packs.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                            {packs.map(pack => (
-                              <div key={pack.id} onClick={() => onChoosePack(pack)}>
+                              <div key={pack.id} onClick={() => onChoosePack(pack)} className="cursor-pointer">
                                   <DataPackCard pack={pack} isCompact={true} />
                               </div>
                            ))}
@@ -318,5 +292,3 @@ export function DataPackSelector({ onSelectPack, onBack }: DataPackSelectorProps
 }
 
 DataPackSelector.Wizard = DataPackWizard;
-
-    
