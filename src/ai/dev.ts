@@ -1,4 +1,3 @@
-
 'use server';
 
 import { config } from 'dotenv';
@@ -15,6 +14,7 @@ import '@/ai/flows/story-generation/flow';
 import '@/ai/flows/hf-model-suggestion/flow';
 import '@/ai/flows/dialogue-generation/flow';
 import '@/ai/flows/text-to-speech/flow';
+import '@/ai/flows/prompt-architect/flow';
 
 
 // Utility files are not flows, so they don't need to be imported here for dev.
