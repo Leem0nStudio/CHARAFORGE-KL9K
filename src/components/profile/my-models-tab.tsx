@@ -76,7 +76,8 @@ function ModelEditDialog({
                     if (data.hf_id) formData.append('hf_id', data.hf_id);
                     if (data.modelslabModelId) formData.append('modelslabModelId', data.modelslabModelId);
                     if (data.triggerWords) {
-                        formData.append('triggerWords', Array.isArray(data.triggerWords) ? data.triggerWords.join(',') : data.triggerWords);
+                        const words = Array.isArray(data.triggerWords) ? data.triggerWords.join(',') : data.triggerWords;
+                        formData.append('triggerWords', words);
                     }
 
                     const coverImageFile = (event.target as HTMLFormElement).coverImage.files[0];
@@ -266,7 +267,6 @@ export function MyModelsTab() {
     };
     
     useEffect(() => {
-        // Fetch models only once when the user profile is available.
         if (userProfile) {
             fetchModels();
         }
@@ -317,3 +317,5 @@ export function MyModelsTab() {
         </Card>
     );
 }
+
+    

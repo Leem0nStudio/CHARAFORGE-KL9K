@@ -1,25 +1,21 @@
 
-
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
 import { installModel } from '@/app/actions/ai-models';
 import { Button } from '@/components/ui/button';
 import { Check, Download, Loader2 } from 'lucide-react';
-import { installDataPack } from '@/app/actions/datapacks';
+import { useAuth } from '@/hooks/use-auth';
 
-export function ModelInstallButton({ modelId, isDataPack = false }: { modelId: string, isDataPack?: boolean }) {
+export function ModelInstallButton({ modelId }: { modelId: string }) {
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
     const router = useRouter();
     const { userProfile } = useAuth();
 
-    const isInstalled = isDataPack
-        ? userProfile?.stats?.installedPacks?.includes(modelId)
-        : userProfile?.stats?.installedModels?.includes(modelId);
+    const isInstalled = userProfile?.preferences?.installed_models?.includes(modelId);
 
     const handleInstall = () => {
         if (!userProfile) {
@@ -28,11 +24,10 @@ export function ModelInstallButton({ modelId, isDataPack = false }: { modelId: s
         }
 
         startTransition(async () => {
-            const action = isDataPack ? installDataPack : installModel;
-            const result = await action(modelId);
+            const result = await installModel(modelId);
             if (result.success) {
                 toast({ title: "Success!", description: result.message });
-                router.refresh(); // Refresh to update userProfile and button state
+                router.refresh(); 
             } else {
                 toast({ variant: 'destructive', title: 'Error', description: result.message });
             }
@@ -54,3 +49,5 @@ export function ModelInstallButton({ modelId, isDataPack = false }: { modelId: s
         </Button>
     )
 }
+
+    

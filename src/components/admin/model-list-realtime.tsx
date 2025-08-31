@@ -2,39 +2,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { getFirebaseClient } from '@/lib/firebase/client';
 import type { AiModel } from '@/types/ai-model';
 import { motion } from 'framer-motion';
 import { ModelCard } from './model-card';
+import { getModels } from '@/app/actions/ai-models';
 
 interface ModelListRealtimeProps {
   initialModels: AiModel[];
   type: 'model' | 'lora';
 }
 
+// This component no longer uses realtime listeners for Supabase for simplicity,
+// but keeps the "realtime" name for consistency during the migration.
+// It could be updated to use Supabase realtime subscriptions if needed.
 export function ModelListRealtime({ initialModels, type }: ModelListRealtimeProps) {
-  const [models, setModels] = useState<AiModel[]>(initialModels);
+  const [models, setModels] = useState<AiModel[]>(initialModels.filter(m => !m.userId));
 
   useEffect(() => {
-    const q = query(
-      collection(getFirebaseClient().db, 'ai_models'), 
-      where('type', '==', type),
-      orderBy('createdAt', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const updatedModels = snapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id,
-        createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(),
-        updatedAt: doc.data().updatedAt?.toDate ? doc.data().updatedAt.toDate() : new Date(),
-      })) as AiModel[];
-      
-      setModels(updatedModels.filter(m => !m.userId));
-    });
-
-    return () => unsubscribe();
+     async function fetchInitialModels() {
+        const systemModels = await getModels(type);
+        setModels(systemModels.filter(m => !m.userId));
+     }
+     fetchInitialModels();
   }, [type]);
 
   const containerVariants = {
@@ -68,3 +57,5 @@ export function ModelListRealtime({ initialModels, type }: ModelListRealtimeProp
     </motion.div>
   );
 }
+
+    

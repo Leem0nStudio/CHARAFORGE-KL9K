@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { enqueueModelSyncJob } from '@/app/actions/tasks';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { User, SlidersHorizontal, Download, FlaskConical, AlertTriangle, CheckCircle } from 'lucide-react';
+import { User, Download, FlaskConical, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // This component is defined and used only within this file.
@@ -120,3 +120,5 @@ export function ModelCard({ model }: { model: AiModel }) {
         </Card>
     )
 }
+
+    

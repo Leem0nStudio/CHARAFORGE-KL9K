@@ -1,5 +1,5 @@
 
-import type { UserInfo, UserMetadata } from 'firebase/auth';
+import type { UserMetadata } from '@supabase/supabase-js';
 
 /**
  * Represents the statistics for a user's activity.
@@ -10,8 +10,8 @@ export interface UserStats {
   followers: number; // Number of users following this user
   following: number; // Number of users this user is following
   collectionsCreated: number;
-  installedPacks: string[];
-  installedModels: string[]; // Updated to track installed models
+  installed_packs?: string[];
+  installed_models?: string[]; // Renamed for consistency with Supabase
   subscriptionTier: string;
   memberSince: number; // Stored as milliseconds since epoch
   points?: number; // Total gamification points
@@ -28,34 +28,31 @@ export type UserPreferences = {
     };
     huggingFaceApiKey?: string;
     openRouterApiKey?: string;
+    installed_packs?: string[];
+    installed_models?: string[];
 }
 
 /**
- * Defines a serializable, "plain" user object that combines Firebase Auth info
- * with our custom Firestore data. This is safe to use in both Server and Client Components.
- * It intentionally omits methods like `getIdToken`.
+ * Defines a serializable, "plain" user object that combines Supabase Auth info
+ * with our custom profile data. This is safe to use in both Server and Client Components.
  */
 export interface UserProfile {
   uid: string;
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  emailVerified: boolean;
-  isAnonymous: boolean;
-  metadata: UserMetadata;
-  providerData: UserInfo[];
-  stats?: UserStats;
   role?: 'admin' | 'moderator' | 'user';
+  stats?: UserStats;
   preferences?: UserPreferences;
-  avatarUpdatedAt?: number;
   profile?: {
     bio?: string;
     socialLinks?: {
       twitter?: string;
       artstation?: string;
       website?: string;
-      // Add more social links as needed
     };
     featuredCharacters?: string[]; // Array of character IDs
   };
 }
+
+    
