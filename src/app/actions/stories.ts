@@ -126,9 +126,9 @@ export async function generateStory(castId: string, storyPrompt: string): Promis
                     biography: char.core.biography,
                     alignment: char.core.alignment || 'True Neutral',
                     timeline: char.core.timeline || [],
-                    archetype: char.core.archetype || undefined,
-                    equipment: char.core.equipment || undefined,
-                    physicalDescription: char.core.physicalDescription || char.generation?.originalPrompt || undefined,
+                    archetype: char.core.archetype || null,
+                    equipment: char.core.equipment || null,
+                    physicalDescription: char.core.physicalDescription || char.generation?.originalPrompt || null,
                 };
             })
         );

@@ -67,10 +67,12 @@ export default async function EditCharacterPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams?: { [key: string]: string | string[] | undefined };
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const defaultTab = typeof searchParams?.tab === 'string' ? searchParams.tab : 'details';
+  const { id } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const defaultTab = typeof resolvedSearchParams?.tab === 'string' ? resolvedSearchParams.tab : 'details';
   const validTabs = ['details', 'gallery', 'rpg', 'versions', 'sharing'];
   const finalDefaultTab = validTabs.includes(defaultTab) ? defaultTab : 'details';
 
@@ -86,7 +88,7 @@ export default async function EditCharacterPage({
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         }>
-          <EditCharacterTabs characterId={params.id} defaultTab={finalDefaultTab} />
+          <EditCharacterTabs characterId={id} defaultTab={finalDefaultTab} />
         </Suspense>
       </div>
     </div>

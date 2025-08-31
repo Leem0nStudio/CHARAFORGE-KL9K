@@ -101,7 +101,7 @@ export async function createDataPackFromFiles(formData: FormData): Promise<Actio
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
     const fileInput = formData.get('wildcardFiles') as File | null;
-    let dataPackName = formData.get('name') as string;
+    const dataPackName = formData.get('name') as string;
 
     if (!dataPackName) return { success: false, message: "DataPack name is required." };
     if (!fileInput || fileInput.size === 0) return { success: false, message: "A file (.zip, .yaml, or .txt) is required." };
@@ -175,7 +175,7 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
 
     try {
         const packId = validatedData.id || undefined;
-        let coverImageUrl: string | null = validatedData.coverImageUrl || null;
+        let coverImageUrl: string | null = null;
 
         if (coverImage && packId) {
             const destinationPath = `datapacks/${packId}/cover.png`;

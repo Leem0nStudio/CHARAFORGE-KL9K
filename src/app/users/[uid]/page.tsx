@@ -15,10 +15,11 @@ import { FollowButton } from '@/components/user/follow-button';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-export default async function UserProfilePage({ params }: { params: { uid: string } }) {
+export default async function UserProfilePage({ params }: { params: Promise<{ uid: string }> }) {
+    const { uid } = await params;
     const [userProfile, userCreations] = await Promise.all([
-        getPublicUserProfile(params.uid),
-        getPublicCharactersForUser(params.uid),
+        getPublicUserProfile(uid),
+        getPublicCharactersForUser(uid),
     ]);
 
     if (!userProfile) {
@@ -33,14 +34,14 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
         currentUserId = user?.id || null;
 
         if (currentUserId) {
-            const status = await getFollowStatus(params.uid);
+            const status = await getFollowStatus(uid);
             isFollowing = status.isFollowing;
         }
     } catch (e) {
         // User not logged in, which is fine
     }
 
-    const isOwner = currentUserId === params.uid;
+    const isOwner = currentUserId === uid;
 
     const fallback = userProfile.displayName?.charAt(0) || '?';
 
@@ -62,7 +63,7 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
                             <div className="space-y-4">
                                 <FollowButton 
                                     currentUserId={currentUserId}
-                                    profileUserId={params.uid}
+                                    profileUserId={uid}
                                     isFollowingInitially={isFollowing}
                                 />
                                 <div className="flex justify-around text-center pt-4 border-t">

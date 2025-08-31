@@ -20,7 +20,13 @@ const searchHfModelsTool = ai.defineTool(
     inputSchema: z.object({ query: z.string() }),
     outputSchema: z.array(z.object({ id: z.string(), pipeline_tag: z.string() })),
   },
-  async ({ query }) => searchHuggingFaceModels(query)
+  async ({ query }) => {
+    const models = await searchHuggingFaceModels(query);
+    return models.map(model => ({
+      id: model.id,
+      pipeline_tag: model.pipeline_tag || 'text-to-image'
+    }));
+  }
 );
 
 

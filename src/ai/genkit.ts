@@ -16,11 +16,7 @@ try {
 
 export const ai = genkit({
   plugins: [
-    googleAI({ 
-        // This is crucial for directing Vertex AI requests to the correct project and location.
-        projectId: projectId,
-        location: 'us-central1', // As confirmed from the user's screenshot
-    }),
+    googleAI({}),
   ],
 });
 

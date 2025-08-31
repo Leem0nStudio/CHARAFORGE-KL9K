@@ -2,8 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { adminDb } from '@/lib/firebase/server';
-import { FieldValue } from 'firebase-admin/firestore';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { AiModel } from '@/types/ai-model';
 import { UpsertModelSchema, type UpsertAiModel } from '@/types/ai-model';
@@ -30,24 +29,31 @@ export async function upsertModel(data: UpsertAiModel): Promise<ActionResponse> 
     const { id, ...modelData } = validation.data;
 
     try {
-        const docRef = id ? adminDb.collection('ai_models').doc(id) : adminDb.collection('ai_models').doc();
+        const supabase = getSupabaseServerClient();
         
-        const finalData: Omit<AiModel, 'id' | 'createdAt' | 'updatedAt' | 'userId'> & { updatedAt: FieldValue, userId?: string | null } = {
+        const finalData = {
             ...modelData,
-            updatedAt: FieldValue.serverTimestamp(),
-            // This field should not be present for system models
-            userId: null,
+            updated_at: new Date().toISOString(),
+            user_id: null,
         };
         
         if (id) {
-            await docRef.update(finalData);
+            const { error } = await supabase
+                .from('ai_models')
+                .update(finalData)
+                .eq('id', id);
+            
+            if (error) throw error;
         } else {
-            await docRef.set({ 
-                ...finalData, 
-                id: docRef.id,
-                createdAt: FieldValue.serverTimestamp(),
-                syncStatus: 'notsynced',
-            });
+            const { error } = await supabase
+                .from('ai_models')
+                .insert({ 
+                    ...finalData, 
+                    created_at: new Date().toISOString(),
+                    sync_status: 'notsynced',
+                });
+            
+            if (error) throw error;
         }
         
         revalidatePath('/admin/models');
@@ -65,10 +71,15 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
     await verifyAndGetUid();
     
     try {
-        const existingModelQuery = await adminDb.collection('ai_models')
-            .where(`${source}ModelId`, '==', sourceModelId)
-            .limit(1).get();
-        if (!existingModelQuery.empty) {
+        const supabase = getSupabaseServerClient();
+        const { data: existingModels, error: queryError } = await supabase
+            .from('ai_models')
+            .select('id')
+            .eq(`${source}_model_id`, sourceModelId)
+            .limit(1);
+        
+        if (queryError) throw queryError;
+        if (existingModels && existingModels.length > 0) {
             return { success: false, message: `A model with this ${source} ID already exists.` };
         }
         
@@ -137,14 +148,15 @@ const getMediaInfo = (image: CivitaiImage) => {
         const baseModelName = latestVersion.baseModel;
 
         if (baseModelName && engine === 'huggingface') {
-            const baseModelQuery = await adminDb.collection('ai_models')
-                .where('type', '==', 'model')
-                .where('baseModel', '==', baseModelName)
-                .limit(1)
-                .get();
+            const { data: baseModels, error: baseModelError } = await supabase
+                .from('ai_models')
+                .select('*')
+                .eq('type', 'model')
+                .eq('base_model', baseModelName)
+                .limit(1);
 
-            if (!baseModelQuery.empty) {
-                const baseModel = baseModelQuery.docs[0].data() as AiModel;
+            if (!baseModelError && baseModels && baseModels.length > 0) {
+                const baseModel = baseModels[0] as AiModel;
                 suggestedHfId = baseModel.hf_id; 
                 engine = baseModel.engine;
                 console.log(`Found compatible base model '${baseModel.name}'. Engine: ${engine}, Execution_ID: ${suggestedHfId}`);
@@ -232,36 +244,50 @@ export async function upsertUserAiModel(formData: FormData): Promise<ActionRespo
     const coverImageFile = formData.get('coverImage') as File | null;
 
     try {
-        const docRef = isNew ? adminDb.collection('ai_models').doc() : adminDb.collection('ai_models').doc(id);
+        const supabase = getSupabaseServerClient();
 
         if (!isNew) {
-            const existingDoc = await docRef.get();
-            if (!existingDoc.exists || existingDoc.data()?.userId !== uid) {
+            const { data: existingModel, error: queryError } = await supabase
+                .from('ai_models')
+                .select('user_id')
+                .eq('id', id)
+                .single();
+            
+            if (queryError || !existingModel || existingModel.user_id !== uid) {
                 return { success: false, message: "Permission denied or model not found." };
             }
         }
         
         let coverMediaUrl = modelData.coverMediaUrl || null;
         if (coverImageFile && coverImageFile.size > 0) {
-            const destinationPath = `usersImg/${uid}/ai_models/${docRef.id}/cover.png`;
+            const modelId = isNew ? crypto.randomUUID() : id;
+            const destinationPath = `usersImg/${uid}/ai_models/${modelId}/cover.png`;
             coverMediaUrl = await uploadToStorage(coverImageFile, destinationPath);
         }
 
         const finalData = {
             ...modelData,
-            userId: uid,
-            coverMediaUrl,
-            updatedAt: FieldValue.serverTimestamp(),
+            user_id: uid,
+            cover_media_url: coverMediaUrl,
+            updated_at: new Date().toISOString(),
         };
 
         if (isNew) {
-            await docRef.set({ 
-                ...finalData, 
-                id: docRef.id,
-                createdAt: FieldValue.serverTimestamp()
-            });
+            const { error: insertError } = await supabase
+                .from('ai_models')
+                .insert({ 
+                    ...finalData, 
+                    created_at: new Date().toISOString()
+                });
+            
+            if (insertError) throw insertError;
         } else {
-            await docRef.update(finalData);
+            const { error: updateError } = await supabase
+                .from('ai_models')
+                .update(finalData)
+                .eq('id', id);
+            
+            if (updateError) throw updateError;
         }
         
         revalidatePath('/profile');
@@ -277,10 +303,16 @@ export async function upsertUserAiModel(formData: FormData): Promise<ActionRespo
 
 export async function deleteModel(id: string): Promise<ActionResponse> {
     await verifyAndGetUid();
-    if (!adminDb) return { success: false, message: 'Database service is unavailable.' };
     
     try {
-        await adminDb.collection('ai_models').doc(id).delete();
+        const supabase = getSupabaseServerClient();
+        const { error } = await supabase
+            .from('ai_models')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+        
         revalidatePath('/admin/models');
         revalidatePath('/character-generator');
         revalidatePath('/profile');
@@ -293,8 +325,6 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
 
 
 export async function getModels(type: 'model' | 'lora', uid?: string): Promise<AiModel[]> {
-    if (!adminDb) return [];
-    
     // Use a Map to handle merging system and user models, ensuring no duplicates.
     const allModels = new Map<string, AiModel>();
 
@@ -304,57 +334,54 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
         allModels.set(model.id, model);
     });
 
-    const processSnapshot = (snapshot: FirebaseFirestore.QuerySnapshot) => {
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
+    try {
+        const supabase = getSupabaseServerClient();
+        
+        // Fetch all system-wide (non-user-specific) models from Supabase
+        const { data: systemModels, error: systemError } = await supabase
+            .from('ai_models')
+            .select('*')
+            .eq('type', type)
+            .is('user_id', null);
+        
+        if (systemError) throw systemError;
+        
+        // Process system models
+        systemModels?.forEach(data => {
             const model: AiModel = {
                 ...data,
-                id: doc.id,
-                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+                id: data.id,
+                createdAt: data.created_at ? new Date(data.created_at) : new Date(),
+                updatedAt: data.updated_at ? new Date(data.updated_at) : new Date(),
             } as AiModel;
-            // The Map ensures that if a system model was somehow added to Firestore,
-            // the static definition from app-config is not overwritten.
             if (!allModels.has(model.id)) {
                 allModels.set(model.id, model);
             }
         });
-    };
 
-    try {
-        // Fetch all system-wide (non-user-specific) models from Firestore
-        const systemModelsQuery = adminDb
-          .collection('ai_models')
-          .where('type', '==', type);
-          
-        const systemModelsSnapshot = await systemModelsQuery.get();
-        
-        systemModelsSnapshot.docs.forEach(doc => {
-            // Add to map only if it doesn't have a userId, ensuring system/admin models are included.
-            if (!doc.data().userId) {
-                const data = doc.data();
+        // If a user is logged in, fetch their personal models
+        if (uid) {
+            const { data: userModels, error: userError } = await supabase
+                .from('ai_models')
+                .select('*')
+                .eq('user_id', uid)
+                .eq('type', type)
+                .order('created_at', { ascending: false });
+            
+            if (userError) throw userError;
+            
+            // Process user models
+            userModels?.forEach(data => {
                 const model: AiModel = {
                     ...data,
-                    id: doc.id,
-                    createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-                    updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+                    id: data.id,
+                    createdAt: data.created_at ? new Date(data.created_at) : new Date(),
+                    updatedAt: data.updated_at ? new Date(data.updated_at) : new Date(),
                 } as AiModel;
                 if (!allModels.has(model.id)) {
                     allModels.set(model.id, model);
                 }
-            }
-        });
-
-
-        // If a user is logged in, fetch their personal models
-        if (uid) {
-            const userModelsSnapshot = await adminDb
-                .collection('ai_models')
-                .where('userId', '==', uid)
-                .where('type', '==', type) // Firestore allows this combination
-                .orderBy('createdAt', 'desc')
-                .get();
-            processSnapshot(userModelsSnapshot);
+            });
         }
         
         return Array.from(allModels.values()).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -368,31 +395,50 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
 
 export async function installModel(modelId: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    if (!adminDb) return { success: false, message: "Database service is not available."};
 
     try {
-        const userRef = adminDb.collection('users').doc(uid);
-        const modelRef = adminDb.collection('ai_models').doc(modelId);
+        const supabase = getSupabaseServerClient();
 
-        const [userDoc, modelDoc] = await Promise.all([userRef.get(), modelRef.get()]);
+        // Check if model exists and is not user-specific
+        const { data: model, error: modelError } = await supabase
+            .from('ai_models')
+            .select('user_id')
+            .eq('id', modelId)
+            .single();
 
-        if (!modelDoc.exists) {
+        if (modelError || !model) {
             return { success: false, message: "This model does not exist." };
         }
-        if (modelDoc.data()?.userId) {
+        if (model.user_id) {
             return { success: false, message: "Cannot install a user-specific model." };
         }
 
-        const installedModels = userDoc.data()?.stats?.installedModels || [];
+        // Check if user already has this model installed
+        const { data: userStats, error: userError } = await supabase
+            .from('users')
+            .select('stats')
+            .eq('id', uid)
+            .single();
+
+        if (userError) throw userError;
+
+        const installedModels = userStats?.stats?.installedModels || [];
         if (installedModels.includes(modelId)) {
             return { success: false, message: "You have already installed this model." };
         }
 
-        await userRef.set({
-            stats: {
-                installedModels: FieldValue.arrayUnion(modelId),
-            },
-        }, { merge: true });
+        // Add model to user's installed models
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({
+                stats: {
+                    ...userStats?.stats,
+                    installedModels: [...installedModels, modelId],
+                },
+            })
+            .eq('id', uid);
+
+        if (updateError) throw updateError;
 
         revalidatePath('/profile');
         revalidatePath('/models');

@@ -7,7 +7,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import type { GenerationCommonOptions } from 'genkit/ai';
 import { 
   TranslateTextInputSchema, 
   TranslateTextOutputSchema, 
@@ -40,7 +39,7 @@ const translateTextFlow = ai.defineFlow(
     Text to translate:
     ${text}`;
     
-    let requestConfig: GenerationCommonOptions = {};
+    let requestConfig: any = {};
   
     if (engineId === 'openrouter') {
       const systemApiKey = process.env.OPENROUTER_API_KEY;

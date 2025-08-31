@@ -299,17 +299,9 @@ const generateCharacterImageFlow = ai.defineFlow(
         // Standard Gemini image generation
         try {
             const { width, height } = getDimensions(aspectRatio);
-            const { media } = await ai.generate({
-                model: 'googleai/gemini-2.0-flash-preview-image-generation',
-                prompt: {
-                    text: finalDescription,
-                    width,
-                    height,
-                },
-                config: {
-                    responseModalities: ['TEXT', 'IMAGE'],
-                },
-            });
+            const { media } = await ai.generate(
+                `Generate an image with the following description: ${finalDescription}. The image should be ${width}x${height} pixels.`
+            );
             imageUrl = media?.url;
         } catch (error) {
             console.error(`Error generating image with Gemini:`, error);
@@ -375,8 +367,9 @@ const generateCharacterImageFlow = ai.defineFlow(
         };
         
         try {
+            const credentials = typeof serviceAccount === 'string' ? JSON.parse(serviceAccount) : serviceAccount;
             const auth = new GoogleAuth({
-                credentials: serviceAccount,
+                credentials,
                 scopes: 'https://www.googleapis.com/auth/cloud-platform',
             });
             const client = await auth.getClient();
