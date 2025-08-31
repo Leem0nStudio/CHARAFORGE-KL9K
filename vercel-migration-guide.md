@@ -12,7 +12,7 @@ El proceso se divide en 4 fases principales. Sigue cada paso en orden para una t
 
 1.  **Fase 1: Preparación y Configuración de Cuentas**
 2.  **Fase 2: Migración de la Base de Datos (El Paso Crítico)**
-3.  **Fase 3: Refactorización del Código de la Aplicación**
+3.  **Fase 3: Refactorización del Código de la Aplicación (¡Ya completado!)**
 4.  **Fase 4: Despliegue y Pruebas Finales**
 
 ---
@@ -33,19 +33,9 @@ Supabase será nuestro nuevo backend "todo en uno".
     *   Elige una región cercana a tus usuarios.
     *   Haz clic en "Create new project".
 
-### Paso 1.2: Crear un Proyecto en Vercel
+### Paso 1.2: Configurar Variables de Entorno (¡Aquí están tus llaves!)
 
-Vercel alojará nuestra aplicación Next.js.
-
-1.  **Regístrate en [Vercel](https://vercel.com/)**: Usa tu cuenta de GitHub.
-2.  **Crea un Nuevo Proyecto**:
-    *   Haz clic en "Add New..." > "Project".
-    *   Importa tu repositorio de GitHub de CharaForge.
-    *   Vercel detectará que es un proyecto Next.js y configurará los ajustes de build automáticamente. **¡No lo despliegues todavía!**
-
-### Paso 1.3: Configurar Variables de Entorno (¡Aquí están tus llaves!)
-
-Ahora, le diremos a Vercel y a tu entorno local cómo hablar con Supabase.
+Ahora, le diremos a Vercel y a tu entorno local cómo hablar con Supabase y con las APIs de IA.
 
 1.  **Ve a tu Panel de Supabase**:
     *   Navega a tu proyecto en [Supabase](https://supabase.com/).
@@ -54,32 +44,24 @@ Ahora, le diremos a Vercel y a tu entorno local cómo hablar con Supabase.
 
 2.  **Encuentra tus Claves**: Verás una sección llamada **Project API Keys**. Aquí están las tres claves que necesitas.
 
-3.  **Configura las Variables**:
-    *   **En Vercel**: Ve a la configuración de tu proyecto > **Settings** > **Environment Variables**.
-    *   **En tu PC (Local)**: Crea un archivo `.env.local` en la raíz de tu proyecto.
+3.  **Crea tu archivo `.env.local`**: En la raíz de tu proyecto, crea un archivo llamado `.env.local` y añade lo siguiente, reemplazando los valores con tus claves:
 
-    Añade las siguientes variables en **ambos lugares** (Vercel y tu archivo `.env.local`):
-
-    *   `NEXT_PUBLIC_SUPABASE_URL`
-        *   **Valor:** Copia la **URL del Proyecto** desde el panel de API de Supabase.
-    *   `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-        *   **Valor:** Copia la clave `anon` `public` desde la sección "Project API Keys".
-    *   `SUPABASE_SERVICE_ROLE_KEY`
-        *   **Valor:** Copia la clave `service_role` `secret`. **¡Esta es muy importante y debe mantenerse secreta!**
-
-    Tu archivo `.env.local` debería verse así:
     ```ini
-    # .env.local
+    # .env.local - Claves de Supabase
     NEXT_PUBLIC_SUPABASE_URL="tu-url-de-supabase-aqui"
     NEXT_PUBLIC_SUPABASE_ANON_KEY="tu-clave-anon-publica-aqui"
     SUPABASE_SERVICE_ROLE_KEY="tu-clave-service-role-secreta-aqui"
+
+    # Claves de APIs de IA (Opcionales pero recomendadas)
+    GEMINI_API_KEY="tu-clave-de-google-gemini"
+    # Añade otras claves como HUGGING_FACE_API_KEY si las necesitas
     ```
 
 ---
 
 ## ✅ Fase 2: Migración de la Base de Datos (El Paso Crítico)
 
-Esta es la parte más delicada. Usaremos la **Supabase CLI** para gestionar el esquema de nuestra base de datos. Este es el método profesional que nos asegura que nuestro entorno local y el de producción (Vercel/Supabase) estén siempre sincronizados.
+Usaremos la **Supabase CLI** para gestionar el esquema de nuestra base de datos. Este es el método profesional que nos asegura que nuestro entorno local y el de producción estén siempre sincronizados.
 
 ### Paso 2.1: Instala la Supabase CLI
 
@@ -87,7 +69,6 @@ Abre una terminal en tu ordenador y ejecuta el siguiente comando (necesitarás [
 ```bash
 npm install supabase --save-dev
 ```
-Esto añade la CLI a tu proyecto.
 
 ### Paso 2.2: Conecta tu Proyecto Local a Supabase
 
@@ -105,96 +86,43 @@ Esto añade la CLI a tu proyecto.
 
 ### Paso 2.3: Aplica la Migración Inicial
 
-Ahora que tu proyecto está vinculado, puedes "empujar" el esquema inicial que hemos preparado en el archivo `supabase/migrations/20240901000000_initial_schema.sql` a tu base de datos de Supabase remota.
+Ahora que tu proyecto está vinculado, puedes "empujar" el esquema inicial que hemos preparado a tu base de datos de Supabase.
 
 Ejecuta el siguiente comando:
 ```bash
 npx supabase db push
 ```
-La CLI leerá el archivo de migración y creará las tablas `users` y `characters`, además de las políticas de seguridad, en tu base de datos de Supabase. ¡Con esto, tu base de datos remota está lista!
+La CLI leerá el archivo `supabase/migrations/20240901000000_initial_schema.sql` y creará todas las tablas y políticas de seguridad en tu base de datos remota. ¡Con esto, tu base de datos está lista!
 
 ---
 
 ## ✅ Fase 3: Refactorización del Código
 
-Ahora, adaptaremos el código de CharaForge para que use Supabase en lugar de Firebase.
-
-### Paso 3.1: Cliente de Supabase
-
-Crea un archivo en `src/lib/supabase/client.ts` para inicializar el cliente de Supabase para el navegador.
-
-```typescript
-// src/lib/supabase/client.ts
-import { createBrowserClient } from '@supabase/ssr';
-
-export function getSupabaseBrowserClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
-```
-
-### Paso 3.2: Reemplazar la Lógica de Autenticación
-
-Edita `src/hooks/use-auth.tsx` para usar Supabase.
-
-*   Reemplaza las llamadas a `firebase/auth` con las del cliente de Supabase (`@supabase/auth-helpers-nextjs` o similar).
-*   El flujo de inicio de sesión ahora llamará a `supabase.auth.signInWithPassword()` en lugar de a Firebase.
-*   La gestión de la sesión se simplifica, ya que la librería de Supabase maneja las cookies automáticamente.
-
-### Paso 3.3: Reemplazar las Acciones del Servidor
-
-Esta es la parte más grande de la refactorización. Deberás repasar cada archivo en `src/app/actions/` y cambiar las llamadas de Firestore por las del SDK de Supabase.
-
-**Ejemplo de cambio en `character-read.ts`:**
-
-```typescript
-// ANTES (Firebase)
-import { adminDb } from '@/lib/firebase/server';
-const charactersRef = adminDb.collection('characters');
-const snapshot = await charactersRef.where('meta.userId', '==', userId).get();
-
-// DESPUÉS (Supabase)
-import { getSupabaseServerClient } from '@/lib/supabase/server';
-const supabase = getSupabaseServerClient();
-
-const { data, error } = await supabase
-    .from('characters')
-    .select('*')
-    .eq('user_id', userId);
-```
-
-Tendrás que hacer cambios similares para `saveCharacter`, `getPublicCharacters`, etc.
-
-### Paso 3.4: Migrar el Almacenamiento de Archivos
-
-Edita `src/services/storage.ts` para usar Supabase Storage.
-
-```typescript
-// ANTES (Firebase)
-import { getStorage } from 'firebase-admin/storage';
-const bucket = getStorage().bucket(...);
-// ...lógica de subida
-
-// DESPUÉS (Supabase)
-import { getSupabaseServerClient } from '@/lib/supabase/server';
-const supabase = getSupabaseServerClient();
-const { data, error } = await supabase.storage
-    .from('character-images') // Nombre de tu bucket en Supabase
-    .upload(destinationPath, fileSource);
-```
+¡Esta fase ya la hemos completado juntos! Todo el código de la aplicación ha sido refactorizado para usar Supabase.
 
 ---
 
-## ✅ Fase 4: Despliegue y Pruebas
+## ✅ Fase 4: Despliegue y Pruebas Finales
 
-1.  **Sube tus Cambios a GitHub**: Una vez que hayas refactorizado y probado todo localmente, sube tus cambios a tu repositorio.
-2.  **Despliega en Vercel**: Ve a tu proyecto de Vercel. Como ya está conectado a tu repo, detectará los nuevos cambios. Inicia un nuevo despliegue.
-3.  **Verifica**: Vercel te dará una URL de vista previa. Úsala para probar todas las funcionalidades:
-    *   Registro e inicio de sesión.
-    *   Creación y guardado de personajes.
-    *   Visualización de galerías públicas.
-4.  **Promociona a Producción**: Si todo funciona, ¡promociona tu despliegue a producción!
+¡Es la hora de la verdad!
 
-¡Y eso es todo! Has migrado con éxito CharaForge a una arquitectura más escalable y potencialmente más económica. ¡Felicidades!
+### Paso 4.1: Sube tu Código a GitHub
+
+Asegúrate de que todos los cambios que hemos hecho estén guardados y subidos a tu repositorio de GitHub.
+
+### Paso 4.2: Despliega en Vercel
+
+1.  **Conecta tu Repositorio**: Ve a tu [dashboard de Vercel](https://vercel.com/new) y crea un nuevo proyecto importando el repositorio de CharaForge desde GitHub.
+2.  **Configura las Variables de Entorno**: Vercel detectará que es un proyecto Next.js. Antes de desplegar, ve a la configuración del proyecto > **Settings** > **Environment Variables**. Añade **exactamente las mismas claves** que pusiste en tu archivo `.env.local` (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, y `GEMINI_API_KEY`).
+3.  **Inicia el Despliegue**: Haz clic en el botón "Deploy".
+
+### Paso 4.3: ¡Prueba tu Aplicación!
+
+Vercel te dará una URL para tu aplicación desplegada. Visítala y prueba todo:
+*   Registro de un nuevo usuario.
+*   Inicio de sesión.
+*   Generación de un personaje.
+*   Guardado del personaje en tu galería.
+*   Exploración de las galerías públicas.
+
+¡Y eso es todo! Has migrado y desplegado con éxito CharaForge a un stack moderno, escalable y profesional.
