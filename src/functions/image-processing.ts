@@ -1,109 +1,15 @@
 
+
 /**
- * @fileoverview Cloud Function for post-upload image processing.
- * This function is triggered when a new image is uploaded to the `raw-uploads/`
- * path in Firebase Storage. It performs several processing steps and saves
- * the result to a different path, updating the character's Firestore document.
- * It will also trigger the RPG stat and skill generation flows.
+ * @fileoverview This Cloud Function is now DEPRECATED.
+ * The logic for image processing has been moved directly into the `reprocessCharacterImage`
+ * server action in `src/app/actions/character-image.ts`. This makes the process
+ * compatible with a Vercel deployment environment.
  */
 
 import { logger } from 'firebase-functions/v2';
-import { onObjectFinalized } from 'firebase-functions/v2/storage';
-import { getFunctions } from 'firebase-admin/functions';
-import { getStorage } from 'firebase-admin/storage';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps } from 'firebase-admin/app';
-import * as path from 'path';
-import sharp from 'sharp';
 
-// Initialize Firebase Admin SDK if not already done
-if (getApps().length === 0) {
-  initializeApp();
-}
-
-const db = getFirestore();
-
-/**
- * Cloud Function that triggers on new file uploads to the 'raw-uploads/' path.
- * This function now handles the full Showcase processing pipeline and reports status.
- */
-export const processUploadedImage = onObjectFinalized({
-    cpu: 2,
-    memory: '1GiB',
-    region: 'us-central1',
-    bucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
-    timeoutSeconds: 300,
-}, async (event) => {
-    const fileBucket = event.bucket;
-    const filePath = event.data.name;
-    const contentType = event.data.contentType;
-
-    if (!contentType?.startsWith('image/')) {
-        logger.log(`File '${filePath}' is not an image. Ignoring.`);
-        return;
-    }
-    if (!filePath.startsWith('raw-uploads/')) {
-        logger.log(`File '${filePath}' is not in raw-uploads/. Ignoring.`);
-        return;
-    }
-    
-    const pathParts = filePath.split('/');
-    if (pathParts.length < 4) {
-        logger.warn(`File path '${filePath}' does not have the expected path structure. Ignoring.`);
-        return;
-    }
-    const userId = pathParts[1];
-    const characterId = pathParts[2];
-    const fileName = pathParts[pathParts.length - 1];
-    
-    logger.log(`Processing showcase image for character '${characterId}' by user '${userId}'.`);
-    
-    const characterRef = db.collection('characters').doc(characterId);
-    
-    const bucket = getStorage().bucket(fileBucket);
-    const downloadResponse = await bucket.file(filePath).download();
-    const imageBuffer = downloadResponse[0];
-    
-    logger.log(`Successfully downloaded '${fileName}'. Starting processing pipeline.`);
-
-    try {
-        await characterRef.update({ 'visuals.showcaseProcessingStatus': 'removing-background' });
-        const processedBuffer = await sharp(imageBuffer)
-            .removeBackground() // Use sharp's built-in background removal
-            .webp({ quality: 90 })
-            .toBuffer();
-        logger.info("Step 1/2: Background removed and image converted to WebP.");
-            
-        const processedFileName = `${path.parse(fileName).name}.webp`;
-        const processedPath = `showcase-images/${userId}/${characterId}/${processedFileName}`;
-        const file = bucket.file(processedPath);
-
-        await file.save(processedBuffer, {
-            metadata: {
-                contentType: 'image/webp',
-                cacheControl: 'public, max-age=31536000',
-            },
-            public: true,
-        });
-
-        const publicUrl = file.publicUrl();
-        logger.info(`Step 2/2: Processed image uploaded. Public URL: ${publicUrl}`);
-
-        await characterRef.update({
-            'visuals.showcaseImageUrl': publicUrl,
-            'visuals.isShowcaseProcessed': true,
-            'visuals.showcaseProcessingStatus': 'complete',
-        });
-        logger.log(`Successfully updated Firestore for character '${characterId}'.`);
-        
-        await bucket.file(filePath).delete();
-        logger.log(`Successfully deleted raw file: '${filePath}'.`);
-
-    } catch (error) {
-        logger.error(`Failed to process showcase image for character ${characterId}.`, { error });
-        await characterRef.update({ 
-            'visuals.isShowcaseProcessed': false,
-            'visuals.showcaseProcessingStatus': 'failed',
-         });
-    }
-});
+export const processUploadedImage = () => {
+    logger.warn("processUploadedImage Cloud Function is deprecated and should not be deployed.");
+    return null;
+};

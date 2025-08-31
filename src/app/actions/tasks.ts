@@ -1,9 +1,14 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { verifyIsAdmin } from '@/lib/auth/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import axios from 'axios';
+import { promisify } from 'util';
+import { pipeline } from 'stream';
+import { getStorage } from 'firebase-admin/storage'; // Note: still using firebase-admin for storage for now
 
 type ActionResponse = {
     success: boolean;
@@ -11,42 +16,63 @@ type ActionResponse = {
     error?: string;
 };
 
-// The logic for Cloud Tasks is very Google Cloud-specific.
-// For Supabase, background jobs are often handled by pg_cron or Edge Functions.
-// This function will be simplified to directly update the status,
-// as the full background job migration is a much larger architectural change.
+async function getCivitaiDownloadUrl(versionId: string): Promise<string> {
+    const apiKey = process.env.CIVITAI_API_KEY;
+    if (!apiKey) throw new Error('CIVITAI_API_KEY environment variable not set.');
+    
+    const url = `https://civitai.com/api/v1/model-versions/${versionId}`;
+    const response = await axios.get(url, { headers: { 'Authorization': `Bearer ${apiKey}` } });
+    const downloadUrl = response.data?.files?.[0]?.downloadUrl;
+    
+    if (!downloadUrl) throw new Error(`Could not find download URL for Civitai version ID ${versionId}.`);
+    
+    return `${downloadUrl}?token=${apiKey}`;
+}
+
 export async function enqueueModelSyncJob(modelId: string): Promise<ActionResponse> {
     await verifyIsAdmin();
     const supabase = getSupabaseServerClient();
-    
-    // In a full Supabase migration, you would call an Edge Function here
-    // or insert a job into a pg_cron queue.
-    // For now, we will simulate the "queued" status update.
-    console.warn("Model sync task enqueuing is a placeholder. Full implementation requires setting up Supabase Edge Functions or pg_cron.");
+    const modelRef = supabase.from('ai_models').select('*').eq('id', modelId).single();
 
     try {
-        const { error } = await supabase
-            .from('ai_models')
-            .update({ sync_status: 'queued', sync_error: null })
-            .eq('id', modelId);
-
-        if (error) throw error;
-        
+        await supabase.from('ai_models').update({ sync_status: 'syncing', sync_error: null }).eq('id', modelId);
         revalidatePath('/admin/models');
 
-        return { success: true, message: `Sync job for model ${modelId} has been queued.` };
+        const { data: modelData, error: fetchError } = await modelRef;
+        if (fetchError || !modelData) throw new Error("Model not found or failed to fetch.");
+        if (!modelData.civitai_model_id || !modelData.version_id) {
+            throw new Error('Model is missing required Civitai fields for syncing.');
+        }
+
+        const downloadUrl = await getCivitaiDownloadUrl(modelData.version_id);
+        
+        const response = await axios.get(downloadUrl, { responseType: 'stream' });
+
+        const storageBucketName = process.env.MODELS_STORAGE_BUCKET;
+        if (!storageBucketName) throw new Error("MODELS_STORAGE_BUCKET is not set.");
+        
+        const bucket = getStorage().bucket(storageBucketName);
+        const fileExtension = modelData.name?.split('.').pop() || 'safetensors';
+        const blobName = `models/${modelData.name.replace(/\s+/g, '_')}/${modelData.version_id}.${fileExtension}`;
+        
+        const blob = bucket.file(blobName);
+        const blobStream = blob.createWriteStream({
+            resumable: false,
+            metadata: { contentType: 'application/octet-stream' },
+        });
+
+        await promisify(pipeline)(response.data, blobStream);
+
+        const gcsUri = `gs://${bucket.name}/${blobName}`;
+        await supabase.from('ai_models').update({ sync_status: 'synced', gcs_uri: gcsUri }).eq('id', modelId);
+
+        revalidatePath('/admin/models');
+        return { success: true, message: `Model ${modelId} synced successfully.` };
+
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        console.error(`Failed to queue task for model ${modelId}:`, message);
-        
-        await supabase
-            .from('ai_models')
-            .update({ sync_status: 'error', sync_error: `Failed to queue task: ${message}` })
-            .eq('id', modelId);
-            
+        await supabase.from('ai_models').update({ sync_status: 'error', sync_error: message }).eq('id', modelId);
         revalidatePath('/admin/models');
-        return { success: false, message: 'Failed to queue sync job.', error: message };
+        return { success: false, message: 'Failed to sync model.', error: message };
     }
 }
-
-    

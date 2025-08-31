@@ -1,13 +1,14 @@
 
+
 'use server';
 
 /**
  * @fileoverview This service contains functions for the composition engine
- * that require server-only dependencies like the Firebase Admin SDK.
- * This file should only be imported by other server components or actions.
+ * that previously required server-only dependencies like the Firebase Admin SDK.
+ * Now it uses the Supabase client.
  */
 
-import { adminDb } from '@/lib/firebase/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { DataPack } from '@/types/datapack';
 import type { Datasets } from './composition';
 
@@ -37,20 +38,27 @@ function dataPackToDataset(pack: DataPack): Datasets {
 }
 
 /**
- * Fetches all DataPacks from Firestore and transforms them into a simple
+ * Fetches all DataPacks from Supabase and transforms them into a simple
  * key-value dataset suitable for the template engine.
  * @returns A promise that resolves to the datasets object.
  */
 export async function loadDatasetsFromFirestore(): Promise<Datasets> {
-    if (!adminDb) {
-        throw new Error("Firestore is not initialized.");
+    const supabase = getSupabaseServerClient();
+    if (!supabase) {
+        throw new Error("Supabase client is not initialized.");
     }
-    const snapshot = await adminDb.collection('datapacks').get();
-    const allPacks = snapshot.docs.map(doc => doc.data() as DataPack);
+
+    const { data: allPacks, error } = await supabase.from('datapacks').select('*');
+    if (error) {
+        console.error("Error fetching datapacks from Supabase:", error);
+        throw new Error("Could not load DataPacks from the database.");
+    }
     
     let combinedDataset: Datasets = {};
     for(const pack of allPacks) {
-        const packDataset = dataPackToDataset(pack);
+        // The pack from Supabase needs its schema_details mapped to schema
+        const packWithSchema = { ...pack, schema: pack.schema_details } as unknown as DataPack;
+        const packDataset = dataPackToDataset(packWithSchema);
         for (const key in packDataset) {
             if(combinedDataset[key]) {
                  combinedDataset[key].push(...packDataset[key]);

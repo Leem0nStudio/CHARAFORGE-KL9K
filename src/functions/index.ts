@@ -1,18 +1,12 @@
 
+
 /**
  * @fileoverview Main entry point for Firebase Cloud Functions.
- * This file should only import and export the functions to be deployed.
+ * This file is now being deprecated as the logic is moved to Supabase-compatible
+ * server actions and Edge Functions. It's kept for reference during migration.
  */
 
-// Import and export the image processing function.
-export { processUploadedImage } from './image-processing';
+// All functions are being moved to server actions or Supabase Edge Functions.
+// This file will be empty or removed post-migration.
 
-// Import and export the RPG generation trigger function.
-export { triggerRpgGeneration } from './rpg';
-
-// Import and export the model sync worker function.
-export { syncModelWorker } from './sync-model';
-
-
-// NOTE: Genkit flows are automatically handled by the Genkit plugin
-// and do not need to be exported from here.
+export {};

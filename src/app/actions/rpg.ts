@@ -1,9 +1,9 @@
 
+
 'use server';
 
 import { ai } from '@/ai/genkit';
-import { adminDb } from '@/lib/firebase/server';
-import { FieldValue } from 'firebase-admin/firestore';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import type { Character } from '@/types/character';
 
@@ -50,22 +50,18 @@ const generateSkillsPrompt = ai.definePrompt({
 });
 
 /**
- * A server action that generates RPG skills for a character and saves them to Firestore.
- * This function is intended to be called by a Cloud Function trigger.
+ * A server action that generates RPG skills for a character and saves them.
+ * This is now a direct server action, no longer relying on a separate Cloud Function.
  * @param {string} characterId The ID of the character to generate skills for.
  * @param {string} archetype The character's archetype.
  * @param {string} biography The character's biography.
  * @returns {Promise<{success: boolean, message: string}>} A promise that resolves to a success or failure message.
  */
 export async function generateAndSaveSkills(characterId: string, archetype: string, biography: string): Promise<{ success: boolean; message: string }> {
-  if (!adminDb) {
-    throw new Error('Database service is unavailable.');
-  }
-
-  const characterRef = adminDb.collection('characters').doc(characterId);
+  const supabase = getSupabaseServerClient();
   
   try {
-    await characterRef.update({ 'rpg.skillsStatus': 'pending' });
+    await supabase.from('characters').update({ rpg_details: { skillsStatus: 'pending' } }).eq('id', characterId);
 
     const { output } = await generateSkillsPrompt({
       characterId,
@@ -81,20 +77,19 @@ export async function generateAndSaveSkills(characterId: string, archetype: stri
       ...skill,
       id: skill.name.toLowerCase().replace(/\s+/g, '-'),
     }));
+    
+    const { data: characterData, error: fetchError } = await supabase.from('characters').select('rpg_details').eq('id', characterId).single();
+    if (fetchError) throw fetchError;
 
-    await characterRef.update({
-      'rpg.skills': skillsWithIds,
-      'rpg.skillsStatus': 'complete',
-    });
+    const newRpgDetails = { ...characterData.rpg_details, skills: skillsWithIds, skillsStatus: 'complete' };
 
-    const characterDoc = await characterRef.get();
-    const characterName = characterDoc.data()?.core.name || 'Unknown Character';
+    await supabase.from('characters').update({ rpg_details: newRpgDetails }).eq('id', characterId);
 
-    return { success: true, message: `Successfully generated ${skillsWithIds.length} skills for ${characterName}.` };
+    return { success: true, message: `Successfully generated ${skillsWithIds.length} skills.` };
 
   } catch (error: any) {
     console.error(`Error generating skills for character ${characterId}:`, error);
-    await characterRef.update({ 'rpg.skillsStatus': 'failed' });
+    await supabase.from('characters').update({ rpg_details: { skillsStatus: 'failed' } }).eq('id', characterId);
     return { success: false, message: error.message || 'An unknown error occurred.' };
   }
 }

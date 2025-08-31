@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { generateCharacterImage as generateCharacterImageFlow } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 import { uploadToStorage } from '@/services/storage';
+import sharp from 'sharp';
 
 type ActionResponse = {
     success: boolean;
@@ -141,44 +142,54 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
         if (!imageUrl) {
             return { success: false, message: 'Character has no primary image to reprocess.' };
         }
-
-        // The destination path is now a "queue" for the external worker.
-        const destinationPath = `raw-uploads/${uid}/${characterId}/${uuidv4()}.png`;
-
-        const newVisuals = {
-            ...characterData.visual_details,
-            isShowcaseProcessed: false,
-            showcaseImageUrl: null,
-            showcaseProcessingStatus: 'removing-background'
-        };
-
-        // Update the status immediately so the UI can react.
-        const { error: updateError } = await supabase
+        
+        await supabase
             .from('characters')
-            .update({ visual_details: newVisuals })
+            .update({ visual_details: { ...characterData.visual_details, showcaseProcessingStatus: 'removing-background' } })
             .eq('id', characterId);
             
-        if (updateError) throw updateError;
-
         revalidatePath(`/characters/${characterId}/edit`);
         
         const fetch = (await import('node-fetch')).default;
         const response = await fetch(imageUrl);
         if (!response.ok) throw new Error(`Failed to fetch original image for reprocessing: ${response.statusText}`);
+        
         const imageBuffer = await response.buffer();
         
-        await uploadToStorage(imageBuffer, destinationPath, response.headers.get('content-type') || 'image/png');
+        // Image processing logic is now directly in the server action
+        const processedBuffer = await sharp(imageBuffer)
+            .removeBackground()
+            .webp({ quality: 90 })
+            .toBuffer();
+
+        const destinationPath = `showcase-images/${uid}/${characterId}/${uuidv4()}.webp`;
+        const showcaseImageUrl = await uploadToStorage(processedBuffer, destinationPath);
+
+        const newVisuals = {
+            ...characterData.visual_details,
+            imageUrl: characterData.visual_details.imageUrl, // Keep original primary image
+            isShowcaseProcessed: true,
+            showcaseImageUrl: showcaseImageUrl,
+            showcaseProcessingStatus: 'complete'
+        };
+
+        await supabase
+            .from('characters')
+            .update({ visual_details: newVisuals })
+            .eq('id', characterId);
+            
+        revalidatePath(`/characters/${characterId}/edit`);
+        revalidatePath(`/showcase/${characterId}`);
         
-        return { success: true, message: 'Image reprocessing job has been successfully queued.' };
+        return { success: true, message: 'Image successfully reprocessed.' };
         
     } catch(error) {
-        const message = error instanceof Error ? error.message : 'Failed to queue image for reprocessing.';
+        const message = error instanceof Error ? error.message : 'Failed to reprocess image.';
         console.error("Reprocess Error:", message);
         await supabase
             .from('characters')
             .update({ visual_details: { showcaseProcessingStatus: 'failed' } })
-            .eq('id', characterId)
-            .select();
+            .eq('id', characterId);
          revalidatePath(`/characters/${characterId}/edit`);
         return { success: false, message };
     }
