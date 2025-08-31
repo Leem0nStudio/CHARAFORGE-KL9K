@@ -1,0 +1,1 @@
+-- Crear buckets de storage para imágenes de personajes y avatares
