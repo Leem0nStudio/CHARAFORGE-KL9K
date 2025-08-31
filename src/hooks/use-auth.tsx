@@ -10,17 +10,15 @@ import {
   Dispatch,
   SetStateAction,
 } from 'react';
-import { User, onIdTokenChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc, DocumentData, Timestamp } from 'firebase/firestore';
-import { getFirebaseClient } from '@/lib/firebase/client';
+import type { User } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { UserProfile } from '@/types/user';
 import { AnvilIcon } from '@/components/app-logo';
 
-
 export interface AuthContextType {
   authUser: User | null;
-  userProfile: UserProfile | null; 
-  setUserProfile: Dispatch<SetStateAction<UserProfile | null>>; 
+  userProfile: UserProfile | null;
+  setUserProfile: Dispatch<SetStateAction<UserProfile | null>>;
   loading: boolean;
 }
 
@@ -31,119 +29,83 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
 });
 
-async function setCookie(token: string | null): Promise<void> {
-  await fetch('/api/auth/set-cookie', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token }),
-  });
-}
-
-const ensureUserDocument = async (user: User): Promise<DocumentData | null> => {
-  const { db } = getFirebaseClient();
-  if (!db) {
-      console.error("[useAuth] Firestore (db) is not available in ensureUserDocument.");
-      return null;
-  }
-  const userDocRef = doc(db, 'users', user.uid);
-  try {
-    const userDoc = await getDoc(userDocRef);
-    if (!userDoc.exists()) {
-      await setDoc(userDocRef, {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp(),
-        role: 'user',
-        stats: {
-          charactersCreated: 0,
-          totalLikes: 0,
-          collectionsCreated: 0,
-          installedPacks: [],
-          installedModels: [],
-          subscriptionTier: 'free',
-          memberSince: serverTimestamp(),
-          points: 0,
-          unlockedAchievements: [],
-        }
-      });
-    } else {
-        const updateData: { displayName: string | null; photoURL: string | null; email?: string | null, lastLogin: Date } = {
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          lastLogin: new Date(),
-        };
-        if (user.email !== userDoc.data()?.email) {
-            updateData.email = user.email;
-        }
-        await updateDoc(userDocRef, { ...updateData });
-    }
+async function getUserProfileFromDb(user: User): Promise<UserProfile | null> {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return null;
     
-    const updatedUserDoc = await getDoc(userDocRef);
-    const data = updatedUserDoc.data();
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+    
+    if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching user profile:", error);
+        return null;
+    }
 
     if (data) {
-        if (data.createdAt && data.createdAt instanceof Timestamp) {
-            data.createdAt = data.createdAt.toMillis();
-        }
-        if (data.lastLogin && data.lastLogin instanceof Timestamp) {
-            data.lastLogin = data.lastLogin.toMillis();
-        }
-        if (data.stats?.memberSince && data.stats.memberSince instanceof Timestamp) {
-           data.stats.memberSince = data.stats.memberSince.toMillis();
-        }
+        return {
+            uid: user.id,
+            email: user.email || null,
+            displayName: data.display_name || user.email,
+            photoURL: data.photo_url || null,
+            role: data.role || 'user',
+            emailVerified: user.email_confirmed_at ? true : false,
+            isAnonymous: user.is_anonymous,
+            metadata: user.user_metadata,
+            providerData: [],
+            stats: data.stats || {},
+            preferences: data.preferences || {},
+            profile: data.profile || {},
+        } as UserProfile;
     }
-    return data || null;
-
-  } catch (error: unknown) {
-    console.error("Error in ensureUserDocument:", error);
     return null;
-  }
-};
+}
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const supabase = getSupabaseBrowserClient();
 
   useEffect(() => {
-    const { auth } = getFirebaseClient();
-    const unsubscribe = onIdTokenChanged(auth, async (newAuthUser) => {
-      setLoading(true);
-      if (newAuthUser) {
-        const token = await newAuthUser.getIdToken();
-        // **CRITICAL FIX**: Await the cookie setting to complete before updating client state
-        // This prevents race conditions where a Server Action is called before the session is known.
-        await setCookie(token);
-
-        const firestoreData = await ensureUserDocument(newAuthUser);
+    const fetchSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        const currentUser = session?.user ?? null;
+        setAuthUser(currentUser);
         
-        setAuthUser(newAuthUser);
-        setUserProfile({
-            uid: newAuthUser.uid,
-            email: newAuthUser.email,
-            displayName: newAuthUser.displayName,
-            photoURL: newAuthUser.photoURL,
-            emailVerified: newAuthUser.emailVerified,
-            isAnonymous: newAuthUser.isAnonymous,
-            metadata: newAuthUser.metadata,
-            providerData: newAuthUser.providerData,
-            ...firestoreData
-        });
-      } else {
-        await setCookie(null);
-        setAuthUser(null);
-        setUserProfile(null);
-      }
-      setLoading(false);
-    });
+        if (currentUser) {
+            const profile = await getUserProfileFromDb(currentUser);
+            setUserProfile(profile);
+        } else {
+            setUserProfile(null);
+        }
+        setLoading(false);
+    };
 
-    return () => unsubscribe();
-    
-  }, []);
-  
+    fetchSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        const currentUser = session?.user ?? null;
+        setAuthUser(currentUser);
+
+        if (currentUser) {
+            const profile = await getUserProfileFromDb(currentUser);
+            setUserProfile(profile);
+        } else {
+            setUserProfile(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen w-full bg-background">
@@ -154,7 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ authUser, userProfile, setUserProfile, loading }}>
+    <AuthContext.Provider value={{ authUser, userProfile, setUserProfile, loading: false }}>
       {children}
     </AuthContext.Provider>
   );

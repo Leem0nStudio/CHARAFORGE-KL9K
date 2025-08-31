@@ -4,12 +4,20 @@ import { CharacterGenerator } from '@/components/character-generator';
 import { motion } from 'framer-motion';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { BackButton } from '@/components/back-button';
 
 function CharacterGeneratorWrapper() {
-  // The logic to get the authenticated user should happen here,
-  // on the server, and be passed down to the client component.
-  // For now, we pass null as the client `useAuth` hook will handle it.
+  const { authUser, loading } = useAuth();
   
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen w-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <motion.div
       className="container py-8"
@@ -18,10 +26,12 @@ function CharacterGeneratorWrapper() {
       transition={{ duration: 0.5 }}
     >
         <div className="mx-auto grid w-full max-w-7xl gap-2 mb-8">
-             <h1 className="text-3xl font-bold tracking-tight font-headline">Character Generator</h1>
-             <p className="text-muted-foreground">Bring your vision to life. Describe your character, or use a DataPack to get started.</p>
+             <BackButton
+                title="Character Generator"
+                description="Bring your vision to life. Use a simple prompt or the DataPack Wizard to get started."
+             />
         </div>
-        <CharacterGenerator />
+        <CharacterGenerator authUser={authUser} />
     </motion.div>
   )
 }

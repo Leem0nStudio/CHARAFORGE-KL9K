@@ -11,17 +11,30 @@ async function getIsAdmin(): Promise<boolean> {
     const cookieStore = cookies();
     const idToken = cookieStore.get('firebaseIdToken')?.value;
 
-    if (!idToken || !adminAuth) {
+    if (!idToken) {
+      // No cookie, definitely not logged in or an admin.
+      return false;
+    }
+    
+    if (!adminAuth) {
+      console.error("Admin check failed: Firebase Admin SDK is not initialized.");
       return false;
     }
     
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     return decodedToken.admin === true;
 
-  } catch (error) {
+  } catch (error: any) {
     // If the token is invalid, expired, or verification fails, they are not an admin.
     // This also handles cases where the cookie is present but malformed.
-    console.warn("Admin check failed (user is not an admin or token is invalid):", error instanceof Error ? error.message : "Unknown error");
+    // Differentiate between "not an admin" and "session expired".
+    if (error.code === 'auth/id-token-expired') {
+        // This is a specific error we can handle gracefully by redirecting to login.
+        redirect('/login?reason=session-expired&redirect=/admin');
+    }
+    
+    // For other errors, log it and treat as "not an admin".
+    console.warn("Admin check failed (user is not an admin or token is invalid):", error.message);
     return false;
   }
 }

@@ -1,15 +1,17 @@
 
 'use client';
 
-import React, { useImperativeHandle, useState } from 'react';
+import React, { useImperativeHandle, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { CaseSensitive, Tags, Package, Wand2 } from 'lucide-react';
+import { CaseSensitive, Tags, Wand2 } from 'lucide-react';
 import type { DataPack, PromptTemplate } from '@/types/datapack';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { PromptTagInput } from './prompt-tag-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
+import { TagAssistantModal } from './tag-assistant-modal';
+import { getDatasetForDataPack, createInvertedDatasetMap, findSlotKeyForTag } from '@/services/composition';
 
 
 const formatPromptText = (text: string): string => {
@@ -17,9 +19,9 @@ const formatPromptText = (text: string): string => {
     
     // Improved regex to handle tags with parentheses and weights
     const tagSplitRegex = /,\s*(?![^()]*\))/;
-    let tags = text.split(tagSplitRegex).map(tag => tag.trim()).filter(Boolean);
+    const tags = text.split(tagSplitRegex).map(tag => tag.trim()).filter(Boolean);
     
-    let uniqueTags = [...new Set(tags)];
+    const uniqueTags = [...new Set(tags)];
     
     return uniqueTags.join(', ');
 };
@@ -38,6 +40,19 @@ export const PromptEditor = React.forwardRef<
   PromptEditorProps
 >(({ value, onChange, disabled, activePack, selectedTemplate, onTemplateChange }, ref) => {
     
+   const [isTagAssistantOpen, setIsTagAssistantOpen] = useState(false);
+
+   // Memoize the dataset and the inverted map so they are not re-calculated on every render.
+   const { dataset, invertedMap } = useMemo(() => {
+        if (!activePack) {
+            return { dataset: null, invertedMap: null };
+        }
+        const ds = getDatasetForDataPack(activePack);
+        const invMap = createInvertedDatasetMap(ds);
+        return { dataset: ds, invertedMap: invMap };
+   }, [activePack]);
+
+
    const handleFormatClick = () => {
         const formatted = formatPromptText(value);
         onChange(formatted);
@@ -46,9 +61,47 @@ export const PromptEditor = React.forwardRef<
   useImperativeHandle(ref, () => ({
     format: handleFormatClick,
   }));
+  
+  const handleAppendTags = (tags: string[]) => {
+      const currentPrompt = value.trim();
+      const newTagsString = tags.join(', ');
+      const newPrompt = currentPrompt ? `${currentPrompt}, ${newTagsString}` : newTagsString;
+      onChange(formatPromptText(newPrompt));
+  };
+  
+  const getOptionsForTag = (tag: string) => {
+      if (!dataset || !invertedMap) return null;
+      
+      const slotKey = findSlotKeyForTag(tag, invertedMap);
+      
+      if (slotKey && dataset[slotKey]) {
+          return dataset[slotKey];
+      }
+
+      return null;
+  }
+
+  const handleTagChange = (oldValue: string, newValue: string) => {
+      // Improved regex to handle various tag formats
+      const tagSplitRegex = /,\s*(?![^()]*\))/;
+      const tags = value.split(tagSplitRegex);
+      const newTags = tags.map(tag => {
+          if (tag.trim() === oldValue.trim()) {
+              return newValue;
+          }
+          return tag;
+      });
+      onChange(newTags.join(', '));
+  };
 
   return (
     <div className="space-y-2">
+        <TagAssistantModal 
+            isOpen={isTagAssistantOpen}
+            onClose={() => setIsTagAssistantOpen(false)}
+            onAppendTags={handleAppendTags}
+            currentDescription={value}
+        />
         {activePack && selectedTemplate && (
             <div className="space-y-1">
                  <Label>Prompt Template</Label>
@@ -69,15 +122,22 @@ export const PromptEditor = React.forwardRef<
             </div>
         )}
         <Tabs defaultValue="visual" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="visual"><Wand2 className="mr-2"/>Visual Editor</TabsTrigger>
-                <TabsTrigger value="text"><CaseSensitive className="mr-2"/>Text Editor</TabsTrigger>
-            </TabsList>
+            <div className="flex items-center justify-between">
+                 <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="visual"><Wand2 className="mr-2"/>Visual Editor</TabsTrigger>
+                    <TabsTrigger value="text"><CaseSensitive className="mr-2"/>Text Editor</TabsTrigger>
+                </TabsList>
+                 <Button type="button" variant="outline" size="sm" className="ml-2" onClick={() => setIsTagAssistantOpen(true)} disabled={disabled}>
+                    <Tags className="mr-2"/> Assistant
+                </Button>
+            </div>
             <TabsContent value="visual" className="mt-2">
                     <PromptTagInput
                     value={value}
                     onChange={onChange}
                     disabled={disabled}
+                    getOptionsForTag={getOptionsForTag}
+                    onTagChange={handleTagChange}
                 />
             </TabsContent>
                 <TabsContent value="text" className="mt-2">

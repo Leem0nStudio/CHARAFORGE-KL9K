@@ -1,4 +1,12 @@
-
+// PLAN: Create a new component for displaying user ranks.
+// This will not be a standard circular or square badge.
+// It will be a stylized hexagonal badge to fit the "gamified" UI theme.
+// The color of the badge will change based on the rank:
+// - Rank 1: Gold
+// - Rank 2: Silver
+// - Rank 3: Bronze
+// - Other Ranks: Iron/Default color
+// This component will be used in the new "Top Creators" section on the home page.
 'use client';
 
 import { cn } from '@/lib/utils';
@@ -8,17 +16,10 @@ interface RankBadgeProps {
 }
 
 export function RankBadge({ rank }: RankBadgeProps) {
-    const colors: { [key: number]: string } = {
-        1: 'bg-yellow-500/20 text-yellow-300 border-yellow-500', // Gold
-        2: 'bg-sky-400/20 text-sky-300 border-sky-400', // Silver
-        3: 'bg-amber-600/20 text-amber-500 border-amber-600', // Bronze
-    };
-    const defaultColor = 'bg-slate-600/20 text-slate-400 border-slate-500'; // Iron
-    const color = colors[rank] || defaultColor;
-
+    // TODO: Implement hexagonal shape and rank-based colors.
     return (
-        <div className={cn("flex items-center justify-center h-10 w-10 shrink-0 border", color)} style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}>
-            <span className="font-bold text-sm z-10">#{rank}</span>
+        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+            <span className="font-bold">#{rank}</span>
         </div>
     );
 }

@@ -1,9 +1,11 @@
-
+// PLAN: This component will now be a simple wrapper around the new `GachaCard`.
+// It will handle the overall animation variants for staggering items in a list.
+// All visual logic will be delegated to `GachaCard`.
 'use client';
 
 import { motion } from 'framer-motion';
 import type { Character } from '@/types/character';
-import { CharacterIndexCard } from './character-index-card';
+import { GachaCard } from './gacha-card';
 
 interface CharacterCardProps {
     character: Character;
@@ -19,7 +21,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
             }}
             className="h-full group"
         >
-            <CharacterIndexCard character={character} />
+            <GachaCard character={character} />
         </motion.div>
     );
 }

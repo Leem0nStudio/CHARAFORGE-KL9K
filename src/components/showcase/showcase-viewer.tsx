@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Image from 'next/image';
@@ -13,196 +12,29 @@ import { ArrowLeft, Edit, Share2, Dna, Swords as SwordsIcon, Shield, BrainCircui
 import { StatItem } from './stat-item';
 import { StarRating } from './star-rating';
 import { motion } from 'framer-motion';
-import { LikeButton } from './like-button';
+import { LikeButton } from '../likes/like-button';
 import { FollowButton } from '../user/follow-button';
-import { checkRelationship } from '@/app/actions/social';
+import { getFollowStatus } from '@/app/actions/user';
 import { useEffect, useState } from 'react';
+import { CommentSection } from '@/components/comments/comment-section';
+import type { Comment } from '@/app/actions/comments';
+import { GenshinLikeShowcase } from './genshin-like-showcase';
+
 
 interface ShowcaseViewerProps {
     character: Character;
     currentUserId: string | null;
     isLikedInitially: boolean;
+    initialComments: Comment[];
 }
 
-function SkillDisplay({ skill }: { skill: Character['rpg']['skills'][0]}) {
-    const iconMap = {
-        attack: <SwordsIcon className="text-destructive w-4 h-4" />,
-        defense: <Shield className="text-blue-500 w-4 h-4" />,
-        utility: <BrainCircuit className="text-green-500 w-4 h-4" />,
-    }
-
+export function ShowcaseViewer({ character, currentUserId, isLikedInitially, initialComments }: ShowcaseViewerProps) {
     return (
-        <div className="text-sm">
-            <div className="flex justify-between items-start gap-2">
-                <h4 className="font-semibold text-card-foreground">{skill.name}</h4>
-                 <div className="flex items-center gap-1.5 shrink-0">
-                     <span className="text-xs font-bold text-primary">{skill.power}</span>
-                     {iconMap[skill.type]}
-                 </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">{skill.description}</p>
-        </div>
+        <GenshinLikeShowcase 
+            character={character}
+            currentUserId={currentUserId}
+            isLikedInitially={isLikedInitially}
+            initialComments={initialComments}
+        />
     )
-}
-
-
-export function ShowcaseViewer({ character, currentUserId, isLikedInitially }: ShowcaseViewerProps) {
-    const isOwner = character.meta.userId === currentUserId;
-    const showcaseImage = character.visuals.showcaseImageUrl || character.visuals.imageUrl;
-    const backgroundImage = character.visuals.imageUrl;
-    const willpower = character.rpg.willpower;
-
-    const [isFollowing, setIsFollowing] = useState(false);
-
-    useEffect(() => {
-        if (currentUserId && character.meta.userId !== currentUserId) {
-            checkRelationship(currentUserId, character.meta.userId).then(rel => setIsFollowing(rel.isFollowing));
-        }
-    }, [currentUserId, character.meta.userId]);
-
-
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1, delayChildren: 0.2 },
-        },
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0 },
-    };
-
-    return (
-        <div className="relative min-h-screen w-full overflow-hidden">
-            {/* Background Image */}
-            <Image
-                src={backgroundImage}
-                alt={`Background for ${character.core.name}`}
-                fill
-                className="object-cover object-center scale-125"
-                quality={50}
-            />
-            <div className="absolute inset-0 bg-background/70 backdrop-blur-xl" />
-            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/50 to-transparent md:bg-gradient-to-r" />
-            
-            {/* Back Button */}
-            <div className="absolute top-4 left-4 z-20">
-                <Button asChild variant="ghost" size="icon">
-                    <Link href="/"><ArrowLeft/></Link>
-                </Button>
-            </div>
-
-            {/* Main Content - Mobile First (Flex Column) then Grid for larger screens */}
-             <motion.div 
-                className="relative z-10 grid md:grid-cols-2 lg:grid-cols-[2fr_1fr] gap-8 min-h-screen container py-16 md:py-8"
-                initial="hidden"
-                animate="visible"
-                variants={containerVariants}
-            >
-                {/* Character Image & Actions */}
-                <motion.div 
-                    className="flex flex-col items-center justify-center w-full gap-4 md:order-2 lg:order-1"
-                    variants={itemVariants}
-                >
-                    <Image
-                        src={showcaseImage}
-                        alt={character.core.name}
-                        width={1024}
-                        height={1024}
-                        className="object-contain max-h-[60vh] md:max-h-[80vh] w-auto drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)]"
-                        priority
-                    />
-                    {/* Action Bar */}
-                     <div className="w-full max-w-sm flex gap-2 pt-4">
-                        <LikeButton 
-                            characterId={character.id}
-                            initialLikes={character.meta.likes}
-                            isLikedInitially={isLikedInitially}
-                            currentUserId={currentUserId}
-                        />
-                        {currentUserId && character.meta.userId !== currentUserId && (
-                           <FollowButton
-                                currentUserId={currentUserId}
-                                profileUserId={character.meta.userId}
-                                isFollowingInitially={isFollowing}
-                            />
-                        )}
-                        {isOwner && (
-                            <Button asChild className="flex-1">
-                                <Link href={`/characters/${character.id}/edit`}><Edit className="mr-2"/> Edit</Link>
-                            </Button>
-                        )}
-                    </div>
-                </motion.div>
-
-                {/* Info Panel */}
-                <motion.div className="w-full md:order-1 lg:order-2" variants={itemVariants}>
-                     <Card className="bg-card/80 backdrop-blur-md h-full">
-                        <ScrollArea className="h-full max-h-[85vh]">
-                        <CardContent className="p-6 space-y-4 flex flex-col">
-                            <div>
-                                <h1 className="text-3xl font-headline tracking-wider">{character.core.name}</h1>
-                                 <Link href={`/users/${character.meta.userId}`} className="text-sm text-muted-foreground hover:text-primary flex items-center gap-2 mb-2">
-                                     <User className="w-4 h-4"/> by {character.meta.userName}
-                                 </Link>
-                                <div className="flex items-center justify-between">
-                                    <StarRating rating={character.core.rarity || 3} />
-                                    <div className="text-right">
-                                        <p className="text-sm font-semibold text-primary">LVL {character.rpg.level}</p>
-                                        <p className="text-xs text-muted-foreground">{character.rpg.experience} XP</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <Separator />
-
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <StatItem label="Archetype" value={character.core.archetype || 'N/A'} />
-                                <StatItem label="Alignment" value={character.core.alignment} />
-                                <StatItem label="Willpower" value={`${willpower?.current || 0} / ${willpower?.max || 0}`} />
-                                <StatItem label="Likes" value={character.meta.likes.toString()} icon={<Heart className="text-destructive"/>} />
-                            </div>
-                            
-                             <div>
-                                <h3 className="font-semibold text-muted-foreground mb-2">Lore</h3>
-                                <ScrollArea className="h-32 md:h-40 pr-4">
-                                    <p className="text-sm text-card-foreground/90 whitespace-pre-wrap">{character.core.biography}</p>
-                                </ScrollArea>
-                            </div>
-                            
-                            {character.rpg.isPlayable && (
-                                <>
-                                 <Separator />
-                                 <div className="space-y-4">
-                                     <h3 className="font-semibold text-muted-foreground flex items-center gap-2"><Dna className="w-4 h-4"/> Base Stats</h3>
-                                      <div className="grid grid-cols-6 gap-2 text-center">
-                                        <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">STR</span><b className="text-primary">{character.rpg.stats.strength}</b></div>
-                                        <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">DEX</span><b className="text-primary">{character.rpg.stats.dexterity}</b></div>
-                                        <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">CON</span><b className="text-primary">{character.rpg.stats.constitution}</b></div>
-                                        <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">INT</span><b className="text-primary">{character.rpg.stats.intelligence}</b></div>
-                                        <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">WIS</span><b className="text-primary">{character.rpg.stats.wisdom}</b></div>
-                                        <div className="flex flex-col items-center p-1 bg-background/50 rounded-md"><span className="text-xs text-muted-foreground">CHA</span><b className="text-primary">{character.rpg.stats.charisma}</b></div>
-                                    </div>
-                                 </div>
-                                  <div className="flex flex-col gap-y-4">
-                                     <h3 className="font-semibold text-muted-foreground flex items-center gap-2"><SwordsIcon className="w-4 h-4"/> Skills</h3>
-                                      <div className="space-y-3">
-                                        {character.rpg.skills.length > 0 ? (
-                                            character.rpg.skills.map((skill) => <SkillDisplay key={skill.id} skill={skill} />)
-                                        ) : (
-                                            <p className="text-xs text-muted-foreground text-center py-4">No skills generated yet. Process an image in the editor to generate them.</p>
-                                        )}
-                                      </div>
-                                 </div>
-                                </>
-                            )}
-                        </CardContent>
-                        </ScrollArea>
-                    </Card>
-                </motion.div>
-            </motion.div>
-        </div>
-    );
 }

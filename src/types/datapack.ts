@@ -1,74 +1,10 @@
 
 import { z } from 'zod';
 
-// #region New Granular RPG Schema
-
-/**
- * Represents the different types of gear that can be equipped in a single body slot.
- */
-export type EquipmentOption = { label: string; value: string; rarity?: number };
-
-export interface EquipmentSlotOptions {
-  clothing?: EquipmentOption[];
-  armor?: EquipmentOption[];
-  accessory?: EquipmentOption[];
-  weapon?: EquipmentOption[];
-}
-
-/**
- * Defines the available options for each part of a structured character profile.
- * This is now the single source of truth for the schema structure.
- */
-export interface CharacterProfileSchema {
-  // General
-  count: EquipmentOption[];
-  raceClass: EquipmentOption[];
-  gender: EquipmentOption[];
-
-  // Appearance
-  hair: EquipmentOption[];
-  eyes: EquipmentOption[];
-  skin: EquipmentOption[];
-  facialFeatures: EquipmentOption[];
-
-  // Equipment Slots
-  head: EquipmentSlotOptions;
-  face: EquipmentSlotOptions;
-  neck: EquipmentSlotOptions;
-  shoulders: EquipmentSlotOptions;
-  torso: EquipmentSlotOptions;
-  arms: EquipmentSlotOptions;
-  hands: EquipmentSlotOptions;
-  waist: EquipmentSlotOptions;
-  legs: EquipmentSlotOptions;
-  feet: EquipmentSlotOptions;
-  back: EquipmentSlotOptions;
-
-  // Extra weapons
-  weaponsExtra?: EquipmentOption[];
-
-  // Scene
-  pose: EquipmentOption[];
-  action: EquipmentOption[];
-  camera: EquipmentOption[];
-  background: EquipmentOption[];
-  effects: EquipmentOption[];
-}
-
-// #endregion
-
-// Legacy interfaces are kept for reference but are no longer the primary structure.
-export interface Exclusion {
-    slotId: string;
-    optionValues: string[];
-}
-
 export interface Option {
     label: string;
     value: string;
-    tags?: string[];
-    exclusions?: Exclusion[];
-    rarity?: number;
+    rarity?: number; // Added for weighted selection
 }
 
 export interface PromptTemplate {
@@ -76,12 +12,26 @@ export interface PromptTemplate {
     template: string;
 }
 
+export interface EquipmentSlotOptions {
+    clothing?: Option[];
+    armor?: Option[];
+    accessory?: Option[];
+    weapon?: Option[];
+}
+
 /**
- * The main schema for a DataPack, now simplified to use the new system.
+ * The main schema for a DataPack. The characterProfileSchema can have any string as a key,
+ * representing a "slot" (e.g., 'hair_color', 'clothing_style'). The value can be an array
+ * of simple options, or a nested object for equipment slots.
  */
+export type CharacterProfileSchema = {
+    [key: string]: Option[] | EquipmentSlotOptions | undefined;
+};
+
+
 export interface DataPackSchema {
-    characterProfileSchema: Partial<CharacterProfileSchema>;
     promptTemplates: PromptTemplate[];
+    characterProfileSchema: CharacterProfileSchema;
 }
 
 export interface DataPack {
@@ -97,56 +47,39 @@ export interface DataPack {
     updatedAt?: number | null;
     schema: DataPackSchema;
     isNsfw?: boolean;
+    extends?: string[];
+    includes?: string[];
+    imported?: boolean;
 }
 
-// Zod Schemas for validation (both client and server)
+// Zod Schemas for validation
 
-const EquipmentOptionSchema = z.object({
+const OptionSchema = z.object({
   label: z.string(),
   value: z.string(),
   rarity: z.number().optional(),
 });
 
 const EquipmentSlotOptionsSchema = z.object({
-  clothing: z.array(EquipmentOptionSchema).optional(),
-  armor: z.array(EquipmentOptionSchema).optional(),
-  accessory: z.array(EquipmentOptionSchema).optional(),
-  weapon: z.array(EquipmentOptionSchema).optional(),
+    clothing: z.array(OptionSchema).optional(),
+    armor: z.array(OptionSchema).optional(),
+    accessory: z.array(OptionSchema).optional(),
+    weapon: z.array(OptionSchema).optional(),
 }).optional();
 
-const CharacterProfileSchemaForZod = z.object({
-  count: z.array(EquipmentOptionSchema).optional(),
-  raceClass: z.array(EquipmentOptionSchema).optional(),
-  gender: z.array(EquipmentOptionSchema).optional(),
-  hair: z.array(EquipmentOptionSchema).optional(),
-  eyes: z.array(EquipmentOptionSchema).optional(),
-  skin: z.array(EquipmentOptionSchema).optional(),
-  facialFeatures: z.array(EquipmentOptionSchema).optional(),
-  head: EquipmentSlotOptionsSchema,
-  face: EquipmentSlotOptionsSchema,
-  neck: EquipmentSlotOptionsSchema,
-  shoulders: EquipmentSlotOptionsSchema,
-  torso: EquipmentSlotOptionsSchema,
-  arms: EquipmentSlotOptionsSchema,
-  hands: EquipmentSlotOptionsSchema,
-  waist: EquipmentSlotOptionsSchema,
-  legs: EquipmentSlotOptionsSchema,
-  feet: EquipmentSlotOptionsSchema,
-  back: EquipmentSlotOptionsSchema,
-  weaponsExtra: z.array(EquipmentOptionSchema).optional(),
-  pose: z.array(EquipmentOptionSchema).optional(),
-  action: z.array(EquipmentOptionSchema).optional(),
-  camera: z.array(EquipmentOptionSchema).optional(),
-  background: z.array(EquipmentOptionSchema).optional(),
-  effects: z.array(EquipmentOptionSchema).optional(),
-}).passthrough();
+const PromptTemplateSchema = z.object({
+    name: z.string(),
+    template: z.string(),
+});
 
+// A dynamic schema for character profiles where keys are strings and values are arrays of options or equipment objects.
+const CharacterProfileSchemaForZod = z.record(
+    z.string(), 
+    z.union([z.array(OptionSchema), EquipmentSlotOptionsSchema])
+);
 
 export const DataPackSchemaSchema = z.object({
-    promptTemplates: z.array(z.object({
-        name: z.string(),
-        template: z.string(),
-    })).default([]),
+    promptTemplates: z.array(PromptTemplateSchema).default([]),
     characterProfileSchema: CharacterProfileSchemaForZod.default({}),
 });
 
@@ -159,6 +92,9 @@ export const DataPackFormSchema = z.object({
   tags: z.array(z.string()).optional(),
   schema: DataPackSchemaSchema,
   isNsfw: z.boolean().optional(),
+  extends: z.array(z.string()).optional(),
+  includes: z.array(z.string()).optional(),
+  imported: z.boolean().optional(),
 });
 
 

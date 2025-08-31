@@ -1,4 +1,6 @@
+
 import { z } from 'zod';
+import type { CharacterBible } from '@/ai/flows/character-bible/types';
 
 /**
  * Represents a single event in a character's history.
@@ -85,7 +87,7 @@ export type Character = {
     isNsfw: boolean;
     dataPackId: string | null;
     dataPackName?: string | null; // Denormalized for display
-    likes: number; // Number of likes
+    likes: number;
   };
 
   // Versioning and branching information.
@@ -115,6 +117,10 @@ export type Character = {
   
   // RPG / Gamification attributes
   rpg: RpgAttributes;
+
+  // Ephemeral data for UI, not stored in Firestore.
+  likeCount?: number;
+  userHasLiked?: boolean;
 };
 
 // Zod validation schemas updated to reflect the new structure.
@@ -131,19 +137,12 @@ export const UpdateCharacterSchema = z.object({
 });
 
 export const SaveCharacterInputSchema = z.object({
-  name: z.string().min(1, 'Name is required.'),
-  biography: z.string(),
+  bible: z.custom<CharacterBible>(), // It now requires the full bible
   imageUrl: z.string().startsWith('data:image/'),
   dataPackId: z.string().optional().nullable(),
-  archetype: z.string().optional().nullable(),
-  equipment: z.array(z.string()).optional().nullable(),
-  physicalDescription: z.string().optional().nullable(),
-  birthYear: z.string().optional().nullable(),
-  weaknesses: z.string().optional().nullable(),
   textEngine: z.enum(['gemini', 'openrouter']).optional(),
   imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai', 'comfyui', 'modelslab', 'rundiffusion']).optional(),
   wizardData: z.record(z.union([z.string(), z.record(z.string())])).optional().nullable(),
   originalPrompt: z.string().optional(),
-  rarity: z.number().min(1).max(5).optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;

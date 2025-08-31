@@ -8,8 +8,9 @@
 
 import { ai } from '@/ai/genkit';
 import { GenerateArchitectPromptInputSchema, GenerateArchitectPromptOutputSchema, type GenerateArchitectPromptInput, type GenerateArchitectPromptOutput } from './types';
-import { expandTemplate, loadDatasetsFromFirestore } from '@/services/composition';
-import { adminDb } from '@/lib/firebase/server';
+import { expandTemplate } from '@/services/composition';
+import { loadDatasetsFromFirestore } from '@/services/composition.server'; // Correctly import the server-only function
+import architectPack from '@/data/datapacks/prompt-architect/datapack.json'; // Direct import of the architect's own data
 
 export async function generateArchitectPrompt(input: GenerateArchitectPromptInput): Promise<GenerateArchitectPromptOutput> {
   return generateArchitectPromptFlow(input);
@@ -25,29 +26,18 @@ const generateArchitectPromptFlow = ai.defineFlow(
     
     const finalSeed = seed ?? Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
     
-    if (!adminDb) {
-        throw new Error("Database service is unavailable.");
-    }
-    
-    // 1. Load all available wildcards and module templates from Firestore.
+    // 1. Load all available wildcards and module templates from Firestore using the server-only function.
     const datasets = await loadDatasetsFromFirestore();
     
-    // CRITICAL FIX: Fetch the document directly by its known ID ('prompt-architect')
-    // This is more reliable and efficient than querying by name.
-    const moduleDoc = await adminDb.collection('datapacks').doc('prompt-architect').get();
-    
-    if (!moduleDoc.exists) {
-        throw new Error("Could not find the 'Prompt Architect' DataPack containing the required focus modules.");
-    }
-    const moduleData = moduleDoc.data();
-    const templates = moduleData?.schema?.promptTemplates || [];
-    const focusTemplate = templates.find((t: any) => t.name.toLowerCase().replace(/ /g, '_') === focusModule);
+    // 2. Load the architect's own templates directly from the imported JSON file.
+    const templates = architectPack.schema?.promptTemplates || [];
+    const focusTemplate = templates.find((t) => t.name.toLowerCase().replace(/ /g, '_') === focusModule);
 
     if (!focusTemplate) {
         throw new Error(`The focus module '${focusModule}' could not be found in the Prompt Architect DataPack.`);
     }
 
-    // 2. Expand the chosen template using the composition service.
+    // 3. Expand the chosen template using the composition service.
     // The expandTemplate function now handles the Pareto selection internally.
     const finalPrompt = expandTemplate(focusTemplate.template, datasets);
 

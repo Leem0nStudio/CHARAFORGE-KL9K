@@ -48,4 +48,14 @@ export interface UserProfile {
   role?: 'admin' | 'moderator' | 'user';
   preferences?: UserPreferences;
   avatarUpdatedAt?: number;
+  profile?: {
+    bio?: string;
+    socialLinks?: {
+      twitter?: string;
+      artstation?: string;
+      website?: string;
+      // Add more social links as needed
+    };
+    featuredCharacters?: string[]; // Array of character IDs
+  };
 }

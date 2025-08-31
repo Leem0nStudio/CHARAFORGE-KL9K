@@ -1,4 +1,3 @@
-
 import type {Config} from 'tailwindcss';
 
 const config = {
@@ -89,12 +88,12 @@ const config = {
          'pulse-glow': {
           '0%, 100%': { 
             opacity: '0.8',
-            filter: 'drop-shadow(0 0 2px hsl(var(--primary)))',
+            filter: 'drop-shadow(0 0 3px hsl(var(--accent)))',
           },
           '50%': { 
             opacity: '1',
-            transform: 'scale(1.05)',
-            filter: 'drop-shadow(0 0 8px hsl(var(--primary)))',
+            transform: 'scale(1.02)',
+            filter: 'drop-shadow(0 0 10px hsl(var(--accent)))',
           },
         },
         'subtle-pulse': {

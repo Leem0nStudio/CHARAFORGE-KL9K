@@ -5,7 +5,7 @@ import type { Character } from '@/types/character';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { GachaCard } from '../character/gacha-card';
+import { GachaCard } from '@/components/character/gacha-card';
 import { ArrowLeft, Swords, Dna, Loader2, RefreshCw, BarChart3, Star, Heart } from 'lucide-react';
 import { simulateBattle, getRandomOpponent } from './actions';
 import { StatItem } from '@/components/showcase/stat-item';

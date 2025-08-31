@@ -1,120 +1,97 @@
-
 'use client';
-
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 
-const sunRayVariants = {
-  hidden: { opacity: 0, scale: 0.8, rotate: -20 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    rotate: 0,
+const sunRaysVariants = {
+  initial: { rotate: 0, scale: 0.8, opacity: 0 },
+  animate: {
+    rotate: 360,
+    scale: 1.2,
+    opacity: 0.5,
     transition: {
-      duration: 1.5,
-      ease: 'easeOut',
+      duration: 30,
+      ease: 'linear',
       repeat: Infinity,
-      repeatType: 'reverse' as const,
     },
   },
 };
 
 const characterVariants = {
-  hidden: { y: 50, opacity: 0, scale: 0.8 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.3 },
-  },
+    hidden: { opacity: 0, y: 100, scale: 0.8 },
+    visible: { 
+        opacity: 1, 
+        y: 0,
+        scale: 1,
+        transition: {
+            duration: 0.8,
+            ease: [0.22, 1, 0.36, 1], // EaseOutQuint
+        }
+    }
 };
 
 const bannerVariants = {
-  hidden: { y: -30, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.5, ease: 'easeOut', delay: 0.1 },
-  },
-};
-
-const sparkles = Array.from({ length: 15 });
+    hidden: { opacity: 0, y: -50 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            delay: 0.5,
+            duration: 0.5,
+            ease: 'easeOut',
+        }
+    }
+}
 
 export function CharacterRevealScreen({ imageUrl }: { imageUrl: string }) {
   return (
-    <div className="fixed inset-0 bg-[#0a2a2f] flex items-center justify-center z-[100] overflow-hidden">
-      {/* Sun Rays Background */}
+    <motion.div
+      className="fixed inset-0 bg-black flex items-center justify-center z-[100] overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Background Starfield & Gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(41,41,85,0.5),transparent_60%)]" />
+
+      {/* Rotating Sun Rays */}
       <motion.div
-        className="absolute inset-0"
+        className="absolute inset-0 bg-contain bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/sun-rays.svg')" }}
+        variants={sunRaysVariants}
+        initial="initial"
+        animate="animate"
+      />
+
+      {/* Character Image */}
+      <motion.div 
+        className="relative w-[300px] h-[400px] md:w-[400px] md:h-[533px] z-20"
+        variants={characterVariants}
         initial="hidden"
         animate="visible"
-        variants={{
-          visible: {
-            transition: {
-              staggerChildren: 0.2,
-            },
-          },
-        }}
       >
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(251,191,36,0.3)_0%,_rgba(251,191,36,0)_50%)]" />
-        <motion.div
-          className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(251,191,36,0.2)_0%,_rgba(251,191,36,0)_60%)]"
-          variants={sunRayVariants}
+        <Image
+          src={imageUrl}
+          alt="Generated Character"
+          fill
+          className="object-contain drop-shadow-[0_10px_30px_rgba(255,255,255,0.25)]"
+          priority
         />
       </motion.div>
-      
-       {/* Sparkles */}
-        {sparkles.map((_, i) => {
-            const size = Math.random() * 20 + 5;
-            const duration = Math.random() * 2 + 3;
-            const delay = Math.random() * 2;
-            return (
-                <motion.div
-                    key={i}
-                    className="absolute rounded-full bg-yellow-300"
-                    style={{
-                        width: size,
-                        height: size,
-                        top: `${Math.random() * 100}%`,
-                        left: `${Math.random() * 100}%`,
-                    }}
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
-                    transition={{ duration, repeat: Infinity, delay, ease: 'easeInOut' }}
-                />
-            );
-        })}
 
-
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
-         {/* Banner */}
-        <motion.div 
-            className="absolute top-[20%] text-center"
-            variants={bannerVariants}
-            initial="hidden"
-            animate="visible"
-        >
-          <div className="relative inline-block bg-primary/20 border-2 border-primary/50 py-2 px-12 text-white font-headline text-3xl tracking-wider shadow-lg rounded-md backdrop-blur-sm">
-            Character Forged
-          </div>
-        </motion.div>
-
-        {/* Character Image */}
-        <motion.div
-          className="relative w-[300px] h-[400px]"
-          variants={characterVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <Image
-            src={imageUrl}
-            alt="Newly generated character"
-            fill
-            className="object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]"
-          />
-        </motion.div>
-      </div>
-    </div>
+       {/* Banner */}
+      <motion.div 
+        className="absolute top-10 md:top-20 z-30"
+        variants={bannerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <div className="px-8 py-3 bg-gradient-to-r from-primary via-accent to-primary border-2 border-primary-foreground/50 rounded-lg shadow-2xl">
+            <h2 className="text-2xl md:text-3xl font-headline tracking-widest text-primary-foreground text-center font-bold">
+                CHARACTER FORGED
+            </h2>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }

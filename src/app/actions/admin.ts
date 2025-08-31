@@ -1,123 +1,134 @@
 
-
 'use server';
 
-import { adminDb } from '@/lib/firebase/server';
-import type { AiModel } from '@/types/ai-model';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import type { UserProfile } from '@/types/user';
+import { verifyIsAdmin } from '@/lib/auth/server';
 
-// Define a type for the stats object for better type safety.
-type DashboardStats = {
-  totalUsers: number;
-  totalCharacters: number;
-  publicCharacters: number;
-  privateCharacters: number;
-  totalModels: number;
-  totalLoras: number;
+// A type for the sanitized user data we send to the client.
+export type SanitizedUser = Pick<UserProfile, 'uid' | 'email'> & {
+    disabled: boolean; // Supabase users have a ban_duration, we can simplify to a boolean
+    isAdmin: boolean;
 };
 
-// Return a consistent, zeroed-out object shape on initialization failure or error.
-const zeroStats: DashboardStats = {
-  totalUsers: 0,
-  totalCharacters: 0,
-  publicCharacters: 0,
-  privateCharacters: 0,
-  totalModels: 0,
-  totalLoras: 0,
+type ActionResponse = {
+    success: boolean;
+    message: string;
+    error?: string;
 };
-
-export async function getDashboardStats(): Promise<DashboardStats> {
-  if (!adminDb) {
-    console.error("Database service is unavailable in getDashboardStats.");
-    return zeroStats;
-  }
-
-  try {
-    // Use Promise.all for concurrent data fetching.
-    const [
-        usersSnapshot, 
-        charactersSnapshot, 
-        publicCharactersSnapshot,
-        modelsSnapshot,
-        lorasSnapshot,
-    ] = await Promise.all([
-      adminDb.collection('users').count().get(),
-      adminDb.collection('characters').count().get(),
-      adminDb.collection('characters').where('meta.status', '==', 'public').count().get(),
-      adminDb.collection('ai_models').where('type', '==', 'model').count().get(),
-      adminDb.collection('ai_models').where('type', '==', 'lora').count().get(),
-    ]);
-    
-    const totalUsers = usersSnapshot.data().count;
-    const totalCharacters = charactersSnapshot.data().count;
-    const publicCharacters = publicCharactersSnapshot.data().count;
-    const privateCharacters = totalCharacters - publicCharacters;
-    const totalModels = modelsSnapshot.data().count;
-    const totalLoras = lorasSnapshot.data().count;
-
-    return {
-      totalUsers,
-      totalCharacters,
-      publicCharacters,
-      privateCharacters,
-      totalModels,
-      totalLoras,
-    };
-  } catch (error) {
-    // Avoid logging errors in production environments for security.
-    // A dedicated logging service should be used in a real-world app.
-    if (process.env.NODE_ENV !== 'production') {
-        console.error("Error fetching dashboard stats:", error);
-    }
-    // Return zeroed stats on error to prevent breaking the UI.
-    return zeroStats;
-  }
-}
-
 
 /**
- * Fetches the application's logo URL from the Firestore configuration.
- * Uses a 'no-store' cache policy to ensure the most recent logo is always fetched.
- * @returns {Promise<string | null>} A promise that resolves to the logo URL string, or null if not found.
+ * Searches for users by email address.
+ * Only callable by an authenticated admin.
+ * @param emailQuery The email address to search for.
+ * @returns A list of sanitized user objects.
  */
-export async function getLogoUrl(): Promise<string | null> {
+export async function searchUsers(emailQuery: string): Promise<SanitizedUser[]> {
+    await verifyIsAdmin();
+    const supabase = getSupabaseServerClient();
+
+    if (!emailQuery) {
+        return [];
+    }
+
     try {
-        if (!adminDb) {
-            // This should not happen in production, but it's a good safeguard.
-            console.error("Firestore is not initialized. Cannot fetch logo URL.");
-            return null;
-        }
+        // Supabase admin client can be used to search users by email
+        const { data: { users }, error } = await supabase.auth.admin.listUsers({ email: emailQuery });
         
-        const configDoc = await adminDb.collection('settings').doc('appDetails').get();
+        if (error) throw error;
+        if (users.length === 0) return [];
 
-        if (configDoc.exists) {
-            return configDoc.data()?.logoUrl || null;
-        }
-        
-        return null;
-
-    } catch (error) {
-        console.error("Error fetching logo URL from Firestore:", error);
-        return null;
+        return users.map(user => ({
+            uid: user.id,
+            email: user.email,
+            disabled: !!user.banned_until && new Date(user.banned_until) > new Date(),
+            isAdmin: user.app_metadata?.role === 'admin',
+        }));
+    } catch (error: any) {
+        console.error('Error searching for user:', error);
+        throw new Error('An error occurred while searching for users.');
     }
 }
 
 /**
- * Fetches general application settings.
- * @returns {Promise<{enableAdminFeatures: boolean} | null>}
+ * Grants admin privileges to a user.
+ * Only callable by an authenticated admin.
+ * @param uid The UID of the user to grant admin privileges to.
  */
-export async function getUserSettings(): Promise<{enableAdminFeatures: boolean} | null> {
-    if (!adminDb) {
-        console.error("Database service is unavailable.");
-        return null;
-    }
+export async function grantAdminRole(uid: string): Promise<ActionResponse> {
+    await verifyIsAdmin();
+    const supabase = getSupabaseServerClient();
     try {
-        const settingsDoc = await adminDb.collection('settings').doc('appDetails').get();
-        if (settingsDoc.exists) {
-            return settingsDoc.data() as {enableAdminFeatures: boolean};
-        }
-        return null;
-    } catch (error) {
-        console.error("Error fetching user settings:", error);
-        return null;
+        const { error: authError } = await supabase.auth.admin.updateUserById(uid, { app_metadata: { role: 'admin' } });
+        if (authError) throw authError;
+
+        const { error: dbError } = await supabase.from('users').update({ role: 'admin' }).eq('id', uid);
+        if (dbError) throw dbError;
+        
+        revalidatePath('/admin/users');
+        return { success: true, message: 'Admin role granted successfully.' };
+    } catch (error: any) {
+        return { success: false, message: 'Failed to grant admin role.', error: error.message };
+    }
+}
+
+/**
+ * Revokes admin privileges from a user.
+ * Only callable by an authenticated admin.
+ * @param uid The UID of the user to revoke admin privileges from.
+ */
+export async function revokeAdminRole(uid: string): Promise<ActionResponse> {
+    await verifyIsAdmin();
+    const supabase = getSupabaseServerClient();
+    try {
+        const { error: authError } = await supabase.auth.admin.updateUserById(uid, { app_metadata: { role: 'user' } });
+        if (authError) throw authError;
+
+        const { error: dbError } = await supabase.from('users').update({ role: 'user' }).eq('id', uid);
+        if (dbError) throw dbError;
+        
+        revalidatePath('/admin/users');
+        return { success: true, message: 'Admin role revoked successfully.' };
+    } catch (error: any) {
+        return { success: false, message: 'Failed to revoke admin role.', error: error.message };
+    }
+}
+
+export async function getDashboardStats(): Promise<{ totalUsers: number; totalCharacters: number; totalDataPacks: number, publicCharacters: number, privateCharacters: number, totalModels: number, totalLoras: number }> {
+    await verifyIsAdmin();
+    const supabase = getSupabaseServerClient();
+    try {
+        const { count: totalUsers, error: usersError } = await supabase.from('users').select('*', { count: 'exact', head: true });
+        if (usersError) throw usersError;
+
+        const { count: totalCharacters, error: charsError } = await supabase.from('characters').select('*', { count: 'exact', head: true });
+        if (charsError) throw charsError;
+
+        const { count: totalDataPacks, error: packsError } = await supabase.from('datapacks').select('*', { count: 'exact', head: true });
+        if (packsError) throw packsError;
+        
+        const { count: publicCharacters, error: publicCharsError } = await supabase.from('characters').select('*', { count: 'exact', head: true }).eq('meta_details->>status', 'public');
+        if(publicCharsError) throw publicCharsError;
+        
+        const { count: totalModels, error: modelsError } = await supabase.from('ai_models').select('*', { count: 'exact', head: true }).eq('type', 'model');
+        if(modelsError) throw modelsError;
+
+        const { count: totalLoras, error: lorasError } = await supabase.from('ai_models').select('*', { count: 'exact', head: true }).eq('type', 'lora');
+        if(lorasError) throw lorasError;
+
+        return {
+            totalUsers: totalUsers || 0,
+            totalCharacters: totalCharacters || 0,
+            totalDataPacks: totalDataPacks || 0,
+            publicCharacters: publicCharacters || 0,
+            privateCharacters: (totalCharacters || 0) - (publicCharacters || 0),
+            totalModels: totalModels || 0,
+            totalLoras: totalLoras || 0,
+        };
+    } catch (error: any) {
+        console.error('Error fetching dashboard stats:', error);
+        // Return default values on error to avoid breaking the dashboard
+        return { totalUsers: 0, totalCharacters: 0, totalDataPacks: 0, publicCharacters: 0, privateCharacters: 0, totalModels: 0, totalLoras: 0 };
     }
 }

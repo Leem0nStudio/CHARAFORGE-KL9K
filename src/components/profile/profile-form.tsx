@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { updateUserProfile, type ActionResponse } from '@/app/actions/user';
 import type { UserProfile } from '@/types/user';
-import { Camera } from 'lucide-react';
+import { Camera, Copy } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SubmitButton } from '@/components/ui/submit-button';
 
@@ -51,6 +52,11 @@ export function ProfileForm({ user }: { user: UserProfile }) {
   };
   
   const fallback = user.displayName?.charAt(0) || user.email?.charAt(0) || '?';
+
+  const copyUid = () => {
+    navigator.clipboard.writeText(user.uid);
+    toast({ title: 'UID Copied!', description: 'Your User ID has been copied to the clipboard.'})
+  }
 
   return (
     <Card>
@@ -99,6 +105,57 @@ export function ProfileForm({ user }: { user: UserProfile }) {
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" defaultValue={user.email || ''} disabled />
             </div>
+             <div className="space-y-2">
+                <Label htmlFor="uid">User ID</Label>
+                <div className="flex items-center gap-2">
+                    <Input id="uid" type="text" value={user.uid} readOnly disabled />
+                    <Button type="button" variant="outline" size="icon" onClick={copyUid}><Copy className="w-4 h-4"/></Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Your unique identifier. Needed for admin commands.</p>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="bio">Biography</Label>
+                <Textarea 
+                    id="bio" 
+                    name="bio" 
+                    defaultValue={user.profile?.bio || ''}
+                    placeholder="Tell us about yourself..."
+                    rows={4}
+                    maxLength={500}
+                />
+            </div>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Social Links</h3>
+                <div className="space-y-2">
+                    <Label htmlFor="twitter">Twitter URL</Label>
+                    <Input 
+                        id="twitter" 
+                        name="socialLinks.twitter" 
+                        defaultValue={user.profile?.socialLinks?.twitter || ''}
+                        placeholder="https://twitter.com/yourprofile"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="artstation">ArtStation URL</Label>
+                    <Input 
+                        id="artstation" 
+                        name="socialLinks.artstation" 
+                        defaultValue={user.profile?.socialLinks?.artstation || ''}
+                        placeholder="https://www.artstation.com/yourprofile"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="website">Website URL</Label>
+                    <Input 
+                        id="website" 
+                        name="socialLinks.website" 
+                        defaultValue={user.profile?.socialLinks?.website || ''}
+                        placeholder="https://yourwebsite.com"
+                    />
+                </div>
+            </div>
+
             <SubmitButton>Update Profile</SubmitButton>
         </form>
       </CardContent>

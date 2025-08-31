@@ -2,24 +2,24 @@
 /**
  * @fileoverview The core algorithmic engine for the Prompt Architect system.
  * This service contains the logic for intelligent prompt composition, including
- * weighted selection, Markov chains for narrative coherence, and template expansion.
+ * weighted selection, and recursive template expansion for nested wildcards.
  */
 
 import type { DataPack, Option } from '@/types/datapack';
-import { adminDb } from '@/lib/firebase/server';
 
 // #region Helper Types
-type Datasets = Record<string, Option[]>;
+export type Datasets = Record<string, Option[]>;
 // #endregion
 
 
 // #region Pareto-Weighted Picker
 
 /**
- * Selects an item from a list using a Pareto-like weighted distribution.
- * This makes lower-ranked (more common) items more likely to be chosen, while still allowing for rare picks.
- * @param items - The list of items to choose from. Each item must have a 'value' and can have a 'rarity' score.
- * @param alpha - The Pareto distribution parameter. Higher values create a steeper curve (more bias towards common items).
+ * Selects an item from a list using a Pareto-like weighted distribution if rarity is present,
+ * otherwise picks a random item.
+ * This makes the function robust and compatible with all DataPacks.
+ * @param items - The list of items to choose from.
+ * @param alpha - The Pareto distribution parameter. Higher values create a steeper curve.
  * @returns The chosen item.
  */
 export function paretoWeightedChoice(items: Option[], alpha: number = 1.5): Option {
@@ -28,8 +28,13 @@ export function paretoWeightedChoice(items: Option[], alpha: number = 1.5): Opti
         return { label: '', value: '' };
     }
     
-    // The previous implementation assumed items always had a 'rarity' property.
-    // This version is now robust and handles cases where rarity is not defined by assigning a default.
+    // Check if the items actually have rarity defined. If not, default to random choice.
+    const hasRarity = items.some(item => typeof item.rarity === 'number');
+
+    if (!hasRarity) {
+        return items[Math.floor(Math.random() * items.length)];
+    }
+    
     const sortedItems = [...items].sort((a, b) => (b.rarity || 1) - (a.rarity || 1));
 
     const n = sortedItems.length;
@@ -39,65 +44,16 @@ export function paretoWeightedChoice(items: Option[], alpha: number = 1.5): Opti
     let random = Math.random() * totalWeight;
 
     for (let i = 0; i < n; i++) {
-        random -= weights[i];
-        if (random <= 0) {
-            return sortedItems[i];
-        }
-    }
-    
-    return sortedItems[n - 1]; // Fallback to the last item
-}
-// #endregion
-
-
-// #region Markov Chain Generator
-// A simple Markov Chain implementation for generating coherent sequences.
-export class MarkovChainGenerator {
-    private model: Map<string, string[]> = new Map();
-
-    /**
-     * Trains the Markov model on a set of sequences.
-     * @param sequences - An array of string arrays, where each inner array is a sequence.
-     */
-    train(sequences: string[][]): void {
-        for (const sequence of sequences) {
-            if (sequence.length === 0) continue;
-            
-            this.model.set('__START__', [...(this.model.get('__START__') || []), sequence[0]]);
-
-            for (let i = 0; i < sequence.length - 1; i++) {
-                const current = sequence[i];
-                const next = sequence[i + 1];
-                const transitions = this.model.get(current) || [];
-                this.model.set(current, [...transitions, next]);
+        const weight = weights[i];
+        if (weight !== undefined) {
+             random -= weight;
+            if (random <= 0) {
+                return sortedItems[i]!;
             }
         }
     }
-
-    /**
-     * Generates a new sequence from the trained model.
-     * @param maxLength - The maximum length of the generated sequence.
-     * @returns A new sequence of strings.
-     */
-    generate(maxLength: number = 5): string[] {
-        let current = this.getRandomElement(this.model.get('__START__'));
-        if (!current) return [];
-
-        const result = [current];
-        for (let i = 1; i < maxLength; i++) {
-            const nextStates = this.model.get(current);
-            if (!nextStates || nextStates.length === 0) break;
-            
-            current = this.getRandomElement(nextStates)!;
-            result.push(current);
-        }
-        return result;
-    }
-
-    private getRandomElement(array?: string[]): string | undefined {
-        if (!array || array.length === 0) return undefined;
-        return array[Math.floor(Math.random() * array.length)];
-    }
+    
+    return sortedItems[n - 1]!; // Fallback to the last item
 }
 // #endregion
 
@@ -132,8 +88,9 @@ export function expandTemplate(template: string, datasets: Datasets, recursionLi
         }
         
         // Handle dataset placeholders
-        if (datasets[key] && datasets[key].length > 0) {
-            const chosenOption = paretoWeightedChoice(datasets[key]);
+        const datasetOptions = datasets[key];
+        if (datasetOptions && datasetOptions.length > 0) {
+            const chosenOption = paretoWeightedChoice(datasetOptions);
             needsAnotherPass = true;
             return chosenOption.value;
         }
@@ -151,35 +108,83 @@ export function expandTemplate(template: string, datasets: Datasets, recursionLi
 }
 // #endregion
 
-
 /**
- * Fetches all DataPacks from Firestore and transforms them into a simple
- * key-value dataset suitable for the template engine.
- * @returns A promise that resolves to the datasets object.
+ * Transforms a single DataPack's schema into the key-value dataset format.
+ * This function is safe to use on the client.
+ * @param pack The DataPack to process.
+ * @returns A Datasets object for the single pack.
  */
-export async function loadDatasetsFromFirestore(): Promise<Datasets> {
-    if (!adminDb) {
-        throw new Error("Firestore is not initialized.");
-    }
-    const snapshot = await adminDb.collection('datapacks').get();
-    const datasets: Datasets = {};
+function dataPackToDataset(pack: DataPack): Datasets {
+    const dataset: Datasets = {};
+    const schema = pack.schema?.characterProfileSchema;
+    if (!schema) return dataset;
 
-    snapshot.forEach(doc => {
-        const pack = doc.data() as DataPack;
-        if (pack.schema && pack.schema.characterProfileSchema) {
-            for (const [key, value] of Object.entries(pack.schema.characterProfileSchema)) {
-                 if (Array.isArray(value)) {
-                    datasets[key] = (datasets[key] || []).concat(value);
-                 } else if (typeof value === 'object' && value !== null) {
-                    for (const subValue of Object.values(value)) {
-                         if (Array.isArray(subValue)) {
-                             datasets[key] = (datasets[key] || []).concat(subValue);
-                         }
-                    }
-                 }
+    for (const [key, value] of Object.entries(schema)) {
+        if (Array.isArray(value)) {
+            dataset[key] = (dataset[key] || []).concat(value);
+        } else if (typeof value === 'object' && value !== null) {
+            for (const [subKey, subValue] of Object.entries(value)) {
+                if (Array.isArray(subValue)) {
+                    const combinedKey = `${key}_${subKey}`;
+                    dataset[combinedKey] = (dataset[combinedKey] || []).concat(subValue);
+                }
             }
         }
-    });
+    }
+    return dataset;
+}
 
-    return datasets;
+/**
+ * Converts a specific DataPack into a dataset for isolated prompt generation.
+ * This is the new standard way to get options for the generator and is client-safe.
+ * @param pack The DataPack to convert.
+ * @returns A Datasets object containing only options from the provided pack.
+ */
+export function getDatasetForDataPack(pack: DataPack): Datasets {
+    return dataPackToDataset(pack);
+}
+
+
+/**
+ * Creates an "inverted index" map from an option's value to its slot key.
+ * This is used for efficiently finding alternative options for a given tag.
+ * e.g., { "wearing a leather jacket": "torso_clothing", "plate armor": "torso_armor" }
+ * @param dataset The flattened dataset from a DataPack.
+ * @returns A Map where keys are option values and values are slot keys.
+ */
+export function createInvertedDatasetMap(dataset: Datasets): Map<string, string> {
+    const invertedMap = new Map<string, string>();
+    for (const slotKey in dataset) {
+        const options = dataset[slotKey];
+        if (Array.isArray(options)) {
+            for (const option of options) {
+                if (option.value) { // Ensure the option has a value
+                    invertedMap.set(option.value, slotKey);
+                }
+            }
+        }
+    }
+    return invertedMap;
+}
+
+/**
+ * Finds the corresponding slot key for a given tag from the prompt by checking
+ * if any known option value is a substring of the tag.
+ * @param tag The tag from the prompt (e.g., "a beautiful woman wearing a leather jacket").
+ * @param invertedMap The pre-computed inverted map of the dataset.
+ * @returns The matching slot key (e.g., "torso_clothing") or null if not found.
+ */
+export function findSlotKeyForTag(tag: string, invertedMap: Map<string, string>): string | null {
+    // This is more robust. It finds the longest matching key to avoid ambiguity.
+    // e.g., if keys are "hat" and "red hat", and tag is "wearing a red hat", it will match "red hat".
+    let bestMatch: string | null = null;
+    let bestMatchLength = 0;
+    
+    for (const [optionValue, slotKey] of invertedMap.entries()) {
+        if (tag.includes(optionValue) && optionValue.length > bestMatchLength) {
+            bestMatch = slotKey;
+            bestMatchLength = optionValue.length;
+        }
+    }
+    return bestMatch;
 }

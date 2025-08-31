@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Exo+2:wght@400;700&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Exo+2:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,75 +7,67 @@
 
 @layer base {
   :root {
-    --background: 222 47% 11%; /* #111827 */
-    --foreground: 0 0% 98%;
-
-    --card: 222 47% 14%;
-    --card-foreground: 0 0% 98%;
-    --card-highlight: 222 47% 16%;
-
-    --popover: 222 47% 8%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 221 63% 33%; /* #1E3A8A */
-    --primary-foreground: 0 0% 98%;
-    --primary-hover: 221 63% 40%;
-
-    --secondary: 222 47% 20%;
-    --secondary-foreground: 0 0% 95%;
-    --secondary-hover: 222 47% 25%;
+    --noise-filter: url("data:image/svg+xml,%3Csvg viewBox='0 0 800 800' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    --background: 224 71% 4%; /* #010815 */
+    --background: 224 71% 4%; /* #010815 */
+    --foreground: 210 40% 98%;
     
-    --muted: 222 47% 16%;
-    --muted-foreground: 222 47% 65%;
+    --card: 224 71% 6%;
+    --card-foreground: 210 40% 98%;
+    --card-highlight: 224 71% 8%;
 
-    --accent: 39 91% 52%; /* #F59E0B */
-    --accent-foreground: 222 47% 8%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 210 40% 98%;
 
-    --destructive: 0 63% 45%;
-    --destructive-foreground: 0 0% 100%;
-    --destructive-hover: 0 63% 50%;
+    --primary: 217 91% 60%; /* Brighter Blue */
+    --primary-foreground: 210 40% 98%;
+    --primary-hover: 217 91% 70%;
 
-    --border: 222 47% 16%;
-    --input: 222 47% 15%;
-    --ring: 39 91% 55%;
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --secondary-hover: 215 28% 22%;
     
-    --radius: 1rem;
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 21% 65%;
 
-    --talent-bg: 200 30% 10%; /* #111a1c - Dark teal base */
-    --talent-panel: 198 30% 11%; /* #142022 - Slightly lighter panel */
-    --talent-border: 180 100% 95%; /* White with low opacity */
-    --talent-accent: 160 50% 60%; /* #66ccaa - Emerald/Teal accent */
+    --accent: 39 91% 52%; /* #F59E0B Amber/Gold */
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --destructive-hover: 0 63% 41%;
+
+    --border: 215 28% 13%;
+    --input: 215 28% 13%;
+    --ring: 217 91% 60%;
+    
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222 47% 11%; /* #111827 */
-    --foreground: 0 0% 98%;
-    --card: 222 47% 14%;
-    --card-foreground: 0 0% 98%;
-    --card-highlight: 222 47% 16%;
-    --popover: 222 47% 8%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 221 63% 33%; /* #1E3A8A */
-    --primary-foreground: 0 0% 98%;
-    --primary-hover: 221 63% 40%;
-    --secondary: 222 47% 20%;
-    --secondary-foreground: 0 0% 95%;
-    --secondary-hover: 222 47% 25%;
-    --muted: 222 47% 16%;
-    --muted-foreground: 222 47% 65%;
-    --accent: 39 91% 52%; /* #F59E0B */
-    --accent-foreground: 222 47% 8%;
-    --destructive: 0 63% 45%;
-    --destructive-foreground: 0 0% 100%;
-    --destructive-hover: 0 63% 50%;
-    --border: 222 47% 16%;
-    --input: 222 47% 15%;
-    --ring: 39 91% 55%;
-    
-    --talent-bg: 200 30% 10%; 
-    --talent-panel: 198 30% 11%;
-    --talent-border: 180 100% 95%;
-    --talent-accent: 160 50% 60%;
+    --background: 224 71% 4%;
+    --foreground: 210 40% 98%;
+    --card: 224 71% 6%;
+    --card-foreground: 210 40% 98%;
+    --card-highlight: 224 71% 8%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    --primary-hover: 217 91% 70%;
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --secondary-hover: 215 28% 22%;
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 21% 65%;
+    --accent: 39 91% 52%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --destructive-hover: 0 63% 41%;
+    --border: 215 28% 13%;
+    --input: 215 28% 13%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -84,6 +77,9 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image: var(--noise-filter);
+    background-blend-mode: overlay;
+    opacity: 0.9;
     font-family: 'Exo 2', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -92,7 +88,7 @@
     @apply pb-24 sm:pb-0;
   }
   .font-headline {
-    font-family: 'Bebas Neue', sans-serif;
+    font-family: 'Oswald', sans-serif;
   }
   /* Embla Carousel Styles */
   .embla {
@@ -106,6 +102,12 @@
     min-width: 0;
     padding: 0 1rem;
   }
+
+  /* Specific override for the article carousel */
+  .article-carousel .embla__slide {
+    flex: 0 0 50%;
+  }
+
   @screen sm {
     .embla__slide {
       flex: 0 0 50%;
@@ -151,23 +153,17 @@
   [data-category="misc"] {
     @apply text-muted-foreground bg-muted-foreground/10 border-muted-foreground/20;
   }
-
-  /* Custom Scrollbar for Talent Screen */
-  .custom-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.25) transparent; }
-  .custom-scroll::-webkit-scrollbar { width: 6px; }
-  .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.25); border-radius: 999px; }
-
 }
 
 @keyframes pulse-glow {
   0%, 100% {
     opacity: 0.8;
-    filter: drop-shadow(0 0 2px hsl(var(--primary)));
+    filter: drop-shadow(0 0 3px hsl(var(--accent)));
   }
   50% {
     opacity: 1;
-    transform: scale(1.05);
-    filter: drop-shadow(0 0 8px hsl(var(--primary)));
+    transform: scale(1.02);
+    filter: drop-shadow(0 0 10px hsl(var(--accent)));
   }
 }
 

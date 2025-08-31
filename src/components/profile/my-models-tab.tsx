@@ -19,6 +19,7 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
     Badge,
 } from '@/components/ui';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Loader2, PlusCircle, Pencil, Trash2, Bot, SlidersHorizontal } from 'lucide-react';
 import { MediaDisplay } from '../media-display';
 import { useAuth } from '@/hooks/use-auth';

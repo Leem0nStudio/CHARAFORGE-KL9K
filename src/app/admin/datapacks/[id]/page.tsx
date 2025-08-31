@@ -1,4 +1,6 @@
 
+'use server';
+
 import { Suspense } from 'react';
 import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 import { EditDataPackForm } from './edit-datapack-form';
@@ -9,7 +11,7 @@ interface EditDataPackPageProps {
 }
 
 // This component now only sets up the layout and suspense boundary.
-export default function EditDataPackPage({ params }: EditDataPackPageProps) {
+export default async function EditDataPackPage({ params }: EditDataPackPageProps) {
   const { id } = params;
   const isNew = id === 'new';
   const title = isNew ? 'Create DataPack' : `Edit DataPack`;

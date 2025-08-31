@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Data schemas and types for the Prompt Architect flow.
  */

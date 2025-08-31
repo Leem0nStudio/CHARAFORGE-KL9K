@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
@@ -7,7 +8,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
-import { Exo_2, Bebas_Neue } from 'next/font/google';
+import { Exo_2, Oswald } from 'next/font/google';
 import { headers } from 'next/headers';
 
 const exo2 = Exo_2({
@@ -16,9 +17,9 @@ const exo2 = Exo_2({
   variable: '--font-body',
 });
 
-const bebasNeue = Bebas_Neue({
+const oswald = Oswald({
   subsets: ['latin'],
-  weight: ['400'],
+  weight: ['400', '700'],
   variable: '--font-headline',
 });
 
@@ -27,18 +28,19 @@ export const metadata: Metadata = {
   description: 'A SaaS platform for writers, artists, and game masters to generate, manage, and share characters using generative AI. Create unique portraits and detailed biographies for your creative projects.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Use headers() within an async component as recommended by Next.js
   const headersList = headers();
   const pathname = headersList.get('x-next-pathname') || '';
   const isAdminRoute = pathname.startsWith('/admin');
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('min-h-screen bg-background antialiased', exo2.variable, bebasNeue.variable)}>
+      <body className={cn('min-h-screen bg-background antialiased', exo2.variable, oswald.variable)}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

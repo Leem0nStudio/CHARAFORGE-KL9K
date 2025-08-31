@@ -1,10 +1,8 @@
 
-
 'use server';
 
-import { adminDb } from '@/lib/firebase/server';
-import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Character } from '@/types/character';
 
@@ -14,41 +12,28 @@ type ActionResponse = {
     error?: string;
 };
 
-// Subcollection approach for scalability
-const getLikeRef = (characterId: string, userId: string) => adminDb.collection('characters').doc(characterId).collection('likes').doc(userId);
-const getFollowRef = (userId: string, userToFollowId: string) => adminDb.collection('users').doc(userId).collection('following').doc(userToFollowId);
-const getFollowerRef = (userId: string, followerId: string) => adminDb.collection('users').doc(userId).collection('followers').doc(followerId);
+// Functions from likes.ts are moved here
+async function getLikeCount(supabase: any, characterId: string): Promise<number> {
+    const { count, error } = await supabase
+        .from('likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('character_id', characterId);
+    if (error) throw error;
+    return count || 0;
+}
 
-
-export async function likeCharacter(characterId: string): Promise<ActionResponse> {
+export async function likeCharacter(characterId: string): Promise<ActionResponse & { newLikeCount?: number, liked?: boolean }> {
     const uid = await verifyAndGetUid();
-    const characterRef = adminDb.collection('characters').doc(characterId);
+    const supabase = getSupabaseServerClient();
     
     try {
-        const characterDoc = await characterRef.get();
-        if (!characterDoc.exists) return { success: false, message: "Character not found." };
+        const { error } = await supabase.from('likes').insert({ character_id: characterId, user_id: uid });
+        if (error) throw error;
         
-        const authorId = (characterDoc.data() as Character).meta.userId;
-        const authorRef = adminDb.collection('users').doc(authorId);
-        
-        await adminDb.runTransaction(async (transaction) => {
-            const likeDoc = await transaction.get(getLikeRef(characterId, uid));
-            if (likeDoc.exists) return; // User has already liked
-
-            transaction.set(getLikeRef(characterId, uid), { likedAt: FieldValue.serverTimestamp() });
-            
-            // Increment like count on the character
-            transaction.update(characterRef, { 'meta.likes': FieldValue.increment(1) });
-            
-            // Increment total likes for the author
-            transaction.update(authorRef, { 'stats.totalLikes': FieldValue.increment(1) });
-            
-            // Restore one point of willpower to the character who received the like
-            transaction.update(characterRef, { 'rpg.willpower.current': FieldValue.increment(1) });
-        });
-        
+        // This could be further optimized with database functions/triggers
         revalidatePath(`/showcase/${characterId}`);
-        return { success: true, message: "Character liked! Willpower restored." };
+        return { success: true, message: "Character liked!" };
+
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, message: "Failed to like character.", error: message };
@@ -57,25 +42,12 @@ export async function likeCharacter(characterId: string): Promise<ActionResponse
 
 export async function unlikeCharacter(characterId: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const characterRef = adminDb.collection('characters').doc(characterId);
+    const supabase = getSupabaseServerClient();
 
     try {
-        const characterDoc = await characterRef.get();
-        if (!characterDoc.exists) return { success: false, message: "Character not found." };
+       const { error } = await supabase.from('likes').delete().match({ character_id: characterId, user_id: uid });
+       if (error) throw error;
 
-        const authorId = (characterDoc.data() as Character).meta.userId;
-        const authorRef = adminDb.collection('users').doc(authorId);
-
-        await adminDb.runTransaction(async (transaction) => {
-            const likeDoc = await transaction.get(getLikeRef(characterId, uid));
-            if (!likeDoc.exists) return; // User hasn't liked
-
-            transaction.delete(getLikeRef(characterId, uid));
-            transaction.update(characterRef, { 'meta.likes': FieldValue.increment(-1) });
-            transaction.update(authorRef, { 'stats.totalLikes': FieldValue.increment(-1) });
-            // Note: We don't remove willpower on unlike to prevent abuse.
-        });
-        
         revalidatePath(`/showcase/${characterId}`);
         return { success: true, message: "Character unliked." };
     } catch (error) {
@@ -86,22 +58,16 @@ export async function unlikeCharacter(characterId: string): Promise<ActionRespon
 
 export async function followUser(userIdToFollow: string): Promise<ActionResponse> {
     const currentUserId = await verifyAndGetUid();
+    const supabase = getSupabaseServerClient();
     if (currentUserId === userIdToFollow) return { success: false, message: "You cannot follow yourself." };
 
     try {
-        await adminDb.runTransaction(async (transaction) => {
-            const followDoc = await transaction.get(getFollowRef(currentUserId, userIdToFollow));
-            if (followDoc.exists) return;
+        const { error } = await supabase.from('follows').insert({ follower_id: currentUserId, following_id: userIdToFollow });
+        if (error) throw error;
 
-            transaction.set(getFollowRef(currentUserId, userIdToFollow), { followedAt: FieldValue.serverTimestamp() });
-            transaction.set(getFollowerRef(userIdToFollow, currentUserId), { followedAt: FieldValue.serverTimestamp() });
-
-            transaction.update(adminDb.collection('users').doc(currentUserId), { 'stats.following': FieldValue.increment(1) });
-            transaction.update(adminDb.collection('users').doc(userIdToFollow), { 'stats.followers': FieldValue.increment(1) });
-        });
-        
         revalidatePath(`/users/${userIdToFollow}`);
         return { success: true, message: "User followed." };
+
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, message: "Failed to follow user.", error: message };
@@ -110,18 +76,11 @@ export async function followUser(userIdToFollow: string): Promise<ActionResponse
 
 export async function unfollowUser(userIdToUnfollow: string): Promise<ActionResponse> {
     const currentUserId = await verifyAndGetUid();
+    const supabase = getSupabaseServerClient();
     
     try {
-        await adminDb.runTransaction(async (transaction) => {
-            const followDoc = await transaction.get(getFollowRef(currentUserId, userIdToUnfollow));
-            if (!followDoc.exists) return;
-
-            transaction.delete(getFollowRef(currentUserId, userIdToUnfollow));
-            transaction.delete(getFollowerRef(userIdToUnfollow, currentUserId));
-
-            transaction.update(adminDb.collection('users').doc(currentUserId), { 'stats.following': FieldValue.increment(-1) });
-            transaction.update(adminDb.collection('users').doc(userIdToUnfollow), { 'stats.followers': FieldValue.increment(-1) });
-        });
+       const { error } = await supabase.from('follows').delete().match({ follower_id: currentUserId, following_id: userIdToUnfollow });
+       if (error) throw error;
 
         revalidatePath(`/users/${userIdToUnfollow}`);
         return { success: true, message: "User unfollowed." };
@@ -132,18 +91,21 @@ export async function unfollowUser(userIdToUnfollow: string): Promise<ActionResp
 }
 
 export async function checkRelationship(userId: string, otherUserId: string): Promise<{ isFollowing: boolean; isFollowedBy: boolean;}> {
-     const [followingDoc, followedByDoc] = await Promise.all([
-        getFollowRef(userId, otherUserId).get(),
-        getFollowerRef(userId, otherUserId).get()
+    const supabase = getSupabaseServerClient();
+    const [followingRes, followedByRes] = await Promise.all([
+        supabase.from('follows').select('follower_id').eq('follower_id', userId).eq('following_id', otherUserId).maybeSingle(),
+        supabase.from('follows').select('follower_id').eq('follower_id', otherUserId).eq('following_id', userId).maybeSingle()
     ]);
     return {
-        isFollowing: followingDoc.exists,
-        isFollowedBy: followedByDoc.exists,
+        isFollowing: !!followingRes.data,
+        isFollowedBy: !!followedByRes.data,
     };
 }
 
 export async function getCharacterLikeStatus(characterId: string, userId?: string | null): Promise<boolean> {
     if (!userId) return false;
-    const likeDoc = await getLikeRef(characterId, userId).get();
-    return likeDoc.exists;
+    const supabase = getSupabaseServerClient();
+    const { data, error } = await supabase.from('likes').select('user_id').eq('character_id', characterId).eq('user_id', userId).single();
+    if(error && error.code !== 'PGRST116') console.error("Error getting like status", error);
+    return !!data;
 }

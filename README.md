@@ -1,3 +1,4 @@
+
 # CharaForge: Forja de Personajes con IA (v3)
 
 CharaForge es una aplicación web moderna y full-stack construida con Next.js y Firebase, diseñada para generar, gestionar y compartir personajes de ficción utilizando IA generativa. Proporciona una plataforma robusta para que escritores, directores de juego y creativos den vida a sus ideas con biografías detalladas y retratos únicos generados por IA.
@@ -127,5 +128,3 @@ El sistema de autenticación está diseñado para ser robusto y seguro, especial
 -   `npm run admin:grant -- <uid>`: Otorga el rol de administrador a un usuario. (Usa `--` antes del UID).
 -   `npm run admin:list`: Lista todos los usuarios con el rol de administrador.
 -   `npm run tags:fetch`: Obtiene y procesa un conjunto de tags de Danbooru para usarlos en el asistente de tags.
-
-    

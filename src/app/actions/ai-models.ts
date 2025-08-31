@@ -1,9 +1,7 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
 import { adminDb } from '@/lib/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
@@ -42,7 +40,7 @@ export async function upsertModel(data: UpsertAiModel): Promise<ActionResponse> 
         };
         
         if (id) {
-            await docRef.update(finalData as any);
+            await docRef.update(finalData);
         } else {
             await docRef.set({ 
                 ...finalData, 
@@ -95,15 +93,33 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
         let coverMediaUrl: string | null = null;
         let coverMediaType: 'image' | 'video' = 'image';
         
-        const getMediaInfo = (image: any) => {
+        interface CivitaiImage {
+  url: string;
+  type: string;
+  meta?: {
+    video?: {
+      url: string;
+    };
+  };
+}
+
+interface CivitaiModelVersion {
+  id: number;
+  name: string;
+  baseModel: string;
+  trainedWords: string[];
+  images: CivitaiImage[];
+}
+
+const getMediaInfo = (image: CivitaiImage) => {
              if (image?.url) {
                 if (image.type === 'video' || image.meta?.video) {
                     const videoUrl = image.meta?.video?.url || image.url;
                     if (videoUrl && (videoUrl.includes('.mp4') || videoUrl.includes('octet-stream'))) {
-                       return { url: videoUrl, type: 'video' as 'video' };
+                       return { url: videoUrl, type: 'video' as const };
                     }
                 }
-                return { url: image.url, type: 'image' as 'image' };
+                return { url: image.url, type: 'image' as const };
             }
             return null;
         };
@@ -156,7 +172,7 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
             coverMediaUrl,
             coverMediaType,
             triggerWords: triggerWords,
-            versions: modelVersions?.map((v: any) => ({ 
+            versions: modelVersions?.map((v: CivitaiModelVersion) => ({ 
                 id: v.id.toString(), 
                 name: v.name, 
                 baseModel: v.baseModel,
@@ -178,22 +194,32 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
 
 
 
+interface RawModelData {
+  id?: string;
+  name: string | null;
+  type: string | null;
+  engine: string | null;
+  triggerWords: string | null;
+  hf_id?: string | null;
+  modelslabModelId?: string | null;
+}
+
 export async function upsertUserAiModel(formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     
-    const rawData: Record<string, any> = {
-        id: formData.get('id') || undefined,
-        name: formData.get('name'),
-        type: formData.get('type'),
-        engine: formData.get('engine'),
-        triggerWords: formData.get('triggerWords'),
+    const rawData: RawModelData = {
+        id: (formData.get('id') as string) || undefined,
+        name: formData.get('name') as string | null,
+        type: formData.get('type') as string | null,
+        engine: formData.get('engine') as string | null,
+        triggerWords: formData.get('triggerWords') as string | null,
     };
     
     if (rawData.engine === 'huggingface') {
-        rawData.hf_id = formData.get('hf_id');
+        rawData.hf_id = formData.get('hf_id') as string | null;
     } else if (rawData.engine === 'modelslab') {
-        rawData.modelslabModelId = formData.get('modelslabModelId');
-        rawData.hf_id = formData.get('modelslabModelId');
+        rawData.modelslabModelId = formData.get('modelslabModelId') as string | null;
+        rawData.hf_id = formData.get('modelslabModelId') as string | null;
     }
 
     const validation = UpsertModelSchema.safeParse(rawData);
@@ -378,3 +404,7 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         return { success: false, message: "Failed to install model." };
     }
 }
+
+
+
+  

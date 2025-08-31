@@ -2,65 +2,64 @@
 
 'use server';
 
-import { adminDb } from '@/lib/firebase/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
-import { FieldValue, FieldPath, Timestamp, QuerySnapshot, DocumentData } from 'firebase-admin/firestore';
-import type { DataPack } from '@/types/datapack';
 import { toCharacterObject } from '@/services/character-hydrator';
+import { PostgrestError } from '@supabase/supabase-js';
 
 // Helper to fetch documents in batches of 30 for 'in' queries
-async function fetchDocsInBatches<T>(ids: string[], collection: string): Promise<Map<string, T>> {
-    if (!adminDb || ids.length === 0) return new Map();
-    const results = new Map<string, T>();
-    const collectionRef = adminDb.collection(collection);
-
-    // Firestore 'in' queries are limited to 30 items.
-    for (let i = 0; i < ids.length; i += 30) {
-        const batchIds = ids.slice(i, i + 30);
+async function fetchUsersInBatches(userIds: string[]): Promise<Map<string, UserProfile>> {
+    const supabase = getSupabaseServerClient();
+    if (!supabase || userIds.length === 0) return new Map();
+    
+    const results = new Map<string, UserProfile>();
+    
+    for (let i = 0; i < userIds.length; i += 30) {
+        const batchIds = userIds.slice(i, i + 30);
         if (batchIds.length > 0) {
-            const snapshot = await collectionRef.where(FieldPath.documentId(), 'in', batchIds).get();
-            snapshot.forEach(doc => results.set(doc.id, doc.data() as T));
+            const { data, error } = await supabase.from('users').select('*').in('id', batchIds);
+            if (error) {
+                console.error("Error fetching user batch:", error);
+                continue;
+            }
+            data.forEach((user: any) => results.set(user.id, {
+                uid: user.id,
+                displayName: user.display_name,
+                photoURL: user.photo_url,
+                // Add other UserProfile fields as needed from the 'users' table
+            } as UserProfile));
         }
     }
     return results;
 }
 
 /**
- * Takes a Firestore query snapshot of characters and enriches them with related data.
- * @param snapshot The QuerySnapshot from the 'characters' collection.
+ * Takes a raw character data array from Supabase and enriches them with user info.
+ * @param characterData The raw data array from a Supabase query.
  * @returns A promise that resolves to an array of hydrated Character objects.
  */
-async function hydrateCharacters(snapshot: QuerySnapshot): Promise<Character[]> {
-    if (snapshot.empty) {
+async function hydrateCharacters(characterData: any[]): Promise<Character[]> {
+    if (!characterData || characterData.length === 0) {
         return [];
     }
 
-    const characters: Character[] = snapshot.docs.map(doc => toCharacterObject(doc.id, doc.data()));
+    const characters: Character[] = await Promise.all(characterData.map(d => toCharacterObject(d.id, d)));
     
-    // 1. Collect all unique IDs needed for hydration
     const userIds = new Set<string>();
-    const dataPackIds = new Set<string>();
     characters.forEach(char => {
         if (char.meta.userId) userIds.add(char.meta.userId);
         if (char.lineage.originalAuthorId) userIds.add(char.lineage.originalAuthorId);
-        if (char.meta.dataPackId) dataPackIds.add(char.meta.dataPackId);
     });
 
-    // 2. Fetch all related data in parallel batches
-    const [userProfiles, dataPacks] = await Promise.all([
-        fetchDocsInBatches<UserProfile>(Array.from(userIds), 'users'),
-        fetchDocsInBatches<DataPack>(Array.from(dataPackIds), 'datapacks')
-    ]);
+    const userProfiles = await fetchUsersInBatches(Array.from(userIds));
 
-    // 3. Map characters to their final, hydrated form
     return characters.map(char => {
         return {
             ...char,
             meta: {
                 ...char.meta,
                 userName: userProfiles.get(char.meta.userId)?.displayName || 'Anonymous',
-                dataPackName: char.meta.dataPackId ? dataPacks.get(char.meta.dataPackId)?.name || null : null,
             },
             lineage: {
                 ...char.lineage,
@@ -76,15 +75,20 @@ async function hydrateCharacters(snapshot: QuerySnapshot): Promise<Character[]> 
  * @returns {Promise<Character[]>} A promise that resolves to an array of character objects.
  */
 export async function getPublicCharacters(): Promise<Character[]> {
-  if (!adminDb) {
-    console.error('Database service is unavailable.');
-    return [];
-  }
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return [];
+
   try {
-    const charactersRef = adminDb.collection('characters');
-    const q = charactersRef.where('meta.status', '==', 'public').orderBy('meta.createdAt', 'desc').limit(20);
-    const snapshot = await q.get();
-    return hydrateCharacters(snapshot);
+    const { data, error } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('meta_details->>status', 'public') // Querying inside JSONB
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+    
+    return hydrateCharacters(data);
   } catch (error) {
     console.error("Error fetching public characters:", error);
     return [];
@@ -97,24 +101,23 @@ export async function getPublicCharacters(): Promise<Character[]> {
  * @returns {Promise<Character[]>} A promise resolving to an array of matching characters.
  */
 export async function searchCharactersByTag(tag: string): Promise<Character[]> {
-    if (!adminDb) {
-        console.error('Database service is unavailable.');
-        return [];
-    }
-    if (!tag) {
+    const supabase = getSupabaseServerClient();
+    if (!supabase || !tag) {
         return [];
     }
 
     try {
-        const charactersRef = adminDb.collection('characters');
-        const q = charactersRef
-            .where('meta.status', '==', 'public')
-            .where('core.tags', 'array-contains', tag.toLowerCase())
-            .orderBy('meta.createdAt', 'desc')
+        const { data, error } = await supabase
+            .from('characters')
+            .select('*')
+            .eq('meta_details->>status', 'public')
+            .contains('core_details->tags', [tag.toLowerCase()]) // Querying inside JSONB array
+            .order('created_at', { ascending: false })
             .limit(50);
         
-        const snapshot = await q.get();
-        return hydrateCharacters(snapshot);
+        if (error) throw error;
+
+        return hydrateCharacters(data);
 
     } catch (error) {
         console.error(`Error searching for tag "${tag}":`, error);
@@ -129,41 +132,25 @@ export async function searchCharactersByTag(tag: string): Promise<Character[]> {
  * @returns {Promise<UserProfile[]>} A promise that resolves to an array of user profile objects.
  */
 export async function getTopCreators(): Promise<UserProfile[]> {
-  if (!adminDb) {
-      console.error('Database service is unavailable.');
-      return [];
-  }
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return [];
+  
   try {
-    const usersRef = adminDb.collection('users');
-    // Only fetch users who have explicitly set their profile to public
-    const q = usersRef
-      .where('preferences.privacy.profileVisibility', '==', 'public')
-      .orderBy('stats.charactersCreated', 'desc')
-      .limit(4);
-    
-    const snapshot = await q.get();
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('preferences->>privacy->>profileVisibility', 'public') // Query JSONB
+        .order('stats->>charactersCreated', { ascending: false, nullsFirst: false })
+        .limit(4);
 
-    if (snapshot.empty) {
-      return [];
-    }
+    if (error) throw error;
     
-    // Map to a clean, serializable object with only the necessary fields
-    const creators = snapshot.docs.map(doc => {
-        const data = doc.data();
-        const memberSince = data.stats?.memberSince;
-        
-        const stats = data.stats ? {
-            ...data.stats,
-            memberSince: memberSince instanceof Timestamp ? memberSince.toMillis() : memberSince,
-        } : {};
-
-        return {
-            uid: doc.id,
-            displayName: data.displayName || null,
-            photoURL: data.photoURL || null,
-            stats,
-        } as Partial<UserProfile>;
-    }) as UserProfile[];
+    const creators = data.map((d: any) => ({
+        uid: d.id,
+        displayName: d.display_name || null,
+        photoURL: d.photo_url || null,
+        stats: d.stats || {},
+    })) as UserProfile[];
 
     return creators;
 
@@ -175,30 +162,25 @@ export async function getTopCreators(): Promise<UserProfile[]> {
 
 /**
  * Fetches all public characters for a specific user.
- * This query is now simplified to avoid needing a composite index.
  * @param {string} userId - The UID of the user whose characters to fetch.
  * @returns {Promise<Character[]>} A promise that resolves to an array of character objects.
  */
 export async function getPublicCharactersForUser(userId: string): Promise<Character[]> {
-  if (!adminDb) {
-    console.error('Database service is unavailable.');
-    return [];
-  }
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return [];
+
   try {
-    const charactersRef = adminDb.collection('characters');
-    // Simplified query to avoid composite index requirement.
-    // We fetch all characters by the user and then filter for public status in the code.
-    const q = charactersRef
-      .where('meta.userId', '==', userId)
-      .where('meta.status', '==', 'public')
-      .orderBy('meta.createdAt', 'desc')
-      .limit(100); // Fetch a reasonable limit of total characters
+    const { data, error } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('meta_details->>status', 'public')
+      .order('created_at', { ascending: false })
+      .limit(100);
     
-    const snapshot = await q.get();
-    
-    // The previous implementation was already correct here after the fix.
-    // No functional change is needed, but we keep the simplified query.
-    return await hydrateCharacters(snapshot);
+    if (error) throw error;
+
+    return await hydrateCharacters(data);
 
   } catch (error) {
     console.error(`Error fetching public characters for user ${userId}:`, error);

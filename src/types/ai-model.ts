@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 interface AiModelVersion {
@@ -7,7 +8,7 @@ interface AiModelVersion {
   triggerWords?: string[];
 }
 
-export type SyncStatus = 'synced' | 'syncing' | 'notsynced';
+export type SyncStatus = 'synced' | 'syncing' | 'queued' | 'notsynced' | 'error';
 
 export interface AiModel {
   id: string;
@@ -27,6 +28,8 @@ export interface AiModel {
   updatedAt: Date;
   userId?: string; // If present, it's a user-specific model
   syncStatus?: SyncStatus;
+  syncError?: string | null; 
+  gcsUri?: string; // The Google Cloud Storage URI of the synced model file
   vertexAiAlias?: string; // Alias for Vertex AI LoRAs
   // ComfyUI specific fields
   apiUrl?: string;
@@ -61,7 +64,9 @@ export const UpsertModelSchema = z.object({
     baseModel: z.string().optional(),
     triggerWords: z.array(z.string()).optional(),
   })).optional(),
-  syncStatus: z.enum(['synced', 'syncing', 'notsynced']).optional(),
+  syncStatus: z.enum(['synced', 'syncing', 'notsynced', 'queued', 'error']).optional(),
+  syncError: z.string().nullable().optional(),
+  gcsUri: z.string().optional(),
   vertexAiAlias: z.string().optional(),
   apiUrl: z.string().optional(),
   comfyWorkflow: z.any().optional(),

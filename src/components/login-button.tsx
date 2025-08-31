@@ -1,9 +1,8 @@
 
 'use client';
 import { LogIn, LogOut, User as UserIcon, Settings, BarChart, Newspaper } from 'lucide-react';
-import { signOut } from 'firebase/auth';
 import { useAuth } from '@/hooks/use-auth';
-import { getFirebaseClient } from '@/lib/firebase/client';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import {
@@ -15,17 +14,17 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export function LoginButton() {
   const { userProfile, loading } = useAuth();
+  const supabase = getSupabaseBrowserClient();
+  const router = useRouter();
 
   const handleSignOut = async () => {
-    try {
-      const { auth } = getFirebaseClient();
-      await signOut(auth);
-    } catch (error: unknown) {
-      console.error("Error signing out: ", error);
-    }
+    await supabase.auth.signOut();
+    router.push('/');
+    router.refresh(); // Force a refresh to update server components
   };
 
   if (loading) {
@@ -78,12 +77,6 @@ export function LoginButton() {
             <Link href="/characters">
               <UserIcon className="mr-2 h-4 w-4" />
               <span>My Characters</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/profile/articles">
-              <Newspaper className="mr-2 h-4 w-4" />
-              <span>My Articles</span>
             </Link>
           </DropdownMenuItem>
            <DropdownMenuItem asChild>

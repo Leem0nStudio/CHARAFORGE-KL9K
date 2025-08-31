@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useTransition } from 'react';
@@ -8,9 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { enqueueModelSyncJob } from '@/app/actions/tasks';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { User, SlidersHorizontal, Download, FlaskConical, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { syncModelToStorage } from '@/app/admin/models/actions';
-import { User, SlidersHorizontal, Download, FlaskConical } from 'lucide-react';
 
 // This component is defined and used only within this file.
 
@@ -20,7 +22,7 @@ function SyncButton({ model }: { model: AiModel }) {
 
     const handleSync = () => {
         startSyncTransition(async () => {
-            const result = await syncModelToStorage(model.id);
+            const result = await enqueueModelSyncJob(model.id);
             if (result.success) {
                 toast({ title: 'Sync Queued', description: result.message });
             } else {
@@ -29,7 +31,6 @@ function SyncButton({ model }: { model: AiModel }) {
         });
     }
     
-    // Only show the sync button if the model is from Civitai.
     if (!model.civitaiModelId) {
         return null;
     }
@@ -37,23 +38,40 @@ function SyncButton({ model }: { model: AiModel }) {
     const syncStatus = model.syncStatus || 'notsynced';
     
     const statusMap = {
-        notsynced: { text: 'Sync Now', icon: <Download />, color: 'bg-blue-600 hover:bg-blue-700', disabled: false, animate: false },
-        syncing: { text: 'Queued...', icon: <Download />, color: 'bg-amber-500', disabled: true, animate: true },
-        synced: { text: 'Synced', icon: <Download />, color: 'bg-green-600', disabled: true, animate: false },
+        notsynced: { text: 'Sync Now', icon: <Download className="mr-2"/>, color: 'bg-blue-600 hover:bg-blue-700', disabled: false },
+        queued: { text: 'Queued', icon: <Download className="mr-2 animate-pulse"/>, color: 'bg-gray-500', disabled: true },
+        syncing: { text: 'Syncing...', icon: <Download className="mr-2 animate-spin"/>, color: 'bg-amber-500', disabled: true },
+        synced: { text: 'Synced', icon: <CheckCircle className="mr-2"/>, color: 'bg-green-600', disabled: true },
+        error: { text: 'Error - Retry', icon: <AlertTriangle className="mr-2"/>, color: 'bg-red-600 hover:bg-red-700', disabled: false },
     }
     const currentStatus = statusMap[syncStatus];
 
-    return (
+    const button = (
         <Button 
             size="sm" 
-            className={cn("w-full mt-2", currentStatus.color, currentStatus.animate && "animate-pulse")}
+            className={cn("w-full mt-2", currentStatus.color)}
             disabled={currentStatus.disabled || isSyncing}
             onClick={handleSync}
         >
-            {currentStatus.icon}
+            {isSyncing ? <Download className="mr-2 animate-spin"/> : currentStatus.icon}
             {isSyncing ? "Please Wait..." : currentStatus.text}
         </Button>
-    )
+    );
+
+    if (syncStatus === 'error' && model.syncError) {
+        return (
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>{button}</TooltipTrigger>
+                    <TooltipContent>
+                        <p className="max-w-xs">Error: {model.syncError}</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        )
+    }
+
+    return button;
 }
 
 

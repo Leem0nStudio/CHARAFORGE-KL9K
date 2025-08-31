@@ -1,10 +1,12 @@
-
 import type {Config} from 'tailwindcss';
+import tailwindcssAnimate from 'tailwindcss-animate';
 
 const config = {
   darkMode: ['class'],
   content: [
-    './src/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     container: {
@@ -16,8 +18,8 @@ const config = {
     },
     extend: {
       fontFamily: {
-        sans: ['var(--font-body)'],
-        headline: ['var(--font-headline)'],
+        sans: ['var(--font-body)', 'sans-serif'],
+        headline: ['var(--font-headline)', 'sans-serif'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -89,12 +91,12 @@ const config = {
          'pulse-glow': {
           '0%, 100%': { 
             opacity: '0.8',
-            filter: 'drop-shadow(0 0 2px hsl(var(--primary)))',
+            filter: 'drop-shadow(0 0 3px hsl(var(--accent)))',
           },
           '50%': { 
             opacity: '1',
-            transform: 'scale(1.05)',
-            filter: 'drop-shadow(0 0 8px hsl(var(--primary)))',
+            transform: 'scale(1.02)',
+            filter: 'drop-shadow(0 0 10px hsl(var(--accent)))',
           },
         },
         'subtle-pulse': {
@@ -110,7 +112,7 @@ const config = {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;
 
 

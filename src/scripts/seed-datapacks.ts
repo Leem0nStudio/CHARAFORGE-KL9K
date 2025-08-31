@@ -1,5 +1,5 @@
 
-require('dotenv').config({ path: './.env' });
+import 'dotenv/config';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 import { getFirestore, Query, FieldValue } from 'firebase-admin/firestore';

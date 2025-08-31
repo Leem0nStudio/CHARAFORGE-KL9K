@@ -9,98 +9,87 @@
     "schema": {
         "promptTemplates": [
             {
-                "name": "Street Style Photo",
-                "template": "street style photo, full body, {gender}, {hair_style}, {hair_color} hair, wearing a {topwear}, {bottomwear}, and {footwear}, in a {background_setting}"
+                "name": "Full Body Street Style",
+                "template": "{camera}, {count}, {raceClass}, {hair}, {eyes}, {head_clothing}, {torso_clothing}, {legs_clothing}, {feet_clothing}, {pose}, in the {background}, cinematic lighting"
             },
             {
-                "name": "Cozy Indoor Portrait",
-                "template": "cozy indoor portrait, {gender}, wearing a comfortable {topwear} and {bottomwear}, {hair_style}, {hair_color} hair, in a {background_setting}"
+                "name": "Upper Body Portrait",
+                "template": "{camera}, portrait of a {raceClass} with {hair} and {eyes}, wearing {torso_clothing} and {neck_accessory}, in a {background}, soft lighting"
             }
         ],
-        "slots": [
-            {
-                "id": "gender",
-                "label": "Gender",
-                "type": "select",
-                "defaultOption": "woman",
-                "options": [
-                    { "label": "Woman", "value": "woman", "tags": ["1girl", "woman"] },
-                    { "label": "Man", "value": "man", "tags": ["1boy", "man"] },
-                    { "label": "Person", "value": "person", "tags": ["person"] }
+        "characterProfileSchema": {
+            "count": [
+                { "label": "A single woman", "value": "1girl" },
+                { "label": "A single man", "value": "1boy" }
+            ],
+            "raceClass": [
+                { "label": "Woman", "value": "a beautiful woman" },
+                { "label": "Man", "value": "a handsome man" },
+                { "label": "Person", "value": "a person" }
+            ],
+            "hair": [
+                { "label": "Messy Bun", "value": "messy bun hairstyle" },
+                { "label": "Short, Styled Hair", "value": "short, styled hair" },
+                { "label": "Long Wavy Hair", "value": "long wavy brown hair" },
+                { "label": "Pink Bob Cut", "value": "a pink bob cut" }
+            ],
+            "eyes": [
+                { "label": "Blue Eyes", "value": "blue eyes" },
+                { "label": "Brown Eyes", "value": "brown eyes" },
+                { "label": "Green Eyes", "value": "green eyes" }
+            ],
+            "head": {
+                "clothing": [
+                    { "label": "Beanie", "value": "wearing a beanie" },
+                    { "label": "Baseball Cap", "value": "wearing a baseball cap" },
+                    { "label": "Headphones", "value": "wearing headphones around neck" }
                 ]
             },
-            {
-                "id": "hair_style",
-                "label": "Hair Style",
-                "type": "select",
-                "defaultOption": "messy_bun",
-                "options": [
-                    { "label": "Messy Bun", "value": "messy_bun", "tags": ["messy bun"] },
-                    { "label": "Short and Styled", "value": "short_styled", "tags": ["short hair", "styled hair"] },
-                    { "label": "Long and Wavy", "value": "long_wavy", "tags": ["long hair", "wavy hair"] },
-                    { "label": "Bob Cut", "value": "bob_cut", "tags": ["bob cut"] }
+            "neck": {
+                "accessory": [
+                    { "label": "Silver Necklace", "value": "silver necklace" },
+                    { "label": "Choker", "value": "black choker" }
                 ]
             },
-            {
-                "id": "hair_color",
-                "label": "Hair Color",
-                "type": "select",
-                "defaultOption": "light_brown",
-                "options": [
-                    { "label": "Light Brown", "value": "light_brown", "tags": ["light brown hair"] },
-                    { "label": "Dyed Pink", "value": "dyed_pink", "tags": ["pink hair"] },
-                    { "label": "Jet Black", "value": "jet_black", "tags": ["black hair"] },
-                    { "label": "Platinum Blonde", "value": "platinum_blonde", "tags": ["blonde hair"] }
+            "torso": {
+                "clothing": [
+                    { "label": "Graphic T-Shirt", "value": "wearing a graphic t-shirt" },
+                    { "label": "Oversized Hoodie", "value": "wearing an oversized hoodie" },
+                    { "label": "Button-up Shirt", "value": "wearing a button-up shirt" },
+                    { "label": "Tank Top", "value": "wearing a tank top" }
                 ]
             },
-            {
-                "id": "topwear",
-                "label": "Topwear",
-                "type": "select",
-                "defaultOption": "graphic_t-shirt",
-                "options": [
-                    { "label": "Graphic T-Shirt", "value": "graphic_t-shirt", "tags": ["graphic t-shirt", "t-shirt"] },
-                    { "label": "Oversized Hoodie", "value": "oversized_hoodie", "tags": ["hoodie", "oversized"] },
-                    { "label": "Button-up Shirt", "value": "button-up_shirt", "tags": ["button-up shirt", "shirt"] },
-                    { "label": "Tank Top", "value": "tank_top", "tags": ["tank top"] }
+            "legs": {
+                "clothing": [
+                    { "label": "Ripped Jeans", "value": "wearing ripped jeans" },
+                    { "label": "Cargo Shorts", "value": "wearing cargo shorts" },
+                    { "label": "Pleated Skirt", "value": "wearing a pleated skirt" },
+                    { "label": "Sweatpants", "value": "wearing sweatpants" }
                 ]
             },
-            {
-                "id": "bottomwear",
-                "label": "Bottomwear",
-                "type": "select",
-                "defaultOption": "ripped_jeans",
-                "options": [
-                    { "label": "Ripped Jeans", "value": "ripped_jeans", "tags": ["ripped jeans", "jeans"] },
-                    { "label": "Cargo Shorts", "value": "cargo_shorts", "tags": ["cargo shorts", "shorts"] },
-                    { "label": "Pleated Skirt", "value": "pleated_skirt", "tags": ["pleated skirt", "skirt"] },
-                    { "label": "Sweatpants", "value": "sweatpants", "tags": ["sweatpants"] }
+            "feet": {
+                "clothing": [
+                    { "label": "Sneakers", "value": "wearing classic sneakers" },
+                    { "label": "Combat Boots", "value": "wearing combat boots" },
+                    { "label": "Sandals", "value": "wearing sandals" }
                 ]
             },
-            {
-                "id": "footwear",
-                "label": "Footwear",
-                "type": "select",
-                "defaultOption": "classic_sneakers",
-                "options": [
-                    { "label": "Sneakers", "value": "classic_sneakers", "tags": ["sneakers"] },
-                    { "label": "Combat Boots", "value": "combat_boots", "tags": ["combat boots"] },
-                    { "label": "Sandals", "value": "sandals", "tags": ["sandals"] },
-                    { "label": "High Heels", "value": "high_heels", "tags": ["high heels"] }
-                ]
-            },
-            {
-                "id": "background_setting",
-                "label": "Background",
-                "type": "select",
-                "defaultOption": "city_street",
-                "options": [
-                    { "label": "City Street", "value": "city_street", "tags": ["cityscape", "street"] },
-                    { "label": "Cozy Cafe", "value": "cozy_cafe", "tags": ["cafe", "indoors"] },
-                    { "label": "Skate Park", "value": "skate_park", "tags": ["skate park"] },
-                    { "label": "Library", "value": "library", "tags": ["library", "indoors"] }
-                ]
-            }
-        ]
+            "pose": [
+                { "label": "Standing", "value": "standing" },
+                { "label": "Leaning against wall", "value": "leaning against a brick wall" },
+                { "label": "Sitting at a table", "value": "sitting at a cafe table" }
+            ],
+            "camera": [
+                { "label": "Full Body Shot", "value": "full body shot" },
+                { "label": "Upper Body", "value": "upper body" },
+                { "label": "Cinematic Portrait", "value": "cinematic portrait" }
+            ],
+            "background": [
+                { "label": "City Street", "value": "city street at night" },
+                { "label": "Cozy Cafe", "value": "cozy cafe interior" },
+                { "label": "Skate Park", "value": "urban skate park" },
+                { "label": "Library", "value": "modern library" }
+            ]
+        }
     }
 }

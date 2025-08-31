@@ -1,3 +1,4 @@
+
 # 🎯 Definitive Solution to the Session Problem with Firebase and Next.js
 
 This document details the diagnosis and the implemented solution to resolve the persistent `"User session not found"` error in the application.

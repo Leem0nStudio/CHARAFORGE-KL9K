@@ -1,3 +1,10 @@
+// PLAN: Create a new component to visually display a selected AI model.
+// This component replaces a standard <select> dropdown for a richer UI.
+//
+// - It will display the model's cover image (or a placeholder icon).
+// - It will show the model's name and its ID (e.g., Hugging Face repo ID).
+// - The entire component will be a button that, when clicked, opens a full-modal model selector (`ModelSelectorModal`).
+// - It will have a loading state to show while models are being fetched.
 'use client';
 
 import { Button } from "./ui/button";

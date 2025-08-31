@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useTransition, useEffect, useState, useRef } from 'react';
@@ -41,7 +40,7 @@ export function ArticleForm({ article }: { article: Article | null }) {
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
-  const form = useForm<Omit<Article, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'author'>>({
+  const form = useForm<Omit<Article, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'author' | 'excerpt'>>({
     resolver: zodResolver(UpsertArticleSchema),
     defaultValues: {
       title: article?.title || '',
@@ -51,7 +50,7 @@ export function ArticleForm({ article }: { article: Article | null }) {
     },
   });
 
-  const onSubmit = (values: Omit<Article, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'author'>) => {
+  const onSubmit = (values: Omit<Article, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'author' | 'excerpt'>) => {
     startTransition(async () => {
       const result = await upsertArticle({ id: article?.id, ...values });
       if (result.success) {

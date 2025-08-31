@@ -8,7 +8,6 @@
  */
 import { ai } from '@/ai/genkit';
 import { GenerateCharacterImageInputSchema, GenerateCharacterImageOutputSchema, type GenerateCharacterImageInput, type GenerateCharacterImageOutput } from './types';
-import type { GenerationCommonOptions } from 'genkit/ai';
 import { GoogleAuth } from 'google-auth-library';
 
 
@@ -159,6 +158,29 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
  * @param {object} data The payload including the prompt and model/LoRA configurations.
  * @returns {Promise<string>} A promise that resolves to the image as a Data URI.
  */
+interface ModelsLabPayload {
+  key: string;
+  prompt: string;
+  negative_prompt: string;
+  model_id: string;
+  width: string;
+  height: string;
+  samples: string;
+  num_inference_steps: string;
+  safety_checker: string;
+  enhance_prompt: string;
+  seed: null;
+  guidance_scale: number;
+  multi_lingual: string;
+  panorama: string;
+  self_attention: string;
+  upscale: string;
+  webhook: null;
+  track_id: null;
+  lora_model?: string;
+  lora_strength?: number;
+}
+
 async function queryModelsLabAPI(data: { prompt: string, negativePrompt?: string, modelId: string, loraId?: string, loraWeight?: number }): Promise<string> {
     const systemApiKey = process.env.MODELSLAB_API_KEY;
     if (!systemApiKey) {
@@ -166,7 +188,7 @@ async function queryModelsLabAPI(data: { prompt: string, negativePrompt?: string
     }
     
     const apiUrl = 'https://modelslab.com/api/v6/images/text2img';
-    const payload: any = {
+    const payload: ModelsLabPayload = {
         key: systemApiKey,
         prompt: data.prompt,
         negative_prompt: data.negativePrompt || "ugly, bad, deformed, distorted",
@@ -244,6 +266,15 @@ export async function generateCharacterImage(
   return generateCharacterImageFlow(input);
 }
 
+interface VertexAIPayload {
+  instances: { prompt: string }[];
+  parameters: {
+    width: number;
+    height: number;
+    negativePrompt?: string;
+  };
+}
+
 const generateCharacterImageFlow = ai.defineFlow(
   {
     name: 'generateCharacterImageFlow',
@@ -309,7 +340,7 @@ const generateCharacterImageFlow = ai.defineFlow(
 
     } else if (engineId === 'vertexai' && modelId) {
         let projectId: string | undefined;
-        let serviceAccount: any;
+        let serviceAccount: string | object;
 
         try {
             const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
@@ -317,7 +348,7 @@ const generateCharacterImageFlow = ai.defineFlow(
                 throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.");
             }
             serviceAccount = JSON.parse(serviceAccountKey);
-            projectId = serviceAccount.project_id;
+            projectId = (serviceAccount as { project_id: string }).project_id;
         } catch (e) {
             const errorMsg = e instanceof Error ? e.message : 'Unknown error';
             throw new Error(`Failed to parse service account key. Error: ${errorMsg}`);
@@ -332,7 +363,7 @@ const generateCharacterImageFlow = ai.defineFlow(
         const endpointUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/endpoints/${modelId}:predict`;
 
         const { width, height } = getDimensions(aspectRatio);
-        const payload: any = {
+        const payload: VertexAIPayload = {
           "instances": [
               { "prompt": finalDescription }
           ],
@@ -356,7 +387,7 @@ const generateCharacterImageFlow = ai.defineFlow(
                 data: payload,
             });
 
-            const responseData = response.data as any;
+            const responseData = response.data as { predictions: { bytesBase64Encoded: string }[] };
             const prediction = responseData?.predictions?.[0];
             
             if (prediction?.bytesBase64Encoded) {
@@ -365,9 +396,9 @@ const generateCharacterImageFlow = ai.defineFlow(
                 console.error("Vertex AI response did not contain an image:", JSON.stringify(responseData, null, 2));
                 throw new Error("The model endpoint responded, but did not return a valid image.");
             }
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.error?.message || error.message || "An unknown error occurred.";
-            console.error("Error calling Vertex AI endpoint:", JSON.stringify(error.response?.data, null, 2));
+        } catch (error: unknown) {
+            const errorMessage = (error as { response?: { data?: { error?: { message?: string } } } }).response?.data?.error?.message || (error as Error).message || "An unknown error occurred.";
+            console.error("Error calling Vertex AI endpoint:", JSON.stringify((error as { response?: { data?: unknown } }).response?.data, null, 2));
             throw new Error(`Failed to get prediction from Vertex AI: ${errorMessage}`);
         }
     } else if (engineId === 'huggingface') {

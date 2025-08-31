@@ -6,6 +6,7 @@ import { adminDb } from '@/lib/firebase/server';
 import type { Character } from '@/types/character';
 import { toCharacterObject } from '@/services/character-hydrator';
 import { FieldValue } from 'firebase-admin/firestore';
+import { verifyAndGetUid } from '@/lib/auth/server';
 
 /**
  * Fetches a random opponent from all public characters, matching the player's rarity.
@@ -112,6 +113,7 @@ function simulateRound(attacker: Character, defender: Character): { roundLog: st
  * @returns A promise resolving to the battle outcome.
  */
 export async function simulateBattle(player: Character, opponent: Character): Promise<{ log: string[]; winnerId: string; xpGained: number }> {
+    const uid = await verifyAndGetUid();
     const log: string[] = [];
     let playerHp = (player.rpg.stats.constitution || 5) * 2; // More health for longer fights
     let opponentHp = (opponent.rpg.stats.constitution || 5) * 2;

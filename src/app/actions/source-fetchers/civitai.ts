@@ -26,3 +26,5 @@ export async function getCivitaiModelInfo(modelId: string): Promise<any> {
     }
     return response.json();
 }
+
+  

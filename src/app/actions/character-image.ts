@@ -3,9 +3,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { adminDb } from '@/lib/firebase/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
-import { FieldValue } from 'firebase-admin/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { generateCharacterImage as generateCharacterImageFlow } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
@@ -19,9 +18,7 @@ type ActionResponse = {
 
 export async function generateNewCharacterImage(characterId: string, description: string, engineConfig: ImageEngineConfig): Promise<ActionResponse & { newImageUrl?: string }> {
      const uid = await verifyAndGetUid(); 
-     if (!adminDb) {
-        return { success: false, message: 'Database service is unavailable.' };
-     }
+     const supabase = getSupabaseServerClient();
      
      try {
         const { imageUrl } = await generateCharacterImageFlow({ description, engineConfig });
@@ -33,10 +30,24 @@ export async function generateNewCharacterImage(characterId: string, description
         const destinationPath = `usersImg/${uid}/${characterId}/${uuidv4()}.png`;
         const publicUrl = await uploadToStorage(imageUrl, destinationPath);
         
-        const characterRef = adminDb.collection('characters').doc(characterId);
-        await characterRef.update({
-            'visuals.gallery': FieldValue.arrayUnion(publicUrl),
-        });
+        // Fetch current gallery and append
+        const { data: characterData, error: fetchError } = await supabase
+            .from('characters')
+            .select('visual_details')
+            .eq('id', characterId)
+            .single();
+
+        if(fetchError) throw fetchError;
+
+        const currentGallery = characterData?.visual_details?.gallery || [];
+        const newGallery = [...currentGallery, publicUrl];
+
+        const { error: updateError } = await supabase
+            .from('characters')
+            .update({ visual_details: { ...characterData?.visual_details, gallery: newGallery } })
+            .eq('id', characterId);
+        
+        if (updateError) throw updateError;
 
         revalidatePath(`/characters/${characterId}/edit`);
 
@@ -54,16 +65,18 @@ export async function updateCharacterImages(
   primaryImageUrl: string,
 ): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
-  if (!adminDb) {
-    return { success: false, message: 'Database service is unavailable.' };
-  }
+  const supabase = getSupabaseServerClient();
   
   try {
-     const characterRef = adminDb.collection('characters').doc(characterId);
-     const characterDoc = await characterRef.get();
+     const { data: characterData, error: fetchError } = await supabase
+        .from('characters')
+        .select('user_id, visual_details')
+        .eq('id', characterId)
+        .single();
      
-     if (!characterDoc.exists || characterDoc.data()?.meta?.userId !== uid) {
-        return { success: false, message: 'Permission denied or character not found.' };
+     if (fetchError || !characterData) throw new Error('Character not found.');
+     if (characterData.user_id !== uid) {
+        return { success: false, message: 'Permission denied.' };
      }
 
      if (!gallery.includes(primaryImageUrl)) {
@@ -73,23 +86,28 @@ export async function updateCharacterImages(
         return { success: false, message: 'You can add a maximum of 10 images.'}
      }
      
-     const oldPrimaryUrl = characterDoc.data()?.visuals?.imageUrl;
+     const oldPrimaryUrl = characterData.visual_details?.imageUrl;
      
-     await characterRef.update({ 
-        'visuals.gallery': gallery,
-        'visuals.imageUrl': primaryImageUrl,
-      });
-
-    // If the primary image has changed, the old showcase image is no longer valid.
-    // Reset the showcase state to prompt the user to reprocess.
-    if (primaryImageUrl !== oldPrimaryUrl) {
+     const newVisuals = {
+         ...characterData.visual_details,
+         gallery: gallery,
+         imageUrl: primaryImageUrl
+     };
+     
+     // If the primary image has changed, reset the showcase state.
+     if (primaryImageUrl !== oldPrimaryUrl) {
       console.log('Primary image changed. Resetting showcase state.');
-      await characterRef.update({
-            'visuals.isShowcaseProcessed': false,
-            'visuals.showcaseImageUrl': null,
-            'visuals.showcaseProcessingStatus': 'idle',
-      });
+      newVisuals.isShowcaseProcessed = false;
+      newVisuals.showcaseImageUrl = null;
+      newVisuals.showcaseProcessingStatus = 'idle';
     }
+
+    const { error: updateError } = await supabase
+        .from('characters')
+        .update({ visual_details: newVisuals })
+        .eq('id', characterId);
+
+    if (updateError) throw updateError;
 
      revalidatePath(`/characters/${characterId}/edit`);
      revalidatePath('/characters');
@@ -105,19 +123,21 @@ export async function updateCharacterImages(
 
 export async function reprocessCharacterImage(characterId: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    if (!adminDb) {
-        return { success: false, message: 'Database service is unavailable.' };
-    }
-    
-    const characterRef = adminDb.collection('characters').doc(characterId);
+    const supabase = getSupabaseServerClient();
     
     try {
-        const characterDoc = await characterRef.get();
-        if (!characterDoc.exists || characterDoc.data()?.meta.userId !== uid) {
-            return { success: false, message: 'Permission denied or character not found.' };
+        const { data: characterData, error: fetchError } = await supabase
+            .from('characters')
+            .select('user_id, visual_details')
+            .eq('id', characterId)
+            .single();
+
+        if (fetchError || !characterData) throw new Error('Character not found.');
+        if (characterData.user_id !== uid) {
+            return { success: false, message: 'Permission denied.' };
         }
-        
-        const imageUrl = characterDoc.data()?.visuals.imageUrl;
+
+        const imageUrl = characterData.visual_details?.imageUrl;
         if (!imageUrl) {
             return { success: false, message: 'Character has no primary image to reprocess.' };
         }
@@ -125,25 +145,28 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
         // The destination path is now a "queue" for the external worker.
         const destinationPath = `raw-uploads/${uid}/${characterId}/${uuidv4()}.png`;
 
+        const newVisuals = {
+            ...characterData.visual_details,
+            isShowcaseProcessed: false,
+            showcaseImageUrl: null,
+            showcaseProcessingStatus: 'removing-background'
+        };
+
         // Update the status immediately so the UI can react.
-        await characterRef.update({
-            'visuals.isShowcaseProcessed': false,
-            'visuals.showcaseImageUrl': null,
-            'visuals.showcaseProcessingStatus': 'removing-background',
-        });
+        const { error: updateError } = await supabase
+            .from('characters')
+            .update({ visual_details: newVisuals })
+            .eq('id', characterId);
+            
+        if (updateError) throw updateError;
 
         revalidatePath(`/characters/${characterId}/edit`);
         
-        // This part is now handled by the client, but we keep the server logic
-        // This might seem redundant, but it's a good pattern to ensure the job is queued
-        // even if client-side logic fails for some reason. The external worker will
-        // fetch the primary URL from the character doc.
         const fetch = (await import('node-fetch')).default;
         const response = await fetch(imageUrl);
         if (!response.ok) throw new Error(`Failed to fetch original image for reprocessing: ${response.statusText}`);
         const imageBuffer = await response.buffer();
         
-        // This upload now acts as the trigger for the external worker.
         await uploadToStorage(imageBuffer, destinationPath, response.headers.get('content-type') || 'image/png');
         
         return { success: true, message: 'Image reprocessing job has been successfully queued.' };
@@ -151,9 +174,11 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
     } catch(error) {
         const message = error instanceof Error ? error.message : 'Failed to queue image for reprocessing.';
         console.error("Reprocess Error:", message);
-        await characterRef.update({ 
-            'visuals.showcaseProcessingStatus': 'failed',
-         }).catch(() => {});
+        await supabase
+            .from('characters')
+            .update({ visual_details: { showcaseProcessingStatus: 'failed' } })
+            .eq('id', characterId)
+            .select();
          revalidatePath(`/characters/${characterId}/edit`);
         return { success: false, message };
     }

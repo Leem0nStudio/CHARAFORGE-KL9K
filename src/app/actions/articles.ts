@@ -2,12 +2,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { adminDb } from '@/lib/firebase/server';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Article, UpsertArticle } from '@/types/article';
 import { UpsertArticleSchema } from '@/types/article';
-import { verifyAndGetUid } from '@/lib/auth/server';
 import { getUserProfile } from './user';
+import { PostgrestError } from '@supabase/supabase-js';
 
 type ActionResponse = {
     success: boolean;
@@ -16,15 +16,20 @@ type ActionResponse = {
     articleId?: string;
 };
 
-// Function to convert Firestore doc to Article object
-const toArticleObject = (doc: FirebaseFirestore.DocumentSnapshot): Article => {
-    const data = doc.data()!;
+// Function to convert a Supabase row to an Article object
+const toArticleObject = (row: any): Article => {
     return {
-        id: doc.id,
-        ...data,
-        createdAt: (data.createdAt as Timestamp).toMillis(),
-        updatedAt: (data.updatedAt as Timestamp).toMillis(),
-    } as Article;
+        id: row.id,
+        slug: row.slug,
+        title: row.title,
+        author: row.author_name,
+        content: row.content,
+        excerpt: row.excerpt,
+        status: row.status,
+        createdAt: new Date(row.created_at).getTime(),
+        updatedAt: new Date(row.updated_at).getTime(),
+        userId: row.user_id,
+    };
 };
 
 export async function upsertArticle(data: UpsertArticle): Promise<ActionResponse> {
@@ -36,40 +41,37 @@ export async function upsertArticle(data: UpsertArticle): Promise<ActionResponse
         return { success: false, message: 'Invalid data provided.', error: validation.error.message };
     }
 
+    const supabase = getSupabaseServerClient();
     const { id, content, ...rest } = validation.data;
     const excerpt = content.substring(0, 150) + (content.length > 150 ? '...' : '');
 
     try {
-        const docRef = id ? adminDb.collection('articles').doc(id) : adminDb.collection('articles').doc();
-        
         if (id) {
-            const existingDoc = await docRef.get();
-            if (!existingDoc.exists || existingDoc.data()?.userId !== uid) {
-                 return { success: false, message: 'Permission denied.' };
+            const { data: existing, error: fetchError } = await supabase.from('articles').select('user_id').eq('id', id).single();
+            if (fetchError || !existing || existing.user_id !== uid) {
+                return { success: false, message: 'Permission denied.' };
             }
         }
         
-        const docData = {
+        const dataToUpsert = {
+            id: id,
             ...rest,
             content,
             excerpt,
-            author: user?.displayName || 'Anonymous',
-            userId: uid,
-            updatedAt: FieldValue.serverTimestamp(),
+            author_name: user?.displayName || 'Anonymous',
+            user_id: uid,
+            updated_at: new Date().toISOString(),
         };
 
-        if (id) {
-            await docRef.update(docData);
-        } else {
-            await docRef.set({ ...docData, createdAt: FieldValue.serverTimestamp() });
-        }
-
+        const { data: upsertedData, error } = await supabase.from('articles').upsert(dataToUpsert).select().single();
+        if (error) throw error;
+        
         revalidatePath('/admin/articles');
         revalidatePath('/profile/articles');
         revalidatePath(`/articles`);
-        revalidatePath(`/articles/${docData.slug}`);
+        revalidatePath(`/articles/${upsertedData.slug}`);
 
-        return { success: true, message: 'Article saved successfully.', articleId: docRef.id };
+        return { success: true, message: 'Article saved successfully.', articleId: upsertedData.id };
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, message: 'Operation failed.', error: message };
@@ -78,13 +80,16 @@ export async function upsertArticle(data: UpsertArticle): Promise<ActionResponse
 
 export async function deleteArticle(id: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
+    const supabase = getSupabaseServerClient();
     try {
-        const docRef = adminDb.collection('articles').doc(id);
-        const doc = await docRef.get();
-        if (!doc.exists || doc.data()?.userId !== uid) {
+        const { data: existing, error: fetchError } = await supabase.from('articles').select('user_id').eq('id', id).single();
+        if (fetchError || !existing || existing.user_id !== uid) {
              return { success: false, message: 'Permission denied.' };
         }
-        await docRef.delete();
+        
+        const { error } = await supabase.from('articles').delete().eq('id', id);
+        if(error) throw error;
+
         revalidatePath('/admin/articles');
         revalidatePath('/profile/articles');
         revalidatePath('/articles');
@@ -96,41 +101,46 @@ export async function deleteArticle(id: string): Promise<ActionResponse> {
 }
 
 export async function getArticlesForUser(userId: string): Promise<Article[]> {
-    const snapshot = await adminDb.collection('articles')
-      .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
-      .get();
-    return snapshot.docs.map(toArticleObject);
+    const supabase = getSupabaseServerClient();
+    const { data, error } = await supabase.from('articles')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if(error) { console.error("Error fetching user articles", error); return [] };
+    return data.map(toArticleObject);
 }
 
 export async function getArticle(id: string): Promise<Article | null> {
-    const doc = await adminDb.collection('articles').doc(id).get();
-    return doc.exists ? toArticleObject(doc) : null;
+    const supabase = getSupabaseServerClient();
+    const { data, error } = await supabase.from('articles').select('*').eq('id', id).single();
+    if(error || !data) return null;
+    return toArticleObject(data);
 }
 
 export async function getPublishedArticles(): Promise<Article[]> {
-    const snapshot = await adminDb.collection('articles').get();
-    const articles = snapshot.docs.map(toArticleObject);
-    
-    return articles
-        .filter(article => article.status === 'published')
-        .sort((a, b) => b.createdAt - a.createdAt);
+    const supabase = getSupabaseServerClient();
+    const { data, error } = await supabase.from('articles').select('*').eq('status', 'published').order('created_at', { ascending: false });
+    if (error) { console.error("Error fetching published articles", error); return [] };
+    return data.map(toArticleObject);
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
-    const snapshot = await adminDb.collection('articles')
-        .where('slug', '==', slug)
-        .where('status', '==', 'published')
-        .limit(1)
-        .get();
+    const supabase = getSupabaseServerClient();
+    const { data, error } = await supabase.from('articles')
+        .select('*')
+        .eq('slug', slug)
+        .eq('status', 'published')
+        .single();
 
-    if (snapshot.empty) {
+    if (error || !data) {
         return null;
     }
-    return toArticleObject(snapshot.docs[0]);
+    return toArticleObject(data);
 }
 
 export async function getAllArticlesForAdmin(): Promise<Article[]> {
-    const snapshot = await adminDb.collection('articles').orderBy('createdAt', 'desc').get();
-    return snapshot.docs.map(toArticleObject);
+    const supabase = getSupabaseServerClient();
+    const { data, error } = await supabase.from('articles').select('*').order('created_at', { ascending: false });
+    if (error) { console.error("Error fetching all articles for admin", error); return [] };
+    return data.map(toArticleObject);
 }

@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { notFound } from 'next/navigation';
@@ -7,6 +6,7 @@ import { getCharacter } from '@/app/actions/character-read';
 import { getCharacterLikeStatus } from '@/app/actions/social';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { GenshinLikeShowcase } from '@/components/showcase/genshin-like-showcase';
+import { getComments } from '@/app/actions/comments';
 
 export default async function ShowcasePage({ params }: { params: { id: string } }) {
   const character = await getCharacter(params.id);
@@ -27,12 +27,15 @@ export default async function ShowcasePage({ params }: { params: { id: string } 
   if (character.meta.status !== 'public' && currentUserId !== character.meta.userId) {
       notFound();
   }
+  
+  const initialComments = await getComments('character', params.id);
 
   return (
     <GenshinLikeShowcase
       character={character}
       currentUserId={currentUserId}
       isLikedInitially={isLiked}
+      initialComments={initialComments}
     />
   );
 }

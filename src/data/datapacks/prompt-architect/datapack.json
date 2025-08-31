@@ -11,103 +11,134 @@
         "promptTemplates": [
             {
                 "name": "character_focus",
-                "template": "A masterpiece portrait of a {race}, {facial_features}, with {hair} and {eyes}, wearing {head_clothing}, {torso_clothing}, and {neck_accessory}. {lighting} with a {mood} atmosphere, {art_style}."
+                "template": "{masterpiece_quality}, {art_style}, cinematic portrait of {count} {race}, {facial_features}, {eyes}, {hair}, wearing {outfit_top}, {outfit_bottom}, {scene_lighting}, {scene_mood}"
             },
             {
                 "name": "scene_focus",
-                "template": "A breathtaking {art_style} scene of a {location}, {scene_detail}. The {weather} creates a {mood} mood under {lighting}."
+                "template": "{masterpiece_quality}, {art_style}, breathtaking scene of a {location_type}, {location_detail}, {scene_weather}, {scene_lighting}, {scene_mood} atmosphere"
             },
             {
                 "name": "action_focus",
-                "template": "Dynamic action shot of a {race} {action}, wielding a {hands_weapon}, wearing {torso_armor}, {legs_armor}, and {feet_armor}. {effects} fill the scene, {camera} captures the intensity. {art_style}."
+                "template": "{masterpiece_quality}, {art_style}, dynamic action shot of {count} {race} {action}, wielding {weapon_type}, {effects}, {camera_shot}"
             },
             {
                 "name": "integrated",
-                "template": "In a {location} under {lighting}, a {race} with {hair} is {action}. They are wearing {torso_armor} and {legs_clothing}, creating a {mood} scene. {art_style}, {masterpiece_quality}."
+                "template": "In a {location_choice}, a {race} {action} under {scene_lighting}. {masterpiece_quality}, {art_style}."
             }
         ],
         "characterProfileSchema": {
-            "count": [
-                { "label": "Female", "value": "1girl" },
-                { "label": "Male", "value": "1boy" }
-            ],
-            "race": [
-                { "label": "Naga Warrior", "value": "Naga Warrior, serpentine lower body, long muscular snake tail, tall and sinuous frame, bronze skin" },
-                { "label": "Cyborg Ninja", "value": "Cyborg Ninja, glowing cybernetic lines, muscular build" },
-                { "label": "Gothic Vampire", "value": "Gothic Vampire, pale skin, sharp features" }
-            ],
-            "hair": [
-                { "label": "Wild Dark Green Hair", "value": "long wild dark green hair" },
-                { "label": "Slicked Back White Hair", "value": "slicked back white hair" }
-            ],
-            "eyes": [
-                { "label": "Glowing Golden Eyes", "value": "glowing golden eyes with slit pupils" },
-                { "label": "Crimson Red Eyes", "value": "crimson red eyes" }
-            ],
-            "facial_features": [
-                { "label": "Sharp and Striking", "value": "sharp and striking facial features" },
-                { "label": "Soft and Youthful", "value": "soft and youthful facial features" },
-                { "label": "Neutral and Confident Expression", "value": "neutral yet confident expression" },
-                { "label": "Smirking", "value": "smirking" }
-            ],
-            "hands": {
-                "accessory": [
-                    { "label": "Sharp Claws", "value": "sharp claws" },
-                    { "label": "Human Hands", "value": "normal hands" },
-                    { "label": "Ring", "value": "ring" }
-                ],
-                "weapon": [
-                    { "label": "crescent blade", "value": "crescent blade" },
-                    { "label": "crystal spear", "value": "crystal spear" }
-                ]
-            },
-            "torso": {
-                "clothing": [
-                    { "label": "Red Shirt", "value": "red shirt" },
-                    { "label": "Tactical Vest", "value": "tactical vest" },
-                    { "label": "Black Velvet Coat", "value": "black velvet coat, hip vent, high collar" }
-                ]
-            },
-            "legs": {
-                "clothing": [
-                    { "label": "Latex Black Pants", "value": "latex black pants" },
-                    { "label": "Cargo Pants", "value": "cargo pants" }
-                ]
-            },
-            "waist": {
-                "clothing": [
-                    { "label": "Belt", "value": "belt" },
-                    { "label": "Utility Belt", "value": "utility belt" }
-                ]
-            },
-            "pose": [
-                { "label": "Powerful Stance", "value": "standing in a powerful and enigmatic pose, arms at sides, head tilted" },
-                { "label": "Crouching", "value": "crouching, ready to pounce" },
-                { "label": "Arms Crossed", "value": "arms crossed" }
-            ],
-            "action": [
-                { "label": "Looking Up", "value": "looking up" }
-            ],
-            "camera": [
-                { "label": "Isometric View", "value": "isometric view" },
-                { "label": "Front View", "value": "front view" }
-            ],
-            "location": [
-                { "label": "Sci-Fi Hangar", "value": "in a sci-fi hangar bay" },
-                { "label": "Gothic Cathedral", "value": "in a gothic cathedral" }
-            ],
-            "effects": [
-                { "label": "Dramatic Lighting", "value": "dramatic lighting" },
-                { "label": "Studio Lighting", "value": "studio lighting" }
+            "masterpiece_quality": [
+                { "value": "masterpiece, best quality, amazing quality, very detailed, sharp focus, cinematic" }
             ],
             "art_style": [
-                { "label": "2D-HD Style", "value": "2D-HD style, 32-bit color palette, crisp edges, no anti-aliasing" },
-                { "label": "Photorealistic", "value": "photorealistic, sharp focus" },
-                { "label": "Anime CG", "value": "anime CG, official art, game CG" }
+                { "value": "concept art" },
+                { "value": "digital painting" },
+                { "value": "oil painting" },
+                { "value": "photorealistic" },
+                { "value": "anime style" },
+                { "value": "splash art" }
             ],
-            "masterpiece_quality": [
-                { "label": "Masterpiece", "value": "masterpiece, best quality, amazing quality, very detailed" },
-                { "label": "Standard Quality", "value": "standard quality" }
+            "count": [
+                { "value": "1girl" },
+                { "value": "1boy" }
+            ],
+            "race": [
+                { "value": "a human warrior" },
+                { "value": "a cyborg ninja" },
+                { "value": "an elf sorceress" },
+                { "value": "a dwarf blacksmith" },
+                { "value": "a vampire noble" }
+            ],
+            "facial_features": [
+                { "value": "sharp and striking facial features" },
+                { "value": "soft and youthful features" },
+                { "value": "a rugged, weathered face" }
+            ],
+            "eyes": [
+                { "value": "glowing golden eyes" },
+                { "value": "piercing blue eyes" },
+                { "value": "kind brown eyes" }
+            ],
+            "hair": [
+                { "value": "long, flowing silver hair" },
+                { "value": "short, spiky black hair" },
+                { "value": "a braided red ponytail" }
+            ],
+            "outfit_top": [
+                { "value": "ornate plate armor" },
+                { "value": "a rugged leather jacket" },
+                { "value": "an elegant silk blouse" },
+                { "value": "a tactical vest" }
+            ],
+            "outfit_bottom": [
+                { "value": "armored greaves" },
+                { "value": "ripped jeans" },
+                { "value": "a long, flowing skirt" },
+                { "value": "cargo pants" }
+            ],
+            "location_choice": [
+                { "value": "{location_fantasy}" },
+                { "value": "{location_scifi}" },
+                { "value": "{location_modern}" }
+            ],
+            "location_fantasy": [
+                { "value": "a misty forest" },
+                { "value": "a grand castle hall" },
+                { "value": "a dragon's lair" }
+            ],
+            "location_scifi": [
+                { "value": "a neon-lit cyberpunk city street" },
+                { "value": "the bridge of a starship" },
+                { "value": "a desolate alien planet" }
+            ],
+            "location_modern": [
+                { "value": "a bustling city square" },
+                { "value": "a quiet library" },
+                { "value": "a rooftop overlooking the city" }
+            ],
+            "location_detail": [
+                { "value": "with ancient ruins" },
+                { "value": "filled with futuristic technology" },
+                { "value": "bathed in the glow of a sunset" }
+            ],
+            "scene_lighting": [
+                { "value": "dramatic lighting" },
+                { "value": "soft, ambient lighting" },
+                { "value": "god rays" },
+                { "value": "cinematic lighting" }
+            ],
+            "scene_mood": [
+                { "value": "serene" },
+                { "value": "eerie" },
+                { "value": "epic" },
+                { "value": "mysterious" }
+            ],
+            "scene_weather": [
+                { "value": "gentle rain" },
+                { "value": "a heavy snowstorm" },
+                { "value": "a clear, starry night" }
+            ],
+            "action": [
+                { "value": "standing heroically" },
+                { "value": "casting a powerful spell" },
+                { "value": "leaping into battle" },
+                { "value": "sneaking through the shadows" }
+            ],
+            "weapon_type": [
+                { "value": "a glowing magic staff" },
+                { "value": "a sharp katana" },
+                { "value": "a heavy warhammer" },
+                { "value": "a high-tech plasma rifle" }
+            ],
+            "effects": [
+                { "value": "swirling magical energy" },
+                { "value": "sparks flying from clashing swords" },
+                { "value": "a lens flare effect" }
+            ],
+            "camera_shot": [
+                { "value": "a low-angle shot" },
+                { "value": "a close-up shot" },
+                { "value": "a wide-angle shot" }
             ]
         }
     }

@@ -1,14 +1,13 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { adminDb } from '@/lib/firebase/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { StoryCast } from '@/types/story';
 import { generateStory as generateStoryFlow } from '@/ai/flows/story-generation/flow';
 import type { Character } from '@/types/character';
+import { toCharacterObject } from '@/services/character-hydrator';
 
 type ActionResponse<T = null> = {
     success: boolean;
@@ -23,35 +22,24 @@ type CharacterDetailsForAI = Pick<Character['core'], 'name' | 'biography' | 'ali
 
 export async function getUserCasts(): Promise<StoryCast[]> {
     const uid = await verifyAndGetUid();
-    if (!adminDb) {
-        console.error("Database service is unavailable in getUserCasts.");
-        // Return empty array instead of throwing, as the UI can handle this state.
-        return [];
-    }
+    const supabase = getSupabaseServerClient();
+    if (!supabase) return [];
 
     try {
-        const castsRef = adminDb.collection('storyCasts');
-        const q = castsRef.where('userId', '==', uid).orderBy('updatedAt', 'desc');
-        const snapshot = await q.get();
+        const { data, error } = await supabase.from('story_casts')
+            .select('*')
+            .eq('user_id', uid)
+            .order('updated_at', { ascending: false });
 
-        if (snapshot.empty) {
-            return []; // Correctly return an empty array if no casts are found.
-        }
+        if (error) throw error;
         
-        return snapshot.docs.map(doc => {
-            const data = doc.data();
-            const createdAt = data.createdAt as any;
-            const updatedAt = data.updatedAt as any;
-            return {
-                ...data,
-                id: doc.id,
-                createdAt: createdAt?.toMillis ? createdAt.toMillis() : new Date(createdAt).getTime(),
-                updatedAt: updatedAt?.toMillis ? updatedAt.toMillis() : new Date(updatedAt).getTime(),
-            } as StoryCast;
-        });
+        return data.map(row => ({
+            ...row,
+            createdAt: new Date(row.created_at).getTime(),
+            updatedAt: new Date(row.updated_at).getTime(),
+        }));
     } catch (error) {
         console.error("Error fetching user casts:", error);
-        // In case of a database error, return an empty array to prevent UI crash.
         return [];
     }
 }
@@ -59,31 +47,18 @@ export async function getUserCasts(): Promise<StoryCast[]> {
 
 export async function createStoryCast(data: { name: string; description: string }): Promise<ActionResponse<StoryCast>> {
     const uid = await verifyAndGetUid();
-    if (!adminDb) {
-        return { success: false, message: 'Database service is unavailable.' };
-    }
-
+    const supabase = getSupabaseServerClient();
+    
     try {
-        const newCastRef = adminDb.collection('storyCasts').doc();
-        const newCast: Omit<StoryCast, 'id' | 'createdAt' | 'updatedAt'> = {
-            userId: uid,
+        const newCastData = {
+            user_id: uid,
             name: data.name,
             description: data.description,
-            characterIds: [],
+            character_ids: [],
         };
-        
-        await newCastRef.set({
-            ...newCast,
-            createdAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
-        });
 
-        // Refetch the document to get the server-generated timestamps
-        const createdDoc = await newCastRef.get();
-        if (!createdDoc.exists) {
-            throw new Error("Failed to retrieve the newly created cast.");
-        }
-        const createdData = createdDoc.data() as any;
+        const { data: inserted, error } = await supabase.from('story_casts').insert(newCastData).select().single();
+        if (error) throw error;
 
         revalidatePath('/lore-forge'); 
 
@@ -91,10 +66,10 @@ export async function createStoryCast(data: { name: string; description: string 
             success: true,
             message: 'New story cast created.',
             data: {
-                id: createdDoc.id,
-                ...createdData,
-                 createdAt: createdData.createdAt.toMillis(),
-                 updatedAt: createdData.updatedAt.toMillis(),
+                ...inserted,
+                 createdAt: new Date(inserted.created_at).getTime(),
+                 updatedAt: new Date(inserted.updated_at).getTime(),
+                 characterIds: inserted.character_ids,
             } as StoryCast,
         };
     } catch(error) {
@@ -105,21 +80,21 @@ export async function createStoryCast(data: { name: string; description: string 
 
 export async function updateStoryCastCharacters(castId: string, characterIds: string[]): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    if (!adminDb) {
-        return { success: false, message: 'Database service is unavailable.' };
-    }
+    const supabase = getSupabaseServerClient();
 
-    const castRef = adminDb.collection('storyCasts').doc(castId);
-    const castDoc = await castRef.get();
-
-    if (!castDoc.exists || castDoc.data()?.userId !== uid) {
+    const { data: castData, error: fetchError } = await supabase.from('story_casts').select('user_id').eq('id', castId).single();
+    if (fetchError || !castData || castData.user_id !== uid) {
         return { success: false, message: 'Permission denied or cast not found.' };
     }
 
-    await castRef.update({
-        characterIds: characterIds,
-        updatedAt: FieldValue.serverTimestamp(),
-    });
+    const { error } = await supabase.from('story_casts').update({
+        character_ids: characterIds,
+        updated_at: new Date().toISOString(),
+    }).eq('id', castId);
+    
+    if (error) {
+        return { success: false, message: 'Failed to update cast', error: error.message };
+    }
     
     revalidatePath('/lore-forge');
     return { success: true, message: 'Story cast updated.' };
@@ -127,61 +102,45 @@ export async function updateStoryCastCharacters(castId: string, characterIds: st
 
 export async function generateStory(castId: string, storyPrompt: string): Promise<ActionResponse<{ title: string; content: string }>> {
     const uid = await verifyAndGetUid();
-    if (!adminDb) {
-        return { success: false, message: 'Database service is unavailable.' };
-    }
+    const supabase = getSupabaseServerClient();
     
-    const castRef = adminDb.collection('storyCasts').doc(castId);
-    const castDoc = await castRef.get();
-
-    if (!castDoc.exists || castDoc.data()?.userId !== uid) {
+    const { data: castData, error: fetchError } = await supabase.from('story_casts').select('*').eq('id', castId).single();
+    if (fetchError || !castData || castData.user_id !== uid) {
         return { success: false, message: 'Permission denied or cast not found.' };
     }
 
-    const castData = castDoc.data() as StoryCast;
-    if (castData.characterIds.length === 0) {
+    if (castData.character_ids.length === 0) {
         return { success: false, message: 'The cast is empty. Add characters before generating a story.' };
     }
 
     try {
         // Fetch full character details for the cast
-        const characterRefs = castData.characterIds.map(id => adminDb.collection('characters').doc(id));
-        const characterDocs = await adminDb.getAll(...characterRefs);
+        const { data: charactersData, error: charsError } = await supabase.from('characters').select('*').in('id', castData.character_ids);
+        if (charsError) throw charsError;
         
-        const charactersForAI: CharacterDetailsForAI[] = characterDocs.map(doc => {
-            if (!doc.exists) {
-                // This case should be handled gracefully, maybe the character was deleted
-                return null;
-            }
-            const char = doc.data() as Character;
-            return {
-                name: char.core.name,
-                biography: char.core.biography,
-                alignment: char.core.alignment || 'True Neutral',
-                timeline: char.core.timeline || [],
-                archetype: char.core.archetype || undefined,
-                equipment: char.core.equipment || undefined,
-                physicalDescription: char.core.physicalDescription || char.generation?.originalPrompt || undefined,
-            };
-        }).filter((c): c is CharacterDetailsForAI => c !== null);
-
-        if (charactersForAI.length !== castData.characterIds.length) {
-             console.warn("Some characters in the cast could not be found and were omitted from the story generation.");
-        }
+        const charactersForAI: CharacterDetailsForAI[] = await Promise.all(
+            charactersData.map(async doc => {
+                const char = await toCharacterObject(doc.id, doc);
+                return {
+                    name: char.core.name,
+                    biography: char.core.biography,
+                    alignment: char.core.alignment || 'True Neutral',
+                    timeline: char.core.timeline || [],
+                    archetype: char.core.archetype || undefined,
+                    equipment: char.core.equipment || undefined,
+                    physicalDescription: char.core.physicalDescription || char.generation?.originalPrompt || undefined,
+                };
+            })
+        );
         
         if (charactersForAI.length === 0) {
             return { success: false, message: 'None of the characters in the cast could be found.' };
         }
 
-
-        // Call the AI flow
         const storyResult = await generateStoryFlow({
             prompt: storyPrompt,
             cast: charactersForAI,
         });
-
-        // Optionally, save the generated story to Firestore
-        // ... (logic to create a 'stories' document)
 
         return {
             success: true,

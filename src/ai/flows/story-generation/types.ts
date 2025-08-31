@@ -6,7 +6,6 @@
  */
 
 import { z } from 'genkit';
-import type { Character } from '@/types/character';
 
 const TimelineEventSchemaForStory = z.object({
     id: z.string(),

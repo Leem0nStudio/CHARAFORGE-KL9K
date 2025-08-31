@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { searchCharactersByTag } from '@/app/actions/creations';
@@ -69,7 +68,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                          <h2 className="text-2xl font-headline flex items-center gap-2 mb-4">
                              <Swords /> Characters Found
                         </h2>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {characterResults.map(character => (
                                 <CharacterCard key={character.id} character={character} />
                             ))}

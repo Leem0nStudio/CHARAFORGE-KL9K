@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -5,10 +6,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { Character } from '@/types/character';
 import { Heart, Edit, User, ArrowLeft, X, Swords, Shield, BrainCircuit, Dna } from 'lucide-react';
-import { LikeButton } from './like-button';
+import { LikeButton } from '../likes/like-button';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
+import type { Comment } from '@/app/actions/comments';
+import { CommentSection } from '@/components/comments/comment-section';
+
 
 const PathIcon: React.FC<{ path: string | null }> = ({ path }) => {
     const iconMap: Record<string, React.ReactNode> = {
@@ -36,17 +40,17 @@ const PathIcon: React.FC<{ path: string | null }> = ({ path }) => {
     );
 };
 
-function ActionButton({ children, variant = "solid", asChild = false, href }: { children: React.ReactNode; variant?: "solid" | "ghost"; asChild?: boolean; href?: string; }) {
+function ActionButton({ children, variant = "solid", asChild = false, href, onClick }: { children: React.ReactNode; variant?: "solid" | "ghost"; asChild?: boolean; href?: string; onClick?: () => void; }) {
   const base = "px-4 py-2 rounded-xl border text-sm font-medium tracking-wide backdrop-blur";
   const styles =
     variant === "solid"
       ? "bg-primary/20 text-primary-foreground border-primary/30 hover:bg-primary/30"
       : "bg-transparent border-white/20 hover:bg-white/10";
 
-  if (asChild && href) {
-    return <Link href={href} className={cn(base, styles)}>{children}</Link>;
-  }
-  return <button className={cn(base, styles)}>{children}</button>;
+  const Comp = asChild && href ? Link : 'button';
+  const compProps = asChild && href ? { href } : { onClick };
+
+  return <Comp className={cn(base, styles)} {...compProps}>{children}</Comp>;
 }
 
 function TalentItem({ title, level, icon, type }: { title: string; level?: number; icon?: React.ReactNode; type: 'attack' | 'defense' | 'utility' }) {
@@ -85,7 +89,7 @@ const skillIcons = {
 };
 
 
-export function GenshinLikeShowcase({ character, currentUserId, isLikedInitially }: ShowcaseProps) {
+export function GenshinLikeShowcase({ character, currentUserId, isLikedInitially, initialComments }: ShowcaseProps) {
   const isOwner = character.meta.userId === currentUserId;
   const rpgStats = character.rpg.stats;
 
@@ -155,17 +159,16 @@ export function GenshinLikeShowcase({ character, currentUserId, isLikedInitially
           <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-3 p-4 bg-gradient-to-t from-black/60 to-transparent">
              {isOwner ? (
                 <ActionButton asChild href={`/characters/${character.id}/edit`}>
-                    <Edit className="mr-2 h-4 w-4"/> Edit
+                    <><Edit className="mr-2 h-4 w-4"/> Edit</>
                 </ActionButton>
             ) : (
                 <ActionButton variant="ghost">Share</ActionButton>
             )}
-            <LikeButton 
+             <LikeButton
                 characterId={character.id}
-                initialLikes={character.meta.likes}
-                isLikedInitially={isLikedInitially}
-                currentUserId={currentUserId}
-             />
+                initialLikeCount={character.meta.likes ?? 0}
+                initialUserHasLiked={isLikedInitially}
+            />
           </div>
         </div>
 
@@ -202,6 +205,9 @@ export function GenshinLikeShowcase({ character, currentUserId, isLikedInitially
                  </>
              )}
           </div>
+          <div className="mt-auto">
+            <CommentSection entityType="character" entityId={character.id} initialComments={initialComments} />
+          </div>
         </aside>
       </section>
     </main>
@@ -212,4 +218,5 @@ interface ShowcaseProps {
     character: Character;
     currentUserId: string | null;
     isLikedInitially: boolean;
+    initialComments: Comment[];
 }

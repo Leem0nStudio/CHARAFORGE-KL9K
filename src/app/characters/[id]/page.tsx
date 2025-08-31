@@ -1,9 +1,10 @@
 
-
 'use server';
 
 import { notFound } from 'next/navigation';
 import { getCharacter } from '@/app/actions/character-read';
+import { getCharacterLikeStatus } from '@/app/actions/social';
+import { getComments } from '@/app/actions/comments';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { ShowcaseViewer } from '@/components/showcase/showcase-viewer';
 
@@ -14,8 +15,10 @@ export default async function CharacterPage({ params }: { params: { id: string }
   }
 
   let currentUserId: string | null = null;
+  let isLiked = false;
   try {
     currentUserId = await verifyAndGetUid();
+    isLiked = await getCharacterLikeStatus(character.id, currentUserId);
   } catch(e) {
     // User is not logged in, which is fine for public pages
   }
@@ -25,10 +28,14 @@ export default async function CharacterPage({ params }: { params: { id: string }
       notFound();
   }
 
+  const initialComments = await getComments('character', params.id);
+
   return (
     <ShowcaseViewer 
       character={character}
       currentUserId={currentUserId}
+      isLikedInitially={isLiked}
+      initialComments={initialComments}
     />
   );
 }

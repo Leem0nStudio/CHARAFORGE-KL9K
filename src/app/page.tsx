@@ -17,7 +17,7 @@ export default async function Home() {
     ]);
     
     const extractCoverImage = (content: string): string | null => {
-        const match = content.match(/\!\[.*?\]\((.*?)\)/);
+        const match = content.match(/!\[.*?\]\((.*?)\)/);
         return match ? match[1] : null;
     };
 
@@ -40,7 +40,7 @@ export default async function Home() {
         <HomePageClient 
             featuredCreations={featuredCharacters} 
             topCreators={topCreators} 
-            newDataPacks={newDataPacks}
+            newDataPacks={newDataPacks.slice(0, 8)}
             latestArticles={articlesWithCovers.slice(0, 3)} // Pass only the 3 most recent articles
             heroCharacter={heroCharacter}
         />

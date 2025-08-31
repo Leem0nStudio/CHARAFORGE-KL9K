@@ -6,12 +6,12 @@ import type { Character } from './character';
  */
 export interface StoryCast {
   id: string;
-  userId: string;
+  user_id: string;
   name: string;
   description: string;
-  characterIds: string[];
-  createdAt: number;
-  updatedAt: number;
+  character_ids: string[];
+  created_at: number;
+  updated_at: number;
 }
 
 /**

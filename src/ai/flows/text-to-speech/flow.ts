@@ -8,7 +8,6 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
 import { GenerateSpeechInputSchema, GenerateSpeechOutputSchema, type GenerateSpeechInput, type GenerateSpeechOutput } from './types';
 import wav from 'wav';
 

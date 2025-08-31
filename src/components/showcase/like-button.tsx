@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -9,15 +8,16 @@ import { Heart } from 'lucide-react';
 import { likeCharacter, unlikeCharacter } from '@/app/actions/social';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
 
 interface LikeButtonProps {
     characterId: string;
     initialLikes: number;
     isLikedInitially: boolean;
-    currentUserId: string | null;
 }
 
-export function LikeButton({ characterId, initialLikes, isLikedInitially, currentUserId }: LikeButtonProps) {
+export function LikeButton({ characterId, initialLikes, isLikedInitially }: LikeButtonProps) {
+    const { authUser } = useAuth();
     const [isLiked, setIsLiked] = useState(isLikedInitially);
     const [likeCount, setLikeCount] = useState(initialLikes);
     const [isPending, startTransition] = useTransition();
@@ -25,19 +25,16 @@ export function LikeButton({ characterId, initialLikes, isLikedInitially, curren
     const { toast } = useToast();
 
     const handleLike = async () => {
-        if (!currentUserId) {
+        if (!authUser) {
             router.push('/login');
             return;
         }
 
         startTransition(async () => {
-            // Optimistic UI update
             setIsLiked(true);
             setLikeCount(prev => prev + 1);
-
             const result = await likeCharacter(characterId);
             if (!result.success) {
-                // Revert optimistic update on failure
                 setIsLiked(false);
                 setLikeCount(prev => prev - 1);
                 toast({ variant: 'destructive', title: 'Error', description: result.message });
@@ -46,19 +43,16 @@ export function LikeButton({ characterId, initialLikes, isLikedInitially, curren
     };
 
     const handleUnlike = async () => {
-        if (!currentUserId) {
+        if (!authUser) {
              router.push('/login');
             return;
         }
         
         startTransition(async () => {
-            // Optimistic UI update
             setIsLiked(false);
             setLikeCount(prev => prev - 1);
-
             const result = await unlikeCharacter(characterId);
              if (!result.success) {
-                // Revert optimistic update on failure
                 setIsLiked(true);
                 setLikeCount(prev => prev + 1);
                 toast({ variant: 'destructive', title: 'Error', description: result.message });
@@ -70,7 +64,7 @@ export function LikeButton({ characterId, initialLikes, isLikedInitially, curren
         <button 
             className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 bg-black/30 hover:bg-black/50"
             onClick={isLiked ? handleUnlike : handleLike}
-            disabled={isPending || !currentUserId}
+            disabled={isPending || !authUser}
         >
             <Heart className={cn("h-[18px] w-[18px]", isLiked && "fill-destructive text-destructive")} />
             <span className="text-sm font-semibold">{likeCount} Like</span>

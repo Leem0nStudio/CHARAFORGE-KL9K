@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character, TimelineEvent } from '@/types/character';
 import { updateCharacter, updateCharacterTimeline, suggestNextTimelineEvent, generateDialogue, narrateBiography } from '@/app/actions/character-write';
-import { generateCharacterSheetData } from '@/app/character-generator/actions';
+import { generateCharacterSheet } from '@/ai/flows/character-sheet/flow';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -139,7 +139,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                     toast({ variant: 'destructive', title: 'Missing Context', description: 'Cannot regenerate without an original prompt.' });
                     return;
                 }
-                const result = await generateCharacterSheetData({ 
+                const result = await generateCharacterSheet({ 
                     description: originalPrompt, 
                     targetLanguage: 'English',
                     engineConfig: {
@@ -148,15 +148,15 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                     }
                 });
 
-                if (result.success && result.data) {
-                    form.setValue('biography', result.data.biography || '', { shouldDirty: true });
-                    form.setValue('physicalDescription', result.data.physicalDescription || '', { shouldDirty: true });
+                if (result.name && result.biography) {
+                    form.setValue('biography', result.biography || '', { shouldDirty: true });
+                    form.setValue('physicalDescription', result.physicalDescription || '', { shouldDirty: true });
                     toast({
                         title: 'Content Regenerated!',
                         description: 'A new biography and physical description have been generated. Don\'t forget to save your changes.',
                     });
                 } else {
-                    throw new Error(result.error || 'The AI failed to return valid content.');
+                    throw new Error('The AI failed to return valid content.');
                 }
             } catch (error) {
                 const message = error instanceof Error ? error.message : "An unknown error occurred.";

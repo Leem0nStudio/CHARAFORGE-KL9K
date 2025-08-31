@@ -1,13 +1,12 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { adminDb } from '@/lib/firebase/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Character } from '@/types/character';
-import { FieldValue } from 'firebase-admin/firestore';
-import type { UserProfile } from '@/types/user';
+import { toCharacterObject } from '@/services/character-hydrator';
+import { v4 as uuidv4 } from 'uuid';
 
 type ActionResponse = {
     success: boolean;
@@ -15,77 +14,90 @@ type ActionResponse = {
     characterId?: string;
 };
 
+// Helper function to fetch a single character for internal use
+async function getCharacterData(characterId: string): Promise<Character | null> {
+    const supabase = getSupabaseServerClient();
+    const { data, error } = await supabase.from('characters').select('*').eq('id', characterId).single();
+    if (error || !data) return null;
+    return await toCharacterObject(data.id, data);
+}
+
 export async function createCharacterVersion(characterId: string): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
-  if (!adminDb) {
-    return { success: false, message: 'Database service is unavailable.' };
-  }
+  const supabase = getSupabaseServerClient();
 
   try {
-    const originalCharRef = adminDb.collection('characters').doc(characterId);
-    const originalCharDoc = await originalCharRef.get();
+    const originalChar = await getCharacterData(characterId);
 
-    if (!originalCharDoc.exists) {
+    if (!originalChar) {
       return { success: false, message: 'Character to version not found.' };
     }
 
-    const originalData = originalCharDoc.data() as Character;
-    if (originalData.meta.userId !== uid) {
+    if (originalChar.meta.userId !== uid) {
       return { success: false, message: 'Permission denied.' };
     }
 
-    const baseId = originalData.lineage.baseCharacterId || originalData.id;
-    const existingVersions = originalData.lineage.versions || [{ id: originalData.id, name: originalData.lineage.versionName, version: originalData.lineage.version }];
+    const baseId = originalChar.lineage.baseCharacterId || originalChar.id;
+    const existingVersions = originalChar.lineage.versions || [{ id: originalChar.id, name: originalChar.lineage.versionName, version: originalChar.lineage.version }];
     const newVersionNumber = Math.max(...existingVersions.map(v => v.version)) + 1;
-
-    const newCharacterRef = adminDb.collection('characters').doc();
+    const newCharacterId = uuidv4();
     const newVersionName = `v.${newVersionNumber}`;
 
-    const newCharacterData: Omit<Character, 'id' | 'meta.createdAt'> = {
-      ...originalData,
-      lineage: {
-          ...originalData.lineage,
-          version: newVersionNumber,
-          versionName: newVersionName,
-          baseCharacterId: baseId,
-          versions: [], // This will be updated in the transaction
-      },
-      meta: {
-          ...originalData.meta,
-          createdAt: new Date(), // Placeholder, will be overwritten by server timestamp
-      }
-    };
+    const newCharacterData = { ...originalChar };
+    // Remove the ID to let Supabase generate it
+    delete (newCharacterData as any).id; 
     
-    const newVersionInfo = { id: newCharacterRef.id, name: newVersionName, version: newVersionNumber };
+    // Create new lineage details
+    newCharacterData.lineage = {
+      ...originalChar.lineage,
+      version: newVersionNumber,
+      versionName: newVersionName,
+      baseCharacterId: baseId,
+      versions: [], // This will be updated later
+    };
+
+    // Update meta details
+    newCharacterData.meta.createdAt = new Date(); // Will be overwritten by DB default
+    
+    const newVersionInfo = { id: newCharacterId, name: newVersionName, version: newVersionNumber };
     const updatedVersionsList = [...existingVersions, newVersionInfo];
 
-    const batch = adminDb.batch();
+    // Prepare the new character row for insertion, using snake_case for Supabase columns
+    const newRow = {
+      id: newCharacterId,
+      user_id: uid,
+      name: newCharacterData.core.name,
+      archetype: newCharacterData.core.archetype,
+      biography: newCharacterData.core.biography,
+      image_url: newCharacterData.visuals.imageUrl,
+      core_details: newCharacterData.core,
+      visual_details: newCharacterData.visuals,
+      lineage_details: { ...newCharacterData.lineage, versions: updatedVersionsList },
+      generation_details: newCharacterData.generation,
+      meta_details: newCharacterData.meta,
+      settings_details: newCharacterData.settings,
+      rpg_details: newCharacterData.rpg,
+    };
+    
+    // Insert new character
+    const { error: insertError } = await supabase.from('characters').insert(newRow);
+    if (insertError) throw insertError;
 
-    batch.set(newCharacterRef, {
-        ...newCharacterData,
-        lineage: {
-            ...newCharacterData.lineage,
-            versions: updatedVersionsList,
-        },
-        meta: {
-            ...newCharacterData.meta,
-            createdAt: FieldValue.serverTimestamp()
-        }
-    });
-
+    // Update all other versions with the new version list
     for (const version of updatedVersionsList) {
-        if (version.id !== newCharacterRef.id) {
-           const charRef = adminDb.collection('characters').doc(version.id);
-           batch.update(charRef, { 'lineage.versions': updatedVersionsList });
+        if (version.id !== newCharacterId) {
+            const { error: updateError } = await supabase
+                .from('characters')
+                .update({ lineage_details: { ...originalChar.lineage, versions: updatedVersionsList } })
+                .eq('id', version.id);
+            if (updateError) console.warn(`Failed to update version history for ${version.id}`, updateError);
         }
     }
 
-    await batch.commit();
-    
     revalidatePath('/characters');
-    revalidatePath(`/characters/${newCharacterRef.id}/edit`);
+    revalidatePath(`/showcase/${newCharacterId}/edit`);
 
-    return { success: true, message: `Created new version: ${newVersionName}`, characterId: newCharacterRef.id };
+    return { success: true, message: `Created new version: ${newVersionName}`, characterId: newCharacterId };
 
   } catch (error) {
     console.error('Error creating character version:', error);
@@ -96,68 +108,72 @@ export async function createCharacterVersion(characterId: string): Promise<Actio
 
 export async function branchCharacter(characterId: string): Promise<ActionResponse> {
   const newOwnerId = await verifyAndGetUid();
-  if (!adminDb) {
-    return { success: false, message: 'Database service is unavailable.' };
-  }
-  const newOwnerProfile = await adminDb.collection('users').doc(newOwnerId).get().then(doc => doc.data() as UserProfile);
+  const supabase = getSupabaseServerClient();
+  
+  const { data: newOwnerProfile, error: profileError } = await supabase.from('users').select('display_name').eq('id', newOwnerId).single();
+  if (profileError) throw new Error("Could not fetch new owner's profile.");
+
 
   try {
-    const originalCharRef = adminDb.collection('characters').doc(characterId);
-    const originalCharDoc = await originalCharRef.get();
+    const originalChar = await getCharacterData(characterId);
+    if (!originalChar) return { success: false, message: 'Character to branch not found.' };
 
-    if (!originalCharDoc.exists) {
-      return { success: false, message: 'Character to branch not found.' };
-    }
-
-    const originalData = originalCharDoc.data() as Character;
-
-    if (originalData.settings.branchingPermissions !== 'public') {
+    if (originalChar.settings.branchingPermissions !== 'public') {
       return { success: false, message: 'This character does not allow branching.' };
     }
-     if (originalData.meta.userId === newOwnerId) {
+     if (originalChar.meta.userId === newOwnerId) {
       return { success: false, message: 'You cannot branch your own character. Create a new version instead.' };
     }
     
-    const originalAuthorId = originalData.meta.userId; 
-    const originalAuthorProfile = await adminDb.collection('users').doc(originalAuthorId).get().then(doc => doc.data() as UserProfile | undefined);
-
-    const newCharacterRef = adminDb.collection('characters').doc();
+    const newCharacterId = uuidv4();
     const version = 1;
     const versionName = 'v.1';
-    const initialVersion = { id: newCharacterRef.id, name: versionName, version: version };
+    const initialVersion = { id: newCharacterId, name: versionName, version: version };
 
-    const newCharacterData: Partial<Character> = {
-      ...originalData,
-      meta: {
-          ...originalData.meta,
-          userId: newOwnerId,
-          userName: newOwnerProfile?.displayName || 'Anonymous',
-          status: 'private', 
-          createdAt: FieldValue.serverTimestamp() as any,
-      },
-      settings: {
-          ...originalData.settings,
-          isSharedToDataPack: false,
-          branchingPermissions: 'private',
-      },
-      lineage: {
-          ...originalData.lineage,
-          branchedFromId: originalData.id,
-          originalAuthorId: originalAuthorId,
-          originalAuthorName: originalAuthorProfile?.displayName || 'Anonymous',
-          version: version,
-          versionName: versionName,
-          baseCharacterId: newCharacterRef.id, 
-          versions: [initialVersion],
-      }
+    const newCharacterData = { ...originalChar };
+    // Remove the ID to let Supabase generate it
+    delete (newCharacterData as any).id; 
+
+    const newRow = {
+        id: newCharacterId,
+        user_id: newOwnerId,
+        name: newCharacterData.core.name,
+        archetype: newCharacterData.core.archetype,
+        biography: newCharacterData.core.biography,
+        image_url: newCharacterData.visuals.imageUrl,
+        core_details: newCharacterData.core,
+        visual_details: newCharacterData.visuals,
+        lineage_details: {
+            ...originalChar.lineage,
+            branchedFromId: originalChar.id,
+            originalAuthorId: originalChar.meta.userId,
+            originalAuthorName: originalChar.meta.userName,
+            version: version,
+            versionName: versionName,
+            baseCharacterId: newCharacterId, 
+            versions: [initialVersion],
+        },
+        generation_details: originalChar.generation,
+        meta_details: {
+            ...originalChar.meta,
+            userId: newOwnerId,
+            userName: newOwnerProfile?.display_name || 'Anonymous',
+            status: 'private', 
+            createdAt: new Date().toISOString(),
+        },
+        settings_details: {
+            ...originalChar.settings,
+            isSharedToDataPack: false,
+            branchingPermissions: 'private',
+        },
+        rpg_details: originalChar.rpg,
     };
     
-    delete (newCharacterData as any).id;
-
-    await newCharacterRef.set(newCharacterData);
+    const { error: insertError } = await supabase.from('characters').insert(newRow);
+    if (insertError) throw insertError;
     
     revalidatePath('/characters');
-    return { success: true, message: `Successfully branched "${originalData.core.name}"! It's now in your gallery.`, characterId: newCharacterRef.id };
+    return { success: true, message: `Successfully branched "${originalChar.core.name}"! It's now in your gallery.`, characterId: newCharacterId };
 
   } catch (error) {
     console.error('Error branching character:', error);

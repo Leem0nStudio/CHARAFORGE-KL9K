@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { UserPlus, UserCheck, Loader2 } from 'lucide-react';
-import { followUser, unfollowUser } from '@/app/actions/social';
+import { followUser, unfollowUser } from '@/app/actions/user';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -53,7 +53,7 @@ export function FollowButton({ currentUserId, profileUserId, isFollowingInitiall
 
     return (
         <Button 
-            className="w-full" 
+            className="w-full flex-1" 
             variant={isFollowing ? 'secondary' : 'default'}
             onClick={isFollowing ? handleUnfollow : handleFollow}
             disabled={isPending}

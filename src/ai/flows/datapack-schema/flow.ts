@@ -3,11 +3,12 @@
 
 /**
  * @fileOverview An AI agent for generating a complete DataPack (metadata and schema) from a concept.
- * It now generates a complete YAML file as a string for the schema, plus metadata fields.
+ * It now generates a complete JSON object matching the output schema directly, improving reliability.
  */
 
 import { ai } from '@/ai/genkit';
 import { GenerateDataPackSchemaInputSchema, GenerateDataPackSchemaOutputSchema, type GenerateDataPackSchemaInput, type GenerateDataPackSchemaOutput } from './types';
+import yaml from 'js-yaml';
 
 
 export async function generateDataPackSchema(
@@ -20,67 +21,63 @@ export async function generateDataPackSchema(
 const prompt = ai.definePrompt({
   name: 'generateDataPackSchemaPrompt',
   input: { schema: GenerateDataPackSchemaInputSchema },
-  output: { schema: GenerateDataPackSchemaOutputSchema },
+  output: { format: 'yaml' }, // Ask for YAML, which is less strict than the model
   model: 'googleai/gemini-1.5-flash-latest',
-  prompt: `You are a world-class expert in prompt engineering for high-quality image generation and a lead game designer. Your task is to generate a complete, professional-grade DataPack, including all metadata and a detailed YAML schema, based on a user's core concept.
+  prompt: `You are a world-class expert in prompt engineering for high-quality image generation and a lead game designer. Your task is to generate a complete, professional-grade DataPack as a YAML string, including all metadata and a detailed schema, based on a user's core concept and a pre-defined list of schema slots.
 
 Concept: {{{concept}}}
 
+Schema Slots to Populate:
+{{#each schemaSlots}}
+- {{this}}
+{{/each}}
+
 **CRITICAL INSTRUCTIONS FOR QUALITY:**
-Your output must be flawless and adhere to these rules. Failure to do so results in a poor user experience.
+Your output must be flawless and adhere to these rules. Your entire response MUST be a single, valid YAML document based on the template below. DO NOT wrap it in markdown backticks or add any commentary.
 
-1.  **Metadata Generation:**
-    *   **Name:** Generate a short, compelling, and marketable name for the DataPack.
-    *   **Description:** Write a concise, one-to-two sentence description that explains the theme and purpose of the DataPack.
-    *   **Tags:** Generate an array of 5-7 relevant, single-word, lowercase tags that categorize the datapack.
+**YOUR TASK:**
+Fill out every single field in the following YAML template based on the provided concept and the required schema slots.
 
-2.  **YAML Content Generation (The Core Task):**
-    *   The 'yamlContent' field MUST contain a single, valid YAML document string. Do not include any other text or explanations outside of the YAML content itself.
-    *   **Prompt Templates:**
-        *   You MUST generate 2-3 diverse and highly detailed 'promptTemplates'.
-        *   Each template MUST use a wide variety of placeholders (e.g., {raceClass}, {torso_armor}, {head_accessory}, {legs_clothing}, etc.) that correspond to the slots you will define below.
-    *   **Character Profile Schema (Prompt Engineering Best Practices):**
-        *   **FULL COMPLETION IS MANDATORY:** You MUST generate thematically appropriate options for EVERY SECTION AND SUB-SECTION listed below. Do NOT leave any section empty. This includes all equipment slots from head to feet.
-        *   **GRANULARITY IS KEY**: You MUST use the provided granular slot structure. For equipment, this means defining options for 'head', 'torso', 'legs', 'feet', 'hands', etc., each with sub-categories like 'clothing', 'armor', 'accessory'.
-        *   **RICH DESCRIPTIVE VALUES (MOST IMPORTANT RULE):** For every option, the 'value' field MUST be a descriptive, multi-word phrase suitable for a high-quality image prompt. DO NOT use single words. Good examples: "ornate obsidian plate armor", "tattered shadow robes with glowing runes", "long flowing white hair with silver clasps". Bad examples: "armor", "robes", "hair". Each 'value' must add significant visual detail.
-        *   **THEMATIC CONSISTENCY:** All generated options, from race to background, must be perfectly aligned with the user's initial 'concept'.
-        *   **MANDATORY ARCHETYPE SLOT:** It is MANDATORY that one of the primary slots is for the character's class or archetype (e.g., 'raceClass', 'class', or 'role'), as this is a cornerstone of character creation.
-        *   **PROVIDE 4-5 OPTIONS PER SLOT/SUB-SLOT.**
+1.  **Metadata:**
+    *   **name:** Generate a short, compelling, marketable name for the concept.
+    *   **description:** Write a concise, one-to-two sentence description.
+    *   **tags:** Generate an array of 5-7 relevant, single-word, lowercase tags.
 
-Example of a high-quality YAML structure for a "Solar Knight" concept:
-'''yaml
-promptTemplates:
-  - name: "Cinematic Portrait"
-    template: "cinematic portrait of a {raceClass} with {hair}, {eyes}, wearing {torso_armor} and {head_accessory}, in {background}, {effects} lighting"
-  - name: "Action Shot"
-    template: "dynamic action shot of a {raceClass}, {action}, wielding a {hands_weapon}, wearing {torso_armor} and {legs_clothing}, in {background}"
-characterProfileSchema:
-  raceClass:
-    - label: "Solar Knight"
-      value: "a noble solar knight with faint glowing skin"
-    - label: "Void Warlock"
-      value: "a mysterious void warlock clad in shadowy silks"
-    - label: "Sunstone Templar"
-      value: "a sunstone templar in inscribed golden armor"
-  hair:
-    - label: "Flowing White"
-      value: "long flowing white hair made of pure light"
-    - label: "Short & Spiky"
-      value: "short, spiky black hair that absorbs light"
-  torso:
-    armor:
-      - label: "Obsidian Plate"
-        value: "ornate, polished obsidian plate armor with gold filigree"
-      - label: "Shadow Robes"
-        value: "tattered, multi-layered shadow robes with glowing purple runes"
-  head:
-    accessory:
-      - label: "Horned Helmet"
-        value: "a large, imposing horned helmet with intricate carvings"
-      - label: "Simple Blindfold"
-        value: "a simple black silk blindfold covering the eyes"
-  # ... and so on for ALL other slots (legs, feet, hands, background, pose, etc.)
-'''
+2.  **Schema Content:**
+    *   **promptTemplates:** MUST generate 2-3 diverse and detailed templates using placeholders that correspond to the slots you are populating (e.g., {torso_clothing}, {hands_weapon}).
+    *   **characterProfileSchema (MOST IMPORTANT):**
+        *   **FILL THE REQUESTED SLOTS:** You MUST generate thematically appropriate options for EVERY slot provided in the 'Schema Slots to Populate' list.
+        *   **RICH VALUES:** Every option's 'value' field MUST be a descriptive, multi-word phrase suitable for a high-quality image prompt.
+        *   **GENERATE 4-6 OPTIONS PER SLOT.** Do not generate slots that were not requested.
+
+---
+**YAML TEMPLATE TO FILL (Use the requested slots for the characterProfileSchema keys):**
+
+name: "Generated DataPack Name"
+description: "Generated description."
+tags:
+  - tag1
+  - tag2
+  - tag3
+schema:
+  promptTemplates:
+    - name: "Full Body Scene"
+      template: "{raceClass}, {hair}, wearing {torso_clothing} and {legs_clothing}, {action}, in a {background}"
+    - name: "Cinematic Portrait"
+      template: "cinematic portrait of a {raceClass} with {hair}, {expression}, wearing {torso_armor}, {lighting}"
+  characterProfileSchema:
+    # Example for a requested 'raceClass' slot. Populate this section with the requested slots.
+    raceClass:
+      - label: "Generated Archetype 1"
+        value: "detailed description for archetype 1"
+      - label: "Generated Archetype 2"
+        value: "detailed description for archetype 2"
+    # Example for a requested 'hair' slot.
+    hair:
+      - label: "Hair Style 1"
+        value: "long flowing red hair"
+      - label: "Hair Style 2"
+        value: "short spiky blue hair"
 `,
 });
 
@@ -92,10 +89,56 @@ const generateDataPackSchemaFlow = ai.defineFlow(
     outputSchema: GenerateDataPackSchemaOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    if (!output || !output.yamlContent) {
-      throw new Error('AI failed to generate a valid YAML content for the DataPack schema.');
+    let attempts = 0;
+    const MAX_RETRIES = 3;
+
+    while (attempts < MAX_RETRIES) {
+        try {
+            const { output: rawOutput } = await prompt(input);
+
+            if (!rawOutput) {
+              throw new Error('AI failed to generate any schema content.');
+            }
+
+            let yamlString: string;
+            
+            if (typeof rawOutput === 'object') {
+              yamlString = yaml.dump(rawOutput);
+            } else if (typeof rawOutput === 'string') {
+              yamlString = rawOutput.replace(/^```(yaml|YAML)?\s*|```$/g, '').trim();
+            } else {
+              console.error("AI returned a non-string/non-object value for YAML, which is invalid.", rawOutput);
+              throw new Error(`AI generation failed. Expected a YAML string or object, but received a ${typeof rawOutput}.`);
+            }
+            
+            try {
+                yaml.load(yamlString);
+            } catch (e) {
+                const parseError = e instanceof Error ? e.message : "Unknown YAML parsing error";
+                console.error("AI returned invalid YAML.", parseError);
+                throw new Error(`AI failed to generate valid YAML: ${parseError}`);
+            }
+            
+            return { schemaYaml: yamlString };
+
+        } catch (error) {
+            attempts++;
+            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+            
+            if (errorMessage.includes("AI failed to generate valid YAML")) {
+                throw error;
+            }
+
+            if (attempts < MAX_RETRIES) {
+                console.warn(`Attempt ${attempts}/${MAX_RETRIES} failed for DataPack generation. Retrying in ${attempts * 1500}ms... Error: ${errorMessage}`);
+                await new Promise(resolve => setTimeout(resolve, attempts * 1500)); 
+            } else {
+                console.error(`Final attempt failed after ${MAX_RETRIES} retries. Error: ${errorMessage}`);
+                throw new Error("The AI model is currently overloaded or failing to respond. Please try again later.");
+            }
+        }
     }
-    return output;
+    
+    throw new Error("The AI model is currently overloaded. Please try again later after all retry attempts.");
   }
 );

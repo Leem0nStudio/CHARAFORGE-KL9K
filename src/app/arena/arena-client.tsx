@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -6,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { Character } from '@/types/character';
 import { BackButton } from '@/components/back-button';
 import { CharacterSelector } from '@/components/arena/character-selector';
-import { BattleView } from '@/components/arena/battle-view';
+import { BattleView } from './battle-view';
 
 interface ArenaClientProps {
     userCharacters: Character[];

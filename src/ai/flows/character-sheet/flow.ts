@@ -6,6 +6,7 @@
  * This flow generates a structured character sheet from a simple description.
  * It now uses Markov chains for both generating a sequence of life events to guide
  * the biography, and for generating a thematically appropriate character name.
+ * It also includes a retry mechanism for handling transient API errors.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -15,7 +16,6 @@ import {
   type GenerateCharacterSheetInput, 
   type GenerateCharacterSheetOutput,
 } from './types';
-import type { Character } from '@/types/character';
 
 // #region Markov Chain Implementation for Life Events
 
@@ -202,56 +202,56 @@ const generateCharacterSheetFlow = ai.defineFlow(
     `;
     
     let aiOutput: z.infer<typeof GenerateCharacterSheetOutputSchema>;
+    let attempts = 0;
+    const MAX_RETRIES = 3;
 
-    if (engineId === 'openrouter') {
-        const systemApiKey = process.env.OPENROUTER_API_KEY;
-        const apiKey = userApiKey || systemApiKey;
+    while (attempts < MAX_RETRIES) {
+        try {
+            if (engineId === 'openrouter') {
+                const systemApiKey = process.env.OPENROUTER_API_KEY;
+                const apiKey = userApiKey || systemApiKey;
+                if (!apiKey) {
+                    throw new Error("OpenRouter API key is not configured on the server or provided by the user.");
+                }
+                const { output } = await ai.generate({
+                    model: modelId,
+                    prompt: prompt,
+                    output: { schema: GenerateCharacterSheetOutputSchema, format: 'json' },
+                    config: { apiKey, provider: 'openai', extraHeaders: { 'HTTP-Referer': 'https://charaforge.com', 'X-Title': 'CharaForge' } },
+                });
+                if (!output) throw new Error('AI failed to generate a character sheet via OpenRouter.');
+                aiOutput = output;
+            } else {
+                const finalModelId = 'googleai/gemini-1.5-flash-latest';
+                const { output } = await ai.generate({
+                    model: finalModelId,
+                    prompt: prompt,
+                    output: { schema: GenerateCharacterSheetOutputSchema },
+                });
+                if (!output) throw new Error('AI failed to generate a character sheet.');
+                aiOutput = output;
+            }
 
-        if (!apiKey) {
-            throw new Error("OpenRouter API key is not configured on the server or provided by the user in their profile settings.");
-        }
-        
-        const { output } = await ai.generate({
-            model: modelId,
-            prompt: prompt,
-            output: {
-                schema: GenerateCharacterSheetOutputSchema,
-                format: 'json',
-            },
-            config: {
-                apiKey: apiKey,
-                provider: 'openai',
-                 extraHeaders: {
-                    'HTTP-Referer': 'https://charaforge.com',
-                    'X-Title': 'CharaForge',
-                },
-            },
-        });
-        
-         if (!output) {
-            throw new Error('AI failed to generate a character sheet via OpenRouter.');
-        }
-        aiOutput = output;
+            aiOutput.name = characterName;
+            aiOutput.archetype = archetype;
+            return aiOutput;
 
-    } else {
-        const finalModelId = 'googleai/gemini-1.5-flash-latest';
-        const { output } = await ai.generate({
-            model: finalModelId,
-            prompt: prompt,
-            output: {
-                schema: GenerateCharacterSheetOutputSchema,
-            },
-        });
-        if (!output) {
-          throw new Error('AI failed to generate a character sheet.');
+        } catch (error: unknown) {
+            attempts++;
+            const errorMessage = (error as Error).message || 'An unknown error occurred.';
+            if (errorMessage.includes('503') && attempts < MAX_RETRIES) {
+                console.warn(`Attempt ${attempts} failed due to model overload. Retrying in ${attempts * 1000}ms...`);
+                await new Promise(resolve => setTimeout(resolve, attempts * 1000)); // Exponential backoff
+            } else {
+                 if (errorMessage.includes('503')) {
+                    throw new Error("The AI model is currently experiencing high traffic. Please try again in a few moments.");
+                }
+                throw error; // Re-throw other errors immediately
+            }
         }
-        aiOutput = output;
     }
     
-    // Ensure the AI doesn't override our generated name and archetype
-    aiOutput.name = characterName;
-    aiOutput.archetype = archetype;
-
-    return aiOutput;
+    // This line will only be reached if all retries fail
+    throw new Error("The AI model is currently overloaded. Please try again later after all retry attempts.");
   }
 );

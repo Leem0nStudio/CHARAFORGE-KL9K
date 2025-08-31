@@ -8,7 +8,7 @@ import { Newspaper } from 'lucide-react';
 import type { ArticleWithCover } from '@/components/article/article-card';
 
 const extractCoverImage = (content: string): string | null => {
-    const match = content.match(/\!\[.*?\]\((.*?)\)/);
+    const match = content.match(/!\[.*?\]\((.*?)\)/);
     return match ? match[1] : null;
 };
 

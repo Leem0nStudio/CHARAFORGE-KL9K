@@ -1,15 +1,12 @@
-
+// This page will display a list of all public DataPacks available in the marketplace.
 'use server';
-
 import { getPublicDataPacks } from '@/app/actions/datapacks';
 import { DataPackStore } from '@/components/datapack/data-pack-store';
 
-export default async function DataPacksPage() {
-    const dataPacks = await getPublicDataPacks();
+export default async function DatapacksPage() {
+  const datapacks = await getPublicDataPacks();
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
-            <DataPackStore dataPacks={dataPacks} />
-        </div>
-    );
-}
+  return (
+    <DataPackStore dataPacks={datapacks} />
+  );
+};

@@ -1,5 +1,4 @@
 
-
 import Link from 'next/link';
 import { getDataPacksForAdmin } from "@/app/actions/datapacks";
 import { format } from "date-fns";
@@ -16,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, User, Edit } from "lucide-react";
 import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 import { Card, CardContent } from '@/components/ui/card';
+import { SeedDataPacksButton } from './seed-datapacks-button';
 
 export default async function DataPacksAdminPage() {
   const dataPacks = await getDataPacksForAdmin();
@@ -24,11 +24,14 @@ export default async function DataPacksAdminPage() {
     <AdminPageLayout
       title="DataPacks"
       actions={
-        <Button asChild>
-          <Link href="/admin/datapacks/new">
-            <PlusCircle className="mr-2 h-4 w-4" /> Add New
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <SeedDataPacksButton />
+          <Button asChild>
+            <Link href="/admin/datapacks/new">
+              <PlusCircle className="mr-2 h-4 w-4" /> Add New
+            </Link>
+          </Button>
+        </div>
       }
     >
       {/* Mobile View: List of Cards */}

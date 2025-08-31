@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -25,9 +26,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DataPack, DataPackSchema } from '@/types/datapack';
 import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
-import { DataPackMetadataForm } from './datapack-metadata-form';
+import { DataPackMetadataForm } from '@/components/admin/datapacks/[id]/datapack-metadata-form';
 import { DataPackSchemaEditor } from './datapack-schema-editor';
-import { formatDataPackSchemaFromAI } from './ai-schema-adapter';
+import { AiGeneratorDialog } from '@/app/admin/datapacks/[id]/ai-generator-dialog';
+
 
 function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => void }) {
     const [isProcessing, startTransition] = useTransition();
@@ -65,20 +67,20 @@ function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => v
                 <Input name="name" id="name" placeholder="e.g., The Genesis Engine" required/>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="wildcardFiles">Wildcard Archive (.zip)</Label>
+                <Label htmlFor="wildcardFiles">Wildcard Archive (.zip, .yaml, .txt)</Label>
                 <Input 
                   name="wildcardFiles" 
                   id="wildcardFiles" 
                   type="file" 
-                  accept=".zip,application/zip,application/x-zip-compressed"
+                  accept=".zip,.yaml,.yml,.txt"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">Select a .zip file containing your wildcard files. Subfolders will be interpreted as nested slots (e.g., `torso/armor.txt`).</p>
+                <p className="text-xs text-muted-foreground">Upload a file. The system will intelligently parse it to build the schema.</p>
             </div>
             <Button type="submit" disabled={isProcessing}>
                 {isProcessing ? <Loader2 className="animate-spin mr-2"/> : <FileUp className="mr-2"/>}
-                Create from Zip
+                Create from File
             </Button>
         </form>
     )
@@ -93,6 +95,7 @@ export function EditDataPackForm({ packId }: { packId: string }) {
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [initialData, setInitialData] = useState<DataPack | null>(null);
   const [isLoading, setIsLoading] = useState(packId !== 'new');
+  const [activeTab, setActiveTab] = useState(packId === 'new' ? 'import' : 'metadata');
 
   const form = useForm<DataPackFormValues>({
     resolver: zodResolver(DataPackFormSchema),
@@ -108,15 +111,15 @@ export function EditDataPackForm({ packId }: { packId: string }) {
         promptTemplates: [],
       },
       isNsfw: false,
+      imported: false,
     },
     mode: 'onChange',
   });
   
-  useEffect(() => {
-    async function fetchData() {
-      if (packId && packId !== 'new') {
-        setIsLoading(true);
-        const data = await getDataPackForAdmin(packId);
+  const fetchDataAndResetForm = async (id: string) => {
+      setIsLoading(true);
+      try {
+        const data = await getDataPackForAdmin(id);
         if (data) {
           setInitialData(data);
           form.reset({
@@ -128,27 +131,31 @@ export function EditDataPackForm({ packId }: { packId: string }) {
             tags: data.tags || [],
             schema: data.schema || { characterProfileSchema: {}, promptTemplates: [] },
             isNsfw: data.isNsfw || false,
+            imported: data.imported || false,
           });
         }
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch DataPack data.' });
+      } finally {
         setIsLoading(false);
       }
-    }
-    fetchData();
-  }, [packId, form]);
+  };
 
- const handleAiSchemaGenerated = (generatedSchema: DataPackSchema, name: string, description: string, tags: string[]) => {
-      const currentValues = form.getValues();
-      const formattedSchema = formatDataPackSchemaFromAI(generatedSchema);
-      
-      // Use form.reset to update the entire form state at once.
-      // This ensures all child components, including those with useFieldArray, re-render correctly.
-      form.reset({
-          ...currentValues, // Keep existing values like type, price, etc.
-          name,
-          description,
-          tags,
-          schema: formattedSchema,
-      });
+  useEffect(() => {
+    if (packId && packId !== 'new') {
+       fetchDataAndResetForm(packId);
+    }
+  }, [packId]);
+
+ const handleAiSchemaGenerated = (schema: DataPackSchema, name: string, description: string, tags: string[]) => {
+    form.reset({
+        ...form.getValues(),
+        name,
+        description,
+        tags,
+        schema,
+        imported: false,
+    });
   };
 
 
@@ -187,6 +194,12 @@ export function EditDataPackForm({ packId }: { packId: string }) {
       }
     });
   };
+
+  const handleImportSuccess = (newPackId: string) => {
+    router.push(`/admin/datapacks/${newPackId}`, { scroll: false });
+    fetchDataAndResetForm(newPackId);
+    setActiveTab('metadata');
+  };
   
   if (isLoading) {
     return (
@@ -196,10 +209,12 @@ export function EditDataPackForm({ packId }: { packId: string }) {
     );
   }
 
+  const isImported = form.watch('imported');
+
   return (
     <FormProvider {...form}>
       <div className="pb-24 sm:pb-0">
-        <Tabs defaultValue={packId === 'new' ? 'import' : 'metadata'} className="flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
              <TabsList>
               <TabsTrigger value="import" disabled={packId !== 'new'}>Import</TabsTrigger>
@@ -236,11 +251,11 @@ export function EditDataPackForm({ packId }: { packId: string }) {
               <TabsContent value="import">
                   <Card>
                       <CardHeader>
-                          <CardTitle>Import from Zip</CardTitle>
-                          <CardDescription>Create a new DataPack by uploading a .zip archive of your wildcard files.</CardDescription>
+                          <CardTitle>Import from File</CardTitle>
+                          <CardDescription>Create a new DataPack by uploading a wildcard file (.zip, .yaml, .txt).</CardDescription>
                       </CardHeader>
                       <CardContent>
-                          <ImportTab onImportSuccess={(newPackId) => router.push(`/admin/datapacks/${newPackId}`)} />
+                          <ImportTab onImportSuccess={handleImportSuccess} />
                       </CardContent>
                   </Card>
               </TabsContent>
@@ -248,12 +263,18 @@ export function EditDataPackForm({ packId }: { packId: string }) {
                 <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} />
               </TabsContent>
               <TabsContent value="schema">
-                <DataPackSchemaEditor 
-                    form={form} 
-                    onAiSchemaGenerated={handleAiSchemaGenerated}
-                    isAiGenerating={isAiGenerating}
-                    onAiGeneratingChange={setIsAiGenerating}
-                />
+                    <div className="space-y-4">
+                        <div className="flex justify-end">
+                            <AiGeneratorDialog 
+                                onSchemaGenerated={() => {}} // Placeholder
+                                onGeneratingChange={setIsAiGenerating}
+                            />
+                        </div>
+                        <DataPackSchemaEditor 
+                            form={form} 
+                            isAiGenerating={isAiGenerating}
+                        />
+                    </div>
               </TabsContent>
           </div>
         </Tabs>

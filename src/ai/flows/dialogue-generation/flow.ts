@@ -11,7 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { GenerateDialogueInputSchema, GenerateDialogueOutputSchema, type GenerateDialogueInput, type GenerateDialogueOutput } from './types';
+import { GenerateDialogueInputSchema, GenerateDialogueOutputSchema } from './types';
 
 // #region Markov Chain Implementation for Dialogue
 type DialogueState = 'Greeting' | 'Question' | 'Statement' | 'Complaint' | 'Boast' | 'Threat' | 'Joke' | 'Farewell';
@@ -58,7 +58,7 @@ function getNextDialogueState(personality: PersonalityType, currentState: Dialog
     const rand = Math.random();
     let cumulativeProbability = 0;
     for (const state in transitions) {
-        cumulativeProbability += (transitions as any)[state]!;
+        cumulativeProbability += (transitions as Record<DialogueState, number>)[state as DialogueState]!;
         if (rand < cumulativeProbability) {
             return state as DialogueState;
         }

@@ -24,7 +24,7 @@ import { Loader2, KeyRound, Info, AlertTriangle, CheckCircle } from 'lucide-reac
 import { useAuth } from '@/hooks/use-auth';
 import type { UserPreferences } from '@/types/user';
 import Link from 'next/link';
-import { Separator } from '../ui/separator';
+import { Separator } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 export function SecurityTab() {

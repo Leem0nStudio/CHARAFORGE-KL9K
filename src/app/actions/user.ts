@@ -1,225 +1,260 @@
 
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { adminDb, adminAuth } from '@/lib/firebase/server';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import { verifyAndGetUid } from '@/lib/auth/server';
-import type { UserPreferences, UserProfile } from '@/types/user';
-import { uploadToStorage } from '@/services/storage';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import type { Character } from '@/types/character';
+import type { UserProfile, UserPreferences } from '@/types/user';
 
 export type ActionResponse = {
-  success: boolean;
-  message: string;
-  error?: string;
-  newAvatarUrl?: string | null;
+    success: boolean;
+    message: string;
+    error?: string;
+    newAvatarUrl?: string;
 };
 
-// Zod schema for validating text fields from the profile form.
-// Follows the "Rigorous Server-Side Validation" pattern.
-const UpdateProfileSchema = z.object({
-  displayName: z.string().min(1, 'Display Name is required').max(50, 'Display Name must be less than 50 characters'),
-});
+// Helper function to get the current user's ID from Supabase Auth
+async function verifyAndGetUid(): Promise<string> {
+    const supabase = getSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        throw new Error('User not authenticated.');
+    }
+    return user.id;
+}
 
+const UpdateUserProfileSchema = z.object({
+    displayName: z.string().min(1, "Display name is required.").max(50, "Display name cannot exceed 50 characters."),
+    bio: z.string().max(500, "Biography cannot exceed 500 characters.").optional(),
+    socialLinks: z.object({
+        twitter: z.string().url("Invalid Twitter URL.").or(z.literal("")).optional(),
+        artstation: z.string().url("Invalid ArtStation URL.").or(z.literal("")).optional(),
+        website: z.string().url("Invalid Website URL.").or(z.literal("")).optional(),
+    }).optional(),
+}).partial();
 
 export async function updateUserProfile(prevState: any, formData: FormData): Promise<ActionResponse> {
-    try {
-        // Pattern: Secure Session Management
-        const uid = await verifyAndGetUid();
-        if (!adminDb || !adminAuth) {
-            throw new Error('Server services not available.');
-        }
-        
-        const displayName = formData.get('displayName') as string;
-        const photoFile = formData.get('photoFile') as File | null;
+    const uid = await verifyAndGetUid();
+    const supabase = getSupabaseServerClient();
 
-        // Pattern: Rigorous Server-Side Validation
-        const validation = UpdateProfileSchema.safeParse({ displayName });
+    const rawData = {
+        displayName: formData.get('displayName'),
+        bio: formData.get('bio'),
+        socialLinks: {
+            twitter: formData.get('socialLinks.twitter'),
+            artstation: formData.get('socialLinks.artstation'),
+            website: formData.get('socialLinks.website'),
+        },
+    };
 
-        if (!validation.success) {
-            const firstError = validation.error.errors[0];
-            return {
-                success: false,
-                message: `Invalid input for ${firstError.path.join('.')}: ${firstError.message}`,
-            };
-        }
-        
-        const userRef = adminDb.collection('users').doc(uid);
-        const currentUserDoc = await userRef.get();
-        let finalPhotoUrl: string | null = currentUserDoc.data()?.photoURL || null;
-        
-        if (photoFile && photoFile.size > 0) {
-            if (photoFile.size > 5 * 1024 * 1024) { // 5MB limit
-                return { success: false, message: 'File is too large. Please upload an image smaller than 5MB.' };
-            }
-            const destinationPath = `usersImg/${uid}/avatar.png`;
-            // Pattern: Centralized File Upload Service
-            const publicUrl = await uploadToStorage(photoFile, destinationPath);
-            // Add a timestamp to bust the cache immediately after upload
-            finalPhotoUrl = `${publicUrl}?t=${new Date().getTime()}`;
-        }
-
-        const updates: { [key: string]: any } = {
-            displayName: validation.data.displayName,
-            photoURL: finalPhotoUrl
-        };
-        
-        await userRef.update(updates);
-        
-        await adminAuth.updateUser(uid, {
-            displayName: validation.data.displayName,
-            photoURL: finalPhotoUrl,
-        });
-
-        revalidatePath('/profile');
-        revalidatePath('/'); // Revalidate home page for top creators
-
-        return {
-            success: true,
-            message: 'Profile updated successfully!',
-            newAvatarUrl: finalPhotoUrl
-        };
-
-    } catch (error) {
-        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        console.error("Update Profile Error:", message);
-        return { success: false, message: 'Operation failed.', error: message };
+    const validation = UpdateUserProfileSchema.safeParse(rawData);
+    if (!validation.success) {
+        return { success: false, message: 'Invalid data provided.', error: validation.error.message };
     }
+    
+    const { displayName, bio, socialLinks } = validation.data;
+    let newAvatarUrl: string | undefined = undefined;
+
+    const photoFile = formData.get('photoFile') as File;
+    if (photoFile && photoFile.size > 0) {
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(`${uid}/avatar.png`, photoFile, {
+                upsert: true,
+                contentType: photoFile.type,
+            });
+        
+        if (uploadError) {
+             return { success: false, message: 'Failed to upload avatar.', error: uploadError.message };
+        }
+        
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(uploadData.path);
+        newAvatarUrl = urlData.publicUrl;
+    }
+    
+    // In Supabase, profile data is stored on the users table.
+    const { data, error } = await supabase
+        .from('users')
+        .update({ 
+            display_name: displayName,
+            photo_url: newAvatarUrl, // Only update if new one was uploaded
+            profile: {
+                bio,
+                socialLinks,
+            }
+         })
+        .eq('id', uid);
+
+    if (error) {
+        console.error('Error updating user profile:', error);
+        return { success: false, message: 'Failed to update profile.', error: error.message };
+    }
+    
+    revalidatePath('/profile');
+    return { success: true, message: 'Profile updated successfully.', newAvatarUrl };
+}
+
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+    const supabase = getSupabaseServerClient();
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', uid)
+        .single();
+    
+    if (error || !data) {
+        console.error(`Error fetching public user profile for ${uid}:`, error);
+        return null;
+    }
+    
+    // Adapt the Firestore structure to the Supabase one
+    return {
+        uid: data.id,
+        displayName: data.display_name || 'Anonymous',
+        photoURL: data.photo_url || null,
+        bio: data.profile?.bio || '',
+        profile: data.profile || {},
+        stats: data.stats || {},
+        email: data.email || null,
+        role: data.role || 'user',
+        preferences: data.preferences || {},
+    } as UserProfile;
+}
+
+export async function getUserCharacters(): Promise<Pick<Character, 'id' | 'core' | 'visuals'>[]> {
+    const uid = await verifyAndGetUid();
+    const supabase = getSupabaseServerClient();
+    
+    const { data, error } = await supabase
+        .from('characters')
+        .select('id, core_details, visual_details') // Assuming these are JSONB columns
+        .eq('user_id', uid)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+    if (error) {
+        console.error('Error fetching user characters:', error);
+        return [];
+    }
+
+    return data.map((char: any) => ({
+        id: char.id,
+        core: { name: char.core_details.name, archetype: char.core_details.archetype, rarity: char.core_details.rarity },
+        visuals: { imageUrl: char.visual_details.imageUrl },
+    })) as any;
 }
 
 
-export async function deleteUserAccount(): Promise<ActionResponse> {
-    try {
-        // Pattern: Secure Session Management
-        const uid = await verifyAndGetUid();
-        if (!adminDb || !adminAuth) {
-            throw new Error('Server services not available.');
-        }
+export async function followUser(targetUid: string): Promise<ActionResponse> {
+    const sourceUid = await verifyAndGetUid();
+    const supabase = getSupabaseServerClient();
 
-        const userRef = adminDb.collection('users').doc(uid);
-        const charactersQuery = adminDb.collection('characters').where('userId', '==', uid);
-
-        await adminDb.runTransaction(async (transaction) => {
-            const charactersSnapshot = await transaction.get(charactersQuery);
-            charactersSnapshot.docs.forEach(doc => transaction.delete(doc.ref));
-            transaction.delete(userRef);
-        });
-
-        await adminAuth.deleteUser(uid);
-        
-        revalidatePath('/');
-
-        return { success: true, message: 'Your account has been permanently deleted.' };
-    } catch (error) {
-        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-        console.error('Delete User Account Error:', error);
-        return { success: false, message: 'Failed to delete account.', error: message };
+    if (sourceUid === targetUid) {
+        return { success: false, message: "You cannot follow yourself." };
     }
+
+    // This would need a `follows` table in Supabase: { follower_id, following_id }
+    const { error } = await supabase
+        .from('follows')
+        .insert({ follower_id: sourceUid, following_id: targetUid });
+
+    if (error) {
+        console.error('Error following user:', error);
+        return { success: false, message: 'Failed to follow user.', error: error.message };
+    }
+
+    revalidatePath(`/users/${sourceUid}`);
+    revalidatePath(`/users/${targetUid}`);
+
+    return { success: true, message: `Successfully followed user ${targetUid}.` };
+}
+
+export async function unfollowUser(targetUid: string): Promise<ActionResponse> {
+    const sourceUid = await verifyAndGetUid();
+    const supabase = getSupabaseServerClient();
+
+    if (sourceUid === targetUid) {
+        return { success: false, message: "You cannot unfollow yourself." };
+    }
+
+    const { error } = await supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', sourceUid)
+        .eq('following_id', targetUid);
+
+     if (error) {
+        console.error('Error unfollowing user:', error);
+        return { success: false, message: 'Failed to unfollow user.', error: error.message };
+    }
+
+    revalidatePath(`/users/${sourceUid}`);
+    revalidatePath(`/users/${targetUid}`);
+    return { success: true, message: `Successfully unfollowed user ${targetUid}.` };
+}
+
+export async function getFollowStatus(targetUid: string): Promise<{ isFollowing: boolean }> {
+    const supabase = getSupabaseServerClient();
+    let sourceUid: string | null = null;
+    try {
+        sourceUid = await verifyAndGetUid();
+    } catch {
+        return { isFollowing: false };
+    }
+
+    if (!sourceUid || sourceUid === targetUid) {
+        return { isFollowing: false };
+    }
+    
+    const { data, error } = await supabase
+        .from('follows')
+        .select('follower_id')
+        .eq('follower_id', sourceUid)
+        .eq('following_id', targetUid)
+        .maybeSingle();
+
+    if (error) {
+        console.error('Error getting follow status:', error);
+        return { isFollowing: false };
+    }
+
+    return { isFollowing: !!data };
 }
 
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
-    try {
-        // Pattern: Secure Session Management
-        const uid = await verifyAndGetUid();
-        if (!adminDb) {
-            throw new Error("Database service is unavailable.");
-        }
-
-        const userRef = adminDb.collection('users').doc(uid);
+    const uid = await verifyAndGetUid();
+    const supabase = getSupabaseServerClient();
+    
+    const { error } = await supabase
+        .from('users')
+        .update({ preferences: preferences })
+        .eq('id', uid);
         
-        // This ensures we are only trying to update the fields that exist in the UserPreferences type
-        const { theme, notifications, privacy, huggingFaceApiKey, openRouterApiKey } = preferences;
-
-        // Use FieldValue.delete() to remove a field if the key is empty or undefined.
-        // This is crucial for clearing keys.
-        const preferencesToUpdate = {
-            'preferences.theme': theme,
-            'preferences.notifications': notifications,
-            'preferences.privacy': privacy,
-            'preferences.huggingFaceApiKey': huggingFaceApiKey || FieldValue.delete(),
-            'preferences.openRouterApiKey': openRouterApiKey || FieldValue.delete(),
-        };
-
-        await userRef.update(preferencesToUpdate);
-
-        revalidatePath('/profile');
-        revalidatePath('/');
-
-        return { success: true, message: "Preferences updated!" };
-    } catch (error) {
-        const message = error instanceof Error ? error.message : "An unknown error occurred.";
-        console.error("Update Preferences Error:", error);
-        return { success: false, message: "Failed to save preferences." };
+    if (error) {
+        console.error('Error updating user preferences:', error);
+        return { success: false, message: 'Failed to update preferences.', error: error.message };
     }
+    
+    revalidatePath('/profile');
+    return { success: true, message: 'Preferences updated successfully.' };
 }
 
+// DANGER: This is a destructive operation. In a real Supabase setup, you'd call a custom database function.
+// This is a simplified version for the purpose of migration.
+export async function deleteUserAccount(): Promise<ActionResponse> {
+    const uid = await verifyAndGetUid();
+    const supabase = getSupabaseServerClient();
 
-export async function getPublicUserProfile(uid: string): Promise<Partial<UserProfile> | null> {
-    if (!adminDb) {
-        console.error('Database service unavailable.');
-        return null;
-    }
-    try {
-        const userRef = adminDb.collection('users').doc(uid);
-        const userDoc = await userRef.get();
-        if (!userDoc.exists) {
-            return null;
-        }
+    // In Supabase, you would typically create an `rpc` function to handle this securely.
+    // This is a placeholder for that logic.
+    const { error } = await supabase.rpc('delete_user_account');
 
-        const userData = userDoc.data();
-        if (userData?.preferences?.privacy?.profileVisibility !== 'public') {
-            return null; // Respect privacy settings
-        }
-        
-        const memberSince = userData.stats?.memberSince;
-        const stats = userData.stats ? {
-            ...userData.stats,
-            memberSince: memberSince instanceof Timestamp ? memberSince.toMillis() : memberSince,
-        } : {};
-
-        return {
-            uid: userData.uid,
-            displayName: userData.displayName || 'Anonymous',
-            photoURL: userData.photoURL || null,
-            stats,
-        };
-    } catch(error) {
-        console.error(`Error fetching public profile for UID ${uid}:`, error);
-        return null;
-    }
-}
-
-
-export async function getUserProfile(uid: string): Promise<UserProfile | null> {
-  if (!adminDb) {
-    console.error('Database service is unavailable.');
-    return null;
-  }
-  try {
-    const userRef = adminDb.collection('users').doc(uid);
-    const doc = await userRef.get();
-    if (!doc.exists) {
-      return null;
-    }
-    const data = doc.data() as UserProfile;
-    
-    // Serialize all potential Timestamp fields before returning from the server action.
-    if (data.stats?.memberSince && (data.stats.memberSince as any) instanceof Timestamp) {
-        data.stats.memberSince = (data.stats.memberSince as any).toMillis();
-    }
-    
-    if ((data as any).createdAt && (data as any).createdAt instanceof Timestamp) {
-        (data as any).createdAt = (data as any).toMillis();
-    }
-    
-    if ((data as any).lastLogin && (data as any).lastLogin instanceof Timestamp) {
-        (data as any).lastLogin = (data as any).lastLogin.toMillis();
+    if (error) {
+        console.error('Error deleting user account:', error);
+        return { success: false, message: 'Failed to delete account.', error: error.message };
     }
 
-    return data;
-  } catch (error) {
-    console.error(`Error fetching user profile for ${uid}:`, error);
-    return null;
-  }
+    revalidatePath('/');
+    return { success: true, message: 'Account deleted successfully.' };
 }

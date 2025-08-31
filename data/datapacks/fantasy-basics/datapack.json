@@ -10,107 +10,76 @@
         "promptTemplates": [
             {
                 "name": "Detailed Portrait",
-                "template": "detailed portrait, fantasy illustration, {gender}, {race}, {class}, {hair_style} {hair_color} hair, {armor_torso}, wielding a {weapon}, {background_setting}",
-                "tags": ["portrait", "fantasy", "{gender}", "{race}", "{class}", "{hair_color} hair", "{hair_style} hair", "{armor_torso}", "{weapon}", "{background_setting}"]
+                "template": "{camera}, {count}, {raceClass}, {hair}, {eyes}, {torso_armor}, {shoulders_armor}, {legs_armor}, {hands_weapon}, {background}, cinematic lighting"
             },
             {
                 "name": "Oil Painting Style",
-                "template": "oil painting, {gender}, {race}, {class}, {hair_style} {hair_color} hair, {armor_torso}, carrying a {weapon}, {background_setting}, dramatic lighting",
-                "tags": ["oil painting (medium)", "fantasy", "{gender}", "{race}", "{class}", "{hair_color} hair", "{hair_style} hair", "{armor_torso}", "{weapon}", "{background_setting}", "dramatic lighting"]
+                "template": "oil painting of a {raceClass} with {hair} and {eyes}, wearing {torso_armor} and {shoulders_armor}, carrying {hands_weapon}, in a {background}, dramatic lighting"
             }
         ],
-        "slots": [
-            {
-                "id": "gender",
-                "label": "Gender",
-                "type": "select",
-                "defaultOption": "female",
-                "options": [
-                    { "label": "Female", "value": "female", "tags": ["1girl", "female"] },
-                    { "label": "Male", "value": "male", "tags": ["1boy", "male"] }
+        "characterProfileSchema": {
+            "count": [
+                { "label": "A single woman", "value": "1girl" },
+                { "label": "A single man", "value": "1boy" }
+            ],
+            "raceClass": [
+                { "label": "Human Warrior", "value": "human warrior" },
+                { "label": "Elf Mage", "value": "elf mage" },
+                { "label": "Dwarf Fighter", "value": "dwarf fighter" },
+                { "label": "Orc Rogue", "value": "orc rogue" }
+            ],
+            "hair": [
+                { "label": "Long Brown Hair", "value": "long brown hair" },
+                { "label": "Short Blonde Hair", "value": "short blonde hair" },
+                { "label": "Braided Black Hair", "value": "braided black hair" },
+                { "label": "Flowing Red Hair", "value": "long flowing red hair" }
+            ],
+            "eyes": [
+                { "label": "Blue Eyes", "value": "blue eyes" },
+                { "label": "Green Eyes", "value": "green eyes" },
+                { "label": "Brown Eyes", "value": "brown eyes" }
+            ],
+            "torso": {
+                "armor": [
+                    { "label": "Leather Tunic", "value": "wearing a leather tunic" },
+                    { "label": "Chainmail", "value": "wearing chainmail" },
+                    { "label": "Steel Plate Armor", "value": "wearing steel plate armor" },
+                    { "label": "Mage Robes", "value": "wearing simple mage robes" }
                 ]
             },
-            {
-                "id": "race",
-                "label": "Race",
-                "type": "select",
-                "defaultOption": "human",
-                "options": [
-                    { "label": "Human", "value": "human", "tags": ["human"] },
-                    { "label": "Elf", "value": "elf", "tags": ["elf", "pointed ears"] },
-                    { "label": "Dwarf", "value": "dwarf", "tags": ["dwarf", "beard"] },
-                    { "label": "Orc", "value": "orc", "tags": ["orc", "green skin", "tusks"] }
+            "shoulders": {
+                "armor": [
+                    { "label": "Leather Pauldrons", "value": "leather pauldrons" },
+                    { "label": "Steel Pauldrons", "value": "steel pauldrons" },
+                    { "label": "No Pauldrons", "value": "" }
                 ]
             },
-            {
-                "id": "class",
-                "label": "Class",
-                "type": "select",
-                "defaultOption": "warrior",
-                "options": [
-                    { "label": "Warrior", "value": "warrior", "tags": ["warrior", "fighter"] },
-                    { "label": "Mage", "value": "mage", "tags": ["mage", "sorcerer", "magic"] },
-                    { "label": "Rogue", "value": "rogue", "tags": ["rogue", "thief", "assassin"] }
+            "legs": {
+                "armor": [
+                    { "label": "Leather Pants", "value": "leather pants" },
+                    { "label": "Chainmail Leggings", "value": "chainmail leggings" },
+                    { "label": "Steel Greaves", "value": "steel greaves" }
                 ]
             },
-            {
-                "id": "hair_style",
-                "label": "Hair Style",
-                "type": "select",
-                "defaultOption": "long",
-                "options": [
-                    { "label": "Long", "value": "long", "tags": ["long hair"] },
-                    { "label": "Short", "value": "short", "tags": ["short hair"] },
-                    { "label": "Braided", "value": "braided", "tags": ["braided hair", "braid"] }
+            "hands": {
+                "weapon": [
+                    { "label": "Longsword", "value": "holding a longsword" },
+                    { "label": "Bow and Arrow", "value": "holding a bow" },
+                    { "label": "Magic Staff", "value": "holding a magic staff" },
+                    { "label": "Dagger", "value": "holding a dagger" }
                 ]
             },
-            {
-                "id": "hair_color",
-                "label": "Hair Color",
-                "type": "select",
-                "defaultOption": "brown",
-                "options": [
-                    { "label": "Brown", "value": "brown", "tags": ["brown hair"] },
-                    { "label": "Blonde", "value": "blonde", "tags": ["blonde hair"] },
-                    { "label": "Black", "value": "black", "tags": ["black hair"] },
-                    { "label": "Red", "value": "red", "tags": ["red hair"] }
-                ]
-            },
-            {
-                "id": "armor_torso",
-                "label": "Torso Armor",
-                "type": "select",
-                "defaultOption": "leather_tunic",
-                "options": [
-                    { "label": "Leather Tunic", "value": "leather_tunic", "tags": ["leather armor", "tunic"] },
-                    { "label": "Chainmail", "value": "chainmail", "tags": ["chainmail", "metal armor"] },
-                    { "label": "Steel Plate", "value": "steel_plate", "tags": ["plate armor", "cuirass"] },
-                    { "label": "Simple Robe", "value": "simple_robe", "tags": ["robe", "mage clothes"] }
-                ]
-            },
-            {
-                "id": "weapon",
-                "label": "Weapon",
-                "type": "select",
-                "defaultOption": "longsword",
-                "options": [
-                    { "label": "Longsword", "value": "longsword", "tags": ["sword", "longsword", "holding sword"] },
-                    { "label": "Bow", "value": "bow", "tags": ["bow", "archer"] },
-                    { "label": "Staff", "value": "staff", "tags": ["staff", "magic staff", "holding staff"] },
-                    { "label": "Dagger", "value": "dagger", "tags": ["dagger", "holding dagger"] }
-                ]
-            },
-            {
-                "id": "background_setting",
-                "label": "Background",
-                "type": "select",
-                "defaultOption": "misty_forest",
-                "options": [
-                    { "label": "Misty Forest", "value": "misty_forest", "tags": ["forest", "mist"] },
-                    { "label": "Castle Wall", "value": "castle_wall", "tags": ["castle", "parapet"] },
-                    { "label": "Tavern", "value": "tavern", "tags": ["tavern", "inn", "indoors"] }
-                ]
-            }
-        ]
+            "camera": [
+                { "label": "Detailed Portrait", "value": "detailed portrait" },
+                { "label": "Full Body Shot", "value": "full body" },
+                { "label": "Action Pose", "value": "dynamic action pose" }
+            ],
+            "background": [
+                { "label": "Misty Forest", "value": "in a misty forest" },
+                { "label": "Castle Wall", "value": "on a castle wall" },
+                { "label": "Tavern Interior", "value": "inside a rustic tavern" },
+                { "label": "Dungeon Corridor", "value": "in a dark dungeon corridor" }
+            ]
+        }
     }
 }

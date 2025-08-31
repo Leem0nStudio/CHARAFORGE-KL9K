@@ -1,34 +1,26 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Swords, Star } from 'lucide-react';
+import { Swords, Star, BookOpen, User, Shield } from 'lucide-react';
 import React from 'react';
+import { rpgArchetypes } from '@/lib/app-config';
 
-const PathIcon: React.FC<{ path: string }> = ({ path }) => {
-    const iconMap: Record<string, React.ReactNode> = {
-      All: <Star className="text-yellow-400" />,
-      Warrior: <Swords className="text-red-400" />,
-      Fighter: <Swords className="text-red-400" />,
-      Paladin: <Swords className="text-red-400" />,
-      Barbarian: <Swords className="text-red-400" />,
-      Mage: <span className="text-xl">🧙</span>,
-      Sorcerer: <span className="text-xl">🔮</span>,
-      Warlock: <span className="text-xl">👿</span>,
-      Wizard: <span className="text-xl">📜</span>,
-      Rogue: <span className="text-xl">🗡️</span>,
-      Ranger: <span className="text-xl">🏹</span>,
-      Bard: <span className="text-xl">🎼</span>,
-      Cleric: <span className="text-xl">✝️</span>,
-      Druid: <span className="text-xl">🌿</span>,
-      Monk: <span className="text-xl">🧘</span>,
-      Artificer: <span className="text-xl">🛠️</span>,
-    };
-    return (
-      <div className="w-6 h-6 grid place-content-center" title={path} aria-label={path}>
-        {iconMap[path] || <Star className="text-slate-400"/>}
-      </div>
-    );
-  };
+const archetypeIcons: Record<string, React.ReactNode> = {
+  Artificer: <User />,
+  Barbarian: <Swords />,
+  Bard: <BookOpen />,
+  Cleric: <User />,
+  Druid: <User />,
+  Fighter: <Swords />,
+  Monk: <User />,
+  Paladin: <Shield />,
+  Ranger: <User />,
+  Rogue: <User />,
+  Sorcerer: <Star />,
+  Warlock: <Star />,
+  Wizard: <Star />,
+  All: <User />,
+};
 
 export function CharacterFilterSidebar({ 
     activeFilter, 
@@ -40,11 +32,11 @@ export function CharacterFilterSidebar({
     archetypes: string[];
 }) {
   return (
-    <aside className="w-56 shrink-0 px-4 py-6 text-slate-200/90 hidden md:block">
+    <aside className="w-56 shrink-0 px-4 py-6 text-slate-200/90 hidden md:block border-r border-slate-700/50 bg-background/50">
       <div className="text-sm uppercase tracking-wide text-slate-300/70 mb-3">
         Data Bank
       </div>
-      <div className="text-2xl font-semibold mb-6">Characters</div>
+      <div className="text-2xl font-semibold mb-6 font-headline">Characters</div>
 
       <nav className="space-y-1">
         {archetypes.map((archetype) => {
@@ -60,7 +52,7 @@ export function CharacterFilterSidebar({
                   : "hover:bg-white/5 text-slate-300 hover:text-white"
               )}
             >
-              <PathIcon path={archetype} />
+              {archetypeIcons[archetype] || <User />}
               <span className="text-sm tracking-wide">{archetype}</span>
             </button>
           );

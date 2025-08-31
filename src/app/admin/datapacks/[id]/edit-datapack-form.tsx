@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Trash2, Save, FileUp } from 'lucide-react';
+import { Loader2, Trash2, Save, FileUp, ClipboardPaste } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,13 +24,17 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { DataPack, DataPackSchema } from '@/types/datapack';
+import type { DataPack } from '@/types/datapack';
 import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
 import { DataPackMetadataForm } from './datapack-metadata-form';
 import { DataPackSchemaEditor } from './datapack-schema-editor';
-import { formatDataPackSchemaFromAI } from './ai-schema-adapter';
+import { AiGeneratorDialog } from './ai-generator-dialog';
+import { Textarea } from '@/components/ui/textarea';
+import yaml from 'js-yaml';
+import { DataPackSchemaSchema } from '@/types/datapack';
 
-function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => void }) {
+
+function ImportFileTab({ onImportSuccess }: { onImportSuccess: (packId: string) => void }) {
     const [isProcessing, startTransition] = useTransition();
     const { toast } = useToast();
     const [file, setFile] = useState<File | null>(null);
@@ -39,12 +43,8 @@ function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => v
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         
-        if (!formData.get('name')) {
-            toast({ variant: 'destructive', title: 'Error', description: 'DataPack name is required.' });
-            return;
-        }
         if (!file) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please select a .zip file.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select a file.' });
             return;
         }
         
@@ -66,26 +66,82 @@ function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => v
                 <Input name="name" id="name" placeholder="e.g., The Genesis Engine" required/>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="wildcardFiles">Wildcard Archive (.zip)</Label>
+                <Label htmlFor="wildcardFiles">Wildcard File (.zip, .yaml, .txt)</Label>
                 <Input 
                   name="wildcardFiles" 
                   id="wildcardFiles" 
                   type="file" 
-                  accept=".zip,application/zip,application/x-zip-compressed"
+                  accept=".zip,.yaml,.yml,.txt"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">Select a .zip file containing your wildcard files. Subfolders will be interpreted as nested slots (e.g., `torso/armor.txt`).</p>
+                <p className="text-xs text-muted-foreground">Upload a file. The system will intelligently parse it to build the schema.</p>
             </div>
             <Button type="submit" disabled={isProcessing}>
                 {isProcessing ? <Loader2 className="animate-spin mr-2"/> : <FileUp className="mr-2"/>}
-                Create from Zip
+                Create from File
             </Button>
         </form>
     )
 }
 
-// This component now fetches its own data.
+function PasteYamlTab({ onImportSuccess }: { onImportSuccess: (packId: string) => void }) {
+    const [isProcessing, startTransition] = useTransition();
+    const { toast } = useToast();
+    const [yamlContent, setYamlContent] = useState('');
+    const [name, setName] = useState('');
+
+    const handleProcess = () => {
+        if (!name.trim()) {
+            toast({ variant: 'destructive', title: 'Error', description: 'DataPack name is required.' });
+            return;
+        }
+        if (!yamlContent.trim()) {
+            toast({ variant: 'destructive', title: 'Error', description: 'YAML content cannot be empty.' });
+            return;
+        }
+
+        const pseudoFile = new File([yamlContent], `${name.replace(/\s+/g, '_')}.yaml`, { type: 'text/yaml' });
+        
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('wildcardFiles', pseudoFile);
+        
+        startTransition(async () => {
+            const result = await createDataPackFromFiles(formData);
+            if (result.success && result.packId) {
+                toast({ title: 'Success!', description: result.message });
+                onImportSuccess(result.packId);
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: result.error || result.message });
+            }
+        });
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="paste-name">New DataPack Name</Label>
+                <Input id="paste-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Cyberpunk Streetwear" required/>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="yaml-content">Paste YAML Content</Label>
+                <Textarea 
+                    id="yaml-content"
+                    value={yamlContent}
+                    onChange={(e) => setYamlContent(e.target.value)}
+                    placeholder="Paste your wildcard file content here..."
+                    className="min-h-[300px] font-mono text-xs"
+                />
+            </div>
+            <Button onClick={handleProcess} disabled={isProcessing}>
+                {isProcessing ? <Loader2 className="animate-spin mr-2"/> : <ClipboardPaste className="mr-2"/>}
+                Create from Text
+            </Button>
+        </div>
+    )
+}
+
 export function EditDataPackForm({ packId }: { packId: string }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -94,6 +150,7 @@ export function EditDataPackForm({ packId }: { packId: string }) {
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [initialData, setInitialData] = useState<DataPack | null>(null);
   const [isLoading, setIsLoading] = useState(packId !== 'new');
+  const [activeTab, setActiveTab] = useState(packId === 'new' ? 'import' : 'metadata');
 
   const form = useForm<DataPackFormValues>({
     resolver: zodResolver(DataPackFormSchema),
@@ -109,15 +166,15 @@ export function EditDataPackForm({ packId }: { packId: string }) {
         promptTemplates: [],
       },
       isNsfw: false,
+      imported: false,
     },
     mode: 'onChange',
   });
   
-  useEffect(() => {
-    async function fetchData() {
-      if (packId && packId !== 'new') {
-        setIsLoading(true);
-        const data = await getDataPackForAdmin(packId);
+  const fetchDataAndResetForm = async (id: string) => {
+      setIsLoading(true);
+      try {
+        const data = await getDataPackForAdmin(id);
         if (data) {
           setInitialData(data);
           form.reset({
@@ -129,27 +186,46 @@ export function EditDataPackForm({ packId }: { packId: string }) {
             tags: data.tags || [],
             schema: data.schema || { characterProfileSchema: {}, promptTemplates: [] },
             isNsfw: data.isNsfw || false,
+            imported: data.imported || false,
           });
         }
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch DataPack data.' });
+      } finally {
         setIsLoading(false);
       }
-    }
-    fetchData();
-  }, [packId, form]);
+  };
 
- const handleAiSchemaGenerated = (generatedSchema: DataPackSchema, name: string, description: string, tags: string[]) => {
-      const currentValues = form.getValues();
-      const formattedSchema = formatDataPackSchemaFromAI(generatedSchema);
+  useEffect(() => {
+    if (packId && packId !== 'new') {
+       fetchDataAndResetForm(packId);
+    }
+  }, [packId]);
+
+ const handleAiSchemaGenerated = (schemaYaml: string) => {
+    try {
+      const cleanedYaml = schemaYaml.replace(/^```(yaml|YAML)?\s*|```$/g, '').trim();
+      const generatedData = yaml.load(cleanedYaml) as any;
       
-      // Use form.reset to update the entire form state at once.
-      // This ensures all child components, including those with useFieldArray, re-render correctly.
+      const schemaValidation = DataPackSchemaSchema.safeParse(generatedData.schema);
+      if (!schemaValidation.success) {
+          throw new Error(`AI returned an invalid schema structure: ${schemaValidation.error.message}`);
+      }
+
       form.reset({
-          ...currentValues, // Keep existing values like type, price, etc.
-          name,
-          description,
-          tags,
-          schema: formattedSchema,
+        ...form.getValues(),
+        name: generatedData.name,
+        description: generatedData.description,
+        tags: generatedData.tags,
+        schema: schemaValidation.data,
+        imported: false,
       });
+
+    } catch (e) {
+      console.error("YAML Parsing or Generation Error:", e);
+      const message = e instanceof Error ? e.message : "An unknown error occurred during parsing.";
+      toast({ variant: 'destructive', title: 'YAML Parsing Error', description: message });
+    }
   };
 
 
@@ -188,6 +264,12 @@ export function EditDataPackForm({ packId }: { packId: string }) {
       }
     });
   };
+
+  const handleImportSuccess = (newPackId: string) => {
+    router.push(`/admin/datapacks/${newPackId}`, { scroll: false });
+    fetchDataAndResetForm(newPackId);
+    setActiveTab('metadata');
+  };
   
   if (isLoading) {
     return (
@@ -197,10 +279,12 @@ export function EditDataPackForm({ packId }: { packId: string }) {
     );
   }
 
+  const isImported = form.watch('imported');
+
   return (
     <FormProvider {...form}>
-      <div className="pb-24 sm:pb-0">
-        <Tabs defaultValue={packId === 'new' ? 'import' : 'metadata'}>
+      <div className="pb-24">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
              <TabsList>
               <TabsTrigger value="import" disabled={packId !== 'new'}>Import</TabsTrigger>
@@ -233,28 +317,47 @@ export function EditDataPackForm({ packId }: { packId: string }) {
             </div>
           </div>
          
-          <TabsContent value="import">
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Import from Zip</CardTitle>
-                      <CardDescription>Create a new DataPack by uploading a .zip archive of your wildcard files.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <ImportTab onImportSuccess={(newPackId) => router.push(`/admin/datapacks/${newPackId}`)} />
-                  </CardContent>
-              </Card>
-          </TabsContent>
-          <TabsContent value="metadata">
-            <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} />
-          </TabsContent>
-          <TabsContent value="schema">
-            <DataPackSchemaEditor 
-                form={form} 
-                onAiSchemaGenerated={handleAiSchemaGenerated}
-                isAiGenerating={isAiGenerating}
-                onAiGeneratingChange={setIsAiGenerating}
-            />
-          </TabsContent>
+          <div className="flex-grow">
+              <TabsContent value="import">
+                  <Card>
+                      <CardHeader>
+                          <CardTitle>Import from File or Text</CardTitle>
+                          <CardDescription>Create a new DataPack by uploading a wildcard file or pasting YAML content.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                          <Tabs defaultValue="file" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="file">Import File</TabsTrigger>
+                                    <TabsTrigger value="paste">Paste Text</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="file" className="pt-4">
+                                     <ImportFileTab onImportSuccess={handleImportSuccess} />
+                                </TabsContent>
+                                <TabsContent value="paste" className="pt-4">
+                                    <PasteYamlTab onImportSuccess={handleImportSuccess} />
+                                </TabsContent>
+                          </Tabs>
+                      </CardContent>
+                  </Card>
+              </TabsContent>
+              <TabsContent value="metadata">
+                <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} />
+              </TabsContent>
+              <TabsContent value="schema">
+                    <div className="space-y-4">
+                        <div className="flex justify-end">
+                            <AiGeneratorDialog 
+                                onSchemaGenerated={handleAiSchemaGenerated}
+                                onGeneratingChange={setIsAiGenerating}
+                            />
+                        </div>
+                        <DataPackSchemaEditor 
+                            form={form} 
+                            isAiGenerating={isAiGenerating}
+                        />
+                    </div>
+              </TabsContent>
+          </div>
         </Tabs>
 
         {/* Mobile Action Footer */}
