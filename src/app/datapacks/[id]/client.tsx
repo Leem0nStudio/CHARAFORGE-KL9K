@@ -25,7 +25,7 @@ function DataPackInstallButton({ pack }: { pack: DataPack }) {
     const router = useRouter();
     const { authUser, userProfile } = useAuth();
 
-    const installedPacks = userProfile?.preferences?.installed_packs || [];
+    const installedPacks = userProfile?.stats?.installedPacks || [];
     const isInstalled = installedPacks.includes(pack.id);
 
     const handleInstall = () => {

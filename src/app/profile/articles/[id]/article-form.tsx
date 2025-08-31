@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useTransition, useEffect, useState, useRef } from 'react';
+import { useTransition, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -38,7 +38,6 @@ export function ArticleForm({ article }: { article: Article | null }) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
-  const contentRef = useRef<HTMLTextAreaElement>(null);
 
   const form = useForm<Omit<Article, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'author' | 'excerpt'>>({
     resolver: zodResolver(UpsertArticleSchema),
@@ -74,7 +73,7 @@ export function ArticleForm({ article }: { article: Article | null }) {
   };
   
   const insertMarkdown = (syntax: 'bold' | 'italic' | 'code' | 'link' | 'image', url?: string) => {
-    const textarea = contentRef.current;
+    const textarea = document.getElementById('content') as HTMLTextAreaElement;
     if (!textarea) return;
 
     const start = textarea.selectionStart;
@@ -148,7 +147,6 @@ export function ArticleForm({ article }: { article: Article | null }) {
                     <Button type="button" variant="ghost" size="icon" onClick={() => setIsSelectorOpen(true)}><ImageIcon /></Button>
                 </div>
                 <Textarea
-                    ref={contentRef}
                     id="content"
                     {...form.register('content')}
                     className="min-h-[400px] font-mono border-0 rounded-t-none focus-visible:ring-0 focus-visible:ring-offset-0"

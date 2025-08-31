@@ -12,6 +12,17 @@ import { SectionTitle } from './section-title';
 import { GachaCard } from './character/gacha-card';
 import { DataPackCard } from './datapack/datapack-card';
 import { EmblaCarousel } from './ui/carousel';
+
+// Wrapper components to make components compatible with EmblaCarousel
+const GachaCardWrapper = ({ character }: { character?: Character }) => {
+    if (!character) return null;
+    return <GachaCard character={character} />;
+};
+
+const DataPackCardWrapper = ({ pack }: { pack?: DataPack }) => {
+    if (!pack) return null;
+    return <DataPackCard pack={pack} />;
+};
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Swords, ArrowRight } from 'lucide-react';
 import { ArticleCard } from './article/article-card';
@@ -80,7 +91,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, l
         {featuredCreations.length > 0 && (
             <motion.section variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
                 <SectionTitle title="Community Gallery" subtitle="Explore the latest epic characters forged by our vibrant community." />
-                <EmblaCarousel slides={featuredCreations} CardComponent={GachaCard} />
+                <EmblaCarousel slides={featuredCreations} CardComponent={GachaCardWrapper} />
             </motion.section>
         )}
         
@@ -109,7 +120,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, l
         {newDataPacks.length > 0 && (
              <motion.section variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
                  <SectionTitle title="Latest DataPacks" subtitle="Discover new creative toolkits to inspire your next character." />
-                <EmblaCarousel slides={newDataPacks} CardComponent={DataPackCard} />
+                <EmblaCarousel slides={newDataPacks} CardComponent={DataPackCardWrapper} />
             </motion.section>
         )}
         

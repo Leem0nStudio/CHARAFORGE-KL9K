@@ -49,7 +49,7 @@ export async function searchUsers(emailQuery: string): Promise<SanitizedUser[]> 
             email: user.email || null,
             disabled: false, // Supabase doesn't have banned_until by default
             isAdmin: user.app_metadata?.role === 'admin',
-        }));
+        })) as SanitizedUser[];
     } catch (error: any) {
         console.error('Error searching for user:', error);
         throw new Error('An error occurred while searching for users.');

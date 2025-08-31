@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { BackButton } from '@/components/back-button';
 
 function CharacterGeneratorWrapper() {
-  const { authUser, loading } = useAuth();
+  const { authUser, userProfile, loading } = useAuth();
   
   if (loading) {
     return (
@@ -31,7 +31,7 @@ function CharacterGeneratorWrapper() {
                 description="Bring your vision to life. Use a simple prompt or the DataPack Wizard to get started."
              />
         </div>
-        <CharacterGenerator authUser={authUser} />
+        <CharacterGenerator authUser={userProfile} />
     </motion.div>
   )
 }

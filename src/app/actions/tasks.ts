@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { verifyIsAdmin } from '@/lib/auth/server';
-import { adminDb } from '@/lib/firebase/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 
 type ActionResponse = {
     success: boolean;
@@ -51,7 +51,20 @@ export async function enqueueModelSyncJob(modelId: string): Promise<ActionRespon
         const [response] = await tasksClient.createTask({ parent, task });
         console.log(`Successfully created task: ${response.name}`);
 
-        await adminDb.collection('ai_models').doc(modelId).update({ syncStatus: 'queued', syncError: null });
+        // Update model status in Supabase
+        const supabase = getSupabaseServerClient();
+        const { error } = await supabase
+            .from('ai_models')
+            .update({ 
+                sync_status: 'queued', 
+                sync_error: null,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', modelId);
+
+        if (error) {
+            console.error('Failed to update model status in Supabase:', error);
+        }
 
         revalidatePath('/admin/models');
 
@@ -60,8 +73,22 @@ export async function enqueueModelSyncJob(modelId: string): Promise<ActionRespon
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
         console.error(`Failed to enqueue task for model ${modelId}:`, message);
-        // Update the model in Firestore to reflect the queuing error.
-        await adminDb.collection('ai_models').doc(modelId).update({ syncStatus: 'error', syncError: `Failed to queue task: ${message}` });
+        
+        // Update the model in Supabase to reflect the queuing error
+        const supabase = getSupabaseServerClient();
+        const { error: updateError } = await supabase
+            .from('ai_models')
+            .update({ 
+                sync_status: 'error', 
+                sync_error: `Failed to queue task: ${message}`,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', modelId);
+
+        if (updateError) {
+            console.error('Failed to update model error status in Supabase:', updateError);
+        }
+
         revalidatePath('/admin/models');
         return { success: false, message: 'Failed to queue sync job.', error: message };
     }

@@ -89,10 +89,10 @@ export default async function UserProfilePage({ params }: { params: Promise<{ ui
                                     </div>
                                 </div>
                                 {/* About Me Section */}
-                                {userProfile.bio && (
+                                {userProfile.profile?.bio && (
                                     <div className="pt-4 border-t">
                                         <h3 className="font-semibold text-muted-foreground mb-2">About Me</h3>
-                                        <p className="text-sm text-card-foreground/90 whitespace-pre-wrap">{userProfile.bio}</p>
+                                        <p className="text-sm text-card-foreground/90 whitespace-pre-wrap">{userProfile.profile.bio}</p>
                                     </div>
                                 )}
                                 {isOwner && (

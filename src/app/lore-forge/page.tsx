@@ -134,7 +134,7 @@ function CharacterSelector({
 
     useEffect(() => {
         if (isOpen) {
-            setSelectedIds(new Set(currentCast.characterIds));
+            setSelectedIds(new Set(currentCast.character_ids));
         }
     }, [currentCast, isOpen]);
     
@@ -156,7 +156,7 @@ function CharacterSelector({
             const result = await updateStoryCastCharacters(currentCast.id, updatedIds);
             if (result.success) {
                 toast({ title: "Cast Updated" });
-                onCastUpdated({ ...currentCast, characterIds: updatedIds });
+                onCastUpdated({ ...currentCast, character_ids: updatedIds });
                 onClose();
             } else {
                 toast({ variant: 'destructive', title: 'Update Failed', description: result.message });
@@ -226,14 +226,14 @@ function LoreForgeGenerator({
     const [isProcessing, startProcessingTransition] = useTransition();
     const { toast } = useToast();
 
-    const castCharacters = characters.filter(c => cast.characterIds.includes(c.id));
+    const castCharacters = characters.filter(c => cast.character_ids.includes(c.id));
 
     const handleGenerateStory = () => {
         if (!prompt.trim()) {
             toast({ variant: 'destructive', title: 'Prompt is empty', description: 'Please provide a theme or idea for the story.'});
             return;
         }
-        if (cast.characterIds.length === 0) {
+        if (cast.character_ids.length === 0) {
              toast({ variant: 'destructive', title: 'Cast is empty', description: 'Add characters to your cast before generating a story.'});
             return;
         }
@@ -252,10 +252,10 @@ function LoreForgeGenerator({
     const handleRemoveCharacterFromCast = (characterId: string) => {
         if (!cast) return;
         startProcessingTransition(async () => {
-            const newCharacterIds = cast.characterIds.filter(id => id !== characterId);
+            const newCharacterIds = cast.character_ids.filter(id => id !== characterId);
             const result = await updateStoryCastCharacters(cast.id, newCharacterIds);
             if(result.success) {
-                onCastUpdated({ ...cast, characterIds: newCharacterIds });
+                onCastUpdated({ ...cast, character_ids: newCharacterIds });
                 toast({title: "Character Removed"});
             } else {
                 toast({ variant: 'destructive', title: 'Update Failed', description: result.message });
@@ -279,7 +279,7 @@ function LoreForgeGenerator({
             <CardContent className="flex-grow space-y-6">
                 <div>
                     <h3 className="text-lg font-semibold flex items-center justify-between mb-2">
-                        <span>The Cast ({cast.characterIds.length})</span>
+                        <span>The Cast ({cast.character_ids.length})</span>
                         <Button variant="outline" size="sm" onClick={() => setIsSelectorOpen(true)}>
                             <Plus className="mr-2"/> Add/Remove
                         </Button>
@@ -352,12 +352,12 @@ function LoreForgeContent() {
     const [characters, setCharacters] = useState<Character[]>([]);
     const [selectedCast, setSelectedCast] = useState<StoryCast | null>(null);
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (userId: string) => {
         setIsLoading(true);
         try {
             const [userCasts, userCharacters] = await Promise.all([
                 getUserCasts(),
-                getCharacters(),
+                getCharacters(userId),
             ]);
 
             setCasts(userCasts);
@@ -385,7 +385,7 @@ function LoreForgeContent() {
         if (!authLoading && !authUser) {
             router.push('/login');
         } else if (authUser) {
-            fetchData();
+            fetchData(authUser.id);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authLoading, authUser, router]);

@@ -1,59 +1,80 @@
 
-
 'use server';
 
-import { adminDb } from '@/lib/firebase/server';
-import type { Character } from '@/types/character';
-import { toCharacterObject } from '@/services/character-hydrator';
-import { FieldValue } from 'firebase-admin/firestore';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
+import { toCharacterObject } from '@/services/character-hydrator';
+import type { Character } from '@/types/character';
 
 /**
- * Fetches a random opponent from all public characters, matching the player's rarity.
- * @param playerRarity The rarity level (1-5) of the player's character.
- * @param excludeId The ID of the player's character to exclude from the opponent pool.
- * @returns A promise that resolves to a random opponent character or null if none are found.
+ * Fetches a random opponent character for arena battles.
+ * @param excludeId The ID of the player's character to exclude from selection.
+ * @param playerRarity The rarity level of the player's character.
+ * @returns A promise resolving to a random opponent character or null if none found.
  */
-export async function getRandomOpponent(playerRarity: number, excludeId: string): Promise<Character | null> {
-    if (!adminDb) {
-        console.error('Database service is unavailable.');
-        return null;
-    }
-
+export async function getRandomOpponent(excludeId: string, playerRarity: number): Promise<Character | null> {
     try {
-        const q = adminDb.collection('characters')
-            .where('meta.status', '==', 'public')
-            .where('rpg.isPlayable', '==', true)
-            .where('core.rarity', '==', playerRarity);
+        const supabase = getSupabaseServerClient();
         
-        const snapshot = await q.get();
-
-        if (snapshot.empty) {
-            // If no exact match, try to find one rarity level below or above
-            const [belowSnapshot, aboveSnapshot] = await Promise.all([
-                 adminDb.collection('characters').where('core.rarity', '==', playerRarity - 1).limit(10).get(),
-                 adminDb.collection('characters').where('core.rarity', '==', playerRarity + 1).limit(10).get()
+        // Get characters with the same rarity first
+        const { data: sameRarityChars, error: sameError } = await supabase
+            .from('characters')
+            .select('*')
+            .neq('id', excludeId)
+            .eq('core_details->rarity', playerRarity)
+            .limit(10);
+            
+        if (sameError) throw sameError;
+        
+        const opponents = sameRarityChars || [];
+        
+        // If not enough opponents with same rarity, get some with adjacent rarities
+        const additionalOpponents: any[] = [];
+        if (opponents.length < 3) {
+            const [aboveRarity, belowRarity] = await Promise.all([
+                supabase
+                    .from('characters')
+                    .select('*')
+                    .neq('id', excludeId)
+                    .eq('core_details->rarity', playerRarity + 1)
+                    .limit(5),
+                supabase
+                    .from('characters')
+                    .select('*')
+                    .neq('id', excludeId)
+                    .eq('core_details->rarity', playerRarity - 1)
+                    .limit(5)
             ]);
-            snapshot.docs.push(...belowSnapshot.docs);
-            snapshot.docs.push(...aboveSnapshot.docs);
+            
+            if (aboveRarity.data) additionalOpponents.push(...aboveRarity.data);
+            if (belowRarity.data) additionalOpponents.push(...belowRarity.data);
         }
         
-        const opponents = snapshot.docs
-            .map(doc => toCharacterObject(doc.id, doc.data()))
-            .filter(char => char.id !== excludeId);
-
-        if (opponents.length === 0) {
+        const allOpponents = [...opponents, ...additionalOpponents];
+        
+        if (allOpponents.length === 0) {
             return null; // No suitable opponents found
         }
         
-        const randomIndex = Math.floor(Math.random() * opponents.length);
-        return opponents[randomIndex];
+        // Convert to Character objects
+        const characterPromises = allOpponents.map(async (char) => {
+            return await toCharacterObject(char.id, char);
+        });
+        
+        const characters = await Promise.all(characterPromises);
+        const validOpponents = characters.filter(char => char.id !== excludeId);
+        
+        if (validOpponents.length === 0) {
+            return null;
+        }
+        
+        const randomIndex = Math.floor(Math.random() * validOpponents.length);
+        return validOpponents[randomIndex];
     } catch (error) {
         console.error("Error fetching random opponent:", error);
         return null;
     }
 }
-
 
 /**
  * Simulates a battle round using the D10 dice pool system.
@@ -105,7 +126,6 @@ function simulateRound(attacker: Character, defender: Character): { roundLog: st
     return { roundLog, damage: netSuccesses };
 }
 
-
 /**
  * Simulates a battle and returns the log and winner.
  * @param player Player's character object.
@@ -137,27 +157,41 @@ export async function simulateBattle(player: Character, opponent: Character): Pr
         log.push(...opponentAttack.roundLog);
         log.push(`${player.core.name} has ${Math.max(0, playerHp)} HP remaining.`);
     }
-    
-    let winnerId = '';
-    let xpGained = 0;
 
-    if (playerHp > 0) {
-        winnerId = player.id;
-        log.push(`${player.core.name} is victorious!`);
-        xpGained = 10 + (opponent.core.rarity - player.core.rarity) * 5; // XP based on rarity difference
-        xpGained = Math.max(5, xpGained); // Minimum 5 XP
+    // Determine winner and calculate XP
+    const winner = playerHp > 0 ? player : opponent;
+    const loser = playerHp > 0 ? opponent : player;
+    const xpGained = Math.floor((loser.rpg.stats.constitution || 5) * 0.5);
+
+    log.push(`--- Battle End ---`);
+    log.push(`${winner.core.name} emerges victorious!`);
+    log.push(`${winner.core.name} gains ${xpGained} XP from this battle.`);
+
+    // Update character stats in database
+    try {
+        const supabase = getSupabaseServerClient();
         
-        if (adminDb) {
-            await adminDb.collection('characters').doc(player.id).update({
-                'rpg.experience': FieldValue.increment(xpGained)
-            });
-             log.push(`${player.core.name} gained ${xpGained} XP!`);
+        // Update winner's XP (stored separately from stats)
+        const { error: updateError } = await supabase
+            .from('characters')
+            .update({ 
+                rpg_details: {
+                    ...winner.rpg,
+                    experience: (winner.rpg.experience || 0) + xpGained
+                }
+            })
+            .eq('id', winner.id);
+            
+        if (updateError) {
+            console.error('Error updating winner XP:', updateError);
         }
-        
-    } else {
-        winnerId = opponent.id;
-        log.push(`${opponent.core.name} is victorious!`);
+    } catch (error) {
+        console.error('Error updating character stats:', error);
     }
 
-    return { log, winnerId, xpGained };
+    return {
+        log,
+        winnerId: winner.id,
+        xpGained
+    };
 }

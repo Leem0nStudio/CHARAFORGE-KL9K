@@ -47,10 +47,11 @@ function ActionButton({ children, variant = "solid", asChild = false, href, onCl
       ? "bg-primary/20 text-primary-foreground border-primary/30 hover:bg-primary/30"
       : "bg-transparent border-white/20 hover:bg-white/10";
 
-  const Comp = asChild && href ? Link : 'button';
-  const compProps = asChild && href ? { href } : { onClick };
-
-  return <Comp className={cn(base, styles)} {...compProps}>{children}</Comp>;
+  if (asChild && href) {
+    return <Link href={href} className={cn(base, styles)}>{children}</Link>;
+  }
+  
+  return <button className={cn(base, styles)} onClick={onClick}>{children}</button>;
 }
 
 function TalentItem({ title, level, icon, type }: { title: string; level?: number; icon?: React.ReactNode; type: 'attack' | 'defense' | 'utility' }) {

@@ -26,9 +26,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DataPack, DataPackSchema } from '@/types/datapack';
 import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
-import { DataPackMetadataForm } from '@/components/admin/datapacks/[id]/datapack-metadata-form';
+// import { DataPackMetadataForm } from '@/components/admin/datapacks/[id]/datapack-metadata-form'; // TODO: Import when file exists
 import { DataPackSchemaEditor } from './datapack-schema-editor';
-import { AiGeneratorDialog } from '@/app/admin/datapacks/[id]/ai-generator-dialog';
+// import { AiGeneratorDialog } from '@/app/admin/datapacks/[id]/ai-generator-dialog'; // TODO: Import when file exists
 
 
 function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => void }) {
@@ -260,19 +260,22 @@ export function EditDataPackForm({ packId }: { packId: string }) {
                   </Card>
               </TabsContent>
               <TabsContent value="metadata">
-                <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} />
+                {/* <DataPackMetadataForm form={form} onFileChange={setCoverImageFile} /> */}
+                <div>Metadata form will be implemented later</div>
               </TabsContent>
               <TabsContent value="schema">
                     <div className="space-y-4">
                         <div className="flex justify-end">
-                            <AiGeneratorDialog 
+                            {/* <AiGeneratorDialog 
                                 onSchemaGenerated={() => {}} // Placeholder
                                 onGeneratingChange={setIsAiGenerating}
-                            />
+                            /> */}
                         </div>
                         <DataPackSchemaEditor 
                             form={form} 
+                            onAiSchemaGenerated={() => {}}
                             isAiGenerating={isAiGenerating}
+                            onAiGeneratingChange={setIsAiGenerating}
                         />
                     </div>
               </TabsContent>

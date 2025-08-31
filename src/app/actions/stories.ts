@@ -17,7 +17,15 @@ type ActionResponse<T = null> = {
 };
 
 // This now includes the full character sheet for a richer context.
-type CharacterDetailsForAI = Pick<Character['core'], 'name' | 'biography' | 'alignment' | 'timeline' | 'archetype' | 'equipment' | 'physicalDescription'>;
+type CharacterDetailsForAI = {
+    name: string;
+    biography: string;
+    alignment: Character['core']['alignment'];
+    timeline: Character['core']['timeline'];
+    archetype?: string;
+    equipment?: string[];
+    physicalDescription?: string;
+};
 
 
 export async function getUserCasts(): Promise<StoryCast[]> {
@@ -126,9 +134,9 @@ export async function generateStory(castId: string, storyPrompt: string): Promis
                     biography: char.core.biography,
                     alignment: char.core.alignment || 'True Neutral',
                     timeline: char.core.timeline || [],
-                    archetype: char.core.archetype || null,
-                    equipment: char.core.equipment || null,
-                    physicalDescription: char.core.physicalDescription || char.generation?.originalPrompt || null,
+                    archetype: char.core.archetype || undefined,
+                    equipment: char.core.equipment || undefined,
+                    physicalDescription: char.core.physicalDescription || char.generation?.originalPrompt || undefined,
                 };
             })
         );

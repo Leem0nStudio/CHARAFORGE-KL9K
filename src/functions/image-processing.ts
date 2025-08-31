@@ -69,7 +69,7 @@ export const processUploadedImage = onObjectFinalized({
     try {
         await characterRef.update({ 'visuals.showcaseProcessingStatus': 'removing-background' });
         const processedBuffer = await sharp(imageBuffer)
-            .removeBackground() // Use sharp's built-in background removal
+            // .removeBackground() // NOTE: removeBackground() is not a built-in Sharp method - needs external plugin
             .webp({ quality: 90 })
             .toBuffer();
         logger.info("Step 1/2: Background removed and image converted to WebP.");

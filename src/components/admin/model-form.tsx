@@ -43,7 +43,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
 
     const form = useForm<UpsertAiModel>({
         resolver: zodResolver(UpsertModelSchema),
-        defaultValues: model ? { ...model, comfyWorkflow: model.comfyWorkflow ? JSON.stringify(model.comfyWorkflow, null, 2) : '', triggerWords: model.triggerWords?.join(', ') } : {
+        defaultValues: model ? { ...model, comfyWorkflow: model.comfyWorkflow ? JSON.stringify(model.comfyWorkflow, null, 2) : '', triggerWords: model.triggerWords || [] } : {
             name: '',
             type: 'lora',
             engine: 'huggingface',
@@ -52,7 +52,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
             modelslabModelId: '',
             versionId: '',
             baseModel: '',
-            triggerWords: '',
+            triggerWords: [],
             vertexAiAlias: '',
             apiUrl: '',
             comfyWorkflow: '',
@@ -115,7 +115,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                     modelslabModelId: result.data.modelslabModelId || '',
                     versionId: result.data.versionId || '',
                     baseModel: result.data.baseModel || '',
-                    triggerWords: result.data.triggerWords?.join(', ') || '',
+                    triggerWords: result.data.triggerWords || [],
                 });
                 setActiveTab('manual'); 
                 toast({ title: 'Data Fetched!', description: 'Model info has been pre-filled. Please review and save manually.' });

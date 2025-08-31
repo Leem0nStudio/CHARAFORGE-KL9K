@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { DataPackFormValues, DataPackSchema } from '@/types/datapack';
-import { AiGeneratorDialog } from './ai-generator-dialog';
+// import { AiGeneratorDialog } from './ai-generator-dialog'; // TODO: Import when file exists
 import { Loader2, Trash2, Wand2, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -95,7 +95,7 @@ export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating
            </CardTitle>
            {isAiGenerating && <Loader2 className="animate-spin text-primary" />}
         </div>
-        <AiGeneratorDialog onSchemaGenerated={onAiSchemaGenerated} onGeneratingChange={onAiGeneratingChange} />
+        {/* <AiGeneratorDialog onSchemaGenerated={onAiSchemaGenerated} onGeneratingChange={onAiGeneratingChange} /> */}
       </CardHeader>
       <CardContent className="space-y-6">
         

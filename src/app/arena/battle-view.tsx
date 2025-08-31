@@ -60,7 +60,7 @@ export function BattleView({ playerCharacter, onExit }: BattleViewProps) {
         startOpponentTransition(async () => {
             setWinnerId(null);
             setBattleLog([]);
-            const newOpponent = await getRandomOpponent(playerCharacter.core.rarity, playerCharacter.id);
+            const newOpponent = await getRandomOpponent(playerCharacter.id, playerCharacter.core.rarity);
             setOpponent(newOpponent);
             setBattleLog([newOpponent ? 'A new challenger approaches!' : 'No opponents found for this rarity level.']);
         });

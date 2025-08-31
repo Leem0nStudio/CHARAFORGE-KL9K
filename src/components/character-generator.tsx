@@ -153,7 +153,13 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
     };
 
     const handleWizardComplete = (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-        const expandedPrompt = expandTemplate(template.template, wizardData);
+        // Convert wizard data to Datasets format
+        const datasets: Record<string, { label: string; value: string; }[]> = {};
+        Object.entries(wizardData).forEach(([key, value]) => {
+            datasets[key] = [{ label: value, value: value }];
+        });
+        
+        const expandedPrompt = expandTemplate(template.template, datasets);
         
         const cleanedPrompt = expandedPrompt
           .replace(/ ,/g, ',')

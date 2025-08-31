@@ -9,6 +9,12 @@ import { DataPackCard } from './datapack-card';
 import type { DataPack } from '@/types/datapack';
 import { EmblaCarousel } from '../ui/carousel';
 
+// Wrapper component to make DataPackCard compatible with EmblaCarousel
+const DataPackCardWrapper = ({ pack }: { pack?: DataPack }) => {
+    if (!pack) return null;
+    return <DataPackCard pack={pack} />;
+};
+
 export function DataPackStore({ dataPacks }: { dataPacks: DataPack[] }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredPacks, setFilteredPacks] = useState(dataPacks);
@@ -52,7 +58,7 @@ export function DataPackStore({ dataPacks }: { dataPacks: DataPack[] }) {
             {searchTerm === '' && featuredPacks.length > 0 && (
                  <section className="mb-16">
                     <h2 className="text-2xl font-bold font-headline mb-6">Featured Packs</h2>
-                    <EmblaCarousel slides={featuredPacks} CardComponent={DataPackCard} />
+                    <EmblaCarousel slides={featuredPacks} CardComponent={DataPackCardWrapper} />
                 </section>
             )}
 

@@ -42,20 +42,20 @@ function ModelEditDialog({
 
     const form = useForm<UpsertAiModel>({
         resolver: zodResolver(UpsertModelSchema),
-        defaultValues: model ? { ...model, triggerWords: model.triggerWords?.join(', ') } : {
+        defaultValues: model ? { ...model, triggerWords: model.triggerWords || [] } : {
             name: '',
             type: 'lora',
             engine: 'huggingface',
             hf_id: '',
             modelslabModelId: '',
-            triggerWords: '',
+            triggerWords: [],
         },
     });
 
     useEffect(() => {
         if (isOpen) {
-            form.reset(model ? { ...model, triggerWords: model.triggerWords?.join(', ') } : {
-                name: '', type: 'lora', engine: 'huggingface', hf_id: '', modelslabModelId: '', triggerWords: ''
+            form.reset(model ? { ...model, triggerWords: model.triggerWords || [] } : {
+                name: '', type: 'lora', engine: 'huggingface', hf_id: '', modelslabModelId: '', triggerWords: []
             });
         }
     }, [isOpen, model, form]);

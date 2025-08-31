@@ -108,17 +108,20 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
         return null;
     }
     
-    // Adapt the Firestore structure to the Supabase one
+    // Adapt the Supabase structure to the UserProfile type
     return {
         uid: data.id,
         displayName: data.display_name || 'Anonymous',
         photoURL: data.photo_url || null,
-        bio: data.profile?.bio || '',
-        profile: data.profile || {},
-        stats: data.stats || {},
         email: data.email || null,
+        emailVerified: false, // Default value for Supabase
+        isAnonymous: false, // Default value for Supabase
+        metadata: {} as any, // Default empty metadata
+        providerData: [] as any, // Default empty provider data
+        stats: data.stats || {},
         role: data.role || 'user',
         preferences: data.preferences || {},
+        profile: data.profile || {},
     } as UserProfile;
 }
 
