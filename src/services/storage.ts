@@ -1,15 +1,14 @@
 
 'use server';
 
-import { getStorage } from 'firebase-admin/storage';
-import { adminDb } from '@/lib/firebase/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 
 /**
- * A centralized, robust function to upload a file to Firebase Storage.
+ * A centralized, robust function to upload a file to Supabase Storage.
  * It can handle both File objects (from form data) and Data URIs (from AI generation).
  * 
  * @param {File | Buffer | string} fileSource The source of the file. Can be a File object, a Buffer, or a Data URI string.
- * @param {string} destinationPath The full path in the Storage bucket where the file will be saved (e.g., 'usersImg/uid/characterId/image.png').
+ * @param {string} destinationPath The full path in the Storage bucket where the file will be saved (e.g., 'usersImg/uid/characterId/imageId/image.png').
  * @param {string} [contentType] Optional. The MIME type of the file. Required if the source is a Buffer.
  * @returns {Promise<string>} A promise that resolves to the public URL of the uploaded file.
  * @throws {Error} Throws an error if the upload fails or the configuration is invalid.
@@ -19,18 +18,12 @@ export async function uploadToStorage(
     destinationPath: string,
     contentType?: string,
 ): Promise<string> {
-    const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-    if (!storageBucket) {
-        throw new Error('Firebase Storage bucket is not configured in environment variables.');
-    }
+    const supabase = getSupabaseServerClient();
     
-    if (!adminDb) {
-        throw new Error('Firebase Admin DB service is not initialized.');
+    if (!supabase) {
+        throw new Error('Supabase client is not initialized.');
     }
 
-    const bucket = getStorage().bucket(storageBucket);
-    const fileRef = bucket.file(destinationPath);
-    
     let buffer: Buffer;
     let finalContentType: string | undefined = contentType;
 
@@ -61,19 +54,87 @@ export async function uploadToStorage(
     }
 
     try {
-        await fileRef.save(buffer, {
-            metadata: {
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+            .from('character-images') // Bucket name in Supabase
+            .upload(destinationPath, buffer, {
                 contentType: finalContentType,
-                cacheControl: 'public, max-age=31536000', // Cache aggressively for 1 year
-            },
-            public: true,
-        });
+                cacheControl: '31536000', // Cache aggressively for 1 year
+                upsert: true // Overwrite if file exists
+            });
 
-        return fileRef.publicUrl();
+        if (error) {
+            throw new Error(`Supabase storage upload failed: ${error.message}`);
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+            .from('character-images')
+            .getPublicUrl(destinationPath);
+
+        return urlData.publicUrl;
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown storage error occurred.';
         console.error(`Storage Upload Error to path ${destinationPath}:`, message);
         // Re-throw a more specific error to be caught by server actions
-        throw new Error(`Failed to upload file to Firebase Storage: ${message}`);
+        throw new Error(`Failed to upload file to Supabase Storage: ${message}`);
+    }
+}
+
+/**
+ * Delete a file from Supabase Storage
+ * @param {string} filePath The path of the file to delete
+ * @returns {Promise<boolean>} True if deletion was successful
+ */
+export async function deleteFromStorage(filePath: string): Promise<boolean> {
+    const supabase = getSupabaseServerClient();
+    
+    if (!supabase) {
+        throw new Error('Supabase client is not initialized.');
+    }
+
+    try {
+        const { error } = await supabase.storage
+            .remove([filePath]);
+
+        if (error) {
+            console.error(`Error deleting file ${filePath}:`, error);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error(`Storage Delete Error for path ${filePath}:`, error);
+        return false;
+    }
+}
+
+/**
+ * Get a signed URL for temporary access to a private file
+ * @param {string} filePath The path of the file
+ * @param {number} expiresIn Seconds until the URL expires (default: 3600 = 1 hour)
+ * @returns {Promise<string>} Signed URL for temporary access
+ */
+export async function getSignedUrl(filePath: string, expiresIn: number = 3600): Promise<string> {
+    const supabase = getSupabaseServerClient();
+    
+    if (!supabase) {
+        throw new Error('Supabase client is not initialized.');
+    }
+
+    try {
+        const { data, error } = await supabase.storage
+            .from('character-images')
+            .createSignedUrl(filePath, expiresIn);
+
+        if (error) {
+            throw new Error(`Failed to create signed URL: ${error.message}`);
+        }
+
+        return data.signedUrl;
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+        console.error(`Signed URL Error for path ${filePath}:`, message);
+        throw new Error(`Failed to create signed URL: ${message}`);
     }
 }
