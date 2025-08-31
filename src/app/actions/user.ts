@@ -194,6 +194,41 @@ export async function unfollowUser(targetUid: string): Promise<ActionResponse> {
     return { success: true, message: `Successfully unfollowed user ${targetUid}.` };
 }
 
+export async function getPublicUserProfile(uid: string): Promise<UserProfile | null> {
+    const supabase = getSupabaseServerClient();
+    
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', uid)
+            .single();
+
+        if (error || !data) {
+            console.error('Error fetching public user profile:', error);
+            return null;
+        }
+
+        return {
+            uid: data.id,
+            email: data.email,
+            displayName: data.display_name || data.email,
+            photoURL: data.photo_url,
+            role: data.role || 'user',
+            emailVerified: true, // Supabase handles this
+            isAnonymous: false,
+            metadata: {},
+            providerData: [],
+            stats: data.stats || {},
+            preferences: data.preferences || {},
+            profile: data.profile || {},
+        } as UserProfile;
+    } catch (error) {
+        console.error('Error fetching public user profile:', error);
+        return null;
+    }
+}
+
 export async function getFollowStatus(targetUid: string): Promise<{ isFollowing: boolean }> {
     const supabase = getSupabaseServerClient();
     let sourceUid: string | null = null;

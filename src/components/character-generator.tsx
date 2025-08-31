@@ -26,6 +26,7 @@ import { DataPackSelector } from './datapack-selector';
 import { geminiImagePlaceholder } from '@/lib/app-config';
 import { PromptEditor } from './prompt-editor';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import type { DataPack, PromptTemplate } from '@/types/datapack';
 import { CharacterRevealScreen } from './character/character-reveal-screen';
 

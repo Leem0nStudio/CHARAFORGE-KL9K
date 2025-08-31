@@ -3,11 +3,11 @@
 
 /**
  * @fileoverview This service contains functions for the composition engine
- * that require server-only dependencies like the Firebase Admin SDK.
+ * that require server-only dependencies like the Supabase client.
  * This file should only be imported by other server components or actions.
  */
 
-import { adminDb } from '@/lib/firebase/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { DataPack } from '@/types/datapack';
 import type { Datasets } from './composition';
 
@@ -37,27 +37,40 @@ function dataPackToDataset(pack: DataPack): Datasets {
 }
 
 /**
- * Fetches all DataPacks from Firestore and transforms them into a simple
+ * Fetches all DataPacks from Supabase and transforms them into a simple
  * key-value dataset suitable for the template engine.
  * @returns A promise that resolves to the datasets object.
  */
-export async function loadDatasetsFromFirestore(): Promise<Datasets> {
-    if (!adminDb) {
-        throw new Error("Firestore is not initialized.");
-    }
-    const snapshot = await adminDb.collection('datapacks').get();
-    const allPacks = snapshot.docs.map(doc => doc.data() as DataPack);
+export async function loadDatasetsFromSupabase(): Promise<Datasets> {
+    const supabase = getSupabaseServerClient();
     
-    let combinedDataset: Datasets = {};
-    for(const pack of allPacks) {
-        const packDataset = dataPackToDataset(pack);
-        for (const key in packDataset) {
-            if(combinedDataset[key]) {
-                 combinedDataset[key].push(...packDataset[key]);
-            } else {
-                combinedDataset[key] = packDataset[key];
+    try {
+        const { data: allPacks, error } = await supabase
+            .from('datapacks')
+            .select('*');
+
+        if (error) {
+            console.error('Error fetching datapacks from Supabase:', error);
+            throw new Error(`Failed to fetch datapacks: ${error.message}`);
+        }
+
+        const combinedDataset: Datasets = {};
+        for (const pack of allPacks || []) {
+            const packDataset = dataPackToDataset(pack as DataPack);
+            for (const key in packDataset) {
+                if (combinedDataset[key]) {
+                    combinedDataset[key].push(...packDataset[key]);
+                } else {
+                    combinedDataset[key] = packDataset[key];
+                }
             }
         }
+        return combinedDataset;
+    } catch (error) {
+        console.error('Error loading datasets from Supabase:', error);
+        throw new Error('Failed to load datasets from Supabase');
     }
-    return combinedDataset;
 }
+
+// Keep the old function name for backward compatibility
+export const loadDatasetsFromFirestore = loadDatasetsFromSupabase;
