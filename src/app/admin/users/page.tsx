@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { searchUsers, grantAdminRole, revokeAdminRole, type SanitizedUser } from '@/app/actions/admin';
-import { Loader2, User, Shield, ShieldOff } from 'lucide-react';
+import { Loader2, User as UserIcon, Shield, ShieldOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -86,12 +86,12 @@ function UserManagementClient() {
                                             <span className="text-xs text-muted-foreground">UID: {user.uid}</span>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            {user.isAdmin && <Badge variant="success"><Shield className="mr-2"/> Admin</Badge>}
+                                            {user.isAdmin && <Badge variant="default"><Shield className="mr-2"/> Admin</Badge>}
                                             <Button 
                                                 variant={user.isAdmin ? 'destructive' : 'outline'}
                                                 size="sm"
                                                 onClick={() => handleRoleChange(user.uid, user.isAdmin)}
-                                                disabled={isUpdating || user.uid === authUser?.uid}
+                                                disabled={isUpdating || user.uid === authUser?.id}
                                             >
                                                 {user.isAdmin ? <ShieldOff className="mr-2"/> : <Shield className="mr-2"/>}
                                                 {user.isAdmin ? 'Revoke Admin' : 'Make Admin'}

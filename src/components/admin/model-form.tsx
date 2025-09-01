@@ -4,9 +4,52 @@
 import { useState, useTransition, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { addAiModelFromSource, deleteModel, upsertModel } from '@/app/actions/ai-models';
 import { UpsertModelSchema, type AiModel, type UpsertAiModel } from '@/types/ai-model';
+
+// Form type that allows triggerWords as string for UI
+type ModelFormValues = Omit<UpsertAiModel, 'triggerWords'> & {
+    triggerWords?: string;
+};
+
+// Form schema that allows triggerWords as string
+const ModelFormSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, 'Name is required'),
+    type: z.enum(['model', 'lora']),
+    engine: z.enum(['huggingface', 'gemini', 'openrouter', 'vertexai', 'comfyui', 'modelslab', 'rundiffusion']),
+    hf_id: z.string().optional(),
+    civitaiModelId: z.string().optional(),
+    modelslabModelId: z.string().optional(),
+    versionId: z.string().optional(),
+    baseModel: z.string().optional(),
+    coverMediaUrl: z.string().url().nullable().optional(),
+    coverMediaType: z.enum(['image', 'video']).optional(),
+    triggerWords: z.string().optional(),
+    versions: z.array(z.object({
+        id: z.string(),
+        name: z.string(),
+        baseModel: z.string().optional(),
+        triggerWords: z.array(z.string()).optional(),
+    })).optional(),
+    syncStatus: z.enum(['synced', 'syncing', 'notsynced', 'queued', 'error']).optional(),
+    syncError: z.string().nullable().optional(),
+    gcsUri: z.string().optional(),
+    vertexAiAlias: z.string().optional(),
+    apiUrl: z.string().optional(),
+    comfyWorkflow: z.any().optional(),
+}).refine(data => {
+    const requiredEngines = ['huggingface', 'vertexai', 'comfyui', 'modelslab', 'rundiffusion'];
+    if (requiredEngines.includes(data.engine)) {
+        return !!data.hf_id;
+    }
+    return true;
+}, {
+    message: "Execution ID is required for the selected engine.",
+    path: ["hf_id"],
+});
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,8 +83,8 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
     const [sourceModelId, setSourceModelId] = useState('');
     const [activeTab, setActiveTab] = useState(isEditing ? 'manual' : 'import');
 
-    const form = useForm<UpsertAiModel>({
-        resolver: zodResolver(UpsertModelSchema),
+    const form = useForm<ModelFormValues>({
+        resolver: zodResolver(ModelFormSchema),
         defaultValues: model ? { ...model, comfyWorkflow: model.comfyWorkflow ? JSON.stringify(model.comfyWorkflow, null, 2) : '', triggerWords: model.triggerWords?.join(', ') } : {
             name: '',
             type: 'lora',
@@ -58,9 +101,17 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
         },
     });
 
-    const onSubmit = (values: UpsertAiModel) => {
+    const onSubmit = (values: ModelFormValues) => {
         startTransition(async () => {
-            const finalValues = { ...values };
+            const finalValues = { ...values } as UpsertAiModel;
+            
+            // Convert triggerWords from string to array
+            if (typeof values.triggerWords === 'string') {
+                finalValues.triggerWords = values.triggerWords.split(',').map(word => word.trim()).filter(word => word.length > 0);
+            } else {
+                finalValues.triggerWords = [];
+            }
+            
             if ((values.engine === 'comfyui' || values.engine === 'rundiffusion') && typeof values.comfyWorkflow === 'string' && values.comfyWorkflow.trim()) {
                 try {
                     finalValues.comfyWorkflow = JSON.parse(values.comfyWorkflow);
@@ -115,7 +166,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                     versionId: result.data.versionId || '',
                     baseModel: result.data.baseModel || '',
                     triggerWords: result.data.triggerWords?.join(', ') || '',
-                });
+                } as ModelFormValues);
                 setActiveTab('manual'); 
                 toast({ title: 'Data Fetched!', description: 'Model info has been pre-filled. Please review and save manually.' });
             } else {

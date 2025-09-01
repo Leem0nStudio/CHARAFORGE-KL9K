@@ -148,7 +148,7 @@ export async function createDataPackFromFiles(formData: FormData): Promise<Actio
         let coverImageUrl = null;
         if(coverImageBuffer) {
             const destinationPath = `datapacks/${insertedRow.id}/cover.png`;
-            coverImageUrl = await uploadToStorage(coverImageBuffer, destinationPath, 'image/png');
+            coverImageUrl = await uploadToStorage(coverImageBuffer, destinationPath);
             const { error: updateError } = await supabase.from('datapacks').update({ cover_image_url: coverImageUrl }).eq('id', insertedRow.id);
             if(updateError) console.warn("Failed to update cover image URL for new datapack", updateError);
         }
@@ -175,11 +175,11 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
 
     try {
         const packId = validatedData.id || undefined;
-        let coverImageUrl: string | null = validatedData.coverImageUrl || null;
+        let coverImageUrl: string | null = null;
 
         if (coverImage && packId) {
             const destinationPath = `datapacks/${packId}/cover.png`;
-            coverImageUrl = await uploadToStorage(coverImage, destinationPath, 'image/png');
+            coverImageUrl = await uploadToStorage(coverImage, destinationPath);
         }
 
         const dataToUpsert = {

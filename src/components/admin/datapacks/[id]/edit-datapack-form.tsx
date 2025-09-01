@@ -26,7 +26,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DataPack, DataPackSchema } from '@/types/datapack';
 import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
-import { DataPackMetadataForm } from '@/components/admin/datapacks/[id]/datapack-metadata-form';
+import { DataPackMetadataForm } from '@/app/admin/datapacks/[id]/datapack-metadata-form';
 import { DataPackSchemaEditor } from './datapack-schema-editor';
 import { AiGeneratorDialog } from '@/app/admin/datapacks/[id]/ai-generator-dialog';
 
@@ -272,7 +272,9 @@ export function EditDataPackForm({ packId }: { packId: string }) {
                         </div>
                         <DataPackSchemaEditor 
                             form={form} 
+                            onAiSchemaGenerated={() => {}} // Placeholder - implement when needed
                             isAiGenerating={isAiGenerating}
+                            onAiGeneratingChange={setIsAiGenerating}
                         />
                     </div>
               </TabsContent>

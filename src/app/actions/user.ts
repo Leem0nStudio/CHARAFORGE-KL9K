@@ -249,16 +249,22 @@ export async function getPublicUserProfile(uid: string): Promise<UserProfile | n
     // Transform the data to match UserProfile type
     return {
         uid: data.id,
+        email: null, // We don't have email in public profile for privacy
         displayName: data.display_name,
         photoURL: data.photo_url,
-        bio: data.profile?.bio,
-        socialLinks: data.profile?.socialLinks,
-        createdAt: data.created_at,
+        profile: {
+            bio: data.profile?.bio,
+            socialLinks: data.profile?.socialLinks,
+            featuredCharacters: []
+        },
         stats: {
             followers: 0, // These would need to be calculated from follows table
             following: 0,
             charactersCreated: 0,
-            totalLikes: 0
+            totalLikes: 0,
+            collectionsCreated: 0,
+            subscriptionTier: 'free',
+            memberSince: data.created_at ? new Date(data.created_at).getTime() : Date.now()
         }
     };
 }

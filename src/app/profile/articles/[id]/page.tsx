@@ -23,7 +23,7 @@ function EditArticlePageContent() {
         if (!isNew && authUser) {
             getArticle(id)
                 .then(data => {
-                    if (data && data.userId === authUser.uid) {
+                    if (data && data.userId === authUser.id) {
                         setArticle(data);
                     } else if (data) {
                         setError("You do not have permission to edit this article.");
