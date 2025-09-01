@@ -9,8 +9,8 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 // This function now returns the client or null if the keys are missing.
-export function getSupabaseServerClient() {
-  const cookieStore = cookies();
+export async function getSupabaseServerClient() {
+  const cookieStore = await cookies();
 
   // Ensure that the environment variables are set.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

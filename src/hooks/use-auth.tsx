@@ -10,7 +10,7 @@ import {
   Dispatch,
   SetStateAction,
 } from 'react';
-import type { User } from '@supabase/supabase-js';
+import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { UserProfile } from '@/types/user';
 import { AnvilIcon } from '@/components/app-logo';
@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fetchSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: AuthChangeEvent, session: Session | null) => {
         const currentUser = session?.user ?? null;
         setAuthUser(currentUser);
 

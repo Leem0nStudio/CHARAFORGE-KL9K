@@ -26,7 +26,7 @@ type ActionResponse = {
  */
 export async function searchUsers(emailQuery: string): Promise<SanitizedUser[]> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     if (!emailQuery) {
         return [];
@@ -64,7 +64,7 @@ export async function searchUsers(emailQuery: string): Promise<SanitizedUser[]> 
  */
 export async function grantAdminRole(uid: string): Promise<ActionResponse> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     try {
         const { error: authError } = await supabase.auth.admin.updateUserById(uid, { app_metadata: { role: 'admin' } });
         if (authError) throw authError;
@@ -86,7 +86,7 @@ export async function grantAdminRole(uid: string): Promise<ActionResponse> {
  */
 export async function revokeAdminRole(uid: string): Promise<ActionResponse> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     try {
         const { error: authError } = await supabase.auth.admin.updateUserById(uid, { app_metadata: { role: 'user' } });
         if (authError) throw authError;
@@ -103,7 +103,7 @@ export async function revokeAdminRole(uid: string): Promise<ActionResponse> {
 
 export async function getDashboardStats(): Promise<{ totalUsers: number; totalCharacters: number; totalDataPacks: number, publicCharacters: number, privateCharacters: number, totalModels: number, totalLoras: number }> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     try {
         const { count: totalUsers, error: usersError } = await supabase.from('users').select('*', { count: 'exact', head: true });
         if (usersError) throw usersError;

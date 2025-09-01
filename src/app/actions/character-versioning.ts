@@ -16,7 +16,7 @@ type ActionResponse = {
 
 // Helper function to fetch a single character for internal use
 async function getCharacterData(characterId: string): Promise<Character | null> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     const { data, error } = await supabase.from('characters').select('*').eq('id', characterId).single();
     if (error || !data) return null;
     return await toCharacterObject(data.id, data);
@@ -24,7 +24,7 @@ async function getCharacterData(characterId: string): Promise<Character | null> 
 
 export async function createCharacterVersion(characterId: string): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   try {
     const originalChar = await getCharacterData(characterId);
@@ -108,7 +108,7 @@ export async function createCharacterVersion(characterId: string): Promise<Actio
 
 export async function branchCharacter(characterId: string): Promise<ActionResponse> {
   const newOwnerId = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   
   const { data: newOwnerProfile, error: profileError } = await supabase.from('users').select('display_name').eq('id', newOwnerId).single();
   if (profileError) throw new Error("Could not fetch new owner's profile.");

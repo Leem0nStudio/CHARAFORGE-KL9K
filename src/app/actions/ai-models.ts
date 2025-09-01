@@ -47,7 +47,7 @@ const toAiModelObject = (row: any): AiModel => ({
 
 export async function upsertModel(data: UpsertAiModel): Promise<ActionResponse> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     const validation = UpsertModelSchema.safeParse(data);
     if (!validation.success) {
         return { success: false, message: 'Invalid data provided.', error: validation.error.message };
@@ -88,7 +88,7 @@ export async function upsertModel(data: UpsertAiModel): Promise<ActionResponse> 
 
 export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sourceModelId: string): Promise<ActionResponse> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     try {
         const { data: existingModel, error: fetchError } = await supabase
@@ -210,7 +210,7 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
 
 export async function upsertUserAiModel(formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     const rawData = Object.fromEntries(formData.entries());
     
@@ -266,7 +266,7 @@ export async function upsertUserAiModel(formData: FormData): Promise<ActionRespo
 
 export async function deleteModel(id: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     try {
         const { data, error: fetchError } = await supabase.from('ai_models').select('user_id').eq('id', id).single();
@@ -296,7 +296,7 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
 
 
 export async function getModels(type: 'model' | 'lora', uid?: string): Promise<AiModel[]> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return [];
     
     const allModels = new Map<string, AiModel>();
@@ -327,7 +327,7 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
 
 export async function installModel(modelId: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     try {
         const { data: modelData, error: modelError } = await supabase.from('ai_models').select('user_id, name').eq('id', modelId).single();
