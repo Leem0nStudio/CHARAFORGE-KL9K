@@ -59,8 +59,8 @@ async function buildSchemaFromFiles(files: { name: string; content: string }[]):
                 const lines = file.content.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
                 if (lines.length > 0) parsedContent = { [baseName]: lines };
             }
-        } catch (e) {
-            console.warn(`Could not parse file ${file.name}. It may be empty or malformed.`, e);
+        } catch (_e) {
+            console.warn(`Could not parse file ${file.name}. It may be empty or malformed.`);
             continue;
         }
         
@@ -101,7 +101,7 @@ export async function createDataPackFromFiles(formData: FormData): Promise<Actio
     const uid = await verifyAndGetUid();
     const supabase = await getSupabaseServerClient();
     const fileInput = formData.get('wildcardFiles') as File | null;
-    let dataPackName = formData.get('name') as string;
+    const dataPackName = formData.get('name') as string;
 
     if (!dataPackName) return { success: false, message: "DataPack name is required." };
     if (!fileInput || fileInput.size === 0) return { success: false, message: "A file (.zip, .yaml, or .txt) is required." };
