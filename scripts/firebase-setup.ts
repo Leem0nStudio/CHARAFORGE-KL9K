@@ -1,6 +1,5 @@
-
-require('dotenv').config();
-const chalk = require('chalk');
+import 'dotenv/config';
+import chalk from 'chalk';
 
 console.log(chalk.blue.bold('--- Firebase Environment Configuration Validator ---'));
 
@@ -65,7 +64,7 @@ requiredServerVars.forEach(key => {
         } catch (e) {
             console.error(chalk.red.bold(`\n[CRITICAL ERROR] Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY!`));
             console.error(chalk.red(`This usually means the key is not a valid, single-line JSON string in your .env file.`));
-            console.error(chalk.red(`Error details: ${e.message}\n`));
+            console.error(chalk.red(`Error details: ${(e as Error).message}\n`));
             console.log(chalk.cyan('How to fix:'));
             console.log(chalk.cyan('1. Copy the entire contents of your service account JSON file.'));
             console.log(chalk.cyan('2. Ensure it is pasted as a single line for the FIREBASE_SERVICE_ACCOUNT_KEY value.'));
@@ -86,7 +85,6 @@ optionalServerVars.forEach(key => {
     }
 });
 
-
 console.log(chalk.blue.bold('\n--- Validation Summary ---'));
 
 if (allKeysPresent && !hasPlaceholderValues && isServiceAccountValid) {
@@ -98,15 +96,10 @@ if (allKeysPresent && !hasPlaceholderValues && isServiceAccountValid) {
   } else if (!allKeysPresent) {
       console.log('Please add all the missing variables listed above to your `.env` file.');
   } else if (hasPlaceholderValues) {
-      console.log('Please replace all placeholder values (like "changeme") with your actual Firebase project credentials.');
+      console.log('Please replace all placeholder values in your `.env` file with actual values.');
   }
-   console.log(chalk.cyan('\nRefer to the README.md for instructions on how to get your Firebase project credentials.'));
 }
-
-console.log(chalk.blue.bold('--- End of Validator ---\n'));
 
 if (!allKeysPresent || !isServiceAccountValid) {
-    process.exit(1);
+  process.exit(1);
 }
-
-    

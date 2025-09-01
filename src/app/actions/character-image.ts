@@ -158,7 +158,6 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
         
         // Image processing logic is now directly in the server action
         const processedBuffer = await sharp(imageBuffer)
-            .removeBackground()
             .webp({ quality: 90 })
             .toBuffer();
 

@@ -301,11 +301,7 @@ const generateCharacterImageFlow = ai.defineFlow(
             const { width, height } = getDimensions(aspectRatio);
             const { media } = await ai.generate({
                 model: 'googleai/gemini-2.0-flash-preview-image-generation',
-                prompt: {
-                    text: finalDescription,
-                    width,
-                    height,
-                },
+                prompt: finalDescription,
                 config: {
                     responseModalities: ['TEXT', 'IMAGE'],
                 },
@@ -340,7 +336,7 @@ const generateCharacterImageFlow = ai.defineFlow(
 
     } else if (engineId === 'vertexai' && modelId) {
         let projectId: string | undefined;
-        let serviceAccount: string | object;
+        let serviceAccount: { project_id: string; private_key: string; client_email: string };
 
         try {
             const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
@@ -348,7 +344,7 @@ const generateCharacterImageFlow = ai.defineFlow(
                 throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.");
             }
             serviceAccount = JSON.parse(serviceAccountKey);
-            projectId = (serviceAccount as { project_id: string }).project_id;
+            projectId = serviceAccount.project_id;
         } catch (e) {
             const errorMsg = e instanceof Error ? e.message : 'Unknown error';
             throw new Error(`Failed to parse service account key. Error: ${errorMsg}`);

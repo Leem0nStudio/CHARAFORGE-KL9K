@@ -222,6 +222,47 @@ export async function getFollowStatus(targetUid: string): Promise<{ isFollowing:
     return { isFollowing: !!data };
 }
 
+export async function getPublicUserProfile(uid: string): Promise<UserProfile | null> {
+    const supabase = getSupabaseServerClient();
+    
+    const { data, error } = await supabase
+        .from('users')
+        .select(`
+            id,
+            display_name,
+            photo_url,
+            profile,
+            created_at
+        `)
+        .eq('id', uid)
+        .maybeSingle();
+        
+    if (error) {
+        console.error('Error getting public user profile:', error);
+        return null;
+    }
+    
+    if (!data) {
+        return null;
+    }
+    
+    // Transform the data to match UserProfile type
+    return {
+        uid: data.id,
+        displayName: data.display_name,
+        photoURL: data.photo_url,
+        bio: data.profile?.bio,
+        socialLinks: data.profile?.socialLinks,
+        createdAt: data.created_at,
+        stats: {
+            followers: 0, // These would need to be calculated from follows table
+            following: 0,
+            charactersCreated: 0,
+            totalLikes: 0
+        }
+    };
+}
+
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();

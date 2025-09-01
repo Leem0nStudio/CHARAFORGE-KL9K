@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { GenerateDialogueInputSchema, GenerateDialogueOutputSchema } from './types';
 
 // #region Markov Chain Implementation for Dialogue
-type DialogueState = 'Greeting' | 'Question' | 'Statement' | 'Complaint' | 'Boast' | 'Threat' | 'Joke' | 'Farewell';
+type DialogueState = 'Greeting' | 'Question' | 'Statement' | 'Complaint' | 'Boast' | 'Threat' | 'Joke' | 'Farewell' | 'Sarcastic_Remark';
 type PersonalityType = 'Grumpy' | 'Noble' | 'Sarcastic' | 'Cheerful' | 'Scholarly';
 
 const dialogueTransitions: Record<PersonalityType, Partial<Record<DialogueState, Partial<Record<DialogueState, number>>>>> = {

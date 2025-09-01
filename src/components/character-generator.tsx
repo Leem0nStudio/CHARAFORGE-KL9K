@@ -28,6 +28,7 @@ import { PromptEditor } from './prompt-editor';
 import { useRouter } from 'next/navigation';
 import type { DataPack, PromptTemplate } from '@/types/datapack';
 import { CharacterRevealScreen } from './character/character-reveal-screen';
+import Image from 'next/image';
 
 const coreFormSchema = z.object({
   prompt: z.string().min(10, { message: 'Please provide a more detailed description.' }),

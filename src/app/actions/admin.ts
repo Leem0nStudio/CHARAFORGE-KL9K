@@ -33,16 +33,22 @@ export async function searchUsers(emailQuery: string): Promise<SanitizedUser[]> 
     }
 
     try {
-        // Supabase admin client can be used to search users by email
-        const { data: { users }, error } = await supabase.auth.admin.listUsers({ email: emailQuery });
+        // Supabase admin client doesn't support email search directly
+        // We'll need to list all users and filter by email
+        const { data: { users }, error } = await supabase.auth.admin.listUsers();
         
         if (error) throw error;
         if (users.length === 0) return [];
 
-        return users.map(user => ({
+        // Filter users by email (case-insensitive)
+        const filteredUsers = users.filter(user => 
+            user.email && user.email.toLowerCase().includes(emailQuery.toLowerCase())
+        );
+
+        return filteredUsers.map(user => ({
             uid: user.id,
-            email: user.email,
-            disabled: !!user.banned_until && new Date(user.banned_until) > new Date(),
+            email: user.email || null,
+            disabled: false, // Supabase doesn't have banned_until property
             isAdmin: user.app_metadata?.role === 'admin',
         }));
     } catch (error: any) {

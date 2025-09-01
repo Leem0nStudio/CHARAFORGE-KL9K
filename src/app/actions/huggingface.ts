@@ -17,7 +17,7 @@ type HfApiModel = {
  * @param query The search term.
  * @returns A promise that resolves to an array of model information.
  */
-export async function searchHuggingFaceModels(query: string): Promise<Pick<HfApiModel, 'id' | 'pipeline_tag'>[]> {
+export async function searchHuggingFaceModels(query: string): Promise<{ id: string; pipeline_tag: string }[]> {
     if (!query) return [];
 
     const url = `https://huggingface.co/api/models?search=${encodeURIComponent(query)}&limit=10&filter=text-to-image`;

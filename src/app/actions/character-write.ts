@@ -15,6 +15,7 @@ import { z } from 'zod';
 import { generateDialogueFlow } from '@/ai/flows/dialogue-generation/flow';
 import { generateSpeech } from '@/ai/flows/text-to-speech/flow';
 import { generateAndSaveSkills } from './rpg';
+import { toCharacterObject } from '@/services/character-hydrator';
 
 // #region Helper Functions for Stat Generation
 type Stat = keyof RpgAttributes['stats'];

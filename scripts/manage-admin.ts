@@ -1,61 +1,55 @@
-
-require('dotenv').config({ path: './.env' });
-const admin = require('firebase-admin');
+import 'dotenv/config';
+import admin from 'firebase-admin';
 
 // Initialize Firebase Admin SDK
 try {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
   });
   console.log('Firebase Admin SDK initialized successfully.');
 } catch (error) {
-  console.error('Error initializing Firebase Admin SDK:', error.message);
+  console.error('Error initializing Firebase Admin SDK:', (error as Error).message);
   process.exit(1);
 }
 
 const auth = admin.auth();
 const db = admin.firestore();
 
-const grantAdminRole = async (uid) => {
+const grantAdminRole = async (uid: string) => {
   try {
     await auth.setCustomUserClaims(uid, { admin: true });
-    // This now also sets the `role` field in Firestore for client-side checks.
     await db.collection('users').doc(uid).set({ role: 'admin' }, { merge: true });
     console.log(`Success! User ${uid} has been granted the admin role.`);
   } catch (error) {
-    console.error(`Error granting admin role to ${uid}:`, error.message);
+    console.error(`Error granting admin role to ${uid}:`, (error as Error).message);
   }
 };
 
-const revokeAdminRole = async (uid) => {
+const revokeAdminRole = async (uid: string) => {
   try {
-    // Setting claims to null removes them, but setting to false is more explicit.
     await auth.setCustomUserClaims(uid, { admin: false });
-    // This now also sets the `role` field in Firestore for client-side checks.
     await db.collection('users').doc(uid).set({ role: 'user' }, { merge: true });
-    console.log(`Success! Admin role has been revoked for user ${uid}.`);
+    console.log(`Admin role has been revoked for user ${uid}.`);
   } catch (error) {
-    console.error(`Error revoking admin role for ${uid}:`, error.message);
+    console.error(`Error revoking admin role for ${uid}:`, (error as Error).message);
   }
 };
 
-const checkAdminStatus = async (uid) => {
+const checkAdminStatus = async (uid: string) => {
   try {
     const user = await auth.getUser(uid);
-    const isAdmin = !!user.customClaims?.admin;
+    const isAdmin = !!(user.customClaims?.admin);
     console.log(`User ${uid} (${user.email || 'No Email'}) has admin status: ${isAdmin}`);
   } catch (error) {
-    console.error(`Error checking admin status for ${uid}:`, error.message);
+    console.error(`Error checking admin status for ${uid}:`, (error as Error).message);
   }
 };
 
 const listAdmins = async () => {
-  console.log('Fetching list of admins... (This may take a while for many users)');
-  const admins = [];
+  console.log('Fetching list of admins...');
+  const admins: Array<{ uid: string; email?: string }> = [];
   try {
-    // Note: listUsers() paginates and might require multiple calls for large user bases.
-    // For this script's purpose, fetching up to 1000 users is sufficient.
     const listUsersResult = await auth.listUsers(1000);
     listUsersResult.users.forEach(user => {
       if (user.customClaims?.admin) {
@@ -70,7 +64,7 @@ const listAdmins = async () => {
       console.table(admins);
     }
   } catch (error) {
-    console.error('Error listing admin users:', error.message);
+    console.error('Error listing admin users:', (error as Error).message);
   }
 };
 
@@ -107,14 +101,13 @@ const main = async () => {
       break;
 
     default:
-      console.log('Invalid command. Available commands:');
-      console.log('  grant <uid>     - Grants admin role to a user');
-      console.log('  revoke <uid>    - Revokes admin role from a user');
-      console.log('  check <uid>     - Checks if a user is an admin');
-      console.log('  list            - Lists all admin users');
+      console.log('Usage:');
+      console.log('  npm run admin:grant <uid>  - Grant admin role to user');
+      console.log('  npm run admin:revoke <uid> - Revoke admin role from user');
+      console.log('  npm run admin:check <uid>  - Check admin status of user');
+      console.log('  npm run admin:list         - List all admin users');
       break;
   }
-  process.exit(0);
 };
 
-main();
+main().catch(console.error);

@@ -8,8 +8,9 @@ import { getComments } from '@/app/actions/comments';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { ShowcaseViewer } from '@/components/showcase/showcase-viewer';
 
-export default async function CharacterPage({ params }: { params: { id: string } }) {
-  const character = await getCharacter(params.id);
+export default async function CharacterPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const character = await getCharacter(id);
   if (!character) {
     notFound();
   }
@@ -28,7 +29,7 @@ export default async function CharacterPage({ params }: { params: { id: string }
       notFound();
   }
 
-  const initialComments = await getComments('character', params.id);
+  const initialComments = await getComments('character', id);
 
   return (
     <ShowcaseViewer 

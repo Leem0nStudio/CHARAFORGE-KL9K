@@ -54,7 +54,7 @@ export async function loadDatasetsFromFirestore(): Promise<Datasets> {
         throw new Error("Could not load DataPacks from the database.");
     }
     
-    let combinedDataset: Datasets = {};
+    const combinedDataset: Datasets = {};
     for(const pack of allPacks) {
         // The pack from Supabase needs its schema_details mapped to schema
         const packWithSchema = { ...pack, schema: pack.schema_details } as unknown as DataPack;

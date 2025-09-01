@@ -15,11 +15,12 @@ import { FollowButton } from '@/components/user/follow-button';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-export default async function UserProfilePage({ params }: { params: { uid: string } }) {
-    const [userProfile, userCreations] = await Promise.all([
-        getPublicUserProfile(params.uid),
-        getPublicCharactersForUser(params.uid),
-    ]);
+export default async function UserProfilePage({ params }: { params: Promise<{ uid: string }> }) {
+  const { uid } = await params;
+  const [userProfile, userCreations] = await Promise.all([
+    getPublicUserProfile(uid),
+    getPublicCharactersForUser(uid),
+  ]);
 
     if (!userProfile) {
         notFound();
