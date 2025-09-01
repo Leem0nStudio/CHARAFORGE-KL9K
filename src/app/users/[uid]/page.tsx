@@ -29,7 +29,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ ui
     let isFollowing = false;
     let currentUserId: string | null = null;
     try {
-        const supabase = (await import('@/lib/supabase/server')).getSupabaseServerClient();
+        const supabase = await (await import('@/lib/supabase/server')).getSupabaseServerClient();
         const { data: { user } } = await supabase.auth.getUser();
         currentUserId = user?.id || null;
 

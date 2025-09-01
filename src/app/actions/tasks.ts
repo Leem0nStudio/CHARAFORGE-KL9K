@@ -31,7 +31,7 @@ async function getCivitaiDownloadUrl(versionId: string): Promise<string> {
 
 export async function enqueueModelSyncJob(modelId: string): Promise<ActionResponse> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     const modelRef = supabase.from('ai_models').select('*').eq('id', modelId).single();
 
     try {

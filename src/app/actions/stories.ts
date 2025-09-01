@@ -31,7 +31,7 @@ type CharacterDetailsForAI = {
 
 export async function getUserCasts(): Promise<StoryCast[]> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return [];
 
     try {
@@ -56,7 +56,7 @@ export async function getUserCasts(): Promise<StoryCast[]> {
 
 export async function createStoryCast(data: { name: string; description: string }): Promise<ActionResponse<StoryCast>> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     try {
         const newCastData = {
@@ -89,7 +89,7 @@ export async function createStoryCast(data: { name: string; description: string 
 
 export async function updateStoryCastCharacters(castId: string, characterIds: string[]): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     const { data: castData, error: fetchError } = await supabase.from('story_casts').select('user_id').eq('id', castId).single();
     if (fetchError || !castData || castData.user_id !== uid) {
@@ -111,7 +111,7 @@ export async function updateStoryCastCharacters(castId: string, characterIds: st
 
 export async function generateStory(castId: string, storyPrompt: string): Promise<ActionResponse<{ title: string; content: string }>> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     const { data: castData, error: fetchError } = await supabase.from('story_casts').select('*').eq('id', castId).single();
     if (fetchError || !castData || castData.user_id !== uid) {

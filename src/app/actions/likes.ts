@@ -15,7 +15,7 @@ async function getLikeCount(supabase: any, characterId: string): Promise<number>
 }
 
 export async function getCharacterLikeStatus(characterId: string) {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     let uid: string | null = null;
     
     try {
@@ -44,7 +44,7 @@ export async function getCharacterLikeStatus(characterId: string) {
 
 export async function toggleLikeCharacter(characterId: string) {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     try {
         // Check if the user has already liked the character
