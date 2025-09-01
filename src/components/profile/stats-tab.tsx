@@ -36,7 +36,7 @@ export function StatsTab({ userStats }: { userStats?: UserProfile['stats'] }) {
                         <StatCard icon={<Heart />} label="Total Likes Received" value={userStats.totalLikes || 0} />
                         <StatCard icon={<UserPlus />} label="Followers" value={userStats.followers || 0} />
                         <StatCard icon={<UserCheck />} label="Following" value={userStats.following || 0} />
-                        <StatCard icon={<Package />} label="DataPacks Installed" value={userStats.installedPacks?.length || 0} />
+                        <StatCard icon={<Package />} label="DataPacks Installed" value={userStats.installed_packs?.length || 0} />
                         <StatCard icon={<Calendar />} label="Member Since" value={memberSinceDate} />
                     </div>
                ) : (

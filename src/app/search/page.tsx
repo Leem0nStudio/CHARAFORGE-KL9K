@@ -11,13 +11,13 @@ import { getSlotCategory } from '@/lib/app-config';
 import { Swords, Package, Tag } from 'lucide-react';
 
 interface SearchPageProps {
-    searchParams: {
+    searchParams: Promise<{
         tag?: string;
-    };
+    }>;
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-    const { tag } = searchParams;
+    const { tag } = await searchParams;
 
     if (!tag) {
         return (

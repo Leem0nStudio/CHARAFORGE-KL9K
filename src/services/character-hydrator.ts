@@ -102,7 +102,7 @@ export async function toCharacterObject(docId: string, data: DocumentData): Prom
     if (!finalCharacter.meta.userName && finalCharacter.meta.userId) {
         try {
             const { getSupabaseServerClient } = await import('@/lib/supabase/server');
-            const supabase = getSupabaseServerClient();
+            const supabase = await getSupabaseServerClient();
             const { data: userData, error } = await supabase.from('users').select('display_name').eq('id', finalCharacter.meta.userId).single();
             if (userData) {
                 finalCharacter.meta.userName = userData.display_name || 'Anonymous';

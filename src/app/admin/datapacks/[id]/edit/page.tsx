@@ -5,11 +5,11 @@ import DatapackForm from '@/components/datapack/DatapackForm';
 import { getDataPackForAdmin } from '@/app/actions/datapacks';
 
 interface EditDatapackPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 const EditDatapackPage = async ({ params }: EditDatapackPageProps) => {
-  const { id } = params;
+  const { id } = await params;
   const datapack = await getDataPackForAdmin(id);
 
   if (!datapack) {

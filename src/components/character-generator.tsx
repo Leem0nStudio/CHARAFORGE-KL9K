@@ -26,8 +26,9 @@ import { DataPackSelector } from './datapack-selector';
 import { geminiImagePlaceholder } from '@/lib/app-config';
 import { PromptEditor } from './prompt-editor';
 import { useRouter } from 'next/navigation';
-import type { DataPack, PromptTemplate } from '@/types/datapack';
+import type { DataPack, PromptTemplate, Option } from '@/types/datapack';
 import { CharacterRevealScreen } from './character/character-reveal-screen';
+import Image from 'next/image';
 
 const coreFormSchema = z.object({
   prompt: z.string().min(10, { message: 'Please provide a more detailed description.' }),
@@ -152,7 +153,13 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
     };
 
     const handleWizardComplete = (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
-        const expandedPrompt = expandTemplate(template.template, wizardData);
+        // Convert wizardData to the format expected by expandTemplate
+        const datasets: Record<string, Option[]> = {};
+        Object.entries(wizardData).forEach(([key, value]) => {
+            datasets[key] = [{ label: value, value }];
+        });
+        
+        const expandedPrompt = expandTemplate(template.template, datasets);
         
         const cleanedPrompt = expandedPrompt
           .replace(/ ,/g, ',')

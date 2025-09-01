@@ -4,6 +4,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { getModels, upsertUserAiModel, deleteModel } from '@/app/actions/ai-models';
 import type { AiModel, UpsertAiModel } from '@/types/ai-model';
@@ -40,8 +41,24 @@ function ModelEditDialog({
 
     const isEditing = !!model;
 
-    const form = useForm<UpsertAiModel>({
-        resolver: zodResolver(UpsertModelSchema),
+    // Form type that allows triggerWords as string for UI
+    type ModelFormValues = Omit<UpsertAiModel, 'triggerWords'> & {
+        triggerWords?: string;
+    };
+
+    // Form schema that allows triggerWords as string
+    const ModelFormSchema = z.object({
+        id: z.string().optional(),
+        name: z.string().min(1, 'Name is required'),
+        type: z.enum(['model', 'lora']),
+        engine: z.enum(['huggingface', 'gemini', 'openrouter', 'vertexai', 'comfyui', 'modelslab', 'rundiffusion']),
+        hf_id: z.string().optional(),
+        modelslabModelId: z.string().optional(),
+        triggerWords: z.string().optional(),
+    });
+
+    const form = useForm<ModelFormValues>({
+        resolver: zodResolver(ModelFormSchema),
         defaultValues: model ? { ...model, triggerWords: model.triggerWords?.join(', ') } : {
             name: '',
             type: 'lora',
@@ -56,7 +73,7 @@ function ModelEditDialog({
         if (isOpen) {
             form.reset(model ? { ...model, triggerWords: model.triggerWords?.join(', ') } : {
                 name: '', type: 'lora', engine: 'huggingface', hf_id: '', modelslabModelId: '', triggerWords: ''
-            });
+            } as ModelFormValues);
         }
     }, [isOpen, model, form]);
     

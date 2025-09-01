@@ -7,12 +7,12 @@ import { EditDataPackForm } from './edit-datapack-form';
 import { Loader2 } from 'lucide-react';
 
 interface EditDataPackPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // This component now only sets up the layout and suspense boundary.
 export default async function EditDataPackPage({ params }: EditDataPackPageProps) {
-  const { id } = params;
+  const { id } = await params;
   const isNew = id === 'new';
   const title = isNew ? 'Create DataPack' : `Edit DataPack`;
 

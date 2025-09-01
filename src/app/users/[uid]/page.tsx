@@ -15,32 +15,33 @@ import { FollowButton } from '@/components/user/follow-button';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-export default async function UserProfilePage({ params }: { params: { uid: string } }) {
+export default async function UserProfilePage({ params }: { params: Promise<{ uid: string }> }) {
+    const { uid } = await params;
     const [userProfile, userCreations] = await Promise.all([
-        getPublicUserProfile(params.uid),
-        getPublicCharactersForUser(params.uid),
+        getPublicUserProfile(uid),
+        getPublicCharactersForUser(uid),
     ]);
 
     if (!userProfile) {
         notFound();
     }
-    
+
     let isFollowing = false;
     let currentUserId: string | null = null;
     try {
-        const supabase = (await import('@/lib/supabase/server')).getSupabaseServerClient();
+        const supabase = await (await import('@/lib/supabase/server')).getSupabaseServerClient();
         const { data: { user } } = await supabase.auth.getUser();
         currentUserId = user?.id || null;
 
         if (currentUserId) {
-            const status = await getFollowStatus(params.uid);
+            const status = await getFollowStatus(uid);
             isFollowing = status.isFollowing;
         }
     } catch (e) {
         // User not logged in, which is fine
     }
 
-    const isOwner = currentUserId === params.uid;
+    const isOwner = currentUserId === uid;
 
     const fallback = userProfile.displayName?.charAt(0) || '?';
 
@@ -62,7 +63,7 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
                             <div className="space-y-4">
                                 <FollowButton 
                                     currentUserId={currentUserId}
-                                    profileUserId={params.uid}
+                                    profileUserId={uid}
                                     isFollowingInitially={isFollowing}
                                 />
                                 <div className="flex justify-around text-center pt-4 border-t">
@@ -88,10 +89,10 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
                                     </div>
                                 </div>
                                 {/* About Me Section */}
-                                {userProfile.bio && (
+                                {userProfile.profile?.bio && (
                                     <div className="pt-4 border-t">
                                         <h3 className="font-semibold text-muted-foreground mb-2">About Me</h3>
-                                        <p className="text-sm text-card-foreground/90 whitespace-pre-wrap">{userProfile.bio}</p>
+                                        <p className="text-sm text-card-foreground/90 whitespace-pre-wrap">{userProfile.profile.bio}</p>
                                     </div>
                                 )}
                                 {isOwner && (

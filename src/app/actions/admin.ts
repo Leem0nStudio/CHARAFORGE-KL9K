@@ -26,23 +26,29 @@ type ActionResponse = {
  */
 export async function searchUsers(emailQuery: string): Promise<SanitizedUser[]> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     if (!emailQuery) {
         return [];
     }
 
     try {
-        // Supabase admin client can be used to search users by email
-        const { data: { users }, error } = await supabase.auth.admin.listUsers({ email: emailQuery });
+        // Supabase admin client doesn't support email search directly
+        // We'll need to list all users and filter by email
+        const { data: { users }, error } = await supabase.auth.admin.listUsers();
         
         if (error) throw error;
         if (users.length === 0) return [];
 
-        return users.map(user => ({
+        // Filter users by email (case-insensitive)
+        const filteredUsers = users.filter(user => 
+            user.email && user.email.toLowerCase().includes(emailQuery.toLowerCase())
+        );
+
+        return filteredUsers.map(user => ({
             uid: user.id,
-            email: user.email,
-            disabled: !!user.banned_until && new Date(user.banned_until) > new Date(),
+            email: user.email || null,
+            disabled: false, // Supabase doesn't have banned_until property
             isAdmin: user.app_metadata?.role === 'admin',
         }));
     } catch (error: any) {
@@ -58,7 +64,7 @@ export async function searchUsers(emailQuery: string): Promise<SanitizedUser[]> 
  */
 export async function grantAdminRole(uid: string): Promise<ActionResponse> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     try {
         const { error: authError } = await supabase.auth.admin.updateUserById(uid, { app_metadata: { role: 'admin' } });
         if (authError) throw authError;
@@ -80,7 +86,7 @@ export async function grantAdminRole(uid: string): Promise<ActionResponse> {
  */
 export async function revokeAdminRole(uid: string): Promise<ActionResponse> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     try {
         const { error: authError } = await supabase.auth.admin.updateUserById(uid, { app_metadata: { role: 'user' } });
         if (authError) throw authError;
@@ -97,7 +103,7 @@ export async function revokeAdminRole(uid: string): Promise<ActionResponse> {
 
 export async function getDashboardStats(): Promise<{ totalUsers: number; totalCharacters: number; totalDataPacks: number, publicCharacters: number, privateCharacters: number, totalModels: number, totalLoras: number }> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     try {
         const { count: totalUsers, error: usersError } = await supabase.from('users').select('*', { count: 'exact', head: true });
         if (usersError) throw usersError;

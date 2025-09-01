@@ -15,6 +15,7 @@ import { z } from 'zod';
 import { generateDialogueFlow } from '@/ai/flows/dialogue-generation/flow';
 import { generateSpeech } from '@/ai/flows/text-to-speech/flow';
 import { generateAndSaveSkills } from './rpg';
+import { toCharacterObject } from '@/services/character-hydrator';
 
 // #region Helper Functions for Stat Generation
 type Stat = keyof RpgAttributes['stats'];
@@ -96,7 +97,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
   } = validation.data;
   
   const userId = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   
   try {
     const characterId = uuidv4();
@@ -209,7 +210,7 @@ export async function saveCharacter(input: SaveCharacterInput) {
 
 export async function deleteCharacter(characterId: string) {
   const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!characterId) {
     throw new Error('Character ID is required for deletion.');
   }
@@ -242,7 +243,7 @@ export async function updateCharacterStatus(
   isNsfw?: boolean,
 ): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   
   try {
     const { data: characterData, error: fetchError } = await supabase
@@ -281,7 +282,7 @@ export async function updateCharacterStatus(
 
 export async function updateCharacterDataPackSharing(characterId: string, isShared: boolean): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   try {
     const { data: characterData, error: fetchError } = await supabase
@@ -328,7 +329,7 @@ export async function updateCharacter(
     data: Partial<Character['core']>
 ): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   
   try {
     const UpdateCharacterCoreSchema = z.object({
@@ -408,7 +409,7 @@ export async function updateCharacter(
 
 export async function updateCharacterTimeline(characterId: string, timeline: TimelineEvent[]): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     try {
         const { data: existing, error: fetchError } = await supabase
@@ -441,7 +442,7 @@ export async function updateCharacterTimeline(characterId: string, timeline: Tim
 
 export async function updateCharacterBranchingPermissions(characterId: string, permissions: 'private' | 'public'): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   try {
     const { data: existing, error: fetchError } = await supabase
@@ -477,7 +478,7 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
 
 export async function addCharacterExperience(characterId: string, xp: number): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     try {
         const { data: existing, error: fetchError } = await supabase
@@ -509,7 +510,7 @@ export async function addCharacterExperience(characterId: string, xp: number): P
 
 export async function suggestNextTimelineEvent(characterId: string): Promise<ActionResponse & { data?: TimelineEvent }> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     try {
         const { data: existing, error: fetchError } = await supabase
@@ -584,7 +585,7 @@ Generate a JSON object with three fields: "date" (a creative date, like "A Year 
 
 export async function generateDialogue(characterId: string): Promise<ActionResponse & { dialogueLines?: string[] }> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     try {
         const { data: existing, error: fetchError } = await supabase
@@ -619,7 +620,7 @@ export async function generateDialogue(characterId: string): Promise<ActionRespo
 
 export async function rollForCharacterStats(characterId: string): Promise<ActionResponse & { newStats?: RpgAttributes['stats'] }> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     try {
         const { data: characterData, error: fetchError } = await supabase
@@ -666,7 +667,7 @@ export async function rollForCharacterStats(characterId: string): Promise<Action
 
 export async function narrateBiography(characterId: string): Promise<ActionResponse & { audioUrl?: string }> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     try {
         const { data: characterData, error: fetchError } = await supabase

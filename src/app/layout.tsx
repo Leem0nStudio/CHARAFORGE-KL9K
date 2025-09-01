@@ -34,7 +34,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // Use headers() within an async component as recommended by Next.js
-  const headersList = headers();
+  const headersList = await headers();
   const pathname = headersList.get('x-next-pathname') || '';
   const isAdminRoute = pathname.startsWith('/admin');
 

@@ -19,7 +19,7 @@ type ActionResponse = {
 
 export async function generateNewCharacterImage(characterId: string, description: string, engineConfig: ImageEngineConfig): Promise<ActionResponse & { newImageUrl?: string }> {
      const uid = await verifyAndGetUid(); 
-     const supabase = getSupabaseServerClient();
+     const supabase = await getSupabaseServerClient();
      
      try {
         const { imageUrl } = await generateCharacterImageFlow({ description, engineConfig });
@@ -66,7 +66,7 @@ export async function updateCharacterImages(
   primaryImageUrl: string,
 ): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   
   try {
      const { data: characterData, error: fetchError } = await supabase
@@ -124,7 +124,7 @@ export async function updateCharacterImages(
 
 export async function reprocessCharacterImage(characterId: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     try {
         const { data: characterData, error: fetchError } = await supabase
@@ -158,7 +158,6 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
         
         // Image processing logic is now directly in the server action
         const processedBuffer = await sharp(imageBuffer)
-            .removeBackground()
             .webp({ quality: 90 })
             .toBuffer();
 

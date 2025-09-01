@@ -19,7 +19,7 @@ import { adminAuth } from '@/lib/firebase/server';
  * @returns {Promise<string>} A promise that resolves to the authenticated user's UID.
  */
 export async function verifyAndGetUid(): Promise<string> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     throw new Error("Authentication service is unavailable on the server.");
   }

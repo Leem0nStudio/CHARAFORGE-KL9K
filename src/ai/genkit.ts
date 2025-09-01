@@ -18,9 +18,6 @@ try {
 
 export const ai = genkit({
   plugins: [
-    googleAI({ 
-        projectId: projectId,
-        location: 'us-central1',
-    }),
+    googleAI(),
   ],
 });

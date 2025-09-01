@@ -80,7 +80,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, l
         {featuredCreations.length > 0 && (
             <motion.section variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
                 <SectionTitle title="Community Gallery" subtitle="Explore the latest epic characters forged by our vibrant community." />
-                <EmblaCarousel slides={featuredCreations} CardComponent={GachaCard} />
+                <EmblaCarousel slides={featuredCreations} CardComponent={({ character }) => character ? <GachaCard character={character} /> : null} />
             </motion.section>
         )}
         
@@ -109,7 +109,7 @@ export function HomePageClient({ featuredCreations, topCreators, newDataPacks, l
         {newDataPacks.length > 0 && (
              <motion.section variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
                  <SectionTitle title="Latest DataPacks" subtitle="Discover new creative toolkits to inspire your next character." />
-                <EmblaCarousel slides={newDataPacks} CardComponent={DataPackCard} />
+                <EmblaCarousel slides={newDataPacks} CardComponent={({ pack }) => pack ? <DataPackCard pack={pack} /> : null} />
             </motion.section>
         )}
         

@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { getCharacters } from '@/app/actions/character-read';
 import type { Character } from '@/types/character';
+import { useAuth } from '@/hooks/use-auth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -19,20 +20,21 @@ interface CharacterImageSelectorProps {
 }
 
 export function CharacterImageSelectorDialog({ isOpen, onClose, onImageSelect }: CharacterImageSelectorProps) {
+    const { authUser } = useAuth();
     const [characters, setCharacters] = useState<Character[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedCharacterUrl, setSelectedCharacterUrl] = useState<string | null>(null);
     const [externalUrl, setExternalUrl] = useState('');
 
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && authUser) {
             setIsLoading(true);
-            getCharacters()
+            getCharacters(authUser.id)
                 .then(setCharacters)
                 .catch(() => console.error("Failed to fetch characters for selector"))
                 .finally(() => setIsLoading(false));
         }
-    }, [isOpen]);
+    }, [isOpen, authUser]);
 
     const handleSelect = () => {
         if (selectedCharacterUrl) {

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { DataPackFormValues, DataPackSchema } from '@/types/datapack';
-import { AiGeneratorDialog } from './ai-generator-dialog';
+import { AiGeneratorDialog } from '@/app/admin/datapacks/[id]/ai-generator-dialog';
 import { Loader2, Trash2, Wand2, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -76,7 +76,7 @@ function EquipmentSlotAccordion({ control }: { control: any }) {
 
 export function DataPackSchemaEditor({ form, onAiSchemaGenerated, isAiGenerating, onAiGeneratingChange }: { 
     form: ReturnType<typeof useFormContext<DataPackFormValues>>,
-    onAiSchemaGenerated: (schema: DataPackSchema, name: string, description: string, tags: string[]) => void,
+    onAiSchemaGenerated: (schemaYaml: string) => void,
     isAiGenerating: boolean,
     onAiGeneratingChange: (isGenerating: boolean) => void,
 }) {

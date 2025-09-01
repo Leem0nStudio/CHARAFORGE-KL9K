@@ -58,7 +58,7 @@ const generateSkillsPrompt = ai.definePrompt({
  * @returns {Promise<{success: boolean, message: string}>} A promise that resolves to a success or failure message.
  */
 export async function generateAndSaveSkills(characterId: string, archetype: string, biography: string): Promise<{ success: boolean; message: string }> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   
   try {
     await supabase.from('characters').update({ rpg_details: { skillsStatus: 'pending' } }).eq('id', characterId);

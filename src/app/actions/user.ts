@@ -16,7 +16,7 @@ export type ActionResponse = {
 
 // Helper function to get the current user's ID from Supabase Auth
 async function verifyAndGetUid(): Promise<string> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         throw new Error('User not authenticated.');
@@ -36,7 +36,7 @@ const UpdateUserProfileSchema = z.object({
 
 export async function updateUserProfile(prevState: any, formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     const rawData = {
         displayName: formData.get('displayName'),
@@ -96,7 +96,7 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -124,7 +124,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
 export async function getUserCharacters(): Promise<Pick<Character, 'id' | 'core' | 'visuals'>[]> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     const { data, error } = await supabase
         .from('characters')
@@ -148,7 +148,7 @@ export async function getUserCharacters(): Promise<Pick<Character, 'id' | 'core'
 
 export async function followUser(targetUid: string): Promise<ActionResponse> {
     const sourceUid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     if (sourceUid === targetUid) {
         return { success: false, message: "You cannot follow yourself." };
@@ -172,7 +172,7 @@ export async function followUser(targetUid: string): Promise<ActionResponse> {
 
 export async function unfollowUser(targetUid: string): Promise<ActionResponse> {
     const sourceUid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     if (sourceUid === targetUid) {
         return { success: false, message: "You cannot unfollow yourself." };
@@ -195,7 +195,7 @@ export async function unfollowUser(targetUid: string): Promise<ActionResponse> {
 }
 
 export async function getFollowStatus(targetUid: string): Promise<{ isFollowing: boolean }> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     let sourceUid: string | null = null;
     try {
         sourceUid = await verifyAndGetUid();
@@ -222,9 +222,56 @@ export async function getFollowStatus(targetUid: string): Promise<{ isFollowing:
     return { isFollowing: !!data };
 }
 
+export async function getPublicUserProfile(uid: string): Promise<UserProfile | null> {
+    const supabase = await getSupabaseServerClient();
+    
+    const { data, error } = await supabase
+        .from('users')
+        .select(`
+            id,
+            display_name,
+            photo_url,
+            profile,
+            created_at
+        `)
+        .eq('id', uid)
+        .maybeSingle();
+        
+    if (error) {
+        console.error('Error getting public user profile:', error);
+        return null;
+    }
+    
+    if (!data) {
+        return null;
+    }
+    
+    // Transform the data to match UserProfile type
+    return {
+        uid: data.id,
+        email: null, // We don't have email in public profile for privacy
+        displayName: data.display_name,
+        photoURL: data.photo_url,
+        profile: {
+            bio: data.profile?.bio,
+            socialLinks: data.profile?.socialLinks,
+            featuredCharacters: []
+        },
+        stats: {
+            followers: 0, // These would need to be calculated from follows table
+            following: 0,
+            charactersCreated: 0,
+            totalLikes: 0,
+            collectionsCreated: 0,
+            subscriptionTier: 'free',
+            memberSince: data.created_at ? new Date(data.created_at).getTime() : Date.now()
+        }
+    };
+}
+
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     const { error } = await supabase
         .from('users')
@@ -244,7 +291,7 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
 // This is a simplified version for the purpose of migration.
 export async function deleteUserAccount(): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     // In Supabase, you would typically create an `rpc` function to handle this securely.
     // This is a placeholder for that logic.

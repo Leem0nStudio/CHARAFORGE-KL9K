@@ -32,7 +32,7 @@ export function ProfileForm({ user }: { user: UserProfile }) {
         toast({ title: 'Success!', description: state.message });
         if (state.newAvatarUrl) {
           // Update the auth context so the UI reflects the change immediately
-          setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl } : null);
+          setUserProfile(prev => prev ? { ...prev, photoURL: state.newAvatarUrl || null } : null);
         }
       } else {
         toast({ variant: 'destructive', title: 'Update Failed', description: state.error || state.message });

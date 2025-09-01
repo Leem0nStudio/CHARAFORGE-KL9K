@@ -38,8 +38,8 @@ export async function getRandomOpponent(playerRarity: number, excludeId: string)
             snapshot.docs.push(...aboveSnapshot.docs);
         }
         
-        const opponents = snapshot.docs
-            .map(doc => toCharacterObject(doc.id, doc.data()))
+        const opponentsPromises = snapshot.docs.map(doc => toCharacterObject(doc.id, doc.data()));
+        const opponents = (await Promise.all(opponentsPromises))
             .filter(char => char.id !== excludeId);
 
         if (opponents.length === 0) {

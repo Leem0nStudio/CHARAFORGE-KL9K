@@ -6,7 +6,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { verifyAndGetUid } from '@/lib/auth/server';
 import type { StoryCast } from '@/types/story';
 import { generateStory as generateStoryFlow } from '@/ai/flows/story-generation/flow';
-import type { Character } from '@/types/character';
+import type { Character, TimelineEvent } from '@/types/character';
 import { toCharacterObject } from '@/services/character-hydrator';
 
 type ActionResponse<T = null> = {
@@ -17,12 +17,21 @@ type ActionResponse<T = null> = {
 };
 
 // This now includes the full character sheet for a richer context.
-type CharacterDetailsForAI = Pick<Character['core'], 'name' | 'biography' | 'alignment' | 'timeline' | 'archetype' | 'equipment' | 'physicalDescription'>;
+// Adjusted to match the expected schema for generateStoryFlow
+type CharacterDetailsForAI = {
+    name: string;
+    biography: string;
+    alignment: 'Lawful Good' | 'Neutral Good' | 'Chaotic Good' | 'Lawful Neutral' | 'True Neutral' | 'Chaotic Neutral' | 'Lawful Evil' | 'Neutral Evil' | 'Chaotic Evil';
+    timeline: TimelineEvent[];
+    archetype?: string;
+    equipment?: string[];
+    physicalDescription?: string;
+};
 
 
 export async function getUserCasts(): Promise<StoryCast[]> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return [];
 
     try {
@@ -47,7 +56,7 @@ export async function getUserCasts(): Promise<StoryCast[]> {
 
 export async function createStoryCast(data: { name: string; description: string }): Promise<ActionResponse<StoryCast>> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     try {
         const newCastData = {
@@ -80,7 +89,7 @@ export async function createStoryCast(data: { name: string; description: string 
 
 export async function updateStoryCastCharacters(castId: string, characterIds: string[]): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
 
     const { data: castData, error: fetchError } = await supabase.from('story_casts').select('user_id').eq('id', castId).single();
     if (fetchError || !castData || castData.user_id !== uid) {
@@ -102,7 +111,7 @@ export async function updateStoryCastCharacters(castId: string, characterIds: st
 
 export async function generateStory(castId: string, storyPrompt: string): Promise<ActionResponse<{ title: string; content: string }>> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     const { data: castData, error: fetchError } = await supabase.from('story_casts').select('*').eq('id', castId).single();
     if (fetchError || !castData || castData.user_id !== uid) {

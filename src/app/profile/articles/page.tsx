@@ -20,7 +20,7 @@ function UserArticlesContent() {
 
     useEffect(() => {
         if (authUser) {
-            getArticlesForUser(authUser.uid)
+            getArticlesForUser(authUser.id)
                 .then(setArticles)
                 .finally(() => setIsLoading(false));
         }
