@@ -2,7 +2,7 @@
 'use server';
 
 import { notFound } from 'next/navigation';
-import { getPublicUserProfile, getFollowStatus } from '@/app/actions/user';
+import { getUserProfile, getFollowStatus } from '@/app/actions/user';
 import { getPublicCharactersForUser } from '@/app/actions/creations';
 
 import { verifyAndGetUid } from '@/lib/auth/server'; // Will be replaced by Supabase equivalent
@@ -17,7 +17,7 @@ import Link from 'next/link';
 
 export default async function UserProfilePage({ params }: { params: { uid: string } }) {
     const [userProfile, userCreations] = await Promise.all([
-        getPublicUserProfile(params.uid),
+        getUserProfile(params.uid),
         getPublicCharactersForUser(params.uid),
     ]);
 

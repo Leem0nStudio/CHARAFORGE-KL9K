@@ -10,32 +10,34 @@ import { CommentSection } from '@/components/comments/comment-section';
 import { Separator } from '@/components/ui/separator';
 import { BackButton } from '@/components/back-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getPublicUserProfile } from '@/app/actions/user';
+import { getUserProfile } from '@/app/actions/user';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-// This is a basic Markdown-to-HTML parser. 
-// For a production app, a more robust library like 'marked' or 'react-markdown' would be better.
-function SimpleMarkdown({ content }: { content: string }) {
+// Safe markdown component using react-markdown with sanitization
+function SafeMarkdown({ content }: { content: string }) {
     // Remove the first image from the content as it's now the cover
     const contentWithoutCover = content.replace(/!\[.*?\]\(.*?\)/, '');
-    const html = contentWithoutCover
-        .replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold mt-6 mb-2">$1</h3>')
-        .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mt-8 mb-4 border-b pb-2">$1</h2>')
-        .replace(/^# (.*$)/gim, '<h1 class="text-4xl font-bold mt-10 mb-6 border-b pb-4">$1</h1>')
-        .replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*)\*/g, '<em>$1</em>')
-        .replace(/`([^`]+)`/g, '<code class="bg-muted text-muted-foreground px-1 py-0.5 rounded-sm">$1</code>')
-        .replace(/^> (.*$)/gim, '<blockquote class="border-l-4 border-primary pl-4 italic my-4">$1</blockquote>')
-        .split('\n')
-        .map(line => {
-            if (line.startsWith('<h') || line.startsWith('<blockquote') || line.startsWith('<code')) {
-                return line;
-            }
-            if (line.trim() === '') return '';
-            return `<p>${line}</p>`;
-        })
-        .join('');
-
-    return <div dangerouslySetInnerHTML={{ __html: html }} className="space-y-4" />;
+    
+    return (
+        <div className="space-y-4">
+            <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                    h1: ({ children }) => <h1 className="text-4xl font-bold mt-10 mb-6 border-b pb-4">{children}</h1>,
+                    h2: ({ children }) => <h2 className="text-2xl font-bold mt-8 mb-4 border-b pb-2">{children}</h2>,
+                    h3: ({ children }) => <h3 className="text-xl font-bold mt-6 mb-2">{children}</h3>,
+                    p: ({ children }) => <p className="mb-4">{children}</p>,
+                    strong: ({ children }) => <strong>{children}</strong>,
+                    em: ({ children }) => <em>{children}</em>,
+                    code: ({ children }) => <code className="bg-muted text-muted-foreground px-1 py-0.5 rounded-sm">{children}</code>,
+                    blockquote: ({ children }) => <blockquote className="border-l-4 border-primary pl-4 italic my-4">{children}</blockquote>,
+                }}
+            >
+                {contentWithoutCover}
+            </ReactMarkdown>
+        </div>
+    );
 }
 
 const extractCoverImage = (content: string): string | null => {
@@ -52,7 +54,7 @@ export default async function ArticlePage({ params }: { params: { slug: string }
     
     const [initialComments, authorProfile] = await Promise.all([
         getComments('article', article.id),
-        getPublicUserProfile(article.userId)
+        getUserProfile(article.userId)
     ]);
     
     const coverImage = extractCoverImage(article.content);
@@ -98,7 +100,7 @@ export default async function ArticlePage({ params }: { params: { slug: string }
                         </div>
 
                         <div className="prose prose-lg dark:prose-invert max-w-none">
-                           <SimpleMarkdown content={article.content} />
+                           <SafeMarkdown content={article.content} />
                         </div>
                     </div>
                 </article>
