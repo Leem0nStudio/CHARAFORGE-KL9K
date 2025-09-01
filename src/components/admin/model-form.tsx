@@ -103,14 +103,12 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
 
     const onSubmit = (values: ModelFormValues) => {
         startTransition(async () => {
-            const finalValues = { ...values } as UpsertAiModel;
-            
-            // Convert triggerWords from string to array
-            if (typeof values.triggerWords === 'string') {
-                finalValues.triggerWords = values.triggerWords.split(',').map(word => word.trim()).filter(word => word.length > 0);
-            } else {
-                finalValues.triggerWords = [];
-            }
+            const finalValues: UpsertAiModel = {
+                ...values,
+                triggerWords: typeof values.triggerWords === 'string' 
+                    ? values.triggerWords.split(',').map(word => word.trim()).filter(word => word.length > 0)
+                    : []
+            };
             
             if ((values.engine === 'comfyui' || values.engine === 'rundiffusion') && typeof values.comfyWorkflow === 'string' && values.comfyWorkflow.trim()) {
                 try {
