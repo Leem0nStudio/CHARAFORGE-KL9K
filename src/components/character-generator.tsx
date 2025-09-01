@@ -28,6 +28,7 @@ import { PromptEditor } from './prompt-editor';
 import { useRouter } from 'next/navigation';
 import type { DataPack, PromptTemplate } from '@/types/datapack';
 import { CharacterRevealScreen } from './character/character-reveal-screen';
+import Image from 'next/image';
 
 const coreFormSchema = z.object({
   prompt: z.string().min(10, { message: 'Please provide a more detailed description.' }),
@@ -69,6 +70,7 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
   });
   
   const promptEditorRef = useRef<{ format: () => void }>(null);
+  const revealTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 
   useEffect(() => {
@@ -86,6 +88,15 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
     }
     loadModels();
   }, [toast]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (revealTimeoutRef.current) {
+        clearTimeout(revealTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleGenerateCore = (values: CoreFormValues) => {
     startCoreTransition(async () => {
@@ -116,7 +127,11 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
             if (result.success && result.imageUrl) {
                 setFinalImageUrl(result.imageUrl);
                 setShowReveal(true);
-                setTimeout(() => setShowReveal(false), 4000); 
+                // Clear any existing timeout before setting a new one
+                if (revealTimeoutRef.current) {
+                    clearTimeout(revealTimeoutRef.current);
+                }
+                revealTimeoutRef.current = setTimeout(() => setShowReveal(false), 4000); 
             } else {
                 toast({ variant: 'destructive', title: 'Image Generation Failed', description: result.error });
                  setGenerationStep('prompt'); // Go back to prompt on failure

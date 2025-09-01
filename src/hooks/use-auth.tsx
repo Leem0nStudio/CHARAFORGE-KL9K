@@ -71,33 +71,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const fetchSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        const currentUser = session?.user ?? null;
-        setAuthUser(currentUser);
-        
-        if (currentUser) {
-            const profile = await getUserProfileFromDb(currentUser);
-            setUserProfile(profile);
-        } else {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const currentUser = session?.user ?? null;
+            setAuthUser(currentUser);
+            
+            if (currentUser) {
+                const profile = await getUserProfileFromDb(currentUser);
+                setUserProfile(profile);
+            } else {
+                setUserProfile(null);
+            }
+        } catch (error) {
+            console.error('Error fetching session:', error);
+            // Set user as null on error to prevent inconsistent state
+            setAuthUser(null);
             setUserProfile(null);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     fetchSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        const currentUser = session?.user ?? null;
-        setAuthUser(currentUser);
+        try {
+            const currentUser = session?.user ?? null;
+            setAuthUser(currentUser);
 
-        if (currentUser) {
-            const profile = await getUserProfileFromDb(currentUser);
-            setUserProfile(profile);
-        } else {
+            if (currentUser) {
+                const profile = await getUserProfileFromDb(currentUser);
+                setUserProfile(profile);
+            } else {
+                setUserProfile(null);
+            }
+        } catch (error) {
+            console.error('Error in auth state change:', error);
+            // Set user as null on error to prevent inconsistent state
+            setAuthUser(null);
             setUserProfile(null);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
       }
     );
 
