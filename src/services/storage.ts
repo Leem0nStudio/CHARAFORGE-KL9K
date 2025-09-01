@@ -17,7 +17,7 @@ export async function uploadToStorage(
     fileSource: File | Buffer | string,
     destinationPath: string
 ): Promise<string> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     const bucketName = 'chara-images'; // Define a consistent bucket name
 
     let fileBody: File | Buffer;

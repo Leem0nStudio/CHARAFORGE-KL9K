@@ -43,7 +43,7 @@ function dataPackToDataset(pack: DataPack): Datasets {
  * @returns A promise that resolves to the datasets object.
  */
 export async function loadDatasetsFromFirestore(): Promise<Datasets> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) {
         throw new Error("Supabase client is not initialized.");
     }
