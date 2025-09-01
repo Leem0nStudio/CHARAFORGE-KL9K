@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const chalk = require('chalk');
 
@@ -14,6 +15,15 @@ const requiredClientVars = [
 
 const requiredServerVars = [
   'FIREBASE_SERVICE_ACCOUNT_KEY',
+];
+
+const optionalServerVars = [
+    'GEMINI_API_KEY', 
+    'HUGGING_FACE_API_KEY', 
+    'OPENROUTER_API_KEY', 
+    'CIVITAI_API_KEY',
+    'MODELSLAB_API_KEY',
+    'MODELS_STORAGE_BUCKET'
 ];
 
 let allKeysPresent = true;
@@ -66,10 +76,21 @@ requiredServerVars.forEach(key => {
     }
 });
 
+console.log(chalk.yellow('\nChecking Optional AI & Storage Variables...'));
+optionalServerVars.forEach(key => {
+    const value = process.env[key];
+    if (!value || value === 'changeme' || value.startsWith('TU_') || value.startsWith('YOUR_')) {
+        console.warn(chalk.yellowBright(`[WARN] Optional variable ${key} is not set. Features related to this key may not work.`));
+    } else {
+        console.log(chalk.green(`[OK] ${key} is set.`));
+    }
+});
+
+
 console.log(chalk.blue.bold('\n--- Validation Summary ---'));
 
 if (allKeysPresent && !hasPlaceholderValues && isServiceAccountValid) {
-  console.log(chalk.green.bold('✅ All Firebase environment variables are correctly configured!'));
+  console.log(chalk.green.bold('✅ All essential Firebase environment variables are correctly configured!'));
 } else {
   console.error(chalk.red.bold('❌ Your Firebase configuration has errors. Please review the messages above.'));
   if (!isServiceAccountValid) {
@@ -87,3 +108,5 @@ console.log(chalk.blue.bold('--- End of Validator ---\n'));
 if (!allKeysPresent || !isServiceAccountValid) {
     process.exit(1);
 }
+
+    

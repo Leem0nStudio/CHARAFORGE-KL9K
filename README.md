@@ -1,71 +1,131 @@
-# CharaForge - Firebase Studio Starter
+# CharaForge: Forja de Personajes con IA (v3)
 
-This is a Next.js starter project built with Firebase Studio, designed to provide a robust foundation for building modern web applications. It comes pre-configured with a complete user management system, AI-powered features, and a modern UI stack.
+CharaForge es una aplicación web moderna y full-stack construida con Next.js y Supabase, diseñada para generar, gestionar y compartir personajes de ficción utilizando IA generativa. Proporciona una plataforma robusta para que escritores, directores de juego y creativos den vida a sus ideas con biografías detalladas y retratos únicos generados por IA.
 
-## Getting Started
+## Funcionalidades Principales
 
-Follow these steps to get the project up and running on your local machine.
+-   **Generación de IA Multi-Motor**: Utiliza una capa de IA flexible impulsada por **Genkit** para generar contenido utilizando varios modelos y servicios, incluyendo **Google Gemini**, **Hugging Face**, **OpenRouter** y un servidor **ComfyUI** centralizado.
+-   **Sistema de DataPacks**: Una potente función de ingeniería de prompts que permite a los usuarios crear personajes utilizando asistentes temáticos (p. ej., "Cyberpunk", "Fantasía", "Punk de Terror"), asegurando resultados de alta calidad y específicos del género.
+-   **Soporte de Modelos Personalizados**: Los usuarios pueden registrar sus propios modelos y LoRAs desde Hugging Face, Civitai o ModelsLab, permitiendo una experiencia de generación profundamente personalizada.
+-   **Lore Forge**: Una herramienta de generación de narrativas que toma un elenco de personajes creado por el usuario y un prompt para escribir historias cortas convincentes.
+-   **Comunidad y Compartir**: Galerías públicas tanto para personajes como para DataPacks, permitiendo a los usuarios compartir sus creaciones e inspirarse en la comunidad.
+-   **Versionado y Ramificación (Branching)**: Los usuarios pueden crear nuevas versiones de sus personajes o "ramificar" personajes públicos creados por otros para construir sobre su trabajo.
+-   **Autenticación Segura**: Sistema de gestión de usuarios con **Supabase Auth**, que incluye una robusta gestión de sesiones para Server Actions a través de middleware.
+-   **Panel de Administración**: Una sección dedicada y protegida por roles para gestionar el contenido de la aplicación como los DataPacks y los modelos de IA.
 
-### 1. Install Dependencies
+## Stack Tecnológico
 
-First, install the necessary npm packages:
+-   **Framework**: [Next.js](https://nextjs.org/) (App Router)
+-   **Lenguaje**: TypeScript
+-   **Backend y Base de Datos (BaaS)**: [Supabase](https://supabase.com/)
+    -   **Autenticación**: Supabase Auth
+    -   **Base de Datos**: Supabase (Postgres)
+    -   **Almacenamiento**: Supabase Storage
+-   **Capa de IA**: [Genkit](https://firebase.google.com/docs/genkit) con `@genkit-ai/googleai`. Soporta Google Gemini, Hugging Face, OpenRouter y ComfyUI.
+-   **UI**: [React](https://react.dev/), [ShadCN UI](https://ui.shadcn.com/), [Tailwind CSS](https://tailwindcss.com/)
+-   **Gestión de Estado**: React Hooks y Context API (`useAuth`).
+-   **Formularios**: [React Hook Form](https://react-hook-form.com/) y [Zod](https://zod.dev/) para validación.
+-   **Despliegue**: [Vercel](https://vercel.com/)
+
+---
+
+## Cómo Empezar
+
+Sigue estos pasos para tener el proyecto funcionando en tu máquina local.
+
+### 1. Instalar Dependencias
+
+Primero, instala los paquetes npm necesarios:
 
 ```bash
 npm install
 ```
 
-### 2. Configure Environment Variables
+### 2. Configurar Variables de Entorno con Supabase
 
-The project relies on environment variables to connect to Firebase services.
+El proyecto ahora depende de Supabase para su backend.
 
-1.  **Create a `.env` file:** Copy the example file `/.env.example` to a new file named `.env` in the root of the project.
-2.  **Set up a Firebase Project:** If you haven't already, create a new project in the [Firebase Console](https://console.firebase.google.com/).
-3.  **Get Web App Credentials:**
-    *   In your Firebase project, go to **Project Settings** > **General**.
-    *   Under "Your apps", click the **</>** icon to register a new web app.
-    *   Copy the `firebaseConfig` object values and paste them into the corresponding `NEXT_PUBLIC_FIREBASE_*` variables in your `.env` file.
-4.  **Get a Service Account Key (for Admin SDK):**
-    *   In your Firebase project, go to **Project Settings** > **Service accounts**.
-    *   Click **Generate new private key**. A JSON file will be downloaded.
-    *   Open the JSON file, copy its entire content, and paste it as a single line into the `FIREBASE_SERVICE_ACCOUNT_KEY` variable in your `.env` file.
-    *   **CRITICAL:** The entire JSON content must be on a single line. Some text editors might automatically format it to multiple lines. You can use an online "JSON to single line" tool to be sure. The value should start with `{` and end with `}` and have no line breaks in between.
-5.  **(Optional) Enable Emulators:** For local development, set `NEXT_PUBLIC_USE_EMULATORS=true` in your `.env` file. You can then run the Firebase emulators in a separate terminal:
-    ```bash
-    firebase emulators:start --only auth,firestore
-    ```
-6.  **Validate your setup:** Run the built-in validator to check your environment variables:
-    ```bash
-    npm run firebase:setup
-    ```
+1.  **Crear un Proyecto en Supabase**: Si aún no lo has hecho, regístrate en [Supabase](https://supabase.com/) y crea un nuevo proyecto.
+2.  **Obtener las Claves de API**:
+    *   En tu proyecto de Supabase, ve a **Settings** (icono de engranaje) > **API**.
+    *   Necesitarás dos claves públicas y una secreta.
+3.  **Crear el archivo `.env.local`**: Copia el archivo de ejemplo `/.env.example` a un nuevo archivo llamado `.env.local` en la raíz del proyecto.
+4.  **Añadir las Claves de Supabase**:
+    *   `NEXT_PUBLIC_SUPABASE_URL`: Pega aquí la **URL del Proyecto**.
+    *   `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Pega aquí la clave `anon` `public`.
+    *   `SUPABASE_SERVICE_ROLE_KEY`: **CRÍTICO**: Pega aquí la clave `service_role` `secret`. Esta clave es para uso del servidor y nunca debe exponerse en el navegador.
+5.  **Obtener Claves de API de IA (Opcional pero Recomendado)**:
+    *   **Gemini**: Ve a [Google AI Studio](https://aistudio.google.com/app/apikey) para generar una clave de API. Pégala en `GEMINI_API_KEY`.
+    *   **Hugging Face, OpenRouter, etc.**: Añade las claves correspondientes si deseas usar esos servicios.
+6.  **Configurar Almacenamiento de Modelos (Opcional)**:
+    *   Si deseas utilizar la función de sincronización de modelos, crea un nuevo bucket de Google Cloud Storage y pega su nombre en la variable `MODELS_STORAGE_BUCKET`.
 
-### 3. Run the Development Server
+### 3. Aplicar Migraciones de Base de Datos
 
-Once your environment is configured, start the Next.js development server:
+Usamos la CLI de Supabase para gestionar el esquema de la base de datos. Para más detalles, consulta `VERCEL_MIGRATION_GUIDE.md`.
+
+```bash
+# Instalar la CLI si no la tienes
+npm install supabase --save-dev
+
+# Conectar tu proyecto local con tu proyecto remoto de Supabase
+npx supabase link --project-ref TU_ID_DE_PROYECTO
+
+# Aplicar las migraciones para crear las tablas
+npx supabase db push
+```
+
+### 4. Ejecutar el Servidor de Desarrollo
+
+Una vez que tu entorno esté configurado, inicia el servidor de desarrollo de Next.js:
 
 ```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:9002`.
+La aplicación estará disponible en `http://localhost:3000`.
 
-## Admin Role Management
+---
 
-The application includes a script to manage user roles directly from the command line. This is essential for assigning the first administrator.
+## Resumen de la Arquitectura (Post-Migración)
 
-**Available Commands:**
+CharaForge está construido sobre Vercel y Supabase, aprovechando un stack moderno y eficiente.
 
-*   `npm run admin:grant -- <uid>`: Grants admin role to a user.
-*   `npm run admin:revoke -- <uid>`: Revokes admin role from a user.
-*   `npm run admin:check -- <uid>`: Checks if a user is an admin.
-*   `npm run admin:list`: Lists all admin users.
+### Frontend (`/src/components` y `/src/app`)
 
-**Note:** Replace `<uid>` with the actual User ID from the Firebase Authentication console. You must use `--` after the script name when passing arguments.
+-   La UI está construida con **React Server Components (RSC)** por defecto, utilizando la directiva `'use client'` donde se necesita interactividad.
+-   Los componentes de la UI provienen de [ShadCN UI](https://ui.shadcn.com/).
 
-## Tech Stack
+### Backend (Server Actions y Supabase)
 
-*   **Framework:** [Next.js](https://nextjs.org/) (App Router)
-*   **Authentication & DB:** [Firebase](https://firebase.google.com/) (Auth, Firestore, Admin SDK)
-*   **AI:** [Genkit](https://firebase.google.com/docs/genkit) with Google's Gemini models
-*   **UI:** [React](https://react.dev/), [ShadCN UI](https://ui.shadcn.com/), [Tailwind CSS](https://tailwindcss.com/)
-*   **Icons:** [Lucide React](https://lucide.dev/guide/packages/lucide-react)
-*   **Forms:** [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
+-   La lógica de backend se maneja principalmente con **Next.js Server Actions**, que se ejecutan de forma segura en el servidor.
+-   **Supabase** actúa como el backend completo, proporcionando la base de datos PostgreSQL, autenticación de usuarios y almacenamiento de archivos.
+
+### Flujo de Autenticación (Supabase Middleware)
+
+-   El sistema utiliza un **middleware de Next.js** para gestionar las sesiones de usuario con Supabase.
+-   Este middleware inspecciona y refresca las sesiones en cada solicitud, asegurando que la información de autenticación esté siempre actualizada tanto en el cliente como en el servidor.
+-   Las Server Actions protegidas utilizan un gatekeeper (`verifyAndGetUid`) que valida la sesión a través del cliente de servidor de Supabase.
+
+### Capa de IA (Genkit)
+
+-   Todas las interacciones con los modelos de IA generativa se abstraen en **Flujos de Genkit**, ubicados en `/src/ai/flows/`.
+-   Esta capa es independiente del backend de la aplicación y se comunica directamente con las APIs de los modelos de IA (Gemini, Hugging Face, etc.).
+
+### Esquema de la Base de Datos (Supabase/PostgreSQL)
+
+-   `users`: Almacena perfiles de usuario, roles y preferencias.
+-   `characters`: La colección principal. Almacena todos los datos de personajes.
+-   `datapacks`: Contiene las definiciones de los DataPacks.
+-   `ai_models`: Contiene definiciones para modelos de IA y LoRAs.
+-   ... y otras tablas para `likes`, `comments`, etc.
+
+---
+
+## Scripts Clave
+
+-   `npm run dev`: Inicia el servidor de desarrollo.
+-   `npm run build`: Crea una compilación de producción.
+-   `npm run datapacks:seed`: Siembra la base de datos de Supabase con los DataPacks locales.
+-   `npm run admin:grant -- <uid>`: Otorga el rol de administrador a un usuario.
+-   `npm run admin:list`: Lista todos los usuarios con el rol de administrador.

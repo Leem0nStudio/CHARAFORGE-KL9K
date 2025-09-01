@@ -1,0 +1,85 @@
+
+{
+    "name": "Fantasy Basics",
+    "author": "CharaForge",
+    "description": "A foundational pack for creating classic fantasy characters. Includes common races, classes, and basic equipment.",
+    "type": "free",
+    "price": 0,
+    "tags": ["fantasy", "rpg", "classic", "starter", "free"],
+    "schema": {
+        "promptTemplates": [
+            {
+                "name": "Detailed Portrait",
+                "template": "{camera}, {count}, {raceClass}, {hair}, {eyes}, {torso_armor}, {shoulders_armor}, {legs_armor}, {hands_weapon}, {background}, cinematic lighting"
+            },
+            {
+                "name": "Oil Painting Style",
+                "template": "oil painting of a {raceClass} with {hair} and {eyes}, wearing {torso_armor} and {shoulders_armor}, carrying {hands_weapon}, in a {background}, dramatic lighting"
+            }
+        ],
+        "characterProfileSchema": {
+            "count": [
+                { "label": "A single woman", "value": "1girl" },
+                { "label": "A single man", "value": "1boy" }
+            ],
+            "raceClass": [
+                { "label": "Human Warrior", "value": "human warrior" },
+                { "label": "Elf Mage", "value": "elf mage" },
+                { "label": "Dwarf Fighter", "value": "dwarf fighter" },
+                { "label": "Orc Rogue", "value": "orc rogue" }
+            ],
+            "hair": [
+                { "label": "Long Brown Hair", "value": "long brown hair" },
+                { "label": "Short Blonde Hair", "value": "short blonde hair" },
+                { "label": "Braided Black Hair", "value": "braided black hair" },
+                { "label": "Flowing Red Hair", "value": "long flowing red hair" }
+            ],
+            "eyes": [
+                { "label": "Blue Eyes", "value": "blue eyes" },
+                { "label": "Green Eyes", "value": "green eyes" },
+                { "label": "Brown Eyes", "value": "brown eyes" }
+            ],
+            "torso": {
+                "armor": [
+                    { "label": "Leather Tunic", "value": "wearing a leather tunic" },
+                    { "label": "Chainmail", "value": "wearing chainmail" },
+                    { "label": "Steel Plate Armor", "value": "wearing steel plate armor" },
+                    { "label": "Mage Robes", "value": "wearing simple mage robes" }
+                ]
+            },
+            "shoulders": {
+                "armor": [
+                    { "label": "Leather Pauldrons", "value": "leather pauldrons" },
+                    { "label": "Steel Pauldrons", "value": "steel pauldrons" },
+                    { "label": "No Pauldrons", "value": "" }
+                ]
+            },
+            "legs": {
+                "armor": [
+                    { "label": "Leather Pants", "value": "leather pants" },
+                    { "label": "Chainmail Leggings", "value": "chainmail leggings" },
+                    { "label": "Steel Greaves", "value": "steel greaves" }
+                ]
+            },
+            "hands": {
+                "weapon": [
+                    { "label": "Longsword", "value": "holding a longsword" },
+                    { "label": "Bow and Arrow", "value": "holding a bow" },
+                    { "label": "Magic Staff", "value": "holding a magic staff" },
+                    { "label": "Dagger", "value": "holding a dagger" }
+                ]
+            },
+            "camera": [
+                { "label": "Detailed Portrait", "value": "detailed portrait" },
+                { "label": "Full Body Shot", "value": "full body" },
+                { "label": "Action Pose", "value": "dynamic action pose" }
+            ],
+            "background": [
+                { "label": "Misty Forest", "value": "in a misty forest" },
+                { "label": "Castle Wall", "value": "on a castle wall" },
+                { "label": "Tavern Interior", "value": "inside a rustic tavern" },
+                { "label": "Dungeon Corridor", "value": "in a dark dungeon corridor" }
+            ]
+        }
+    }
+}

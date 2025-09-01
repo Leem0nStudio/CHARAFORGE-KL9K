@@ -1,3 +1,4 @@
+
 require('dotenv').config({ path: './.env' });
 const admin = require('firebase-admin');
 
@@ -19,7 +20,7 @@ const db = admin.firestore();
 const grantAdminRole = async (uid) => {
   try {
     await auth.setCustomUserClaims(uid, { admin: true });
-    // Also update the role in Firestore
+    // This now also sets the `role` field in Firestore for client-side checks.
     await db.collection('users').doc(uid).set({ role: 'admin' }, { merge: true });
     console.log(`Success! User ${uid} has been granted the admin role.`);
   } catch (error) {
@@ -29,9 +30,9 @@ const grantAdminRole = async (uid) => {
 
 const revokeAdminRole = async (uid) => {
   try {
-    // Setting claims to null removes them
+    // Setting claims to null removes them, but setting to false is more explicit.
     await auth.setCustomUserClaims(uid, { admin: false });
-     // Also update the role in Firestore to 'user'
+    // This now also sets the `role` field in Firestore for client-side checks.
     await db.collection('users').doc(uid).set({ role: 'user' }, { merge: true });
     console.log(`Success! Admin role has been revoked for user ${uid}.`);
   } catch (error) {
@@ -43,7 +44,7 @@ const checkAdminStatus = async (uid) => {
   try {
     const user = await auth.getUser(uid);
     const isAdmin = !!user.customClaims?.admin;
-    console.log(`User ${uid} (${user.email}) has admin status: ${isAdmin}`);
+    console.log(`User ${uid} (${user.email || 'No Email'}) has admin status: ${isAdmin}`);
   } catch (error) {
     console.error(`Error checking admin status for ${uid}:`, error.message);
   }
@@ -53,6 +54,8 @@ const listAdmins = async () => {
   console.log('Fetching list of admins... (This may take a while for many users)');
   const admins = [];
   try {
+    // Note: listUsers() paginates and might require multiple calls for large user bases.
+    // For this script's purpose, fetching up to 1000 users is sufficient.
     const listUsersResult = await auth.listUsers(1000);
     listUsersResult.users.forEach(user => {
       if (user.customClaims?.admin) {

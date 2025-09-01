@@ -1,27 +1,40 @@
-import { redirect } from 'next/navigation';
-import { getAuth } from 'firebase-admin/auth';
-import { cookies } from 'next/headers';
-import { adminApp, adminDb } from '@/lib/firebase/server';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Swords, BarChart } from 'lucide-react';
-import { getDashboardStats } from './actions';
 
+import { redirect } from 'next/navigation';
+import { adminAuth } from '@/lib/firebase/server';
+import { cookies } from 'next/headers';
+import { getDashboardStats } from '@/app/actions/admin';
+import { DashboardClient } from './dashboard-client';
+import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 
 async function getIsAdmin(): Promise<boolean> {
-  const cookieStore = cookies();
-  const idToken = cookieStore.get('firebaseIdToken')?.value;
-
-  if (!idToken || !adminApp || !adminDb) {
-    return false;
-  }
-
   try {
-    const auth = getAuth(adminApp);
-    const decodedToken = await auth.verifyIdToken(idToken);
-    const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
+    const cookieStore = cookies();
+    const idToken = cookieStore.get('firebaseIdToken')?.value;
+
+    if (!idToken) {
+      // No cookie, definitely not logged in or an admin.
+      return false;
+    }
     
-    return userDoc.exists && userDoc.data()?.role === 'admin';
-  } catch (error: unknown) {
+    if (!adminAuth) {
+      console.error("Admin check failed: Firebase Admin SDK is not initialized.");
+      return false;
+    }
+    
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    return decodedToken.admin === true;
+
+  } catch (error: any) {
+    // If the token is invalid, expired, or verification fails, they are not an admin.
+    // This also handles cases where the cookie is present but malformed.
+    // Differentiate between "not an admin" and "session expired".
+    if (error.code === 'auth/id-token-expired') {
+        // This is a specific error we can handle gracefully by redirecting to login.
+        redirect('/login?reason=session-expired&redirect=/admin');
+    }
+    
+    // For other errors, log it and treat as "not an admin".
+    console.warn("Admin check failed (user is not an admin or token is invalid):", error.message);
     return false;
   }
 }
@@ -36,50 +49,8 @@ export default async function AdminDashboardPage() {
   const stats = await getDashboardStats();
 
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-      <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl font-headline tracking-wider">Admin Dashboard</h1>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">Total registered users</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Characters</CardTitle>
-            <Swords className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCharacters}</div>
-             <p className="text-xs text-muted-foreground">
-                {stats.publicCharacters} public / {stats.privateCharacters} private
-            </p>
-          </CardContent>
-        </Card>
-         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">API Status</CardTitle>
-            <BarChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-500">Operational</div>
-             <p className="text-xs text-muted-foreground">Public API is running</p>
-          </CardContent>
-        </Card>
-      </div>
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Analytics (Coming Soon)</h2>
-         <Card className="min-h-[300px] flex items-center justify-center">
-            <p className="text-muted-foreground">Charts and more detailed analytics will be displayed here.</p>
-        </Card>
-      </div>
-    </main>
-  );
+    <AdminPageLayout title="Dashboard">
+        <DashboardClient stats={stats} />
+    </AdminPageLayout>
+  )
 }

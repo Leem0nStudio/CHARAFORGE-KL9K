@@ -3,39 +3,49 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is an admin
-    function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
-    // Rules for the 'users' collection
     match /users/{userId} {
-      // Anyone can read non-sensitive public profile data (e.g., for creator lists)
-      allow read: if request.auth != null;
-
-      // Only the user themselves can create their own document
-      allow create: if request.auth.uid == userId;
-
-      // The user can update their own document. An admin can also update roles.
-      allow update: if request.auth.uid == userId || isAdmin();
-      
-      // The user can delete their own account.
-      allow delete: if request.auth.uid == userId;
+      allow read: if isOwner(userId) || resource.data.preferences.privacy.profileVisibility == 'public';
+      allow create, update: if isOwner(userId);
     }
 
-    // Rules for the 'characters' collection
     match /characters/{characterId} {
-      // Allow reading a character if it is public, or if the user is the owner.
-      allow read: if resource.data.status == 'public' || (request.auth != null && request.auth.uid == resource.data.userId);
+      // Un usuario puede LEER un personaje si es el propietario O si el personaje es público.
+      // Esta es la regla clave que soluciona el problema del listener.
+      allow read: if (request.auth.uid != null && request.auth.uid == resource.data.meta.userId) || resource.data.meta.status == 'public';
 
-      // Allow creating a character if the user is logged in and the character's userId matches their own.
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // Un usuario puede CREAR un personaje si los datos que está enviando lo marcan como propietario.
+      allow create: if isOwner(request.resource.data.meta.userId);
 
-      // Allow updating a character if the user is the owner.
-      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
-
-      // Allow deleting a character if the user is the owner.
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Un usuario puede ACTUALIZAR o ELIMINAR un personaje si es el propietario de los datos existentes.
+      allow update, delete: if isOwner(resource.data.meta.userId);
+    }
+    
+    // El resto de las colecciones son de solo lectura para los clientes,
+    // ya que se gestionan a través del backend seguro.
+    match /datapacks/{packId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /storyCasts/{castId} {
+      allow read: if request.auth.uid == resource.data.userId;
+      allow create, update, delete: if isOwner(request.resource.data.userId);
+    }
+    
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /ai_models/{modelId} {
+       allow read: if true;
+       // Solo permite a los usuarios crear/actualizar SUS PROPIOS modelos.
+       allow create: if request.resource.data.userId != null && isOwner(request.resource.data.userId);
+       allow update, delete: if resource.data.userId != null && isOwner(resource.data.userId);
     }
   }
 }

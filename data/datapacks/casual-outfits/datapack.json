@@ -1,0 +1,95 @@
+
+{
+    "name": "Casual Outfits",
+    "author": "CharaForge",
+    "description": "Create characters with modern, everyday clothing. Perfect for contemporary, slice-of-life, or urban fantasy settings.",
+    "type": "free",
+    "price": 0,
+    "tags": ["modern", "casual", "fashion", "urban", "free"],
+    "schema": {
+        "promptTemplates": [
+            {
+                "name": "Full Body Street Style",
+                "template": "{camera}, {count}, {raceClass}, {hair}, {eyes}, {head_clothing}, {torso_clothing}, {legs_clothing}, {feet_clothing}, {pose}, in the {background}, cinematic lighting"
+            },
+            {
+                "name": "Upper Body Portrait",
+                "template": "{camera}, portrait of a {raceClass} with {hair} and {eyes}, wearing {torso_clothing} and {neck_accessory}, in a {background}, soft lighting"
+            }
+        ],
+        "characterProfileSchema": {
+            "count": [
+                { "label": "A single woman", "value": "1girl" },
+                { "label": "A single man", "value": "1boy" }
+            ],
+            "raceClass": [
+                { "label": "Woman", "value": "a beautiful woman" },
+                { "label": "Man", "value": "a handsome man" },
+                { "label": "Person", "value": "a person" }
+            ],
+            "hair": [
+                { "label": "Messy Bun", "value": "messy bun hairstyle" },
+                { "label": "Short, Styled Hair", "value": "short, styled hair" },
+                { "label": "Long Wavy Hair", "value": "long wavy brown hair" },
+                { "label": "Pink Bob Cut", "value": "a pink bob cut" }
+            ],
+            "eyes": [
+                { "label": "Blue Eyes", "value": "blue eyes" },
+                { "label": "Brown Eyes", "value": "brown eyes" },
+                { "label": "Green Eyes", "value": "green eyes" }
+            ],
+            "head": {
+                "clothing": [
+                    { "label": "Beanie", "value": "wearing a beanie" },
+                    { "label": "Baseball Cap", "value": "wearing a baseball cap" },
+                    { "label": "Headphones", "value": "wearing headphones around neck" }
+                ]
+            },
+            "neck": {
+                "accessory": [
+                    { "label": "Silver Necklace", "value": "silver necklace" },
+                    { "label": "Choker", "value": "black choker" }
+                ]
+            },
+            "torso": {
+                "clothing": [
+                    { "label": "Graphic T-Shirt", "value": "wearing a graphic t-shirt" },
+                    { "label": "Oversized Hoodie", "value": "wearing an oversized hoodie" },
+                    { "label": "Button-up Shirt", "value": "wearing a button-up shirt" },
+                    { "label": "Tank Top", "value": "wearing a tank top" }
+                ]
+            },
+            "legs": {
+                "clothing": [
+                    { "label": "Ripped Jeans", "value": "wearing ripped jeans" },
+                    { "label": "Cargo Shorts", "value": "wearing cargo shorts" },
+                    { "label": "Pleated Skirt", "value": "wearing a pleated skirt" },
+                    { "label": "Sweatpants", "value": "wearing sweatpants" }
+                ]
+            },
+            "feet": {
+                "clothing": [
+                    { "label": "Sneakers", "value": "wearing classic sneakers" },
+                    { "label": "Combat Boots", "value": "wearing combat boots" },
+                    { "label": "Sandals", "value": "wearing sandals" }
+                ]
+            },
+            "pose": [
+                { "label": "Standing", "value": "standing" },
+                { "label": "Leaning against wall", "value": "leaning against a brick wall" },
+                { "label": "Sitting at a table", "value": "sitting at a cafe table" }
+            ],
+            "camera": [
+                { "label": "Full Body Shot", "value": "full body shot" },
+                { "label": "Upper Body", "value": "upper body" },
+                { "label": "Cinematic Portrait", "value": "cinematic portrait" }
+            ],
+            "background": [
+                { "label": "City Street", "value": "city street at night" },
+                { "label": "Cozy Cafe", "value": "cozy cafe interior" },
+                { "label": "Skate Park", "value": "urban skate park" },
+                { "label": "Library", "value": "modern library" }
+            ]
+        }
+    }
+}

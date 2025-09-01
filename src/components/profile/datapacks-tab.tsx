@@ -1,0 +1,83 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, Wand2 } from 'lucide-react';
+import type { DataPack } from '@/types/datapack';
+import { getInstalledDataPacks } from '@/app/actions/datapacks';
+import { useAuth } from '@/hooks/use-auth';
+import { DataPackCard } from '../datapack/datapack-card';
+
+export function DataPacksTab() {
+    const [packs, setPacks] = useState<DataPack[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const { authUser } = useAuth();
+
+    useEffect(() => {
+        if (!authUser) return;
+
+        const loadPacks = async () => {
+            setIsLoading(true);
+            try {
+                const installedPacks = await getInstalledDataPacks();
+                setPacks(installedPacks);
+            } catch (error) {
+                console.error("Failed to load installed datapacks", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadPacks();
+    }, [authUser]);
+
+    if (isLoading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Installed DataPacks</CardTitle>
+                    <CardDescription>The creative building blocks you've collected. Use them in the Character Generator.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Installed DataPacks</CardTitle>
+                <CardDescription>The creative building blocks you've collected. Use them in the Character Generator.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {packs.length > 0 ? (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {packs.map(pack => (
+                           <div key={pack.id}>
+                               <DataPackCard pack={pack} isCompact={true} />
+                               <Button asChild variant="secondary" size="sm" className="w-full mt-2">
+                                    <Link href={`/character-generator?packId=${pack.id}`}>
+                                        <Wand2 className="mr-2 h-4 w-4" /> Use Pack
+                                    </Link>
+                                </Button>
+                           </div>
+                        ))}
+                    </div>
+                ) : (
+                     <div className="text-center text-muted-foreground py-12">
+                        <p className="mb-4">You haven't installed any DataPacks yet.</p>
+                        <Button asChild>
+                            <Link href="/datapacks">Browse Catalog</Link>
+                        </Button>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+    
