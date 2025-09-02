@@ -3,6 +3,7 @@
 'use client';
 
 import { useState, useTransition, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';

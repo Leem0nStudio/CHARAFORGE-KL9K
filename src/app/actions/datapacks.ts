@@ -103,7 +103,7 @@ export async function createDataPackFromFiles(formData: FormData): Promise<Actio
     if (!supabase) return { success: false, message: "Database service is not available." };
 
     const fileInput = formData.get('wildcardFiles') as File | null;
-    let dataPackName = formData.get('name') as string;
+    const dataPackName = formData.get('name') as string;
 
     if (!dataPackName) return { success: false, message: "DataPack name is required." };
     if (!fileInput || fileInput.size === 0) return { success: false, message: "A file (.zip, .yaml, or .txt) is required." };

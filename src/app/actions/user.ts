@@ -125,6 +125,10 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     } as UserProfile;
 }
 
+export async function getPublicUserProfile(uid: string): Promise<UserProfile | null> {
+    return getUserProfile(uid);
+}
+
 export async function getUserCharacters(): Promise<Pick<Character, 'id' | 'core' | 'visuals'>[]> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
