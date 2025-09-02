@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -84,14 +85,14 @@ type ActionResponse = {
     error?: string;
 };
 
-export async function saveCharacter(input: SaveCharacterInput) {
+export async function saveCharacter(input: SaveCharacterInput, imageFile: File) {
   const validation = SaveCharacterInputSchema.safeParse(input);
   if (!validation.success) {
     const firstError = validation.error.errors[0];
     throw new Error(`Invalid input for ${firstError.path.join('.')}: ${firstError.message}`);
   }
   const { 
-      bible, imageUrl: imageDataUri, dataPackId,
+      bible, dataPackId,
       textEngine, imageEngine, wizardData, originalPrompt
   } = validation.data;
   
@@ -101,8 +102,9 @@ export async function saveCharacter(input: SaveCharacterInput) {
   try {
     const characterId = uuidv4();
     
-    const destinationPath = `raw-uploads/${userId}/${characterId}/${uuidv4()}.png`;
-    const storageUrl = await uploadToStorage(imageDataUri, destinationPath);
+    // The image file is now uploaded directly from the client via this server action
+    const destinationPath = `raw-uploads/${userId}/${characterId}/${imageFile.name}`;
+    const storageUrl = await uploadToStorage(imageFile, destinationPath);
 
     const archetype = bible.identity.role;
     const isPlayable = !!archetype;
@@ -696,3 +698,5 @@ export async function narrateBiography(characterId: string): Promise<ActionRespo
         return { success: false, message, error: message };
     }
 }
+
+    

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useTransition, useEffect, useRef } from 'react';
@@ -28,6 +29,7 @@ import { PromptEditor } from './prompt-editor';
 import { useRouter } from 'next/navigation';
 import type { DataPack, PromptTemplate } from '@/types/datapack';
 import { CharacterRevealScreen } from './character/character-reveal-screen';
+import { v4 as uuidv4 } from 'uuid';
 
 const coreFormSchema = z.object({
   prompt: z.string().min(10, { message: 'Please provide a more detailed description.' }),
@@ -36,6 +38,23 @@ const coreFormSchema = z.object({
 type CoreFormValues = z.infer<typeof coreFormSchema>;
 
 type GenerationStep = 'prompt' | 'portrait';
+
+// Helper function to convert data URI to File object
+function dataURItoFile(dataURI: string, filename: string): File {
+    const arr = dataURI.split(',');
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    if (!mimeMatch) {
+        throw new Error('Invalid data URI');
+    }
+    const mime = mimeMatch[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, {type:mime});
+}
 
 export function CharacterGenerator({ authUser }: { authUser: UserProfile | null }) {
   const { toast } = useToast();
@@ -126,13 +145,21 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
 
     const handleSave = () => {
         if (!characterBibleResult || !finalImageUrl) return;
+        
         startSavingTransition(async () => {
              try {
+                // Convert Data URI to File object on the client-side
+                const imageFile = dataURItoFile(finalImageUrl, `${uuidv4()}.png`);
+
                 const result = await saveCharacter({
                     bible: characterBibleResult.bible,
-                    imageUrl: finalImageUrl,
+                    dataPackId: activePack?.id,
+                    textEngine: 'gemini',
+                    imageEngine: selectedModel.engine,
+                    wizardData: coreForm.watch('prompt') === characterBibleResult.renderPrompt ? null : coreForm.getValues(),
                     originalPrompt: coreForm.getValues('prompt')
-                });
+                }, imageFile);
+
                 if(result.success && result.characterId) {
                     toast({ title: 'Character Forged!', description: 'Your new character has been saved to your Armory.' });
                     router.push(`/characters/${result.characterId}/edit`);
@@ -287,3 +314,5 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
     </>
   );
 }
+
+    

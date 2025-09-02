@@ -37,6 +37,7 @@ type ActionResponse = {
 export async function addComment(commentData: z.infer<typeof AddCommentSchema>): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     const validation = AddCommentSchema.safeParse(commentData);
     if (!validation.success) {
@@ -79,6 +80,7 @@ export async function addComment(commentData: z.infer<typeof AddCommentSchema>):
 
 export async function getComments(entityType: 'character' | 'datapack' | 'article', entityId: string): Promise<Comment[]> {
     const supabase = getSupabaseServerClient();
+    if (!supabase) return [];
 
     try {
         const { data, error } = await supabase.from('comments')

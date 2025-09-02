@@ -1,3 +1,4 @@
+
 'use server';
 
 import { Suspense } from 'react';
@@ -14,7 +15,7 @@ export default async function ArenaPage() {
         uid = await verifyAndGetUid();
     } catch (error) {
         // If verifyAndGetUid throws (no session), redirect to login.
-        redirect('/login?reason=unauthenticated');
+        redirect('/login?reason=unauthenticated&redirect=/arena');
     }
     
     // Fetch all characters and then filter for playable ones.

@@ -32,6 +32,7 @@ async function getCivitaiDownloadUrl(versionId: string): Promise<string> {
 export async function enqueueModelSyncJob(modelId: string): Promise<ActionResponse> {
     await verifyIsAdmin();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: 'Database service is not available.' };
     const modelRef = supabase.from('ai_models').select('*').eq('id', modelId).single();
 
     try {

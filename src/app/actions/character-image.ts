@@ -20,6 +20,7 @@ type ActionResponse = {
 export async function generateNewCharacterImage(characterId: string, description: string, engineConfig: ImageEngineConfig): Promise<ActionResponse & { newImageUrl?: string }> {
      const uid = await verifyAndGetUid(); 
      const supabase = getSupabaseServerClient();
+     if (!supabase) return { success: false, message: 'Database service is not available.' };
      
      try {
         const { imageUrl } = await generateCharacterImageFlow({ description, engineConfig });
@@ -67,6 +68,7 @@ export async function updateCharacterImages(
 ): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
   const supabase = getSupabaseServerClient();
+  if (!supabase) return { success: false, message: 'Database service is not available.' };
   
   try {
      const { data: characterData, error: fetchError } = await supabase
@@ -125,6 +127,7 @@ export async function updateCharacterImages(
 export async function reprocessCharacterImage(characterId: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: 'Database service is not available.' };
     
     try {
         const { data: characterData, error: fetchError } = await supabase

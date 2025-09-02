@@ -27,6 +27,7 @@ type ActionResponse = {
 export async function searchUsers(emailQuery: string): Promise<SanitizedUser[]> {
     await verifyIsAdmin();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return [];
 
     if (!emailQuery) {
         return [];
@@ -59,6 +60,7 @@ export async function searchUsers(emailQuery: string): Promise<SanitizedUser[]> 
 export async function grantAdminRole(uid: string): Promise<ActionResponse> {
     await verifyIsAdmin();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: 'Database service is not available.' };
     try {
         const { error: authError } = await supabase.auth.admin.updateUserById(uid, { app_metadata: { role: 'admin' } });
         if (authError) throw authError;
@@ -81,6 +83,7 @@ export async function grantAdminRole(uid: string): Promise<ActionResponse> {
 export async function revokeAdminRole(uid: string): Promise<ActionResponse> {
     await verifyIsAdmin();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: 'Database service is not available.' };
     try {
         const { error: authError } = await supabase.auth.admin.updateUserById(uid, { app_metadata: { role: 'user' } });
         if (authError) throw authError;
@@ -98,6 +101,9 @@ export async function revokeAdminRole(uid: string): Promise<ActionResponse> {
 export async function getDashboardStats(): Promise<{ totalUsers: number; totalCharacters: number; totalDataPacks: number, publicCharacters: number, privateCharacters: number, totalModels: number, totalLoras: number }> {
     await verifyIsAdmin();
     const supabase = getSupabaseServerClient();
+    const defaultStats = { totalUsers: 0, totalCharacters: 0, totalDataPacks: 0, publicCharacters: 0, privateCharacters: 0, totalModels: 0, totalLoras: 0 };
+    if (!supabase) return defaultStats;
+
     try {
         const { count: totalUsers, error: usersError } = await supabase.from('users').select('*', { count: 'exact', head: true });
         if (usersError) throw usersError;
@@ -129,6 +135,6 @@ export async function getDashboardStats(): Promise<{ totalUsers: number; totalCh
     } catch (error: any) {
         console.error('Error fetching dashboard stats:', error);
         // Return default values on error to avoid breaking the dashboard
-        return { totalUsers: 0, totalCharacters: 0, totalDataPacks: 0, publicCharacters: 0, privateCharacters: 0, totalModels: 0, totalLoras: 0 };
+        return defaultStats;
     }
 }
