@@ -6,6 +6,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Character } from '@/types/character';
 import type { UserProfile, UserPreferences } from '@/types/user';
+import { uploadToStorage } from '@/services/storage';
 
 export type ActionResponse = {
     success: boolean;
@@ -60,19 +61,12 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
 
     const photoFile = formData.get('photoFile') as File;
     if (photoFile && photoFile.size > 0) {
-        const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('avatars')
-            .upload(`${uid}/avatar.png`, photoFile, {
-                upsert: true,
-                contentType: photoFile.type,
-            });
-        
-        if (uploadError) {
+        try {
+            const destinationPath = `avatars/${uid}`;
+            newAvatarUrl = await uploadToStorage(photoFile, destinationPath);
+        } catch (uploadError: any) {
              return { success: false, message: 'Failed to upload avatar.', error: uploadError.message };
         }
-        
-        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(uploadData.path);
-        newAvatarUrl = urlData.publicUrl;
     }
     
     // In Supabase, profile data is stored on the users table.
@@ -120,7 +114,6 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
         bio: data.profile?.bio || '',
         profile: data.profile || {},
         stats: data.stats || {},
-        email: data.email || null,
         role: data.role || 'user',
         preferences: data.preferences || {},
     } as UserProfile;

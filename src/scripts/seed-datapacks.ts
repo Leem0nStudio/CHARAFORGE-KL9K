@@ -1,9 +1,9 @@
 
-
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { uploadToStorage } from '@/services/storage';
 
 // Initialize Supabase Client for script usage
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -78,14 +78,8 @@ async function seedDataPacks() {
                  if (coverImageExists) {
                     const fileContent = await fs.readFile(coverImagePath);
                     const destination = `datapacks/${packId}/cover.png`;
-                    const { error: uploadError } = await supabase.storage.from('chara-images').upload(destination, fileContent, {
-                        contentType: 'image/png',
-                        upsert: true,
-                    });
-                    if (uploadError) throw uploadError;
-                    
-                    const { data: urlData } = supabase.storage.from('chara-images').getPublicUrl(destination);
-                    coverImageUrl = urlData.publicUrl;
+                    // Use the centralized uploadToStorage service
+                    coverImageUrl = await uploadToStorage(fileContent, destination);
                     console.log(`- Cover image uploaded to ${coverImageUrl}`);
                  } else {
                     console.log('- No cover image found for this pack.');

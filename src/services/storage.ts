@@ -14,24 +14,24 @@ import { v4 as uuidv4 } from 'uuid';
  * @throws {Error} Throws an error if the upload fails.
  */
 export async function uploadToStorage(
-    fileSource: File | Buffer | string,
+    fileSource: File | Buffer | string | ArrayBuffer,
     destinationPath: string
 ): Promise<string> {
 
     let fileToUpload: File;
-    const fileName = `${destinationPath}/${uuidv4()}`;
+    const fileName = `${destinationPath}/${uuidv4()}.png`;
 
     if (typeof fileSource === 'string' && fileSource.startsWith('data:')) {
         const match = fileSource.match(/^data:(image\/\w+);base64,(.+)$/);
         if (!match) throw new Error('Invalid Data URI format.');
         const contentType = match[1];
         const buffer = Buffer.from(match[2], 'base64');
-        fileToUpload = new File([buffer], `${uuidv4()}.png`, { type: contentType });
+        fileToUpload = new File([buffer], "image.png", { type: contentType });
     } else if (fileSource instanceof File) {
         fileToUpload = fileSource;
-    } else if (fileSource instanceof Buffer) {
+    } else if (fileSource instanceof Buffer || fileSource instanceof ArrayBuffer) {
         // Assume png if buffer is provided without type
-        fileToUpload = new File([fileSource], `${uuidv4()}.png`, { type: 'image/png' });
+        fileToUpload = new File([fileSource], "image.png", { type: 'image/png' });
     } else {
         throw new Error("Unsupported file source type.");
     }
