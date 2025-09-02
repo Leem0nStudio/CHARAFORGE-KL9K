@@ -6,7 +6,6 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
 import { toCharacterObject } from '@/services/character-hydrator';
-import { PostgrestError } from '@supabase/supabase-js';
 
 // Helper to fetch documents in batches of 30 for 'in' queries
 async function fetchUsersInBatches(userIds: string[]): Promise<Map<string, UserProfile>> {
@@ -136,12 +135,7 @@ export async function getTopCreators(): Promise<UserProfile[]> {
   if (!supabase) return [];
   
   try {
-    const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('preferences->>privacy->>profileVisibility', 'public') // Query JSONB
-        .order('stats->>charactersCreated', { ascending: false, nullsFirst: false })
-        .limit(4);
+    const { data, error } = await supabase.rpc('get_top_creators');
 
     if (error) throw error;
     
