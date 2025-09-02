@@ -11,8 +11,8 @@
 El proceso se divide en 4 fases principales. Sigue cada paso en orden para una transición segura y sin problemas.
 
 1.  **Fase 1: Preparación y Configuración de Cuentas**
-2.  **Fase 2: Migración de la Base de Datos (El Paso Crítico)**
-3.  **Fase 3: Refactorización del Código de la Aplicación (¡Ya completado!)**
+2.  **Fase 2: Migración de la Base de Datos (¡Ahora Automatizada!)**
+3.  **Fase 3: Refactorización del Código de la Aplicación (Completado)**
 4.  **Fase 4: Despliegue y Pruebas Finales**
 
 ---
@@ -44,13 +44,13 @@ Ahora, le diremos a Vercel y a tu entorno local cómo hablar con Supabase y con 
 
 2.  **Encuentra tus Claves**: Verás una sección llamada **Project API Keys**. Aquí están las tres claves que necesitas.
 
-3.  **Crea tu archivo `.env.local`**: En la raíz de tu proyecto, crea un archivo llamado `.env.local` y añade lo siguiente, reemplazando los valores con tus claves:
+3.  **Crea tu archivo `.env.local`**: En la raíz del proyecto, crea un archivo llamado `.env.local` y añade lo siguiente, reemplazando los valores con tus claves:
 
     ```ini
     # .env.local - Claves de Supabase
     NEXT_PUBLIC_SUPABASE_URL="tu-url-de-supabase-aqui"
     NEXT_PUBLIC_SUPABASE_ANON_KEY="tu-clave-anon-publica-aqui"
-    SUPABASE_SERVICE_ROLE_KEY="tu-clave-service-role-secreta-aqui"
+    SUPABASE_SERVICE_ROLE_KEY="tu-clave-service-role-secreta-aqui" # ¡MANTENER SECRETA!
 
     # Clave de Vercel Blob (la crearás en Vercel, déjala vacía por ahora)
     BLOB_READ_WRITE_TOKEN=""
@@ -62,9 +62,9 @@ Ahora, le diremos a Vercel y a tu entorno local cómo hablar con Supabase y con 
 
 ---
 
-## ✅ Fase 2: Migración de la Base de Datos (El Paso Crítico)
+## ✅ Fase 2: Migración de la Base de Datos (¡Ahora Automatizada!)
 
-Usaremos la **Supabase CLI** para gestionar el esquema de nuestra base de datos. Este es el método profesional que nos asegura que nuestro entorno local y el de producción estén siempre sincronizados.
+Usaremos la **Supabase CLI** para gestionar el esquema de nuestra base de datos de forma automática y profesional. Esto asegura que tu entorno local y el de producción estén siempre sincronizados.
 
 ### Paso 2.1: Instala la Supabase CLI
 
@@ -87,21 +87,21 @@ npm install supabase --save-dev
     ```
     Reemplaza `[TU_PROJECT_ID]` con el ID que aparece en la URL de tu proyecto de Supabase (ej. `https://supabase.com/dashboard/project/[TU_PROJECT_ID]`).
 
-### Paso 2.3: Aplica la Migración Inicial
+### Paso 2.3: Crea las Tablas en tu Base de Datos (El Paso Mágico)
 
-Ahora que tu proyecto está vinculado, puedes "empujar" el esquema inicial que hemos preparado a tu base de datos de Supabase.
+Ahora que tu proyecto está vinculado, puedes "empujar" el esquema inicial que hemos preparado a tu base de datos de Supabase. **Este comando creará automáticamente todas las tablas, columnas y políticas de seguridad.**
 
-Ejecuta el siguiente comando:
+Ejecuta el siguiente comando en tu terminal:
 ```bash
-npx supabase db push
+npm run supabase:db:push
 ```
-La CLI leerá el archivo `supabase/migrations/20240901000000_initial_schema.sql` y creará todas las tablas y políticas de seguridad en tu base de datos remota. ¡Con esto, tu base de datos está lista!
+¡Listo! La CLI leerá el archivo de migración que hemos creado en `supabase/migrations` y configurará tu base de datos remota. ¡Con esto, tu base de datos está 100% lista!
 
 ---
 
 ## ✅ Fase 3: Refactorización del Código
 
-¡Esta fase ya la hemos completado juntos! Todo el código de la aplicación ha sido refactorizado para usar Supabase.
+Esta fase ya está completada. Todo el código de la aplicación ha sido refactorizado para usar Supabase y Vercel Blob.
 
 ---
 
@@ -116,7 +116,7 @@ Asegúrate de que todos los cambios que hemos hecho estén guardados y subidos a
 ### Paso 4.2: Despliega en Vercel
 
 1.  **Conecta tu Repositorio**: Ve a tu [dashboard de Vercel](https://vercel.com/new) y crea un nuevo proyecto importando el repositorio de CharaForge desde GitHub.
-2.  **Configura las Variables de Entorno**: Vercel detectará que es un proyecto Next.js. Antes de desplegar, ve a la configuración del proyecto > **Settings** > **Environment Variables**. Añade **exactamente las mismas claves** que pusiste en tu archivo `.env.local` (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, y `GEMINI_API_KEY`).
+2.  **Configura las Variables de Entorno**: Vercel detectará que es un proyecto Next.js. Antes de desplegar, ve a la configuración del proyecto > **Settings** > **Environment Variables**. Añade **exactamente las mismas claves** que pusiste en tu archivo `.env.local`.
 3.  **Configura Vercel Blob**:
     *   En el dashboard de tu proyecto de Vercel, ve a la pestaña **Storage**.
     *   Crea un nuevo "Blob Store" y conéctalo a tu proyecto.

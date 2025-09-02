@@ -3,7 +3,7 @@
 'use client';
 
 import { useState, useTransition, useEffect, useRef } from 'react';
-import Image from 'next/image';
+import NextImage from 'next/image'; // Renamed import
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -288,7 +288,7 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
                     animate={{ opacity: 1, y: 0 }}
                     className="relative aspect-square w-full rounded-lg overflow-hidden border shadow-lg"
                 >
-                    <Image src={finalImageUrl} alt="Generated Character Portrait" fill className="object-cover" />
+                    <NextImage src={finalImageUrl} alt="Generated Character Portrait" fill className="object-cover" />
                 </motion.div>
             )}
              {isLoadingPortrait && (
