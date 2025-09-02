@@ -4,7 +4,12 @@ import React from 'react';
 import DatapackForm from '@/components/datapack/DatapackForm';
 import { getDataPackForAdmin } from '@/app/actions/datapacks';
 
-const EditDatapackPage = async ({ params }: { params: { id: string } }) => {
+interface PageProps {
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+const EditDatapackPage = async ({ params }: PageProps) => {
   const { id } = params;
   const datapack = await getDataPackForAdmin(id);
 
