@@ -6,9 +6,8 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
 import { toCharacterObject } from '@/services/character-hydrator';
-import { PostgrestError } from '@supabase/supabase-js';
 
-// Helper to fetch documents in batches of 30 for 'in' queries
+// Helper to fetch users in batches of 30 for 'in' queries
 async function fetchUsersInBatches(userIds: string[]): Promise<Map<string, UserProfile>> {
     const supabase = getSupabaseServerClient();
     if (!supabase || userIds.length === 0) return new Map();
@@ -27,7 +26,7 @@ async function fetchUsersInBatches(userIds: string[]): Promise<Map<string, UserP
                 uid: user.id,
                 displayName: user.display_name,
                 photoURL: user.photo_url,
-                // Add other UserProfile fields as needed from the 'users' table
+                stats: user.stats || {},
             } as UserProfile));
         }
     }
@@ -127,8 +126,8 @@ export async function searchCharactersByTag(tag: string): Promise<Character[]> {
 
 
 /**
- * Fetches the top 4 creators based on the number of characters they have created
- * and who have set their profile to public.
+ * Fetches the top creators based on the number of characters they have created.
+ * This is now done by fetching all users and sorting them in the server action.
  * @returns {Promise<UserProfile[]>} A promise that resolves to an array of user profile objects.
  */
 export async function getTopCreators(): Promise<UserProfile[]> {
@@ -136,18 +135,24 @@ export async function getTopCreators(): Promise<UserProfile[]> {
   if (!supabase) return [];
   
   try {
-    const { data, error } = await supabase.rpc('get_top_creators');
+    const { data, error } = await supabase
+        .from('users')
+        .select('id, display_name, photo_url, stats')
+        .not('stats', 'is', null); // Only get users with stats
 
     if (error) throw error;
     
-    const creators = data.map((d: any) => ({
-        uid: d.id,
-        displayName: d.display_name || null,
-        photoURL: d.photo_url || null,
-        stats: d.stats || {},
-    })) as UserProfile[];
+    const creators = data
+        .map((d: any) => ({
+            uid: d.id,
+            displayName: d.display_name || null,
+            photoURL: d.photo_url || null,
+            stats: d.stats || {},
+        }))
+        .sort((a, b) => (b.stats?.charactersCreated || 0) - (a.stats?.charactersCreated || 0))
+        .slice(0, 4);
 
-    return creators;
+    return creators as UserProfile[];
 
   } catch (error) {
     console.error("Error fetching top creators:", error);
