@@ -3,9 +3,7 @@
 'use server';
 
 import { getModels } from "@/app/actions/ai-models";
-import { AdminPageLayout } from "@/components/admin/admin-page-layout";
 import { MediaDisplay } from "@/components/media-display";
-import type { AiModel } from "@/types/ai-model";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/back-button";
@@ -96,5 +94,3 @@ export default async function AiModelsPage() {
         </div>
     );
 }
-
-    

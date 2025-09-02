@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useTransition, useEffect, useState } from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { useTransition, useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Character, TimelineEvent } from '@/types/character';
@@ -14,13 +14,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Wand2, Dna, Swords, Shield, BrainCircuit, AlertCircle, RefreshCw, Calendar, Plus, Trash2, Sparkles, MessageSquareQuote, Volume2 } from 'lucide-react';
+import { Loader2, Wand2, Plus, Trash2, Sparkles, MessageSquareQuote, Volume2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
-import { StarRating } from '@/components/showcase/star-rating';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { rpgArchetypes } from '@/lib/app-config';
 
 const alignmentOptions = [
@@ -54,10 +51,9 @@ const TimelineFormSchema = z.object({
 type TimelineFormValues = z.infer<typeof TimelineFormSchema>;
 
 
-export function EditDetailsTab({ character: initialCharacter }: { character: Character }) {
+export function EditDetailsTab({ character }: { character: Character }) {
     const { toast } = useToast();
     const router = useRouter();
-    const [character, setCharacter] = useState(initialCharacter);
     const [isUpdating, startUpdateTransition] = useTransition();
     const [isRegenerating, startRegenerateTransition] = useTransition();
     const [isSuggestingEvent, startSuggestEventTransition] = useTransition();
@@ -66,10 +62,6 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
     const [dialogueLines, setDialogueLines] = useState<string[]>([]);
     const [biographyAudioUrl, setBiographyAudioUrl] = useState<string | null>(null);
     
-    useEffect(() => {
-        setCharacter(initialCharacter);
-    }, [initialCharacter]);
-
 
     const form = useForm<FormValues>({
         resolver: zodResolver(FormSchema),
@@ -184,7 +176,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                 setDialogueLines(result.dialogueLines);
                 toast({ title: 'Dialogue Generated!', description: 'Characteristic phrases for your character have been created.' });
             } else {
-                toast({ variant: 'destructive', title: 'Dialogue Failed', description: result.message });
+                toast({ variant: 'destructive', title: 'Dialogue Failed', description: result.error || result.message });
             }
         });
     };
@@ -196,7 +188,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                 setBiographyAudioUrl(result.audioUrl);
                 toast({ title: 'Narration Complete!', description: 'The character\'s biography is ready to be heard.' });
             } else {
-                toast({ variant: 'destructive', title: 'Narration Failed', description: result.message });
+                toast({ variant: 'destructive', title: 'Narration Failed', description: result.error || result.message });
             }
         })
     }
@@ -211,7 +203,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
             <Card>
                 <CardHeader>
                     <CardTitle>Core Details</CardTitle>
-                    <CardDescription>Modify the character's story and defining attributes.</CardDescription>
+                    <CardDescription>Modify the character&apos;s story and defining attributes.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -322,7 +314,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                 <CardHeader>
                     <CardTitle>Character Voice</CardTitle>
                     <CardDescription>
-                        Generate characteristic dialogue lines to define your character's personality and voice.
+                        Generate characteristic dialogue lines to define your character&apos;s personality and voice.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -330,7 +322,7 @@ export function EditDetailsTab({ character: initialCharacter }: { character: Cha
                         {dialogueLines.length > 0 && (
                             <div className="space-y-2 rounded-lg border p-4 bg-muted/50">
                                 {dialogueLines.map((line, index) => (
-                                    <p key={index} className="italic text-muted-foreground">"{line}"</p>
+                                    <p key={index} className="italic text-muted-foreground">&quot;{line}&quot;</p>
                                 ))}
                             </div>
                         )}

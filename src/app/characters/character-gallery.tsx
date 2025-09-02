@@ -4,7 +4,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Character } from '@/types/character';
 import { Button } from '@/components/ui/button';
-import { Loader2, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { StarfieldBackground } from '@/components/character/starfield-background';
 import { CharacterFilterSidebar } from '@/components/character/character-filter-sidebar';
 import { CharacterCard } from '@/components/character/character-card';

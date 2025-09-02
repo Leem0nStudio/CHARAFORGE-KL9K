@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Star } from 'lucide-react';
 import type { Character } from '@/types/character';
 import { cn } from '@/lib/utils';
 import { StarRating } from '../showcase/star-rating';
@@ -89,8 +88,7 @@ const customKeyframes = `
 const styleSheet = typeof document !== 'undefined' ? document.styleSheets[0] : null;
 if (styleSheet && !styleSheet.cssRules[0]?.cssText.includes('pulse-glow')) {
     try {
-        styleSheet.insertRule(`@keyframes pulse-glow { ${rarityStyles[5].glow} }`, styleSheet.cssRules.length);
-        styleSheet.insertRule(`@keyframes pulse-glow-subtle { ${rarityStyles[4].glow} }`, styleSheet.cssRules.length);
+        styleSheet.insertRule(customKeyframes, styleSheet.cssRules.length);
     } catch(e) {
         // In some environments, this might not be possible. It's a progressive enhancement.
     }

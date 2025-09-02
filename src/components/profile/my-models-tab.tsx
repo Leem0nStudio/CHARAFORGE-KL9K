@@ -12,7 +12,7 @@ import {
     Button,
     Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
     Input,
     Label,
     Textarea,
@@ -317,5 +317,3 @@ export function MyModelsTab() {
         </Card>
     );
 }
-
-    

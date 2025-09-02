@@ -7,7 +7,6 @@ import type { ImageEngineConfig } from '@/types/generation';
 import type { AiModel } from '@/types/ai-model';
 import { generateCharacterBibleAction } from '../actions/character-bible';
 import type { CharacterBible, CharacterBibleInput } from '@/ai/flows/character-bible/types';
-import { getUserProfile } from '../actions/user';
 
 
 // This type combines the full CharacterBible with the derived prompts for UI use.

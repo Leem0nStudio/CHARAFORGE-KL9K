@@ -5,7 +5,6 @@ import { notFound } from 'next/navigation';
 import { getPublicUserProfile, getFollowStatus } from '@/app/actions/user';
 import { getPublicCharactersForUser } from '@/app/actions/creations';
 
-import { verifyAndGetUid } from '@/lib/auth/server'; // Will be replaced by Supabase equivalent
 import { BackButton } from '@/components/back-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,6 +13,7 @@ import { CharacterCard } from '@/components/character/character-card';
 import { FollowButton } from '@/components/user/follow-button';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 
 export default async function UserProfilePage({ params }: { params: { uid: string } }) {
     const [userProfile, userCreations] = await Promise.all([
@@ -28,7 +28,7 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
     let isFollowing = false;
     let currentUserId: string | null = null;
     try {
-        const supabase = (await import('@/lib/supabase/server')).getSupabaseServerClient();
+        const supabase = getSupabaseServerClient();
         if (supabase) {
             const { data: { user } } = await supabase.auth.getUser();
             currentUserId = user?.id || null;
@@ -138,7 +138,7 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
                         </div>
                     ) : (
                         <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg bg-card/50">
-                            <p>This creator hasn't published any characters yet.</p>
+                            <p>This creator hasn&apos;t published any characters yet.</p>
                         </div>
                     )}
                 </div>

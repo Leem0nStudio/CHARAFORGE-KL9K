@@ -76,7 +76,7 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
     }
     
     // In Supabase, profile data is stored on the users table.
-    const { data, error } = await supabase
+    const { error } = await supabase
         .from('users')
         .update({ 
             display_name: displayName,
@@ -114,6 +114,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     // Adapt the Firestore structure to the Supabase one
     return {
         uid: data.id,
+        email: data.email || null,
         displayName: data.display_name || 'Anonymous',
         photoURL: data.photo_url || null,
         bio: data.profile?.bio || '',

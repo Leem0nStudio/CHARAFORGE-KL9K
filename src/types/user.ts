@@ -1,5 +1,4 @@
 
-import type { UserMetadata } from '@supabase/supabase-js';
 
 /**
  * Represents the statistics for a user's activity.
@@ -54,5 +53,3 @@ export interface UserProfile {
     featuredCharacters?: string[]; // Array of character IDs
   };
 }
-
-    

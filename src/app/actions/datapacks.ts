@@ -3,15 +3,14 @@
 
 import { revalidatePath } from 'next/cache';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import type { DataPack, UpsertDataPack, DataPackSchema, Option } from '@/types/datapack';
+import type { DataPack, UpsertDataPack, DataPackSchema } from '@/types/datapack';
 import { UpsertDataPackSchema, DataPackSchemaSchema } from '@/types/datapack';
 import { verifyAndGetUid, verifyIsAdmin } from '@/lib/auth/server';
 import { uploadToStorage } from '@/services/storage';
 import AdmZip from 'adm-zip';
 import yaml from 'js-yaml';
 import path from 'path';
-import * as fs from 'fs/promises';
-import { PostgrestError } from '@supabase/supabase-js';
+
 
 export type ActionResponse = {
     success: boolean;

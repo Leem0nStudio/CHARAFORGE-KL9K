@@ -4,7 +4,7 @@
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import type { Character } from '@/types/character';
+
 
 type ActionResponse = {
     success: boolean;
@@ -12,15 +12,6 @@ type ActionResponse = {
     error?: string;
 };
 
-// Functions from likes.ts are moved here
-async function getLikeCount(supabase: any, characterId: string): Promise<number> {
-    const { count, error } = await supabase
-        .from('likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('character_id', characterId);
-    if (error) throw error;
-    return count || 0;
-}
 
 export async function likeCharacter(characterId: string): Promise<ActionResponse & { newLikeCount?: number, liked?: boolean }> {
     const uid = await verifyAndGetUid();
