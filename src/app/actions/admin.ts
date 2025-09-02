@@ -46,7 +46,7 @@ export async function searchUsers(emailQuery: string): Promise<SanitizedUser[]> 
             disabled: !!user.banned_until && new Date(user.banned_until) > new Date(),
             isAdmin: user.app_metadata?.role === 'admin',
         }));
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error searching for user:', error);
         throw new Error('An error occurred while searching for users.');
     }
@@ -70,7 +70,7 @@ export async function grantAdminRole(uid: string): Promise<ActionResponse> {
         
         revalidatePath('/admin/users');
         return { success: true, message: 'Admin role granted successfully.' };
-    } catch (error: any) {
+    } catch (error: unknown) {
         return { success: false, message: 'Failed to grant admin role.', error: error.message };
     }
 }
@@ -93,7 +93,7 @@ export async function revokeAdminRole(uid: string): Promise<ActionResponse> {
         
         revalidatePath('/admin/users');
         return { success: true, message: 'Admin role revoked successfully.' };
-    } catch (error: any) {
+    } catch (error: unknown) {
         return { success: false, message: 'Failed to revoke admin role.', error: error.message };
     }
 }
@@ -132,7 +132,7 @@ export async function getDashboardStats(): Promise<{ totalUsers: number; totalCh
             totalModels: totalModels || 0,
             totalLoras: totalLoras || 0,
         };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error fetching dashboard stats:', error);
         // Return default values on error to avoid breaking the dashboard
         return defaultStats;

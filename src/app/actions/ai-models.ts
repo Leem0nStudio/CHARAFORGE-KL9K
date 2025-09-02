@@ -19,7 +19,7 @@ type ActionResponse = {
     data?: Partial<AiModel>; // Used to return pre-filled data
 };
 
-const toAiModelObject = (row: any): AiModel => ({
+const toAiModelObject = (row: Record<string, any>): AiModel => ({
     id: row.id,
     name: row.name,
     type: row.type,
@@ -80,7 +80,7 @@ export async function upsertModel(data: UpsertAiModel): Promise<ActionResponse> 
         revalidatePath('/character-generator');
         
         return { success: true, message: `Model "${modelData.name}" saved successfully.` };
-    } catch (error) {
+    } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, message: 'Operation failed.', error: message };
     }
@@ -190,7 +190,7 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
             coverMediaUrl,
             coverMediaType,
             triggerWords: triggerWords,
-            versions: modelVersions?.map((v: any) => ({ 
+            versions: modelVersions?.map((v: { id: { toString: () => any; }; name: any; baseModel: any; trainedWords: any[]; }) => ({ 
                 id: v.id.toString(), 
                 name: v.name, 
                 baseModel: v.baseModel,
@@ -204,7 +204,7 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
             data: prefilledData
         };
     
-    } catch (error) {
+    } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, message: "Operation failed.", error: message };
     }
@@ -259,7 +259,7 @@ export async function upsertUserAiModel(formData: FormData): Promise<ActionRespo
         revalidatePath('/profile/models');
         
         return { success: true, message: `Model "${modelData.name}" saved successfully.` };
-    } catch (error) {
+    } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, message: 'Operation failed.', error: message };
     }
@@ -292,7 +292,7 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
         revalidatePath('/character-generator');
         revalidatePath('/profile');
         return { success: true, message: 'Model deleted successfully.' };
-    } catch (error) {
+    } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
         return { success: false, message: 'Failed to delete model.', error: message };
     }
@@ -322,7 +322,7 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
         
         return Array.from(allModels.values()).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-    } catch (error) {
+    } catch (error: unknown) {
         console.error(`Error fetching ${type}s:`, error);
         return Array.from(allModels.values());
     }
@@ -359,7 +359,7 @@ export async function installModel(modelId: string): Promise<ActionResponse> {
         revalidatePath('/models');
 
         return { success: true, message: "Model successfully installed!" };
-    } catch (error) {
+    } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         console.error("Install Model Error:", message);
         return { success: false, message: "Failed to install model." };

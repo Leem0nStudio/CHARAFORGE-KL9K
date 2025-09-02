@@ -36,7 +36,7 @@ const UpdateUserProfileSchema = z.object({
     }).optional(),
 }).partial();
 
-export async function updateUserProfile(prevState: any, formData: FormData): Promise<ActionResponse> {
+export async function updateUserProfile(prevState: ActionResponse | undefined, formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
@@ -64,7 +64,7 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
         try {
             const destinationPath = `avatars/${uid}`;
             newAvatarUrl = await uploadToStorage(photoFile, destinationPath);
-        } catch (uploadError: any) {
+        } catch (uploadError: unknown) {
              return { success: false, message: 'Failed to upload avatar.', error: uploadError.message };
         }
     }
@@ -140,11 +140,11 @@ export async function getUserCharacters(): Promise<Pick<Character, 'id' | 'core'
         return [];
     }
 
-    return data.map((char: any) => ({
+    return data.map((char) => ({
         id: char.id,
         core: { name: char.core_details.name, archetype: char.core_details.archetype, rarity: char.core_details.rarity },
         visuals: { imageUrl: char.visual_details.imageUrl },
-    })) as any;
+    })) as Pick<Character, 'id' | 'core' | 'visuals'>[];
 }
 
 
