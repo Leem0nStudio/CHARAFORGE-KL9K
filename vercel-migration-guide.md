@@ -92,17 +92,19 @@ npm install supabase --save-dev
     ```bash
     npx supabase link --project-ref [TU_PROJECT_ID]
     ```
-    Reemplaza `[TU_PROJECT_ID]` con el ID que aparece en la URL de tu proyecto de Supabase (ej. `https://supabase.com/dashboard/project/[TU_PROJECT_ID]`).
+    Reemplaza `[TU_PROJECT_ID]` con el ID que aparece en la URL de tu proyecto de Supabase (ej. `app.supabase.com/project/[TU_PROJECT_ID]`).
 
-### Paso 2.3: Crea las Tablas en tu Base de Datos (El Paso Mágico)
+### Paso 2.3: Crea o Resetea tu Base de Datos (El Paso Mágico)
 
-Ahora que tu proyecto está vinculado, puedes "empujar" el esquema inicial que hemos preparado a tu base de datos de Supabase. **Este comando creará automáticamente todas las tablas, columnas y políticas de seguridad.**
+Ahora que tu proyecto está vinculado, puedes "empujar" el esquema que hemos preparado a tu base de datos de Supabase. **Este comando creará automáticamente todas las tablas, columnas y políticas de seguridad.**
+
+**IMPORTANTE:** Si ya tenías tablas y te encontraste con errores, es mejor empezar de cero. El siguiente comando borrará los datos de tu base de datos de Supabase y aplicará el esquema desde el principio, garantizando una instalación limpia.
 
 Ejecuta el siguiente comando en tu terminal:
 ```bash
-npm run supabase:db:push
+npm run supabase:db:reset
 ```
-¡Listo! La CLI leerá el archivo de migración que hemos creado en `supabase/migrations` y configurará tu base de datos remota. ¡Con esto, tu base de datos está 100% lista!
+Se te pedirá que confirmes la operación. Escribe el nombre de tu proyecto para continuar. ¡Con esto, tu base de datos estará 100% lista y limpia!
 
 ---
 

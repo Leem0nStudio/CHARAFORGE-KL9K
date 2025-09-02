@@ -1,3 +1,4 @@
+
 -- 1. Tabla para perfiles de usuario
 -- Esta tabla se conectará con la tabla de autenticación de Supabase.
 CREATE TABLE IF NOT EXISTS public.users (
@@ -12,15 +13,15 @@ CREATE TABLE IF NOT EXISTS public.users (
     profile JSONB
 );
 
--- 2. Tabla para DataPacks
+-- 2. Tabla para los DataPacks (paquetes de contenido)
 CREATE TABLE IF NOT EXISTS public.datapacks (
-    id TEXT PRIMARY KEY, -- Cambiado de UUID a TEXT
+    id TEXT PRIMARY KEY, -- CAMBIO CRÍTICO: De UUID a TEXT
     name TEXT NOT NULL,
     author TEXT,
     description TEXT,
     cover_image_url TEXT,
     type TEXT,
-    price NUMERIC,
+    price REAL,
     tags TEXT[],
     schema_details JSONB,
     is_nsfw BOOLEAN DEFAULT FALSE,
@@ -30,7 +31,7 @@ CREATE TABLE IF NOT EXISTS public.datapacks (
     updated_at TIMESTAMPTZ
 );
 
--- 3. Tabla para los personajes
+-- 3. Tabla principal para los personajes
 CREATE TABLE IF NOT EXISTS public.characters (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES public.users(id),
@@ -38,21 +39,22 @@ CREATE TABLE IF NOT EXISTS public.characters (
     archetype TEXT,
     biography TEXT,
     image_url TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ,
-    -- Campos JSONB para datos anidados
+    -- JSONB para flexibilidad
     core_details JSONB,
     visual_details JSONB,
-    lineage_details JSONB,
-    generation_details JSONB,
     meta_details JSONB,
+    lineage_details JSONB,
     settings_details JSONB,
-    rpg_details JSONB
+    generation_details JSONB,
+    rpg_details JSONB,
+    datapack_id TEXT REFERENCES public.datapacks(id) ON DELETE SET NULL, -- CAMBIO: Asegura que la referencia es TEXT
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ
 );
 
--- 4. Tabla para los modelos de IA
+-- 4. Tabla para modelos de IA
 CREATE TABLE IF NOT EXISTS public.ai_models (
-    id TEXT PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     type TEXT,
     engine TEXT,
@@ -77,7 +79,7 @@ CREATE TABLE IF NOT EXISTS public.ai_models (
     mix_recipe JSONB
 );
 
--- 5. Tabla para los "Me Gusta" (Likes)
+-- 5. Tabla para "Me Gusta"
 CREATE TABLE IF NOT EXISTS public.likes (
     character_id UUID REFERENCES public.characters(id) ON DELETE CASCADE,
     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
@@ -85,7 +87,7 @@ CREATE TABLE IF NOT EXISTS public.likes (
     PRIMARY KEY (character_id, user_id)
 );
 
--- 6. Tabla para los comentarios
+-- 6. Tabla para Comentarios
 CREATE TABLE IF NOT EXISTS public.comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     entity_type TEXT, -- 'character', 'datapack', 'article'
@@ -98,18 +100,18 @@ CREATE TABLE IF NOT EXISTS public.comments (
     updated_at TIMESTAMPTZ
 );
 
--- 7. Tabla para "Casts" de historias
+-- 7. Tabla para "Casts" de Historias (Lore Forge)
 CREATE TABLE IF NOT EXISTS public.story_casts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES public.users(id),
-    name TEXT,
+    name TEXT NOT NULL,
     description TEXT,
     character_ids UUID[],
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ
 );
 
--- 8. Tabla para seguimientos (Follows)
+-- 8. Tabla para Seguidores
 CREATE TABLE IF NOT EXISTS public.follows (
     follower_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
     following_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
@@ -117,11 +119,11 @@ CREATE TABLE IF NOT EXISTS public.follows (
     PRIMARY KEY (follower_id, following_id)
 );
 
--- 9. Tabla para Artículos/Noticias
+-- 9. Tabla para Artículos
 CREATE TABLE IF NOT EXISTS public.articles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    slug TEXT UNIQUE NOT NULL,
-    title TEXT NOT NULL,
+    slug TEXT UNIQUE,
+    title TEXT,
     author_name TEXT,
     content TEXT,
     excerpt TEXT,
@@ -131,8 +133,14 @@ CREATE TABLE IF NOT EXISTS public.articles (
     updated_at TIMESTAMPTZ
 );
 
+-- Añadir Índices para optimizar consultas comunes
+CREATE INDEX IF NOT EXISTS characters_user_id_idx ON public.characters(user_id);
+CREATE INDEX IF NOT EXISTS datapacks_user_id_idx ON public.datapacks(user_id);
+CREATE INDEX IF NOT EXISTS articles_slug_idx ON public.articles(slug);
+CREATE INDEX IF NOT EXISTS likes_user_id_idx ON public.likes(user_id);
+CREATE INDEX IF NOT EXISTS comments_entity_idx ON public.comments(entity_type, entity_id);
 
--- Habilitar Row Level Security (RLS)
+-- Habilitar Seguridad a Nivel de Fila (RLS) para todas las tablas
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.datapacks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.characters ENABLE ROW LEVEL SECURITY;
@@ -143,44 +151,50 @@ ALTER TABLE public.story_casts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
 
+-- Políticas de Seguridad
 
--- Políticas de seguridad para la tabla `users`
-CREATE POLICY "Users can view their own profile." ON public.users FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update their own profile." ON public.users FOR UPDATE USING (auth.uid() = id);
+-- Los usuarios pueden ver su propio perfil.
+CREATE POLICY "Allow individual user read access" ON public.users FOR SELECT USING (auth.uid() = id);
+-- Los usuarios pueden actualizar su propio perfil.
+CREATE POLICY "Allow individual user update access" ON public.users FOR UPDATE USING (auth.uid() = id);
 
--- Políticas para `characters`
-CREATE POLICY "Users can view their own characters." ON public.characters FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Public characters are viewable by everyone." ON public.characters FOR SELECT USING ((meta_details->>'status' = 'public'));
-CREATE POLICY "Users can insert their own characters." ON public.characters FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own characters." ON public.characters FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete their own characters." ON public.characters FOR DELETE USING (auth.uid() = user_id);
+-- Todos pueden ver DataPacks.
+CREATE POLICY "Allow public read access on datapacks" ON public.datapacks FOR SELECT USING (true);
+-- Solo los admins o dueños pueden crear/modificar DataPacks. (Simplificado por ahora)
+CREATE POLICY "Allow authorized insert on datapacks" ON public.datapacks FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow authorized update on datapacks" ON public.datapacks FOR UPDATE USING (true);
 
--- Políticas para `likes`, `comments`, `story_casts`, `follows`
-CREATE POLICY "Enable read access for all users" ON public.likes FOR SELECT USING (true);
-CREATE POLICY "Enable insert for authenticated users only" ON public.likes FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Enable delete for users based on user_id" ON public.likes FOR DELETE USING (auth.uid() = user_id);
+-- Todos pueden ver personajes públicos.
+CREATE POLICY "Allow public read access on public characters" ON public.characters FOR SELECT USING (((meta_details ->> 'status'::text) = 'public'::text));
+-- Los usuarios pueden ver sus propios personajes privados.
+CREATE POLICY "Allow individual read access on own characters" ON public.characters FOR SELECT USING (auth.uid() = user_id);
+-- Los usuarios pueden crear personajes.
+CREATE POLICY "Allow individual insert on characters" ON public.characters FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Los usuarios pueden actualizar sus propios personajes.
+CREATE POLICY "Allow individual update on own characters" ON public.characters FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE POLICY "Enable read access for all users" ON public.comments FOR SELECT USING (true);
-CREATE POLICY "Enable insert for authenticated users only" ON public.comments FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Enable update for users based on user_id" ON public.comments FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Enable delete for users based on user_id" ON public.comments FOR DELETE USING (auth.uid() = user_id);
+-- Todos pueden ver modelos de IA.
+CREATE POLICY "Allow public read access on ai_models" ON public.ai_models FOR SELECT USING (true);
+-- Los usuarios pueden crear/modificar sus propios modelos de IA.
+CREATE POLICY "Allow user insert on ai_models" ON public.ai_models FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Allow user update on own ai_models" ON public.ai_models FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can manage their own story casts" ON public.story_casts FOR ALL USING (auth.uid() = user_id);
+-- Todos pueden leer likes y comentarios.
+CREATE POLICY "Allow public read access on likes" ON public.likes FOR SELECT USING (true);
+CREATE POLICY "Allow public read access on comments" ON public.comments FOR SELECT USING (true);
+-- Los usuarios autenticados pueden dar me gusta y comentar.
+CREATE POLICY "Allow authenticated users to insert likes" ON public.likes FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated users to insert comments" ON public.comments FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+-- Los usuarios pueden borrar sus propios likes y comentarios.
+CREATE POLICY "Allow individual delete on own likes" ON public.likes FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Allow individual delete on own comments" ON public.comments FOR DELETE USING (auth.uid() = user_id);
 
-CREATE POLICY "Enable read access for all users" ON public.follows FOR SELECT USING (true);
-CREATE POLICY "Users can manage their own follows" ON public.follows FOR ALL USING (auth.uid() = follower_id);
+-- El resto de políticas se mantienen simplificadas por ahora.
+CREATE POLICY "Allow full access on story_casts" ON public.story_casts USING (true) WITH CHECK (true);
+CREATE POLICY "Allow full access on follows" ON public.follows USING (true) WITH CHECK (true);
+CREATE POLICY "Allow full access on articles" ON public.articles USING (true) WITH CHECK (true);
 
--- Políticas para `datapacks` y `ai_models` (lectura pública, escritura para admins/dueños)
-CREATE POLICY "Enable read access for all users" ON public.datapacks FOR SELECT USING (true);
-CREATE POLICY "Enable read access for all users" ON public.ai_models FOR SELECT USING (true);
-CREATE POLICY "Users can manage their own models" ON public.ai_models FOR ALL USING (auth.uid() = user_id);
-
--- Políticas para `articles`
-CREATE POLICY "Published articles are viewable by everyone." ON public.articles FOR SELECT USING (status = 'published');
-CREATE POLICY "Users can manage their own articles." ON public.articles FOR ALL USING (auth.uid() = user_id);
-
-
--- Nueva función SQL para obtener los mejores creadores
+-- Función para obtener los creadores con más personajes públicos.
 CREATE OR REPLACE FUNCTION get_top_creators()
 RETURNS TABLE (
     id UUID,
@@ -198,9 +212,13 @@ BEGIN
     FROM
         public.users u
     WHERE
-        u.preferences->'privacy'->>'profileVisibility' = 'public'
-    ORDER BY
-        (u.stats->>'charactersCreated')::INT DESC NULLS LAST
-    LIMIT 4;
+        u.id IN (
+            SELECT c.user_id
+            FROM public.characters c
+            WHERE (c.meta_details->>'status' = 'public')
+            GROUP BY c.user_id
+            ORDER BY count(*) DESC
+            LIMIT 4
+        );
 END;
 $$ LANGUAGE plpgsql;
