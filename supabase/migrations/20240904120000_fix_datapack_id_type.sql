@@ -1,17 +1,12 @@
+-- This migration corrects the data type of the 'id' column in the 'datapacks' table.
+-- It was incorrectly set to UUID in the initial schema, but it needs to be TEXT
+-- to accommodate human-readable IDs like "fantasy-basics".
 
--- 1. Alter the 'characters' table to drop the foreign key constraint on 'datapacks'
-ALTER TABLE public.characters
-DROP CONSTRAINT IF EXISTS characters_data_pack_id_fkey;
-
--- 2. Alter the 'datapacks' table to change the 'id' column type from UUID to TEXT
+-- 1. Change the column type from UUID to TEXT.
+-- We use 'USING id::text' to cast the existing UUIDs to text format if any exist.
 ALTER TABLE public.datapacks
-ALTER COLUMN id SET DATA TYPE TEXT;
+ALTER COLUMN id TYPE TEXT USING id::text;
 
--- 3. Re-add the foreign key constraint to the 'characters' table, referencing the updated 'datapacks' table
--- It's important that this matches the definition in the initial schema for consistency.
--- We are just re-establishing the link after the type change.
-ALTER TABLE public.characters
-ADD CONSTRAINT characters_data_pack_id_fkey
-FOREIGN KEY (data_pack_id)
-REFERENCES public.datapacks(id)
-ON DELETE SET NULL;
+-- Note: The foreign key constraint from 'characters' to 'datapacks' was removed
+-- from the initial schema because it referenced a non-existent column. 
+-- Data integrity between characters and datapacks will be handled at the application layer.
