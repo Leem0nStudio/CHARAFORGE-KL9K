@@ -29,12 +29,14 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
     let currentUserId: string | null = null;
     try {
         const supabase = (await import('@/lib/supabase/server')).getSupabaseServerClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        currentUserId = user?.id || null;
+        if (supabase) {
+            const { data: { user } } = await supabase.auth.getUser();
+            currentUserId = user?.id || null;
 
-        if (currentUserId) {
-            const status = await getFollowStatus(params.uid);
-            isFollowing = status.isFollowing;
+            if (currentUserId) {
+                const status = await getFollowStatus(params.uid);
+                isFollowing = status.isFollowing;
+            }
         }
     } catch (e) {
         // User not logged in, which is fine

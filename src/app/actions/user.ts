@@ -17,6 +17,7 @@ export type ActionResponse = {
 // Helper function to get the current user's ID from Supabase Auth
 async function verifyAndGetUid(): Promise<string> {
     const supabase = getSupabaseServerClient();
+    if (!supabase) throw new Error("Database service is not available.");
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         throw new Error('User not authenticated.');
@@ -37,6 +38,7 @@ const UpdateUserProfileSchema = z.object({
 export async function updateUserProfile(prevState: any, formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     const rawData = {
         displayName: formData.get('displayName'),
@@ -97,6 +99,7 @@ export async function updateUserProfile(prevState: any, formData: FormData): Pro
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     const supabase = getSupabaseServerClient();
+    if (!supabase) return null;
     const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -125,6 +128,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 export async function getUserCharacters(): Promise<Pick<Character, 'id' | 'core' | 'visuals'>[]> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return [];
     
     const { data, error } = await supabase
         .from('characters')
@@ -149,6 +153,7 @@ export async function getUserCharacters(): Promise<Pick<Character, 'id' | 'core'
 export async function followUser(targetUid: string): Promise<ActionResponse> {
     const sourceUid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     if (sourceUid === targetUid) {
         return { success: false, message: "You cannot follow yourself." };
@@ -173,6 +178,7 @@ export async function followUser(targetUid: string): Promise<ActionResponse> {
 export async function unfollowUser(targetUid: string): Promise<ActionResponse> {
     const sourceUid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     if (sourceUid === targetUid) {
         return { success: false, message: "You cannot unfollow yourself." };
@@ -196,6 +202,7 @@ export async function unfollowUser(targetUid: string): Promise<ActionResponse> {
 
 export async function getFollowStatus(targetUid: string): Promise<{ isFollowing: boolean }> {
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { isFollowing: false };
     let sourceUid: string | null = null;
     try {
         sourceUid = await verifyAndGetUid();
@@ -225,6 +232,7 @@ export async function getFollowStatus(targetUid: string): Promise<{ isFollowing:
 export async function updateUserPreferences(preferences: UserPreferences): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: 'Database service is not available.' };
     
     const { error } = await supabase
         .from('users')
@@ -245,6 +253,7 @@ export async function updateUserPreferences(preferences: UserPreferences): Promi
 export async function deleteUserAccount(): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     // In Supabase, you would typically create an `rpc` function to handle this securely.
     // This is a placeholder for that logic.

@@ -8,6 +8,7 @@ import { toCharacterObject } from '@/services/character-hydrator';
 
 export async function getCharacters(userId: string): Promise<Character[]> {
   const supabase = getSupabaseServerClient();
+  if (!supabase) return [];
   
   try {
     const { data, error } = await supabase
@@ -34,6 +35,7 @@ export async function getCharacters(userId: string): Promise<Character[]> {
 
 export async function getCharacter(characterId: string): Promise<Character | null> {
     const supabase = getSupabaseServerClient();
+    if (!supabase) return null;
     try {
         const { data, error } = await supabase
             .from('characters')
