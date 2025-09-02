@@ -1,4 +1,5 @@
-
+// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-var-requires */
 
 require('dotenv').config({ path: './.env' });
 const admin = require('firebase-admin');
