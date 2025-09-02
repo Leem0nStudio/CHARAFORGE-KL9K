@@ -21,7 +21,7 @@ const DATA_PACKS_DIR = path.join(process.cwd(), 'data', 'datapacks');
  * @param tableName The name of the table to clear.
  */
 async function deleteTable(tableName: string) {
-    const { error } = await supabase.from(tableName).delete().gt('created_at', '1970-01-01T00:00:00.000Z');
+    const { error } = await supabase.from(tableName).delete().gt('id', '0'); // Corrected to work with text IDs
     if (error) throw error;
 }
 

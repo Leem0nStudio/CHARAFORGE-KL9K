@@ -64,7 +64,7 @@ const checkAdminStatus = async (uid: string) => {
 
 const listAdmins = async () => {
   console.log('Fetching list of admins... (This may take a while for many users)');
-  const admins = [];
+  const admins: { uid: string; email?: string }[] = [];
   try {
     // Note: listUsers() paginates and might require multiple calls for large user bases.
     // For this script's purpose, fetching up to 1000 users is sufficient.
