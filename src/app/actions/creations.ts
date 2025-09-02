@@ -6,6 +6,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { Character } from '@/types/character';
 import type { UserProfile } from '@/types/user';
 import { toCharacterObject } from '@/services/character-hydrator';
+import { PostgrestError } from '@supabase/supabase-js';
 
 // Helper to fetch documents in batches of 30 for 'in' queries
 async function fetchUsersInBatches(userIds: string[]): Promise<Map<string, UserProfile>> {
