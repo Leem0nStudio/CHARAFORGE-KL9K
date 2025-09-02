@@ -1,8 +1,8 @@
-# 🚀 Guía Completa de Migración: De Firebase a Vercel + Supabase
+# 🚀 Guía Completa de Migración: De Firebase a Vercel + Supabase y Vercel Blob
 
-¡Felicidades por dar el siguiente paso! Esta guía te llevará de la mano a través de todo el proceso para migrar CharaForge desde su configuración actual en Firebase a una arquitectura moderna y altamente rentable en **Vercel** (para el hosting) y **Supabase** (para el backend).
+¡Felicidades por dar el siguiente paso! Esta guía te llevará de la mano a través de todo el proceso para migrar CharaForge desde su configuración actual en Firebase a una arquitectura moderna y altamente rentable en **Vercel** (para el hosting y almacenamiento de archivos) y **Supabase** (para el backend de base de datos y autenticación).
 
-**Objetivo Final:** Desplegar una versión 100% funcional de CharaForge en Vercel, utilizando Supabase para la autenticación, base de datos y almacenamiento, aprovechando al máximo sus generosas capas gratuitas.
+**Objetivo Final:** Desplegar una versión 100% funcional de CharaForge en Vercel, utilizando Supabase para la autenticación y base de datos, y **Vercel Blob** para el almacenamiento de archivos.
 
 ---
 
@@ -23,7 +23,7 @@ Aquí prepararemos el terreno para la migración.
 
 ### Paso 1.1: Crear un Proyecto en Supabase
 
-Supabase será nuestro nuevo backend "todo en uno".
+Supabase será nuestro nuevo backend para la base de datos y la autenticación.
 
 1.  **Regístrate en [Supabase](https://supabase.com/)**: Usa tu cuenta de GitHub para que la integración sea más sencilla.
 2.  **Crea una Nueva Organización**: Dale un nombre, como "CharaForge Projects".
@@ -51,6 +51,9 @@ Ahora, le diremos a Vercel y a tu entorno local cómo hablar con Supabase y con 
     NEXT_PUBLIC_SUPABASE_URL="tu-url-de-supabase-aqui"
     NEXT_PUBLIC_SUPABASE_ANON_KEY="tu-clave-anon-publica-aqui"
     SUPABASE_SERVICE_ROLE_KEY="tu-clave-service-role-secreta-aqui"
+
+    # Clave de Vercel Blob (la crearás en Vercel, déjala vacía por ahora)
+    BLOB_READ_WRITE_TOKEN=""
 
     # Claves de APIs de IA (Opcionales pero recomendadas)
     GEMINI_API_KEY="tu-clave-de-google-gemini"
@@ -114,7 +117,12 @@ Asegúrate de que todos los cambios que hemos hecho estén guardados y subidos a
 
 1.  **Conecta tu Repositorio**: Ve a tu [dashboard de Vercel](https://vercel.com/new) y crea un nuevo proyecto importando el repositorio de CharaForge desde GitHub.
 2.  **Configura las Variables de Entorno**: Vercel detectará que es un proyecto Next.js. Antes de desplegar, ve a la configuración del proyecto > **Settings** > **Environment Variables**. Añade **exactamente las mismas claves** que pusiste en tu archivo `.env.local` (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, y `GEMINI_API_KEY`).
-3.  **Inicia el Despliegue**: Haz clic en el botón "Deploy".
+3.  **Configura Vercel Blob**:
+    *   En el dashboard de tu proyecto de Vercel, ve a la pestaña **Storage**.
+    *   Crea un nuevo "Blob Store" y conéctalo a tu proyecto.
+    *   Vercel generará automáticamente un **token de lectura/escritura**. Copia este token.
+    *   Vuelve a **Settings** > **Environment Variables** y crea una nueva variable llamada `BLOB_READ_WRITE_TOKEN`, pegando el token que acabas de copiar.
+4.  **Inicia el Despliegue**: Haz clic en el botón "Deploy".
 
 ### Paso 4.3: ¡Prueba tu Aplicación!
 
@@ -122,7 +130,7 @@ Vercel te dará una URL para tu aplicación desplegada. Visítala y prueba todo:
 *   Registro de un nuevo usuario.
 *   Inicio de sesión.
 *   Generación de un personaje.
-*   Guardado del personaje en tu galería.
+*   Guardado del personaje en tu galería (esto probará la subida a Vercel Blob).
 *   Exploración de las galerías públicas.
 
 ¡Y eso es todo! Has migrado y desplegado con éxito CharaForge a un stack moderno, escalable y profesional.
