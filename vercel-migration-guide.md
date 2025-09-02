@@ -75,13 +75,20 @@ npm install supabase --save-dev
 
 ### Paso 2.2: Conecta tu Proyecto Local a Supabase
 
-1.  **Inicia sesión**:
+1.  **Inicializa Supabase en tu Proyecto (¡Paso Importante!):**
+    *   Este comando crea la carpeta `supabase` necesaria para las migraciones.
+
+    ```bash
+    npx supabase init
+    ```
+
+2.  **Inicia sesión**:
     ```bash
     npx supabase login
     ```
     Esto te pedirá un Token de Acceso, que puedes generar desde tu [dashboard de Supabase](https://supabase.com/dashboard/account/tokens).
 
-2.  **Vincula tu proyecto**: Navega a la carpeta de tu proyecto en la terminal y ejecuta:
+3.  **Vincula tu proyecto**: Navega a la carpeta de tu proyecto en la terminal y ejecuta:
     ```bash
     npx supabase link --project-ref [TU_PROJECT_ID]
     ```
