@@ -3,7 +3,6 @@
 
 import { Suspense } from 'react';
 import { AdminPageLayout } from '@/components/admin/admin-page-layout';
-import { EditDataPackForm } from './edit-datapack-form';
 import { Loader2 } from 'lucide-react';
 
 interface EditDataPackPageProps {
@@ -23,7 +22,7 @@ export default async function EditDataPackPage({ params }: EditDataPackPageProps
                 <Loader2 className="h-8 w-8 animate-spin" />
             </div>
         }>
-            <EditDataPackForm packId={id} />
+            {/* The form will be loaded via the edit/page.tsx route */}
         </Suspense>
     </AdminPageLayout>
   );
