@@ -100,6 +100,8 @@ async function buildSchemaFromFiles(files: { name: string; content: string }[]):
 export async function createDataPackFromFiles(formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: "Database service is not available." };
+
     const fileInput = formData.get('wildcardFiles') as File | null;
     let dataPackName = formData.get('name') as string;
 
@@ -148,7 +150,7 @@ export async function createDataPackFromFiles(formData: FormData): Promise<Actio
         let coverImageUrl = null;
         if(coverImageBuffer) {
             const destinationPath = `datapacks/${insertedRow.id}/cover.png`;
-            coverImageUrl = await uploadToStorage(coverImageBuffer, destinationPath, 'image/png');
+            coverImageUrl = await uploadToStorage(coverImageBuffer, destinationPath);
             const { error: updateError } = await supabase.from('datapacks').update({ cover_image_url: coverImageUrl }).eq('id', insertedRow.id);
             if(updateError) console.warn("Failed to update cover image URL for new datapack", updateError);
         }
@@ -166,6 +168,7 @@ export async function createDataPackFromFiles(formData: FormData): Promise<Actio
 export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: "Database service is not available." };
     
     const validation = UpsertDataPackSchema.safeParse(data);
     if (!validation.success) {
@@ -179,7 +182,7 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
 
         if (coverImage && packId) {
             const destinationPath = `datapacks/${packId}/cover.png`;
-            coverImageUrl = await uploadToStorage(coverImage, destinationPath, 'image/png');
+            coverImageUrl = await uploadToStorage(coverImage, destinationPath);
         }
 
         const dataToUpsert = {
@@ -214,6 +217,7 @@ export async function upsertDataPack(data: UpsertDataPack, coverImage?: Buffer):
 export async function deleteDataPack(packId: string): Promise<ActionResponse> {
     await verifyIsAdmin(); // Or check ownership
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: "Database service is not available." };
     try {
         const { error } = await supabase.from('datapacks').delete().eq('id', packId);
         if (error) throw error;
@@ -232,6 +236,7 @@ export async function deleteDataPack(packId: string): Promise<ActionResponse> {
 export async function getDataPacksForAdmin(): Promise<DataPack[]> {
     await verifyIsAdmin();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return [];
     const { data, error } = await supabase.from('datapacks').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return Promise.all(data.map(dataPackFromRow));
@@ -240,6 +245,7 @@ export async function getDataPacksForAdmin(): Promise<DataPack[]> {
 export async function getDataPackForAdmin(packId: string): Promise<DataPack | null> {
     await verifyIsAdmin();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return null;
     const { data, error } = await supabase.from('datapacks').select('*').eq('id', packId).single();
     if (error) {
         console.error("Error fetching single datapack for admin:", error);
@@ -250,6 +256,7 @@ export async function getDataPackForAdmin(packId: string): Promise<DataPack | nu
 
 export async function getPublicDataPack(packId: string): Promise<DataPack | null> {
     const supabase = getSupabaseServerClient();
+    if (!supabase) return null;
     const { data, error } = await supabase.from('datapacks').select('*').eq('id', packId).single();
     if (error) {
         console.error("Error fetching single public datapack:", error);
@@ -260,6 +267,7 @@ export async function getPublicDataPack(packId: string): Promise<DataPack | null
 
 export async function getPublicDataPacks(): Promise<DataPack[]> {
     const supabase = getSupabaseServerClient();
+    if (!supabase) return [];
     const { data, error } = await supabase.from('datapacks').select('*').order('created_at', { ascending: false });
     if (error) {
         console.error("Error fetching public datapacks:", error);
@@ -271,6 +279,7 @@ export async function getPublicDataPacks(): Promise<DataPack[]> {
 export async function installDataPack(packId: string): Promise<{success: boolean, message: string}> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return { success: false, message: "Database service is not available." };
 
     try {
         const { data: packData, error: packError } = await supabase.from('datapacks').select('type, name').eq('id', packId).single();
@@ -311,6 +320,7 @@ export async function getCreationsForDataPack(packId: string): Promise<any[]> {
 export async function getInstalledDataPacks(): Promise<DataPack[]> {
     const uid = await verifyAndGetUid();
     const supabase = getSupabaseServerClient();
+    if (!supabase) return [];
     
     const { data: userData, error: userError } = await supabase.from('users').select('preferences').eq('id', uid).single();
     if(userError || !userData) return [];
@@ -326,7 +336,7 @@ export async function getInstalledDataPacks(): Promise<DataPack[]> {
 
 export async function searchDataPacksByTag(tag: string): Promise<DataPack[]> {
     const supabase = getSupabaseServerClient();
-    if (!tag) return [];
+    if (!supabase || !tag) return [];
 
     const { data, error } = await supabase.from('datapacks')
         .select('*')

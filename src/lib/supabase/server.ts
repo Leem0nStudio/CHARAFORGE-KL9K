@@ -5,11 +5,11 @@
  * and API routes. It correctly handles cookies for authentication.
  */
 
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient, type CookieOptions, type SupabaseClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 // This function now returns the client or null if the keys are missing.
-export function getSupabaseServerClient() {
+export function getSupabaseServerClient(): SupabaseClient | null {
   const cookieStore = cookies();
 
   // Ensure that the environment variables are set.
@@ -18,10 +18,7 @@ export function getSupabaseServerClient() {
 
   if (!supabaseUrl || !supabaseServiceRoleKey) {
      console.warn('Supabase server environment variables are not set. Server-side operations will be disabled.');
-     // To avoid hard errors, we can return null, and the calling function should handle it.
-     // However, for this migration, we assume the keys will be provided.
-     // In a real-world scenario, you might want more robust handling.
-     throw new Error("Supabase server keys are not configured in environment variables.");
+     return null;
   }
 
   return createServerClient(
