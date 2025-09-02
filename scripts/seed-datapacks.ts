@@ -1,78 +1,37 @@
 
-require('dotenv').config({ path: './.env' });
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getStorage } from 'firebase-admin/storage';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import 'dotenv/config';
+import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-// Re-initialize admin here to avoid dependency on the main server file
-const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-if (!serviceAccountKey) {
-  throw new Error('FATAL: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
+// Initialize Supabase Client for script usage
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Supabase URL or Service Role Key is not set in environment variables.');
 }
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-const serviceAccount = JSON.parse(serviceAccountKey);
-
-if (!getApps().length) {
-    initializeApp({
-        credential: cert(serviceAccount),
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    });
-}
-
-
-const db = getFirestore();
-const bucket = getStorage().bucket();
 
 const DATA_PACKS_DIR = path.join(process.cwd(), 'data', 'datapacks');
 
 /**
- * Deletes all documents in a collection in batches.
- * @param collectionRef The collection to clear.
- * @param batchSize The number of documents to delete at once.
+ * Deletes all documents in a Supabase table in batches.
+ * @param tableName The name of the table to clear.
  */
-async function deleteCollection(collectionRef: FirebaseFirestore.CollectionReference, batchSize: number) {
-    const query = collectionRef.orderBy('__name__').limit(batchSize);
-
-    return new Promise<void>((resolve, reject) => {
-        deleteQueryBatch(query, resolve).catch(reject);
-    });
+async function deleteTable(tableName: string) {
+    const { error } = await supabase.from(tableName).delete().gt('created_at', '1970-01-01T00:00:00.000Z');
+    if (error) throw error;
 }
-
-async function deleteQueryBatch(query: FirebaseFirestore.Query, resolve: () => void) {
-    const snapshot = await query.get();
-
-    const batchSize = snapshot.size;
-    if (batchSize === 0) {
-        // When there are no documents left, we are done
-        resolve();
-        return;
-    }
-
-    // Delete documents in a batch
-    const batch = db.batch();
-    snapshot.docs.forEach((doc) => {
-        batch.delete(doc.ref);
-    });
-    await batch.commit();
-
-    // Recurse on the next process tick, to avoid
-    // exploding the stack.
-    process.nextTick(() => {
-        deleteQueryBatch(query, resolve);
-    });
-}
-
 
 async function seedDataPacks() {
-    console.log('🔥 Starting DataPack seeding process...');
+    console.log('🔥 Starting DataPack seeding process for Supabase...');
 
     try {
-        // Step 1: Delete all existing datapacks from Firestore
-        console.log('🗑️  Clearing existing DataPacks from Firestore...');
-        const collectionRef = db.collection('datapacks');
-        await deleteCollection(collectionRef, 50);
+        // Step 1: Delete all existing datapacks from Supabase
+        console.log('🗑️  Clearing existing DataPacks from Supabase...');
+        await deleteTable('datapacks');
         console.log('✅ Existing DataPacks cleared.');
         
         // Step 2: Proceed with seeding new datapacks
@@ -103,7 +62,6 @@ async function seedDataPacks() {
             }
 
             const dataPackContent = await fs.readFile(dataPackJsonPath, 'utf-8');
-            // Check if content is empty (for deletion)
             if (dataPackContent.trim() === '') {
                 console.log(`- Skipping ${packId} as its datapack.json is empty.`);
                 continue;
@@ -117,12 +75,16 @@ async function seedDataPacks() {
             try {
                  const coverImageExists = await fs.access(coverImagePath).then(() => true).catch(() => false);
                  if (coverImageExists) {
+                    const fileContent = await fs.readFile(coverImagePath);
                     const destination = `datapacks/${packId}/cover.png`;
-                    await bucket.upload(coverImagePath, { 
-                        destination,
-                        public: true 
+                    const { error: uploadError } = await supabase.storage.from('chara-images').upload(destination, fileContent, {
+                        contentType: 'image/png',
+                        upsert: true,
                     });
-                    coverImageUrl = bucket.file(destination).publicUrl();
+                    if (uploadError) throw uploadError;
+                    
+                    const { data: urlData } = supabase.storage.from('chara-images').getPublicUrl(destination);
+                    coverImageUrl = urlData.publicUrl;
                     console.log(`- Cover image uploaded to ${coverImageUrl}`);
                  } else {
                     console.log('- No cover image found for this pack.');
@@ -132,14 +94,22 @@ async function seedDataPacks() {
             }
             
             const docData = {
-                ...dataPackData,
                 id: packId,
-                coverImageUrl: coverImageUrl,
-                createdAt: FieldValue.serverTimestamp(),
+                name: dataPackData.name,
+                author: dataPackData.author,
+                description: dataPackData.description,
+                cover_image_url: coverImageUrl,
+                type: dataPackData.type,
+                price: dataPackData.price,
+                tags: dataPackData.tags || [],
+                schema_details: dataPackData.schema,
+                is_nsfw: dataPackData.isNsfw || false,
+                is_imported: dataPackData.imported || false,
             };
 
-            await db.collection('datapacks').doc(packId).set(docData, { merge: true });
-            console.log(`- Data for ${packId} saved to Firestore.`);
+            const { error } = await supabase.from('datapacks').upsert(docData);
+            if (error) throw error;
+            console.log(`- Data for ${packId} saved to Supabase.`);
         }
         console.log('\n✅ DataPack seeding completed successfully!');
 
