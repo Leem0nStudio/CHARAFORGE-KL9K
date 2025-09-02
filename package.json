@@ -21,7 +21,7 @@
     "datapacks:seed": "node --import tsx scripts/seed-datapacks.ts",
     "tags:fetch": "node --import tsx scripts/fetch-danbooru-tags.ts",
     "supabase:db:push": "npx supabase db push",
-    "supabase:db:reset": "npx supabase db reset"
+    "supabase:db:reset": "npx supabase db push"
   },
   "dependencies": {
     "@genkit-ai/firebase": "1.14.1",
