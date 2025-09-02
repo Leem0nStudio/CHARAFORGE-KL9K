@@ -20,7 +20,8 @@
     "admin:list": "node --import tsx scripts/manage-admin.ts list",
     "datapacks:seed": "node --import tsx scripts/seed-datapacks.ts",
     "tags:fetch": "node --import tsx scripts/fetch-danbooru-tags.ts",
-    "supabase:db:push": "npx supabase db push"
+    "supabase:db:push": "npx supabase db push",
+    "supabase:db:reset": "npx supabase db reset"
   },
   "dependencies": {
     "@genkit-ai/firebase": "^1.14.1",
