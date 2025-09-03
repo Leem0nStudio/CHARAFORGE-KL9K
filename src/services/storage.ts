@@ -1,52 +1,76 @@
 
 'use server';
 
-import { upload } from '@vercel/blob/client';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * A centralized, robust function to upload a file to Vercel Blob via our internal API route.
- * It can handle both File objects (from form data) and Data URIs (from AI generation).
+ * A centralized, robust function to upload a file to Supabase Storage.
+ * It can handle both File objects (from form data) and Buffers (from AI generation).
  * 
- * @param {File | Buffer | string | ArrayBuffer} fileSource The source of the file. Can be a File object, a Buffer, or a Data URI string.
- * @param {string} destinationPath The desired path prefix in the blob store (e.g., 'usersImg/uid/characterId'). A unique ID will be appended.
+ * @param {File | Buffer | ArrayBuffer} fileSource The source of the file.
+ * @param {string} destinationPath The desired path within the bucket (e.g., 'avatars/userId').
  * @returns {Promise<string>} A promise that resolves to the public URL of the uploaded file.
  * @throws {Error} Throws an error if the upload fails.
  */
 export async function uploadToStorage(
-    fileSource: File | Buffer | string | ArrayBuffer,
+    fileSource: File | Buffer | ArrayBuffer,
     destinationPath: string
 ): Promise<string> {
+    const supabase = getSupabaseServerClient();
+    if (!supabase) {
+        throw new Error("Storage service is not available. Supabase client failed to initialize.");
+    }
 
-    let fileToUpload: File;
-    const fileName = `${destinationPath}/${uuidv4()}.png`;
+    const bucketName = 'chara-images';
+    // Use the destinationPath directly as it should already be unique.
+    // Appending another uuid might be redundant if the caller already does it.
+    const filePath = destinationPath;
+
+    let fileData: File | Buffer | ArrayBuffer;
+    let contentType: string | undefined;
 
     if (typeof fileSource === 'string' && fileSource.startsWith('data:')) {
         const match = fileSource.match(/^data:(image\/\w+);base64,(.+)$/);
         if (!match) throw new Error('Invalid Data URI format.');
-        const contentType = match[1];
-        const buffer = Buffer.from(match[2], 'base64');
-        fileToUpload = new File([buffer], "image.png", { type: contentType });
-    } else if (fileSource instanceof File) {
-        fileToUpload = fileSource;
-    } else if (fileSource instanceof Buffer || fileSource instanceof ArrayBuffer) {
-        // Assume png if buffer is provided without type
-        fileToUpload = new File([fileSource], "image.png", { type: 'image/png' });
+        contentType = match[1];
+        fileData = Buffer.from(match[2], 'base64');
     } else {
-        throw new Error("Unsupported file source type.");
+        fileData = fileSource;
+        if (fileSource instanceof File) {
+            contentType = fileSource.type;
+        }
     }
-
+    
+    if (!contentType) {
+        contentType = 'image/png'; // Default content type
+    }
+    
     try {
-        const blob = await upload(fileName, fileToUpload, {
-            access: 'public',
-            handleUploadUrl: '/api/upload', // The new API route we created
-        });
+        const { error: uploadError } = await supabase.storage
+            .from(bucketName)
+            .upload(filePath, fileData, {
+                contentType,
+                upsert: true, // Overwrite file if it exists, useful for avatars
+            });
+
+        if (uploadError) {
+            throw uploadError;
+        }
+
+        const { data } = supabase.storage
+            .from(bucketName)
+            .getPublicUrl(filePath);
+
+        if (!data || !data.publicUrl) {
+            throw new Error('Failed to get public URL for the uploaded file.');
+        }
         
-        return blob.url;
+        return data.publicUrl;
 
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown storage error occurred.';
-        console.error(`Vercel Blob Upload Error for path ${destinationPath}:`, message);
-        throw new Error(`Failed to upload file via Vercel Blob: ${message}`);
+        console.error(`Supabase Storage Upload Error for path ${destinationPath}:`, message);
+        throw new Error(`Failed to upload file to Supabase Storage: ${message}`);
     }
 }
