@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -27,9 +26,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DataPack } from '@/types/datapack';
 import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
-import { DataPackMetadataForm } from '@/app/admin/datapacks/[id]/datapack-metadata-form';
-import { DataPackSchemaEditor } from '@/app/admin/datapacks/[id]/datapack-schema-editor';
-import { AiGeneratorDialog } from '@/app/admin/datapacks/[id]/ai-generator-dialog';
+import { DataPackMetadataForm } from './datapack-metadata-form';
+import { DataPackSchemaEditor } from './datapack-schema-editor';
+import { AiGeneratorDialog } from './ai-generator-dialog';
 import yaml from 'js-yaml';
 
 

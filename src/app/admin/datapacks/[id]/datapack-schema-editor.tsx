@@ -3,11 +3,10 @@
 
 import { useFormContext, Controller, useFieldArray } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { DataPackFormValues, Option } from '@/types/datapack';
+import type { DataPackFormValues } from '@/types/datapack';
 import { Loader2, Trash2, PlusCircle, Sprout } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
