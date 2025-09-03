@@ -10,7 +10,7 @@
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { DataPack } from '@/types/datapack';
-import type { Datasets } from './composition';
+import type { Datasets } from '@/services/composition';
 
 /**
  * Transforms a single DataPack's schema into the key-value dataset format.
