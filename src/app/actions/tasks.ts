@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -8,7 +7,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import axios from 'axios';
 import { promisify } from 'util';
 import { pipeline } from 'stream';
-import { getStorage } from 'firebase-admin/storage'; // Note: still using firebase-admin for storage for now
+import { uploadToStorage } from '@/services/storage';
 
 type ActionResponse = {
     success: boolean;
@@ -50,28 +49,32 @@ export async function enqueueModelSyncJob(modelId: string): Promise<ActionRespon
         const response = await axios.get(downloadUrl, { responseType: 'stream' });
 
         const storageBucketName = process.env.MODELS_STORAGE_BUCKET;
-        if (!storageBucketName) throw new Error("MODELS_STORAGE_BUCKET is not set.");
+        if (!storageBucketName) throw new Error("MODELS_STORAGE_BUCKET is not set for server-side storage.");
         
-        const bucket = getStorage().bucket(storageBucketName);
+        // This part needs adjustment if not using firebase-admin for GCS.
+        // For simplicity, we assume a compatible upload service for large files.
+        // The `uploadToStorage` is for Vercel Blob and may have size limits.
+        // A direct-to-GCS upload would be needed for very large models.
+        // This implementation will work for smaller models that fit within Vercel Blob limits.
         const fileExtension = modelData.name?.split('.').pop() || 'safetensors';
         const blobName = `models/${modelData.name.replace(/\s+/g, '_')}/${modelData.version_id}.${fileExtension}`;
         
-        const blob = bucket.file(blobName);
-        const blobStream = blob.createWriteStream({
-            resumable: false,
-            metadata: { contentType: 'application/octet-stream' },
-        });
+        // Convert stream to buffer to use with uploadToStorage
+        const chunks: Buffer[] = [];
+        for await (const chunk of response.data) {
+            chunks.push(chunk);
+        }
+        const buffer = Buffer.concat(chunks);
+        
+        const publicUrl = await uploadToStorage(buffer, blobName);
 
-        await promisify(pipeline)(response.data, blobStream);
-
-        const gcsUri = `gs://${bucket.name}/${blobName}`;
-        await supabase.from('ai_models').update({ sync_status: 'synced', gcs_uri: gcsUri }).eq('id', modelId);
+        await supabase.from('ai_models').update({ sync_status: 'synced', gcs_uri: publicUrl }).eq('id', modelId);
 
         revalidatePath('/admin/models');
         return { success: true, message: `Model ${modelId} synced successfully.` };
 
-    } catch (error) {
-        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+    } catch (error: any) {
+        const message = error.message || 'An unknown error occurred.';
         await supabase.from('ai_models').update({ sync_status: 'error', sync_error: message }).eq('id', modelId);
         revalidatePath('/admin/models');
         return { success: false, message: 'Failed to sync model.', error: message };

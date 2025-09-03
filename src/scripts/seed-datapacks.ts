@@ -84,8 +84,8 @@ async function seedDataPacks() {
                  } else {
                     console.log('- No cover image found for this pack.');
                  }
-            } catch (e) {
-                console.error(`- Error uploading cover image for ${packId}:`, e);
+            } catch (e: any) {
+                console.error(`- Error uploading cover image for ${packId}:`, e.message);
             }
             
             const docData = {

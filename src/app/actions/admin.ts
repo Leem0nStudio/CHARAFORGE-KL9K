@@ -70,7 +70,7 @@ export async function grantAdminRole(uid: string): Promise<ActionResponse> {
         
         revalidatePath('/admin/users');
         return { success: true, message: 'Admin role granted successfully.' };
-    } catch (error: unknown) {
+    } catch (error: any) {
         return { success: false, message: 'Failed to grant admin role.', error: error.message };
     }
 }
@@ -93,7 +93,7 @@ export async function revokeAdminRole(uid: string): Promise<ActionResponse> {
         
         revalidatePath('/admin/users');
         return { success: true, message: 'Admin role revoked successfully.' };
-    } catch (error: unknown) {
+    } catch (error: any) {
         return { success: false, message: 'Failed to revoke admin role.', error: error.message };
     }
 }
