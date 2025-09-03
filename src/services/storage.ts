@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
  * A centralized, robust function to upload a file to Vercel Blob via our internal API route.
  * It can handle both File objects (from form data) and Data URIs (from AI generation).
  * 
- * @param {File | Buffer | string} fileSource The source of the file. Can be a File object, a Buffer, or a Data URI string.
+ * @param {File | Buffer | string | ArrayBuffer} fileSource The source of the file. Can be a File object, a Buffer, or a Data URI string.
  * @param {string} destinationPath The desired path prefix in the blob store (e.g., 'usersImg/uid/characterId'). A unique ID will be appended.
  * @returns {Promise<string>} A promise that resolves to the public URL of the uploaded file.
  * @throws {Error} Throws an error if the upload fails.

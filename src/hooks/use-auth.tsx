@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -51,10 +52,10 @@ async function getUserProfileFromDb(user: User): Promise<UserProfile | null> {
             displayName: data.display_name || user.email,
             photoURL: data.photo_url || null,
             role: data.role || 'user',
-            emailVerified: user.email_confirmed_at ? true : false,
-            isAnonymous: user.is_anonymous,
-            metadata: user.user_metadata,
-            providerData: [],
+            // emailVerified: user.email_confirmed_at ? true : false,
+            // isAnonymous: user.is_anonymous,
+            // metadata: user.user_metadata,
+            // providerData: [],
             stats: data.stats || {},
             preferences: data.preferences || {},
             profile: data.profile || {},

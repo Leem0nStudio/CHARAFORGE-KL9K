@@ -64,7 +64,7 @@ export async function updateUserProfile(prevState: ActionResponse | undefined, f
         try {
             const destinationPath = `avatars/${uid}`;
             newAvatarUrl = await uploadToStorage(photoFile, destinationPath);
-        } catch (uploadError: unknown) {
+        } catch (uploadError: any) {
              return { success: false, message: 'Failed to upload avatar.', error: uploadError.message };
         }
     }
