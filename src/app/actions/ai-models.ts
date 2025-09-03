@@ -10,7 +10,6 @@ import { suggestHfModel } from '@/ai/flows/hf-model-suggestion/flow';
 import { uploadToStorage } from '@/services/storage';
 import { imageModels } from '@/lib/app-config';
 import { getCivitaiModelInfo, getModelsLabModelInfo } from './source-fetchers';
-import { PostgrestError } from '@supabase/supabase-js';
 
 type ActionResponse = {
     success: boolean;

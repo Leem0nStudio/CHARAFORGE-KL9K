@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useTransition, useEffect, useRef } from 'react';
@@ -11,7 +10,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import type { UserProfile } from '@/types/user';
 import type { AiModel } from '@/types/ai-model';
-import type { CharacterBibleResult, CharacterBibleInput } from '@/app/character-generator/actions';
+import type { CharacterBibleResult } from '@/app/character-generator/actions';
 import { generateCharacterCore, generateCharacterPortrait } from '@/app/character-generator/actions';
 import { saveCharacter } from '@/app/actions/character-write';
 import { expandTemplate } from '@/services/composition';
@@ -21,7 +20,7 @@ import { getModels } from '@/app/actions/ai-models';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Wand2, ArrowRight, Save, Image as ImageIcon, Stars, Package } from 'lucide-react';
+import { Loader2, Save, Image as ImageIcon, Package } from 'lucide-react';
 import { ModelSelectorModal } from './model-selector-modal';
 import { VisualModelSelector } from './visual-model-selector';
 import { DataPackSelector } from './datapack-selector';
@@ -38,7 +37,6 @@ const coreFormSchema = z.object({
 
 type CoreFormValues = z.infer<typeof coreFormSchema>;
 
-type GenerationStep = 'prompt' | 'portrait';
 
 // Helper function to convert data URI to File object
 function dataURItoFile(dataURI: string, filename: string): File {
@@ -65,7 +63,6 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
   const [isSaving, startSavingTransition] = useTransition();
 
   // State Management
-  const [generationStep, setGenerationStep] = useState<GenerationStep>('prompt');
   const [characterBibleResult, setCharacterBibleResult] = useState<CharacterBibleResult | null>(null);
   const [finalImageUrl, setFinalImageUrl] = useState<string | null>(null);
   const [isDataPackWizardOpen, setIsDataPackWizardOpen] = useState(false);
@@ -122,7 +119,6 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
   
    const handleGeneratePortrait = async (bibleResult: CharacterBibleResult) => {
         if (!bibleResult) return;
-        setGenerationStep('portrait');
         startPortraitTransition(async () => {
             const result = await generateCharacterPortrait({
                 description: bibleResult.renderPrompt,
@@ -139,7 +135,6 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
                 setTimeout(() => setShowReveal(false), 4000); 
             } else {
                 toast({ variant: 'destructive', title: 'Image Generation Failed', description: result.error });
-                 setGenerationStep('prompt'); // Go back to prompt on failure
             }
         });
     };
@@ -189,7 +184,6 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
           .trim();
 
         coreForm.setValue('prompt', cleanedPrompt);
-        setGenerationStep('prompt');
         setIsDataPackWizardOpen(false);
     };
 
@@ -315,5 +309,3 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
     </>
   );
 }
-
-    

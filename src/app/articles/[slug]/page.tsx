@@ -12,6 +12,11 @@ import { BackButton } from '@/components/back-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getPublicUserProfile } from '@/app/actions/user';
 
+type Props = {
+  params: { slug: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+
 // This is a basic Markdown-to-HTML parser. 
 // For a production app, a more robust library like 'marked' or 'react-markdown' would be better.
 function SimpleMarkdown({ content }: { content: string }) {
@@ -43,7 +48,7 @@ const extractCoverImage = (content: string): string | null => {
     return match ? match[1] : null;
 };
 
-export default async function ArticlePage({ params }: { params: { slug: string } }) {
+export default async function ArticlePage({ params }: Props) {
     const article = await getArticleBySlug(params.slug);
 
     if (!article) {

@@ -22,7 +22,7 @@ const rarityStyles = {
   },
   4: { // Epic
     card: 'border-purple-600/70 hover:border-purple-400/90',
-    glow: 'group-hover:shadow-[0_0_25px_rgba(192,132,252,0.5)] animate-pulse-glow-subtle',
+    glow: 'group-hover:shadow-[0_0_25px_rgba(192,132,252,0.5)] animate-subtle-pulse',
   },
   5: { // Legendary
     card: 'border-amber-500/70 hover:border-amber-400',

@@ -26,8 +26,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DataPack, DataPackSchema } from '@/types/datapack';
 import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
-import { DataPackMetadataForm } from '@/components/admin/datapacks/[id]/datapack-metadata-form';
-import { DataPackSchemaEditor } from './datapack-schema-editor';
+import { DataPackMetadataForm } from './datapack-metadata-form';
+import { DataPackSchemaEditor } from '@/app/admin/datapacks/[id]/datapack-schema-editor';
 import { AiGeneratorDialog } from '@/app/admin/datapacks/[id]/ai-generator-dialog';
 
 
@@ -134,7 +134,7 @@ export function EditDataPackForm({ packId }: { packId: string }) {
             imported: data.imported || false,
           });
         }
-      } catch (error) {
+      } catch (e) {
         toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch DataPack data.' });
       } finally {
         setIsLoading(false);
@@ -145,17 +145,11 @@ export function EditDataPackForm({ packId }: { packId: string }) {
     if (packId && packId !== 'new') {
        fetchDataAndResetForm(packId);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packId]);
 
- const handleAiSchemaGenerated = (schema: DataPackSchema, name: string, description: string, tags: string[]) => {
-    form.reset({
-        ...form.getValues(),
-        name,
-        description,
-        tags,
-        schema,
-        imported: false,
-    });
+ const handleAiSchemaGenerated = (_schemaYaml: string) => {
+    // This is now handled inside the dialog, this function is a no-op but required by prop types
   };
 
 
@@ -266,7 +260,7 @@ export function EditDataPackForm({ packId }: { packId: string }) {
                     <div className="space-y-4">
                         <div className="flex justify-end">
                             <AiGeneratorDialog 
-                                onSchemaGenerated={() => {}} // Placeholder
+                                onSchemaGenerated={handleAiSchemaGenerated}
                                 onGeneratingChange={setIsAiGenerating}
                             />
                         </div>

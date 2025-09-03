@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { UserPlus, UserCheck, Loader2 } from 'lucide-react';
 import { followUser, unfollowUser } from '@/app/actions/user';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 interface FollowButtonProps {
     currentUserId: string | null;
