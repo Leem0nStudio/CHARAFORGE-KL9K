@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useTransition, useEffect, useState, useRef } from 'react';
@@ -15,14 +14,14 @@ import { uploadToStorage } from '@/services/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Star, Trash2, FileUp, Wand2, Image as ImageIcon, CheckCircle, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Loader2, Star, Trash2, FileUp, Wand2, Image as ImageIcon, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { v4 as uuidv4 } from 'uuid';
 import { ModelSelectorModal } from '@/components/model-selector-modal';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 import type { AiModel } from '@/types/ai-model';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
 const UpdateImagesSchema = z.object({
@@ -318,7 +317,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
                             <div className="flex justify-center mb-2">
                                  <Label htmlFor="image-upload" className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80">
                                     {isUploading ? <Loader2 className="mr-2 animate-spin" /> : <FileUp className="mr-2" />} Upload
-                                </Label>
+                                 </Label>
                                 <Input id="image-upload" type="file" className="hidden" onChange={handleImageUpload} accept="image/png, image/jpeg, image/webp" disabled={isLoading}/>
                             </div>
                              <p className="text-xs text-muted-foreground my-2">or</p>

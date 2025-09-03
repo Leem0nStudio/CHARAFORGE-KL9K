@@ -30,7 +30,7 @@ export async function getModelsLabModelInfo(modelIdOrSlug: string): Promise<any>
             try {
                 const errorJson = await response.json();
                 errorBody += ` ${errorJson.message || errorJson.detail || JSON.stringify(errorJson)}`;
-            } catch(e) {
+            } catch {
                  errorBody += ` ${response.statusText}`;
             }
             throw new Error(`Could not find a model on ModelsLab matching the identifier: "${modelIdOrSlug}". ${errorBody}`);
@@ -42,5 +42,3 @@ export async function getModelsLabModelInfo(modelIdOrSlug: string): Promise<any>
         throw error;
     }
 }
-
-  

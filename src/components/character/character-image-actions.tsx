@@ -1,15 +1,14 @@
 
-
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { deleteCharacter } from '@/app/actions/character-write';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Loader2, Settings, Pencil, Trash2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import type { Character } from '@/types/character';
@@ -53,11 +52,11 @@ export function CharacterImageActions({ character, currentUserId, isOwner }: Cha
 
                 {isOwner && (
                     <>
-                        <Link href={`/characters/${character.id}/edit`}>
-                            <Button>
+                        <Button asChild>
+                            <Link href={`/characters/${character.id}/edit`}>
                                 <Pencil className="mr-2" /> Edit Character
-                            </Button>
-                        </Link>
+                            </Link>
+                        </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                  <Tooltip>

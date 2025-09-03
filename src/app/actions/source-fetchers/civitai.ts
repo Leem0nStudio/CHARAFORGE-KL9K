@@ -19,12 +19,10 @@ export async function getCivitaiModelInfo(modelId: string): Promise<any> {
         try {
             const errorJson = await response.json();
             errorBody += ` ${errorJson.error || JSON.stringify(errorJson)}`;
-        } catch(e) {
+        } catch {
              errorBody += ` ${response.statusText}`;
         }
         throw new Error(`Failed to fetch model info from Civitai. ${errorBody}`);
     }
     return response.json();
 }
-
-  

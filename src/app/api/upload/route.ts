@@ -1,3 +1,13 @@
-// This file is no longer needed after migrating to Supabase Storage,
-// as the client communicates directly with the Supabase API via its SDK.
-// This can be safely deleted.
+
+import { NextResponse, type NextRequest } from 'next/server';
+import { upload } from '@vercel/blob/client';
+ 
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const body = await request.json();
+  const blob = await upload(body.filename, body.file, {
+    access: 'public',
+    handleUploadUrl: process.env.BLOB_UPLOAD_URL,
+  });
+ 
+  return NextResponse.json(blob);
+}

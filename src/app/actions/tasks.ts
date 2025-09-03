@@ -5,8 +5,6 @@ import { revalidatePath } from 'next/cache';
 import { verifyIsAdmin } from '@/lib/auth/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import axios from 'axios';
-import { promisify } from 'util';
-import { pipeline } from 'stream';
 import { uploadToStorage } from '@/services/storage';
 
 type ActionResponse = {
@@ -30,7 +28,7 @@ async function getCivitaiDownloadUrl(versionId: string): Promise<string> {
 
 export async function enqueueModelSyncJob(modelId: string): Promise<ActionResponse> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
     const modelRef = supabase.from('ai_models').select('*').eq('id', modelId).single();
 

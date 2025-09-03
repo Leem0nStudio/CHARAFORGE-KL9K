@@ -10,7 +10,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import type { UserProfile } from '@/types/user';
 import type { AiModel } from '@/types/ai-model';
-import type { CharacterBibleResult } from '@/app/character-generator/actions';
+import type { CharacterBibleResult, CharacterBibleInput } from '@/app/character-generator/actions';
 import { generateCharacterCore, generateCharacterPortrait } from '@/app/character-generator/actions';
 import { saveCharacter } from '@/app/actions/character-write';
 import { expandTemplate } from '@/services/composition';

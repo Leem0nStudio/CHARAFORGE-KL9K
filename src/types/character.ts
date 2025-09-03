@@ -1,5 +1,4 @@
 
-
 import { z } from 'zod';
 import type { CharacterBible } from '@/ai/flows/character-bible/types';
 
@@ -142,9 +141,7 @@ export const SaveCharacterInputSchema = z.object({
   dataPackId: z.string().optional().nullable(),
   textEngine: z.enum(['gemini', 'openrouter']).optional(),
   imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai', 'comfyui', 'modelslab', 'rundiffusion']).optional(),
-  wizardData: z.record(z.union([z.string(), z.record(z.string())])).optional().nullable(),
+  wizardData: z.record(z.any()).optional().nullable(),
   originalPrompt: z.string().optional(),
 });
 export type SaveCharacterInput = z.infer<typeof SaveCharacterInputSchema>;
-
-    

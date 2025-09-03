@@ -1,11 +1,9 @@
 
-
 'use server';
 
-import { adminDb } from '@/lib/firebase/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { Character } from '@/types/character';
 import { toCharacterObject } from '@/services/character-hydrator';
-import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAndGetUid } from '@/lib/auth/server';
 
 /**
@@ -15,39 +13,52 @@ import { verifyAndGetUid } from '@/lib/auth/server';
  * @returns A promise that resolves to a random opponent character or null if none are found.
  */
 export async function getRandomOpponent(playerRarity: number, excludeId: string): Promise<Character | null> {
-    if (!adminDb) {
+    const supabase = await getSupabaseServerClient();
+    if (!supabase) {
         console.error('Database service is unavailable.');
         return null;
     }
 
     try {
-        const q = adminDb.collection('characters')
-            .where('meta.status', '==', 'public')
-            .where('rpg.isPlayable', '==', true)
-            .where('core.rarity', '==', playerRarity);
+        const { data, error } = await supabase
+            .from('characters')
+            .select('*')
+            .eq('meta_details->>status', 'public')
+            .eq('rpg_details->>isPlayable', 'true')
+            .eq('core_details->>rarity', playerRarity)
+            .neq('id', excludeId)
+            .limit(50); // Limit to 50 potential opponents
         
-        const snapshot = await q.get();
+        if (error) throw error;
+        
+        let opponents: Character[] = [];
+        if (data) {
+            opponents = await Promise.all(data.map(d => toCharacterObject(d.id, d)));
+        }
 
-        if (snapshot.empty) {
+        if (opponents.length === 0) {
             // If no exact match, try to find one rarity level below or above
-            const [belowSnapshot, aboveSnapshot] = await Promise.all([
-                 adminDb.collection('characters').where('core.rarity', '==', playerRarity - 1).limit(10).get(),
-                 adminDb.collection('characters').where('core.rarity', '==', playerRarity + 1).limit(10).get()
+            const [belowResponse, aboveResponse] = await Promise.all([
+                 supabase.from('characters').select('*').eq('meta_details->>status', 'public').eq('rpg_details->>isPlayable', 'true').eq('core_details->>rarity', playerRarity - 1).limit(10),
+                 supabase.from('characters').select('*').eq('meta_details->>status', 'public').eq('rpg_details->>isPlayable', 'true').eq('core_details->>rarity', playerRarity + 1).limit(10)
             ]);
-            snapshot.docs.push(...belowSnapshot.docs);
-            snapshot.docs.push(...aboveSnapshot.docs);
+
+            const belowData = belowResponse.data || [];
+            const aboveData = aboveResponse.data || [];
+            
+            const belowOpponents = await Promise.all(belowData.map(d => toCharacterObject(d.id, d)));
+            const aboveOpponents = await Promise.all(aboveData.map(d => toCharacterObject(d.id, d)));
+
+            opponents.push(...belowOpponents, ...aboveOpponents);
+            opponents = opponents.filter(char => char.id !== excludeId);
         }
         
-        const opponents = snapshot.docs
-            .map(doc => toCharacterObject(doc.id, doc.data()))
-            .filter(char => char.id !== excludeId);
-
         if (opponents.length === 0) {
             return null; // No suitable opponents found
         }
         
         const randomIndex = Math.floor(Math.random() * opponents.length);
-        return opponents[randomIndex];
+        return opponents[randomIndex]!;
     } catch (error) {
         console.error("Error fetching random opponent:", error);
         return null;
@@ -113,7 +124,7 @@ function simulateRound(attacker: Character, defender: Character): { roundLog: st
  * @returns A promise resolving to the battle outcome.
  */
 export async function simulateBattle(player: Character, opponent: Character): Promise<{ log: string[]; winnerId: string; xpGained: number }> {
-    const uid = await verifyAndGetUid();
+    await verifyAndGetUid();
     const log: string[] = [];
     let playerHp = (player.rpg.stats.constitution || 5) * 2; // More health for longer fights
     let opponentHp = (opponent.rpg.stats.constitution || 5) * 2;
@@ -147,11 +158,11 @@ export async function simulateBattle(player: Character, opponent: Character): Pr
         xpGained = 10 + (opponent.core.rarity - player.core.rarity) * 5; // XP based on rarity difference
         xpGained = Math.max(5, xpGained); // Minimum 5 XP
         
-        if (adminDb) {
-            await adminDb.collection('characters').doc(player.id).update({
-                'rpg.experience': FieldValue.increment(xpGained)
-            });
-             log.push(`${player.core.name} gained ${xpGained} XP!`);
+        const supabase = await getSupabaseServerClient();
+        if (supabase) {
+             const { error } = await supabase.rpc('increment_experience', { character_id: player.id, xp_to_add: xpGained });
+             if (error) console.error("Failed to increment experience:", error);
+             else log.push(`${player.core.name} gained ${xpGained} XP!`);
         }
         
     } else {

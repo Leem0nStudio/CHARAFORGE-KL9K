@@ -1,11 +1,9 @@
 
-
 'use server';
 
 import { ai } from '@/ai/genkit';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { z } from 'zod';
-import type { Character } from '@/types/character';
 
 // Input and Output Schemas for the new skill generation flow
 const GenerateSkillsInputSchema = z.object({
@@ -13,7 +11,6 @@ const GenerateSkillsInputSchema = z.object({
   archetype: z.string(),
   biography: z.string(),
 });
-type GenerateSkillsInput = z.infer<typeof GenerateSkillsInputSchema>;
 
 const SkillSchema = z.object({
   name: z.string().describe("A cool, evocative name for the skill."),
@@ -58,7 +55,10 @@ const generateSkillsPrompt = ai.definePrompt({
  * @returns {Promise<{success: boolean, message: string}>} A promise that resolves to a success or failure message.
  */
 export async function generateAndSaveSkills(characterId: string, archetype: string, biography: string): Promise<{ success: boolean; message: string }> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) {
+    return { success: false, message: 'Database service not available.' };
+  }
   
   try {
     await supabase.from('characters').update({ rpg_details: { skillsStatus: 'pending' } }).eq('id', characterId);

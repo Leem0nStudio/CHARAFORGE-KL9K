@@ -26,7 +26,7 @@ type ActionResponse = {
  */
 export async function searchUsers(emailQuery: string): Promise<SanitizedUser[]> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return [];
 
     if (!emailQuery) {
@@ -59,7 +59,7 @@ export async function searchUsers(emailQuery: string): Promise<SanitizedUser[]> 
  */
 export async function grantAdminRole(uid: string): Promise<ActionResponse> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
     try {
         const { error: authError } = await supabase.auth.admin.updateUserById(uid, { app_metadata: { role: 'admin' } });
@@ -82,7 +82,7 @@ export async function grantAdminRole(uid: string): Promise<ActionResponse> {
  */
 export async function revokeAdminRole(uid: string): Promise<ActionResponse> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
     try {
         const { error: authError } = await supabase.auth.admin.updateUserById(uid, { app_metadata: { role: 'user' } });
@@ -100,7 +100,7 @@ export async function revokeAdminRole(uid: string): Promise<ActionResponse> {
 
 export async function getDashboardStats(): Promise<{ totalUsers: number; totalCharacters: number; totalDataPacks: number, publicCharacters: number, privateCharacters: number, totalModels: number, totalLoras: number }> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     const defaultStats = { totalUsers: 0, totalCharacters: 0, totalDataPacks: 0, publicCharacters: 0, privateCharacters: 0, totalModels: 0, totalLoras: 0 };
     if (!supabase) return defaultStats;
 

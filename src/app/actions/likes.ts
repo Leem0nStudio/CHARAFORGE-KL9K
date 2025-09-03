@@ -3,7 +3,6 @@
 
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { PostgrestError } from '@supabase/supabase-js';
 
 async function getLikeCount(supabase: any, characterId: string): Promise<number> {
     const { count, error } = await supabase
@@ -15,7 +14,9 @@ async function getLikeCount(supabase: any, characterId: string): Promise<number>
 }
 
 export async function getCharacterLikeStatus(characterId: string) {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
+    if (!supabase) return { success: false, error: 'Database service is not available.', likeCount: 0, userHasLiked: false };
+
     let uid: string | null = null;
     
     try {
@@ -44,7 +45,8 @@ export async function getCharacterLikeStatus(characterId: string) {
 
 export async function toggleLikeCharacter(characterId: string) {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
+    if (!supabase) return { success: false, error: 'Database service is not available.' };
     
     try {
         // Check if the user has already liked the character

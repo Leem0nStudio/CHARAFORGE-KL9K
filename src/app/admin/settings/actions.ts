@@ -2,9 +2,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { adminDb } from '@/lib/firebase/server';
-import { getStorage } from 'firebase-admin/storage';
-import { verifyAndGetUid } from '@/lib/auth/server';
+import { verifyIsAdmin } from '@/lib/auth/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { uploadToStorage } from '@/services/storage';
 
 export type ActionResponse = {
     success: boolean;
@@ -14,44 +14,35 @@ export type ActionResponse = {
 
 const LOGO_PATH = 'app-assets/logo.png';
 
-export async function updateLogo(prevState: any, formData: FormData): Promise<ActionResponse> {
+export async function updateLogo(_prevState: any, formData: FormData): Promise<ActionResponse> {
+    await verifyIsAdmin();
+    const supabase = await getSupabaseServerClient();
+    if (!supabase) {
+        return { success: false, message: "Database service is not available." };
+    }
+
+    const logoFile = formData.get('logo') as File;
+    if (!logoFile || logoFile.size === 0) {
+        return { success: false, message: 'No file was uploaded.' };
+    }
+    if (logoFile.type !== 'image/png') {
+        return { success: false, message: 'Invalid file type. Must be a PNG.' };
+    }
+
     try {
-        await verifyAndGetUid();
-
-        const logoFile = formData.get('logo') as File;
-
-        if (!logoFile || logoFile.size === 0) {
-            return { success: false, message: 'No file was uploaded. Please select a logo.' };
-        }
-        if (logoFile.type !== 'image/png') {
-            return { success: false, message: 'Invalid file type. Please upload a PNG image.' };
-        }
-
-        if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
-            throw new Error("Storage bucket not configured.");
-        }
-        const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
-        const file = bucket.file(LOGO_PATH);
-
         const buffer = Buffer.from(await logoFile.arrayBuffer());
 
-        await file.save(buffer, {
-            metadata: { 
-                contentType: 'image/png',
-                cacheControl: 'no-cache, max-age=0',
-            },
-            public: true, 
-        });
-        
-        const publicUrl = file.publicUrl();
+        // Use the generic uploadToStorage service, which will handle Supabase.
+        const publicUrl = await uploadToStorage(buffer, LOGO_PATH);
 
-        if (!adminDb) {
-            throw new Error('Database service is unavailable.');
-        }
-        await adminDb.collection('settings').doc('appDetails').set({
-            logoUrl: publicUrl,
-        }, { merge: true });
-        
+        // Upsert the logo URL into a new 'settings' table.
+        const { error: dbError } = await supabase
+            .from('settings')
+            .upsert({ id: 'appDetails', logo_url: publicUrl }, { onConflict: 'id' });
+
+        if (dbError) throw dbError;
+
+        // Revalidate the entire site layout to reflect the new logo.
         revalidatePath('/', 'layout');
 
         return { success: true, message: 'Logo updated successfully!' };
@@ -62,5 +53,3 @@ export async function updateLogo(prevState: any, formData: FormData): Promise<Ac
         return { success: false, message: 'Operation failed.', error: message };
     }
 }
-
-    
