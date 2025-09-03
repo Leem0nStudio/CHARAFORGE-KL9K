@@ -172,9 +172,10 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
     const handleDataPackSelect = (pack: DataPack) => {
         setActivePack(pack);
         setSelectedTemplate(pack.schema.promptTemplates[0] || null);
+        setIsDataPackWizardOpen(true);
     };
 
-    const handleWizardComplete = (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
+    const handleWizardComplete = (wizardData: Record<string, any>, pack: DataPack, template: PromptTemplate) => {
         const expandedPrompt = expandTemplate(template.template, wizardData);
         
         const cleanedPrompt = expandedPrompt

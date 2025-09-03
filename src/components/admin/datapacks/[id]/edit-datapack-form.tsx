@@ -25,11 +25,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { DataPack, DataPackSchema } from '@/types/datapack';
+import type { DataPack } from '@/types/datapack';
 import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
 import { DataPackMetadataForm } from './datapack-metadata-form';
 import { DataPackSchemaEditor } from './datapack-schema-editor';
 import { AiGeneratorDialog } from './ai-generator-dialog';
+import yaml from 'js-yaml';
 
 
 function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => void }) {
@@ -149,8 +150,28 @@ export function EditDataPackForm({ packId }: { packId: string }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packId]);
 
- const handleAiSchemaGenerated = (_schemaYaml: string) => {
-    // This is now handled inside the dialog, this function is a no-op but required by prop types
+ const handleAiSchemaGenerated = (schemaYaml: string) => {
+    try {
+        const aiData = yaml.load(schemaYaml) as any;
+        
+        // This is a simplified merge. A more robust solution might use a deep merge library.
+        form.setValue('name', aiData.name || form.getValues('name'));
+        form.setValue('description', aiData.description || form.getValues('description'));
+        form.setValue('tags', aiData.tags || form.getValues('tags'));
+        
+        const currentSchema = form.getValues('schema');
+        const newSchema = {
+            promptTemplates: aiData.schema?.promptTemplates || currentSchema.promptTemplates,
+            characterProfileSchema: {
+                ...currentSchema.characterProfileSchema,
+                ...(aiData.schema?.characterProfileSchema || {})
+            }
+        };
+        form.setValue('schema', newSchema);
+
+    } catch (e) {
+        toast({ variant: 'destructive', title: 'YAML Parse Error', description: 'The AI returned invalid YAML content.' });
+    }
   };
 
 
