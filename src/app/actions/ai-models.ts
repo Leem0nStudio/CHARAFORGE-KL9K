@@ -46,7 +46,7 @@ const toAiModelObject = (row: Record<string, any>): AiModel => ({
 
 export async function upsertModel(data: UpsertAiModel): Promise<ActionResponse> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
     const validation = UpsertModelSchema.safeParse(data);
     if (!validation.success) {
@@ -88,7 +88,7 @@ export async function upsertModel(data: UpsertAiModel): Promise<ActionResponse> 
 
 export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sourceModelId: string): Promise<ActionResponse> {
     await verifyIsAdmin();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
     
     try {
@@ -211,7 +211,7 @@ export async function addAiModelFromSource(source: 'civitai' | 'modelslab', sour
 
 export async function upsertUserAiModel(formData: FormData): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
     
     const rawData = Object.fromEntries(formData.entries());
@@ -268,7 +268,7 @@ export async function upsertUserAiModel(formData: FormData): Promise<ActionRespo
 
 export async function deleteModel(id: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
     
     try {
@@ -299,7 +299,7 @@ export async function deleteModel(id: string): Promise<ActionResponse> {
 
 
 export async function getModels(type: 'model' | 'lora', uid?: string): Promise<AiModel[]> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return [];
     
     const allModels = new Map<string, AiModel>();
@@ -330,7 +330,7 @@ export async function getModels(type: 'model' | 'lora', uid?: string): Promise<A
 
 export async function installModel(modelId: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     try {

@@ -1,6 +1,6 @@
 
 'use client';
-import { LogIn, LogOut, User as UserIcon, Settings, BarChart, Newspaper } from 'lucide-react';
+import { LogIn, LogOut, User as UserIcon, Settings, BarChart } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';

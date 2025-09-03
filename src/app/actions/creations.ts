@@ -119,7 +119,7 @@ export async function searchCharactersByTag(tag: string): Promise<Character[]> {
         return hydrateCharacters(data);
 
     } catch (error) {
-        console.error(`Error searching for tag \"${tag}\":`, error);
+        console.error(`Error searching for tag "${tag}":`, error);
         return [];
     }
 }

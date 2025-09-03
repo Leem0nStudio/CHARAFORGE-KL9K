@@ -130,7 +130,9 @@ export async function createDataPackFromFiles(formData: FormData): Promise<Actio
              return { success: false, message: "Unsupported file type." };
         }
         
-        if (filesToProcess.length === 0) return { success: false, message: "No compatible files found." };
+        if (filesToProcess.length === 0) {
+            return { success: false, message: "No compatible wildcard (.yaml or .txt) files were found in the uploaded archive." };
+        }
 
         const finalSchema = await buildSchemaFromFiles(filesToProcess);
         const schemaValidation = DataPackSchemaSchema.safeParse(finalSchema);
@@ -156,7 +158,7 @@ export async function createDataPackFromFiles(formData: FormData): Promise<Actio
         }
 
         revalidatePath('/admin/datapacks');
-        return { success: true, message: `DataPack \"${dataPackName}\" imported successfully.`, packId: insertedRow.id };
+        return { success: true, message: `DataPack "${dataPackName}" imported successfully.`, packId: insertedRow.id };
 
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred during import.";
@@ -304,7 +306,7 @@ export async function installDataPack(packId: string): Promise<{success: boolean
         revalidatePath('/datapacks');
         revalidatePath(`/datapacks/${packId}`);
 
-        return { success: true, message: `Successfully installed \"${packData.name}\"!` };
+        return { success: true, message: `Successfully installed "${packData.name}"!` };
     } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred.';
         return { success: false, message: "Failed to install DataPack." };
@@ -344,7 +346,7 @@ export async function searchDataPacksByTag(tag: string): Promise<DataPack[]> {
         .order('created_at', { ascending: false });
 
     if (error) {
-        console.error(`Error searching for datapacks with tag \"${tag}\":`, error);
+        console.error(`Error searching for datapacks with tag "${tag}":`, error);
         return [];
     }
     return Promise.all(data.map(dataPackFromRow));

@@ -97,7 +97,7 @@ export async function saveCharacter(input: SaveCharacterInput, imageFile: File) 
   } = validation.data;
   
   const userId = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase) throw new Error("Database service is not available.");
   
   try {
@@ -212,7 +212,7 @@ export async function saveCharacter(input: SaveCharacterInput, imageFile: File) 
 
 export async function deleteCharacter(characterId: string) {
   const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase || !characterId) {
     throw new Error('Character ID is required for deletion.');
   }
@@ -245,7 +245,7 @@ export async function updateCharacterStatus(
   isNsfw?: boolean,
 ): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { success: false, message: 'Database service is not available.' };
   
   try {
@@ -285,7 +285,7 @@ export async function updateCharacterStatus(
 
 export async function updateCharacterDataPackSharing(characterId: string, isShared: boolean): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { success: false, message: 'Database service is not available.' };
 
   try {
@@ -333,7 +333,7 @@ export async function updateCharacter(
     data: Partial<Character['core']>
 ): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { success: false, message: 'Database service is not available.' };
   
   try {
@@ -414,7 +414,7 @@ export async function updateCharacter(
 
 export async function updateCharacterTimeline(characterId: string, timeline: TimelineEvent[]): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
     
     try {
@@ -448,7 +448,7 @@ export async function updateCharacterTimeline(characterId: string, timeline: Tim
 
 export async function updateCharacterBranchingPermissions(characterId: string, permissions: 'private' | 'public'): Promise<ActionResponse> {
   const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { success: false, message: 'Database service is not available.' };
 
   try {
@@ -485,7 +485,7 @@ export async function updateCharacterBranchingPermissions(characterId: string, p
 
 export async function addCharacterExperience(characterId: string, xp: number): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     try {
@@ -518,7 +518,7 @@ export async function addCharacterExperience(characterId: string, xp: number): P
 
 export async function suggestNextTimelineEvent(characterId: string): Promise<ActionResponse & { data?: TimelineEvent }> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     try {
@@ -594,7 +594,7 @@ Generate a JSON object with three fields: "date" (a creative date, like "A Year 
 
 export async function generateDialogue(characterId: string): Promise<ActionResponse & { dialogueLines?: string[] }> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     try {
@@ -630,7 +630,7 @@ export async function generateDialogue(characterId: string): Promise<ActionRespo
 
 export async function rollForCharacterStats(characterId: string): Promise<ActionResponse & { newStats?: RpgAttributes['stats'] }> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     try {
@@ -668,7 +668,7 @@ export async function rollForCharacterStats(characterId: string): Promise<Action
 
     } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to roll for stats.";
-        const supabase = getSupabaseServerClient();
+        const supabase = await getSupabaseServerClient();
         if (supabase) {
             await supabase
                 .from('characters')
@@ -681,7 +681,7 @@ export async function rollForCharacterStats(characterId: string): Promise<Action
 
 export async function narrateBiography(characterId: string): Promise<ActionResponse & { audioUrl?: string }> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     try {

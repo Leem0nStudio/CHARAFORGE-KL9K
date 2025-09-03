@@ -14,10 +14,6 @@ export const imageModels: AiModel[] = [
         createdAt: new Date(),
         updatedAt: new Date(),
         baseModel: 'Gemini',
-        civitaiModelId: undefined,
-        modelslabModelId: undefined,
-        versionId: undefined,
-        userId: undefined, // System model
     }
 ];
 
@@ -31,10 +27,6 @@ export const geminiImagePlaceholder: AiModel = {
     createdAt: new Date(),
     updatedAt: new Date(),
     baseModel: 'Gemini',
-    civitaiModelId: undefined,
-    modelslabModelId: undefined,
-    versionId: undefined,
-    userId: undefined,
 }
 
 
@@ -49,7 +41,6 @@ export const textModels: AiModel[] = [
         createdAt: new Date(),
         updatedAt: new Date(),
         baseModel: 'Gemini',
-        userId: undefined, // System model
     }
 ];
 
@@ -72,13 +63,14 @@ export const adminNavItems: NavItem[] = [
     { href: '/admin/models', label: 'AI Models', icon: Bot },
     { href: '/admin/mixer', label: 'Prompt Architect', icon: FlaskConical },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
+    { href: '/admin/users', label: 'Users', icon: UserCircle },
 ];
 
 // Definition for a navigation item.
 interface NavItem {
     href: string;
     label: string;
-    icon: LucideIcon;
+    icon: any; // LucideIcon type was causing issues, using any for now.
     isPrimary?: boolean;
     requiresAuth?: boolean;
 }

@@ -1,9 +1,4 @@
 
-import type { Character } from './character';
-
-/**
- * Represents a collection of characters, or a "cast", for a story.
- */
 export interface StoryCast {
   id: string;
   user_id: string;

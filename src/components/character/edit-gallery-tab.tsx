@@ -93,7 +93,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
       try {
         const models = await getModels('model');
         setAvailableModels(models);
-      } catch (error) {
+      } catch {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not load AI models.' });
       } finally {
         setIsLoadingModels(false);

@@ -24,7 +24,7 @@ export async function getRandomOpponent(playerRarity: number, excludeId: string)
             .from('characters')
             .select('*')
             .eq('meta_details->>status', 'public')
-            .eq('rpg_details->>isPlayable', 'true')
+            .eq('rpg_details->>isPlayable', true)
             .eq('core_details->>rarity', playerRarity)
             .neq('id', excludeId)
             .limit(50); // Limit to 50 potential opponents
@@ -39,8 +39,8 @@ export async function getRandomOpponent(playerRarity: number, excludeId: string)
         if (opponents.length === 0) {
             // If no exact match, try to find one rarity level below or above
             const [belowResponse, aboveResponse] = await Promise.all([
-                 supabase.from('characters').select('*').eq('meta_details->>status', 'public').eq('rpg_details->>isPlayable', 'true').eq('core_details->>rarity', playerRarity - 1).limit(10),
-                 supabase.from('characters').select('*').eq('meta_details->>status', 'public').eq('rpg_details->>isPlayable', 'true').eq('core_details->>rarity', playerRarity + 1).limit(10)
+                 supabase.from('characters').select('*').eq('meta_details->>status', 'public').eq('rpg_details->>isPlayable', true).eq('core_details->>rarity', playerRarity - 1).limit(10),
+                 supabase.from('characters').select('*').eq('meta_details->>status', 'public').eq('rpg_details->>isPlayable', true).eq('core_details->>rarity', playerRarity + 1).limit(10)
             ]);
 
             const belowData = belowResponse.data || [];

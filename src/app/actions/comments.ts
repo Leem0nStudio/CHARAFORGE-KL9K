@@ -6,7 +6,6 @@ import { verifyAndGetUid } from '@/lib/auth/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { getUserProfile } from './user';
-import { PostgrestError } from '@supabase/supabase-js';
 
 export interface Comment {
     id: string;
@@ -36,7 +35,7 @@ type ActionResponse = {
 
 export async function addComment(commentData: z.infer<typeof AddCommentSchema>): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     const validation = AddCommentSchema.safeParse(commentData);
@@ -79,7 +78,7 @@ export async function addComment(commentData: z.infer<typeof AddCommentSchema>):
 }
 
 export async function getComments(entityType: 'character' | 'datapack' | 'article', entityId: string): Promise<Comment[]> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return [];
 
     try {

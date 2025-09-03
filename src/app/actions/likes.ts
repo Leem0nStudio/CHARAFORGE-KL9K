@@ -3,6 +3,7 @@
 
 import { verifyAndGetUid } from '@/lib/auth/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { PostgrestError } from '@supabase/supabase-js';
 
 async function getLikeCount(supabase: any, characterId: string): Promise<number> {
     const { count, error } = await supabase
@@ -21,7 +22,7 @@ export async function getCharacterLikeStatus(characterId: string) {
     
     try {
         uid = await verifyAndGetUid();
-    } catch (error) {
+    } catch (err) {
         uid = null;
     }
     

@@ -10,9 +10,8 @@ import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 export default async function AdminDashboardPage() {
   try {
     await verifyIsAdmin();
-  } catch (error) {
-    // The verifyIsAdmin function will handle logging, so we just redirect.
-    redirect('/'); 
+  } catch {
+    redirect('/login?reason=unauthenticated'); 
   }
 
   // If we reach here, the user is a verified admin.

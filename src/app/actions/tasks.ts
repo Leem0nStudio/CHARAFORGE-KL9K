@@ -45,15 +45,7 @@ export async function enqueueModelSyncJob(modelId: string): Promise<ActionRespon
         const downloadUrl = await getCivitaiDownloadUrl(modelData.version_id);
         
         const response = await axios.get(downloadUrl, { responseType: 'stream' });
-
-        const storageBucketName = process.env.MODELS_STORAGE_BUCKET;
-        if (!storageBucketName) throw new Error("MODELS_STORAGE_BUCKET is not set for server-side storage.");
         
-        // This part needs adjustment if not using firebase-admin for GCS.
-        // For simplicity, we assume a compatible upload service for large files.
-        // The `uploadToStorage` is for Vercel Blob and may have size limits.
-        // A direct-to-GCS upload would be needed for very large models.
-        // This implementation will work for smaller models that fit within Vercel Blob limits.
         const fileExtension = modelData.name?.split('.').pop() || 'safetensors';
         const blobName = `models/${modelData.name.replace(/\s+/g, '_')}/${modelData.version_id}.${fileExtension}`;
         

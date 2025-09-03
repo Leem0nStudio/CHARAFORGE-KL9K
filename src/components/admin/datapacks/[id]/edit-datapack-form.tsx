@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -27,8 +28,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DataPack, DataPackSchema } from '@/types/datapack';
 import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
 import { DataPackMetadataForm } from './datapack-metadata-form';
-import { DataPackSchemaEditor } from '@/app/admin/datapacks/[id]/datapack-schema-editor';
-import { AiGeneratorDialog } from '@/app/admin/datapacks/[id]/ai-generator-dialog';
+import { DataPackSchemaEditor } from './datapack-schema-editor';
+import { AiGeneratorDialog } from './ai-generator-dialog';
 
 
 function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => void }) {
@@ -45,7 +46,7 @@ function ImportTab({ onImportSuccess }: { onImportSuccess: (packId: string) => v
             return;
         }
         if (!file) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please select a .zip file.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select a .zip, .yaml, or .txt file.' });
             return;
         }
         

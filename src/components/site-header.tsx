@@ -19,16 +19,7 @@ export async function SiteHeader() {
           <span className="font-headline text-2xl tracking-wider">CharaForge</span>
         </Link>
         <div className="hidden sm:flex items-center gap-2">
-             {mainNavItems.filter(item => !item.isPrimary && item.href !== '/' && !item.requiresAuth).map(item => (
-                 <Button key={item.href} variant="ghost" asChild>
-                    <Link href={item.href}>
-                        <item.icon className="mr-2" />
-                        {item.label}
-                    </Link>
-                 </Button>
-             ))}
-             {/* Auth-required links */}
-             {mainNavItems.filter(item => !item.isPrimary && item.href !== '/' && item.requiresAuth).map(item => (
+             {mainNavItems.filter(item => !item.isPrimary && item.href !== '/').map(item => (
                  <Button key={item.href} variant="ghost" asChild>
                     <Link href={item.href}>
                         <item.icon className="mr-2" />
