@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { cn } from '../lib/utils';
 import { useAuth } from '../hooks/use-auth';
 import { mainNavItems } from '../lib/app-config';
 
