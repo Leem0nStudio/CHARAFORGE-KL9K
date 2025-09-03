@@ -25,11 +25,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { DataPack, DataPackSchema } from '@/types/datapack';
+import type { DataPack } from '@/types/datapack';
 import { DataPackFormSchema, type DataPackFormValues } from '@/types/datapack';
-import { DataPackMetadataForm } from './datapack-metadata-form';
-import { DataPackSchemaEditor } from './datapack-schema-editor';
-import { AiGeneratorDialog } from './ai-generator-dialog';
+import { DataPackMetadataForm } from '@/app/admin/datapacks/[id]/datapack-metadata-form';
+import { DataPackSchemaEditor } from '@/app/admin/datapacks/[id]/datapack-schema-editor';
+import { AiGeneratorDialog } from '@/app/admin/datapacks/[id]/ai-generator-dialog';
 import yaml from 'js-yaml';
 
 
@@ -160,7 +160,7 @@ export function EditDataPackForm({ packId }: { packId: string }) {
         form.setValue('tags', aiData.tags || form.getValues('tags'), { shouldDirty: true });
         
         const currentSchema = form.getValues('schema');
-        const newSchema: DataPackSchema = {
+        const newSchema = {
             promptTemplates: aiData.schema?.promptTemplates || currentSchema.promptTemplates,
             characterProfileSchema: {
                 ...currentSchema.characterProfileSchema,

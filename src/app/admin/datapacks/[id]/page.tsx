@@ -2,7 +2,7 @@
 
 'use server';
 
-import { EditDataPackForm } from '@/components/admin/datapacks/[id]/edit-datapack-form';
+import { EditDataPackForm } from '@/app/admin/datapacks/[id]/edit-datapack-form';
 
 export default async function EditDataPackPage({ params }: { params: { id: string } }) {
   // The form component now handles its own data fetching.
