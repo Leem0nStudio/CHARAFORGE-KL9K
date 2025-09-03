@@ -5,11 +5,12 @@
  * and API routes. It correctly handles cookies for authentication.
  */
 
-import { createServerClient, type CookieOptions, type SupabaseClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
-// This function now returns the client or null if the keys are missing.
-export function getSupabaseServerClient(): SupabaseClient | null {
+// This function now returns a promise of the client or null if the keys are missing.
+export async function getSupabaseServerClient(): Promise<SupabaseClient | null> {
   const cookieStore = cookies();
 
   // Ensure that the environment variables are set.
@@ -26,10 +27,10 @@ export function getSupabaseServerClient(): SupabaseClient | null {
     supabaseServiceRoleKey,
     {
       cookies: {
-        get(name: string) {
+        get: (name: string) => {
           return cookieStore.get(name)?.value;
         },
-        set(name: string, value: string, options: CookieOptions) {
+        set: (name: string, value: string, options: CookieOptions) => {
           try {
             cookieStore.set({ name, value, ...options });
           } catch (error) {
@@ -37,7 +38,7 @@ export function getSupabaseServerClient(): SupabaseClient | null {
             // as the Supabase client will still work for read operations.
           }
         },
-        remove(name: string, options: CookieOptions) {
+        remove: (name: string, options: CookieOptions) => {
           try {
             cookieStore.set({ name, value: '', ...options });
           } catch (error) {

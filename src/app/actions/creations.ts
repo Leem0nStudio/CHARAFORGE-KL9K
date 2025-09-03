@@ -9,7 +9,7 @@ import { toCharacterObject } from '@/services/character-hydrator';
 
 // Helper to fetch users in batches of 30 for 'in' queries
 async function fetchUsersInBatches(userIds: string[]): Promise<Map<string, UserProfile>> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase || userIds.length === 0) return new Map();
     
     const results = new Map<string, UserProfile>();
@@ -74,7 +74,7 @@ async function hydrateCharacters(characterData: any[]): Promise<Character[]> {
  * @returns {Promise<Character[]>} A promise that resolves to an array of character objects.
  */
 export async function getPublicCharacters(): Promise<Character[]> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
   try {
@@ -100,7 +100,7 @@ export async function getPublicCharacters(): Promise<Character[]> {
  * @returns {Promise<Character[]>} A promise resolving to an array of matching characters.
  */
 export async function searchCharactersByTag(tag: string): Promise<Character[]> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase || !tag) {
         return [];
     }
@@ -119,7 +119,7 @@ export async function searchCharactersByTag(tag: string): Promise<Character[]> {
         return hydrateCharacters(data);
 
     } catch (error) {
-        console.error(`Error searching for tag "${tag}":`, error);
+        console.error(`Error searching for tag \"${tag}\":`, error);
         return [];
     }
 }
@@ -131,7 +131,7 @@ export async function searchCharactersByTag(tag: string): Promise<Character[]> {
  * @returns {Promise<UserProfile[]>} A promise that resolves to an array of user profile objects.
  */
 export async function getTopCreators(): Promise<UserProfile[]> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   
   try {
@@ -166,7 +166,7 @@ export async function getTopCreators(): Promise<UserProfile[]> {
  * @returns {Promise<Character[]>} A promise that resolves to an array of character objects.
  */
 export async function getPublicCharactersForUser(userId: string): Promise<Character[]> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
   try {

@@ -28,14 +28,11 @@ export const metadata: Metadata = {
   description: 'A SaaS platform for writers, artists, and game masters to generate, manage, and share characters using generative AI. Create unique portraits and detailed biographies for your creative projects.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // This is a correct way to read headers in a Server Component layout.
-  // The error might stem from how the dev server handles hot-reloading.
-  // This logic is sound for production builds.
   const headersList = headers();
   const pathname = headersList.get('x-next-pathname') || '';
   const isAdminRoute = pathname.startsWith('/admin');

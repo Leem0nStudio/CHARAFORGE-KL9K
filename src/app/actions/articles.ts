@@ -7,7 +7,6 @@ import { verifyAndGetUid } from '@/lib/auth/server';
 import type { Article, UpsertArticle } from '@/types/article';
 import { UpsertArticleSchema } from '@/types/article';
 import { getUserProfile } from './user';
-import { PostgrestError } from '@supabase/supabase-js';
 
 type ActionResponse = {
     success: boolean;
@@ -41,7 +40,7 @@ export async function upsertArticle(data: UpsertArticle): Promise<ActionResponse
         return { success: false, message: 'Invalid data provided.', error: validation.error.message };
     }
 
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
 
     const { id, content, ...rest } = validation.data;
@@ -82,7 +81,7 @@ export async function upsertArticle(data: UpsertArticle): Promise<ActionResponse
 
 export async function deleteArticle(id: string): Promise<ActionResponse> {
     const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
     try {
         const { data: existing, error: fetchError } = await supabase.from('articles').select('user_id').eq('id', id).single();
@@ -104,7 +103,7 @@ export async function deleteArticle(id: string): Promise<ActionResponse> {
 }
 
 export async function getArticlesForUser(userId: string): Promise<Article[]> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return [];
     const { data, error } = await supabase.from('articles')
       .select('*')
@@ -115,7 +114,7 @@ export async function getArticlesForUser(userId: string): Promise<Article[]> {
 }
 
 export async function getArticle(id: string): Promise<Article | null> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return null;
     const { data, error } = await supabase.from('articles').select('*').eq('id', id).single();
     if(error || !data) return null;
@@ -123,7 +122,7 @@ export async function getArticle(id: string): Promise<Article | null> {
 }
 
 export async function getPublishedArticles(): Promise<Article[]> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return [];
     const { data, error } = await supabase.from('articles').select('*').eq('status', 'published').order('created_at', { ascending: false });
     if (error) { console.error("Error fetching published articles", error); return [] };
@@ -131,7 +130,7 @@ export async function getPublishedArticles(): Promise<Article[]> {
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return null;
     const { data, error } = await supabase.from('articles')
         .select('*')
@@ -146,7 +145,7 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
 }
 
 export async function getAllArticlesForAdmin(): Promise<Article[]> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return [];
     const { data, error } = await supabase.from('articles').select('*').order('created_at', { ascending: false });
     if (error) { console.error("Error fetching all articles for admin", error); return [] };
