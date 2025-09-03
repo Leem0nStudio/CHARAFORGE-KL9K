@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -32,12 +32,15 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const supabase = getSupabaseBrowserClient();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (authUser && !authLoading) {
-      router.push("/");
+    // Only redirect if authentication has finished loading and we have a confirmed user.
+    if (!authLoading && authUser) {
+        const redirectUrl = searchParams.get('redirect') || '/';
+        router.push(redirectUrl);
     }
-  }, [authUser, authLoading, router]);
+  }, [authUser, authLoading, router, searchParams]);
 
 
   const handleAuthError = (error: AuthError) => {
@@ -69,8 +72,8 @@ export default function LoginPage() {
           title: "Login Successful!",
           description: "Welcome back to CharaForge. Redirecting...",
         });
-        router.push('/');
-        router.refresh(); // Ensure layout re-renders with new auth state
+        // Let the useEffect handle the redirect to ensure state is consistent
+        router.refresh(); 
       }
     } catch (error: unknown) {
         handleAuthError(error as AuthError);
@@ -80,6 +83,15 @@ export default function LoginPage() {
   };
   
   const totalLoading = loading || authLoading;
+
+  // Don't render the form if we are still verifying the auth state and might redirect
+  if (authLoading) {
+     return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
@@ -131,7 +143,7 @@ export default function LoginPage() {
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full" disabled={totalLoading}>
-                {totalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSignUp ? "Sign Up" : "Sign In"}
             </Button>
             <Button
