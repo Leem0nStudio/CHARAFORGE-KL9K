@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview Supabase client for server-side usage.
  * This file provides a function to get a Supabase client instance
