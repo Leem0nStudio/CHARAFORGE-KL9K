@@ -2,7 +2,6 @@
 'use server';
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { adminAuth } from '@/lib/firebase/server';
 
 /**
  * @fileoverview This file contains the server-side authentication gatekeeper.
@@ -36,7 +35,7 @@ export async function verifyAndGetUid(): Promise<string> {
 
 /**
  * A wrapper around `verifyAndGetUid` that also checks if the user has admin
- * privileges based on their custom claims.
+ * privileges based on their role in the database.
  *
  * This should be called at the beginning of any server action that requires
  * administrative permissions.
@@ -46,18 +45,21 @@ export async function verifyAndGetUid(): Promise<string> {
  */
 export async function verifyIsAdmin(): Promise<string> {
     const uid = await verifyAndGetUid();
-    
-    // We still use Firebase Admin SDK for custom claims until that is also migrated.
-    // This part of the logic remains the same.
-    if (!adminAuth) {
-        throw new Error('Authentication admin service is unavailable on the server.');
+    const supabase = getSupabaseServerClient();
+    if (!supabase) {
+        throw new Error("Authentication service is unavailable on the server.");
     }
+    
     try {
-        const userRecord = await adminAuth.getUser(uid);
-        if (userRecord.customClaims?.admin === true) {
+        const { data: user, error } = await supabase.from('users').select('role').eq('id', uid).single();
+        if (error) throw error;
+
+        if (user && user.role === 'admin') {
             return uid;
         }
+        
         throw new Error('User does not have admin privileges.');
+
     } catch (error) {
         console.error('Admin verification failed:', error);
         throw new Error('Permission denied. User is not an administrator.');
