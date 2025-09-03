@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
@@ -32,6 +33,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // The headers() call is intentionally kept to read the pathname for layout decisions.
+  // It must be used within an async component.
   const headersList = headers();
   const pathname = headersList.get('x-next-pathname') || '';
   const isAdminRoute = pathname.startsWith('/admin');

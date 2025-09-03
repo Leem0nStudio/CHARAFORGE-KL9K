@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Supabase client for server-side usage.
  * This file provides a function to get a Supabase client instance
@@ -10,7 +11,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 // This function now returns a promise of the client or null if the keys are missing.
-export function getSupabaseServerClient(): SupabaseClient | null {
+export async function getSupabaseServerClient(): Promise<SupabaseClient | null> {
   const cookieStore = cookies();
 
   // Ensure that the environment variables are set.
