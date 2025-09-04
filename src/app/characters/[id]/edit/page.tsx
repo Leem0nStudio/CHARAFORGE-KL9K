@@ -64,14 +64,11 @@ async function EditCharacterTabs({ characterId, defaultTab }: { characterId: str
   );
 }
 
-interface EditCharacterPageProps {
-  searchParams?: { [key:string]: string | string[] | undefined };
-}
-
+// This page now correctly uses AsyncParams and handles searchParams inside the component.
 export default async function EditCharacterPage({
   params,
   searchParams,
-}: AsyncParams<{ id: string }> & EditCharacterPageProps) {
+}: AsyncParams<{ id: string }> & { searchParams?: { [key:string]: string | string[] | undefined }}) {
   const { id } = await params;
   const defaultTab = typeof searchParams?.tab === 'string' ? searchParams.tab : 'details';
   const validTabs = ['details', 'gallery', 'rpg', 'versions', 'sharing'];

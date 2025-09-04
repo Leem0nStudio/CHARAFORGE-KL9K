@@ -65,8 +65,6 @@ export function BattleView({ playerCharacter, onExit }: BattleViewProps) {
             setOpponent(newOpponent);
             setBattleLog([newOpponent ? 'A new challenger approaches!' : 'No opponents found for this rarity level.']);
         });
-    // CRITICAL FIX: Add playerCharacter.id to the dependency array.
-    // This prevents an infinite loop where the effect re-runs on every render because `playerCharacter` is a new object.
     }, [playerCharacter.id, playerCharacter.core.rarity]);
 
     useEffect(() => {

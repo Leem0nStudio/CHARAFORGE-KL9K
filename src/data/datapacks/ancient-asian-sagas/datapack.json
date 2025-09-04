@@ -1,0 +1,153 @@
+
+{
+    "name": "Ancient Asian Sagas",
+    "author": "CharaForge AI",
+    "description": "Weave tales of honor, myth, and destiny in a world inspired by the rich tapestry of ancient Asian history and mythology. This advanced pack uses nested wildcards to create deeply contextual characters.",
+    "type": "free",
+    "price": 0,
+    "tags": ["fantasy", "samurai", "mythology", "asian", "ninja", "historic"],
+    "isNsfw": false,
+    "schema": {
+        "promptTemplates": [
+            {
+                "name": "Full Character Profile",
+                "template": "{masterpiece_quality}, cinematic full body portrait of a {character_profile}, {scene}, {art_style}"
+            },
+            {
+                "name": "Atmospheric Scene",
+                "template": "{masterpiece_quality}, breathtaking scene of a {location}, {weather}, {time_of_day}, cinematic lighting, {art_style}"
+            },
+            {
+                "name": "Duel",
+                "template": "{masterpiece_quality}, dynamic action shot of a {character_profile} locked in a duel with a rival warrior, {action}, {effects}, {art_style}"
+            }
+        ],
+        "characterProfileSchema": {
+            "masterpiece_quality": [
+                { "value": "masterpiece, best quality, ultra-detailed, sharp focus, 8k" }
+            ],
+            "art_style": [
+                { "value": "digital painting by WLOP and Guweiz" },
+                { "value": "concept art in the style of Sekiro: Shadows Die Twice" },
+                { "value": "traditional ink wash painting (sumi-e)" },
+                { "value": "Ukiyo-e woodblock print style" }
+            ],
+            "character_profile": [
+                { "value": "{social_status} from {clan_identity}, wielding {weaponry}. They are accompanied by a {mythical_companion} and wear {outfit}. Their expression is {expression}." }
+            ],
+            "social_status": [
+                { "value": "noble lord (Daimyo)", "rarity": 4 },
+                { "value": "wandering ronin", "rarity": 2 },
+                { "value": "stoic samurai warrior", "rarity": 3 },
+                { "value": "shadowy shinobi agent", "rarity": 3 },
+                { "value": "serene shrine maiden (Miko)", "rarity": 2 },
+                { "value": "wise mountain monk", "rarity": 2 },
+                { "value": "humble peasant farmer", "rarity": 1 }
+            ],
+            "clan_identity": [
+                { "value": "the Tiger Clan, known for their fierceness" },
+                { "value": "the Crane Clan, famed for their grace and diplomacy" },
+                { "value": "the Serpent Clan, masters of stealth and poison" },
+                { "value": "the Dragon Clan, guardians of ancient magic" }
+            ],
+            "weaponry": [
+                { "value": "{weapon_samurai}" },
+                { "value": "{weapon_shinobi}" },
+                { "value": "{weapon_monk}" },
+                { "value": "{weapon_peasant}" }
+            ],
+            "weapon_samurai": [
+                { "value": "an ornate Katana with a cherry blossom tsuba", "rarity": 3 },
+                { "value": "a heavy Naginata polearm", "rarity": 2 },
+                { "value": "a Yumi longbow", "rarity": 1 }
+            ],
+            "weapon_shinobi": [
+                { "value": "a pair of sharp Kama sickles", "rarity": 2 },
+                { "value": "a Kusarigama (chain-sickle)", "rarity": 3 },
+                { "value": "throwing kunai and shuriken", "rarity": 1 }
+            ],
+            "weapon_monk": [
+                { "value": "a simple Bo staff", "rarity": 1 },
+                { "value": "ornate prayer beads that glow with energy", "rarity": 3 }
+            ],
+            "weapon_peasant": [
+                { "value": "a simple farming hoe", "rarity": 1 },
+                { "value": "a sharpened bamboo spear", "rarity": 2 }
+            ],
+            "mythical_companion": [
+                { "value": "a wise old turtle spirit", "rarity": 2 },
+                { "value": "a mischievous nine-tailed kitsune", "rarity": 3 },
+                { "value": "a majestic Kirin with scales of jade", "rarity": 4 },
+                { "value": "a powerful celestial dragon coiling in the sky", "rarity": 5 },
+                { "value": "a loyal shiba inu", "rarity": 1 }
+            ],
+            "outfit": [
+                { "value": "{outfit_noble lord (Daimyo)}" },
+                { "value": "{outfit_wandering ronin}" },
+                { "value": "{outfit_stoic samurai warrior}" },
+                { "value": "{outfit_shadowy shinobi agent}" },
+                { "value": "{outfit_serene shrine maiden (Miko)}" },
+                { "value": "{outfit_wise mountain monk}" },
+                { "value": "{outfit_humble peasant farmer}" }
+            ],
+            "outfit_noble lord (Daimyo)": [
+                { "value": "an elaborate silk kimono and hakama, adorned with their clan's mon (crest)" }
+            ],
+            "outfit_wandering ronin": [
+                { "value": "a worn, patched kimono under a straw cloak (mino), looking travel-stained" }
+            ],
+            "outfit_stoic samurai warrior": [
+                { "value": "a full suit of traditional O-yoroi armor with a fearsome mempo (face mask)" }
+            ],
+            "outfit_shadowy shinobi agent": [
+                { "value": "a dark Shinobi Shozoku outfit, covering their face" }
+            ],
+            "outfit_serene shrine maiden (Miko)": [
+                { "value": "a white haori and red hakama, holding a gohei wand" }
+            ],
+            "outfit_wise mountain monk": [
+                { "value": "simple saffron robes and prayer beads" }
+            ],
+            "outfit_humble peasant farmer": [
+                { "value": "simple linen clothing and a sugegasa (straw hat)" }
+            ],
+            "expression": [
+                { "value": "a calm, focused expression" },
+                { "value": "a fierce battle cry" },
+                { "value": "a serene, knowing smile" },
+                { "value": "a grim and determined look" }
+            ],
+            "scene": [
+                { "value": "in a {location}, {weather}, during the {time_of_day}" }
+            ],
+            "location": [
+                { "value": "a tranquil bamboo forest" },
+                { "value": "a magnificent castle keep with shoji screens" },
+                { "value": "a snow-covered mountain pass" },
+                { "value": "a village surrounded by rice paddies" },
+                { "value": "a serene temple with a koi pond" }
+            ],
+            "weather": [
+                { "value": "with gentle rain falling" },
+                { "value": "with cherry blossom petals drifting on the wind" },
+                { "value": "with thick fog rolling in" },
+                { "value": "under a clear, full moon" }
+            ],
+            "time_of_day": [
+                { "value": "golden hour" },
+                { "value": "dead of night" },
+                { "value": "misty dawn" },
+                { "value": "high noon" }
+            ],
+            "action": [
+                { "value": "drawing their blade swiftly" },
+                { "value": "meditating under a waterfall" },
+                { "value": "parrying a strike with sparks flying" }
+            ],
+            "effects": [
+                { "value": "glowing magical energy" },
+                { "value": "dramatic ink splash effects" }
+            ]
+        }
+    }
+}
