@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
 
 // This component now only sets up the layout and suspense boundary.
 // It has been simplified to match the expected signature for a Next.js layout.
-export default function EditDataPackLayout({ children }: { children: ReactNode }) {
+export default async function EditDataPackLayout({ children, params }: { children: ReactNode, params: { id: string } }) {
   // The title is now managed by the child page component to avoid complexity here.
   return (
     <AdminPageLayout title="DataPack Editor">
