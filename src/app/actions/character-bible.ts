@@ -1,9 +1,10 @@
+export const runtime = "nodejs";
 
 'use server';
 
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { characterBibleGen } from '@/ai/flows/character-bible/flow';
+import { generateCharacterBible as characterBibleGen } from '@/ai/flows/character-bible/flow'; // Correctly import and alias
 import type { CharacterBible, CharacterBibleInput } from '@/ai/flows/character-bible/types';
 
 // This type can be expanded with more details if needed, e.g., usage counts, ratings
@@ -19,6 +20,7 @@ type SavedPrompt = {
 export async function generateCharacterBible(input: CharacterBibleInput): Promise<{ success: boolean; data?: CharacterBible; message?: string }> {
     try {
         console.log('Generating character bible with input:', input);
+        // Use the aliased import
         const result = await characterBibleGen(input);
         return { success: true, data: result };
     } catch (error) {

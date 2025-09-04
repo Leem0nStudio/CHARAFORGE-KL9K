@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 
 'use server';
 
@@ -5,7 +6,7 @@ import { z } from 'zod';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/types/generation';
 import type { AiModel } from '@/types/ai-model';
-import { generateCharacterBibleAction } from '../actions/character-bible';
+import { generateCharacterBible } from '../actions/character-bible';
 import type { CharacterBible, CharacterBibleInput } from '@/ai/flows/character-bible/types';
 
 
@@ -18,6 +19,67 @@ export type CharacterBibleResult = {
 
 // Re-export for client-side use without needing a separate file
 export type { CharacterBible, CharacterBibleInput };
+
+/**
+ * Builds the render and negative prompts from a CharacterBible object.
+ * @param bible The CharacterBible object.
+ * @returns An object containing the render and negative prompts.
+ */
+function buildPromptsFromBible(bible: CharacterBible): { renderPrompt: string; negativePrompt: string } {
+    const { visual_core, anatomy, outfit, scene, armament, identity } = bible;
+
+    const anatomyDetails = [
+        anatomy.face_shape,
+        `${anatomy.skin_tone} skin`,
+        anatomy.body_type,
+        `${anatomy.hair.length} ${anatomy.hair.style} ${anatomy.hair.color} hair`,
+        `${anatomy.eyes.shape} ${anatomy.eyes.color} eyes`,
+        anatomy.expression,
+        anatomy.body_language,
+        ...anatomy.unique_marks,
+    ].filter(Boolean).join(', ');
+
+    const outfitDetails = [
+        outfit.headgear,
+        outfit.neck,
+        outfit.shoulders,
+        outfit.chest,
+        outfit.arms,
+        outfit.hands_gloves,
+        outfit.waist_belt,
+        outfit.legs,
+        outfit.feet,
+        outfit.back,
+        ...outfit.accessories,
+    ].filter(v => v && v.toLowerCase() !== 'none').join(', ');
+    
+    const armamentDetails = [armament.primary, armament.secondary, ...armament.magic_fx].filter(v => v && v.toLowerCase() !== 'none').join(', ');
+
+    const renderPrompt = [
+        identity.premise,
+        `(${visual_core.art_style})`,
+        ...visual_core.tone,
+        ...visual_core.motifs,
+        anatomyDetails,
+        `wearing ${outfitDetails}`,
+        armamentDetails ? `equipped with ${armamentDetails}` : '',
+        `scene: ${scene.location}, ${scene.weather}, ${scene.time_of_day}`,
+        `lighting: ${scene.lighting}`,
+        `camera: ${scene.camera}`,
+        `pose: ${scene.pose}`,
+    ].filter(Boolean).join(', ');
+
+    const negativePrompt = [
+        'ugly', 'tiling', 'poorly drawn hands', 'poorly drawn feet', 'poorly drawn face',
+        'out of frame', 'extra limbs', 'disfigured', 'deformed', 'body out of frame',
+        'bad anatomy', 'watermark', 'signature', 'cut off', 'low contrast',
+        'underexposed', 'overexposed', 'bad art', 'beginner', 'amateur',
+        'distorted face', 'blurry', 'draft', 'grainy',
+        ...(bible.meta.tags.includes('nsfw') ? [] : ['nsfw', 'nudity', 'sexual'])
+    ].join(', ');
+
+    return { renderPrompt, negativePrompt };
+}
 
 // Schema for the second step: generating the portrait
 const GeneratePortraitInputSchema = z.object({
@@ -43,19 +105,24 @@ export type GeneratePortraitOutput = {
 // This is a wrapper around the new Character Bible action, keeping the interface simple for the generator.
 export async function generateCharacterCore(input: CharacterBibleInput): Promise<{ success: boolean; message: string; data?: CharacterBibleResult; error?: string; }> {
     try {
-        const result = await generateCharacterBibleAction(input);
-        if (result.success && result.characterBible && result.renderPrompt && result.negativePrompt) {
+        // Call the corrected action
+        const result = await generateCharacterBible(input);
+
+        if (result.success && result.data) {
+            // Build the prompts from the bible data
+            const { renderPrompt, negativePrompt } = buildPromptsFromBible(result.data);
+
             return { 
                 success: true, 
                 message: "Character Core generated successfully!",
                 data: {
-                    bible: result.characterBible,
-                    renderPrompt: result.renderPrompt,
-                    negativePrompt: result.negativePrompt,
+                    bible: result.data,
+                    renderPrompt,
+                    negativePrompt,
                 }
             };
         }
-        throw new Error(result.error || "Failed to generate Character Bible.");
+        throw new Error(result.message || "Failed to generate Character Bible.");
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, message: "Failed to generate character core.", error: message };
