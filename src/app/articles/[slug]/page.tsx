@@ -11,13 +11,9 @@ import { Separator } from '@/components/ui/separator';
 import { BackButton } from '@/components/back-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getPublicUserProfile } from '@/app/actions/user';
+import type { AsyncParams } from '@/types/next';
 
-type Props = {
-  params: { slug: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-};
-
-// This is a basic Markdown-to-HTML parser. 
+// This is a basic Markdown-to-HTML parser.
 // For a production app, a more robust library like 'marked' or 'react-markdown' would be better.
 function SimpleMarkdown({ content }: { content: string }) {
     // Remove the first image from the content as it's now the cover
@@ -48,18 +44,19 @@ const extractCoverImage = (content: string): string | null => {
     return match ? match[1] : null;
 };
 
-export default async function ArticlePage({ params }: Props) {
-    const article = await getArticleBySlug(params.slug);
+export default async function ArticlePage({ params }: AsyncParams<{ slug: string }>) {
+    const { slug } = await params;
+    const article = await getArticleBySlug(slug);
 
     if (!article) {
         notFound();
     }
-    
+
     const [initialComments, authorProfile] = await Promise.all([
         getComments('article', article.id),
         getPublicUserProfile(article.userId)
     ]);
-    
+
     const coverImage = extractCoverImage(article.content);
     const authorFallback = authorProfile?.displayName?.charAt(0) || article.author.charAt(0) || '?';
 

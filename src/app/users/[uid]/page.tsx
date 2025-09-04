@@ -4,7 +4,6 @@
 import { notFound } from 'next/navigation';
 import { getPublicUserProfile, getFollowStatus } from '@/app/actions/user';
 import { getPublicCharactersForUser } from '@/app/actions/creations';
-
 import { BackButton } from '@/components/back-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,11 +13,14 @@ import { FollowButton } from '@/components/user/follow-button';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import type { AsyncParams } from '@/types/next';
 
-export default async function UserProfilePage({ params }: { params: { uid: string } }) {
+export default async function UserProfilePage({ params }: AsyncParams<{ uid: string }>) {
+    const { uid } = await params;
+
     const [userProfile, userCreations] = await Promise.all([
-        getPublicUserProfile(params.uid),
-        getPublicCharactersForUser(params.uid),
+        getPublicUserProfile(uid),
+        getPublicCharactersForUser(uid),
     ]);
 
     if (!userProfile) {
@@ -34,7 +36,7 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
             currentUserId = user?.id || null;
 
             if (currentUserId) {
-                const status = await getFollowStatus(params.uid);
+                const status = await getFollowStatus(uid);
                 isFollowing = status.isFollowing;
             }
         }
@@ -42,7 +44,7 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
         // User not logged in, which is fine
     }
 
-    const isOwner = currentUserId === params.uid;
+    const isOwner = currentUserId === uid;
 
     const fallback = userProfile.displayName?.charAt(0) || '?';
 
@@ -64,7 +66,7 @@ export default async function UserProfilePage({ params }: { params: { uid: strin
                             <div className="space-y-4">
                                 <FollowButton 
                                     currentUserId={currentUserId}
-                                    profileUserId={params.uid}
+                                    profileUserId={uid}
                                     isFollowingInitially={isFollowing}
                                 />
                                 <div className="flex justify-around text-center pt-4 border-t">

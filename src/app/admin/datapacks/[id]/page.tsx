@@ -1,11 +1,14 @@
+
 import { EditDataPackForm } from '@/app/admin/datapacks/[id]/edit-datapack-form';
+import type { AsyncParams } from '@/types/next';
 
-// The PageProps interface is removed as it's the source of the typing error with Next.js 15.
-// The params are now typed inline in the component function signature.
+// Using the global AsyncParams helper to correctly type the props for a Next.js 15 dynamic page.
+// The page is async, and we must `await` the params object to access its properties.
+export default async function EditDataPackPage({ params }: AsyncParams<{ id: string }>) {
+  // Awaiting the params Promise to get the actual route parameters.
+  const { id } = await params;
 
-export default async function EditDataPackPage({ params }: { params: { id: string } }) {
-  // The form component now handles its own data fetching.
-  // We just need to pass the ID from the URL.
-  // Next.js automatically resolves the params for async server components.
-  return <EditDataPackForm packId={params.id} />;
+  // The form component handles its own data fetching.
+  // We just need to pass the resolved ID from the URL.
+  return <EditDataPackForm packId={id} />;
 }
