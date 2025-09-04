@@ -14,14 +14,14 @@ import { uploadToStorage } from '@/services/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Star, Trash2, FileUp, Wand2, Image as ImageIcon, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, Star, Trash2, FileUp, Wand2, Image as ImageIcon, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { v4 as uuidv4 } from 'uuid';
 import { ModelSelectorModal } from '@/components/model-selector-modal';
 import type { ImageEngineConfig } from '@/ai/flows/character-image/types';
 import type { AiModel } from '@/types/ai-model';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
 const UpdateImagesSchema = z.object({
@@ -93,7 +93,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
       try {
         const models = await getModels('model');
         setAvailableModels(models);
-      } catch {
+      } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not load AI models.' });
       } finally {
         setIsLoadingModels(false);
@@ -272,7 +272,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                 </Button>
                                 {isPrimary && (
                                     <Button type="button" variant="secondary" size="sm" className="w-full" onClick={handleReprocessWithConfirmation} disabled={isReprocessing || isShowcaseProcessing}>
-                                        {isReprocessing || isShowcaseProcessing ? <Loader2 className="animate-spin" /> : <ImageIcon className="mr-2" />}
+                                        {isReprocessing || isShowcaseProcessing ? <Loader2 className="animate-spin" /> : <RefreshCw className="mr-2" />}
                                         {character.visuals.showcaseImageUrl ? 'Reprocess' : 'Process'}
                                     </Button>
                                 )}
@@ -288,7 +288,7 @@ export function EditGalleryTab({ character }: { character: Character }) {
                                 </Button>
                                 {isPrimary && (
                                     <Button type="button" variant="secondary" size="sm" className="w-full" onClick={handleReprocessWithConfirmation} disabled={isReprocessing || isShowcaseProcessing}>
-                                        {isReprocessing || isShowcaseProcessing ? <Loader2 className="animate-spin" /> : <ImageIcon className="mr-2" />}
+                                        {isReprocessing || isShowcaseProcessing ? <Loader2 className="animate-spin" /> : <RefreshCw className="mr-2" />}
                                         {character.visuals.showcaseImageUrl ? 'Reprocess' : 'Process'}
                                     </Button>
                                 )}
