@@ -13,6 +13,8 @@ import { EditVersionsTab } from './edit-versions-tab';
 import { EditSharingTab } from './edit-sharing-tab';
 import { RpgAttributesTab } from './rpg-attributes-tab';
 import { Loader2 } from 'lucide-react';
+import type { AsyncParams } from '@/types/next';
+
 
 async function EditCharacterTabs({ characterId, defaultTab }: { characterId: string; defaultTab: string }) {
   let uid: string;
