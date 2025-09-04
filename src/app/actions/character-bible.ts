@@ -1,51 +1,42 @@
 
 'use server';
 
-import { generateCharacterBible } from "@/ai/flows/character-bible/flow";
-import type { CharacterBible, CharacterBibleInput } from "@/ai/flows/character-bible/types";
-import { buildNegativePrompt, buildRenderPrompt } from "@/services/prompt-builder";
+import { z } from 'zod';
+import { ai } from '@/ai/genkit';
+import { characterBibleGen } from '@/ai/flows/character-bible/flow';
+import type { CharacterBible, CharacterBibleInput } from '@/ai/flows/character-bible/types';
 
-// Define the response type for the server action
-export type GenerateCharacterBibleResponse = {
-    success: boolean;
-    message: string;
-    characterBible?: CharacterBible;
-    renderPrompt?: string;
-    negativePrompt?: string;
-    error?: string;
+// This type can be expanded with more details if needed, e.g., usage counts, ratings
+type SavedPrompt = {
+    id: string;
+    text: string;
+    createdAt: Date;
 };
 
 /**
- * A server action that orchestrates the entire Character Bible generation process.
- * It takes user input, calls the Genkit flow to get the structured JSON,
- * and then uses the prompt builder service to assemble the final prompts.
- * @param input - The user's specifications for the character.
- * @returns A promise that resolves to a `GenerateCharacterBibleResponse` object.
+ * Server action to generate a character bible using the Genkit flow.
  */
-export async function generateCharacterBibleAction(input: CharacterBibleInput): Promise<GenerateCharacterBibleResponse> {
+export async function generateCharacterBible(input: CharacterBibleInput): Promise<{ success: boolean; data?: CharacterBible; message?: string }> {
     try {
-        // 1. Call the Genkit flow to get the structured Character Bible from the AI.
-        const characterBible = await generateCharacterBible(input);
-
-        // 2. Use the prompt builder service to construct the final prompts from the bible.
-        const renderPrompt = buildRenderPrompt(characterBible);
-        const negativePrompt = buildNegativePrompt(input.negative_hints);
-
-        return {
-            success: true,
-            message: "Character Bible generated successfully.",
-            characterBible,
-            renderPrompt,
-            negativePrompt,
-        };
-
+        console.log('Generating character bible with input:', input);
+        const result = await characterBibleGen(input);
+        return { success: true, data: result };
     } catch (error) {
-        const message = error instanceof Error ? error.message : "An unknown server error occurred.";
-        console.error("Character Bible Action Error:", error);
-        return {
-            success: false,
-            message: "Failed to generate Character Bible.",
-            error: message,
-        };
+        console.error('Error generating character bible:', error);
+        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return { success: false, message };
     }
+}
+
+/**
+ * Fetches a list of saved prompts for the current user.
+ * NOTE: This is a placeholder. A real implementation would fetch from a database.
+ */
+export async function getSavedPrompts(): Promise<SavedPrompt[]> {
+    // Placeholder data
+    return [
+        { id: '1', text: 'A grizzled space marine captain with a dark secret', createdAt: new Date() },
+        { id: '2', text: 'An elven princess who secretly yearns for a life of piracy', createdAt: new Date() },
+        { id: '3', text: 'A sentient robot street artist in a cyberpunk city', createdAt: new Date() },
+    ];
 }
