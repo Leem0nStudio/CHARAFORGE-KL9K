@@ -1,6 +1,4 @@
 
-
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -17,6 +15,7 @@ import { generateDialogueFlow } from '@/ai/flows/dialogue-generation/flow';
 import { generateSpeech } from '@/ai/flows/text-to-speech/flow';
 import { generateAndSaveSkills } from './rpg';
 import type { CharacterBibleResult } from '../character-generator/actions';
+import { toCharacterObject } from '@/services/character-hydrator';
 
 // #region Helper Functions for Stat Generation
 type Stat = keyof RpgAttributes['stats'];
@@ -669,12 +668,21 @@ export async function rollForCharacterStats(characterId: string): Promise<Action
 
     } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to roll for stats.";
-        const supabase = await getSupabaseServerClient();
-        if (supabase) {
-            await supabase
+        const supabaseClient = await getSupabaseServerClient();
+        if (supabaseClient) {
+            const { data: characterData, error: fetchError } = await supabaseClient
                 .from('characters')
-                .update({ rpg_details: { ...((await supabase.from('characters').select('rpg_details').eq('id', characterId).single()).data?.rpg_details), statsStatus: 'failed', skillsStatus: 'failed' }})
-                .eq('id', characterId);
+                .select('rpg_details')
+                .eq('id', characterId)
+                .single();
+
+            if (characterData) {
+                const existingRpg = characterData.rpg_details || {};
+                 await supabaseClient
+                    .from('characters')
+                    .update({ rpg_details: { ...existingRpg, statsStatus: 'failed', skillsStatus: 'failed' }})
+                    .eq('id', characterId);
+            }
         }
         return { success: false, message };
     }

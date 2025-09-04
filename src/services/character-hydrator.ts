@@ -102,12 +102,14 @@ export async function toCharacterObject(docId: string, data: DocumentData): Prom
     if (!finalCharacter.meta.userName && finalCharacter.meta.userId) {
         try {
             const { getSupabaseServerClient } = await import('@/lib/supabase/server');
-            const supabase = getSupabaseServerClient();
-            const { data: userData, error } = await supabase.from('users').select('display_name').eq('id', finalCharacter.meta.userId).single();
-            if (userData) {
-                finalCharacter.meta.userName = userData.display_name || 'Anonymous';
+            const supabase = await getSupabaseServerClient();
+            if (supabase) {
+                const { data: userData, error } = await supabase.from('users').select('display_name').eq('id', finalCharacter.meta.userId).single();
+                if (userData) {
+                    finalCharacter.meta.userName = userData.display_name || 'Anonymous';
+                }
+                if (error) console.warn(`Hydration: Could not fetch user ${finalCharacter.meta.userId}`);
             }
-            if (error) console.warn(`Hydration: Could not fetch user ${finalCharacter.meta.userId}`);
         } catch (e) {
             console.error("Hydration failed for user", e);
         }

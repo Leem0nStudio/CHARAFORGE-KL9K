@@ -18,7 +18,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export async function uploadToStorage(
     fileSource: File | Buffer | ArrayBuffer | string,
     destinationPath: string,
-    supabaseClient?: SupabaseClient
+    supabaseClient?: SupabaseClient | null
 ): Promise<string> {
     const supabase = supabaseClient || await getSupabaseServerClient();
     if (!supabase) {
