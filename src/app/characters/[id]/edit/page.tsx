@@ -13,6 +13,7 @@ import { EditVersionsTab } from './edit-versions-tab';
 import { EditSharingTab } from './edit-sharing-tab';
 import { RpgAttributesTab } from './rpg-attributes-tab';
 import { Loader2 } from 'lucide-react';
+import type { AsyncParams } from '@/types/next';
 
 async function EditCharacterTabs({ characterId, defaultTab }: { characterId: string; defaultTab: string }) {
   let uid: string;
@@ -64,14 +65,14 @@ async function EditCharacterTabs({ characterId, defaultTab }: { characterId: str
 }
 
 interface EditCharacterPageProps {
-  params: { id: string };
   searchParams?: { [key:string]: string | string[] | undefined };
 }
 
 export default async function EditCharacterPage({
   params,
   searchParams,
-}: EditCharacterPageProps) {
+}: AsyncParams<{ id: string }> & EditCharacterPageProps) {
+  const { id } = await params;
   const defaultTab = typeof searchParams?.tab === 'string' ? searchParams.tab : 'details';
   const validTabs = ['details', 'gallery', 'rpg', 'versions', 'sharing'];
   const finalDefaultTab = validTabs.includes(defaultTab) ? defaultTab : 'details';
@@ -88,7 +89,7 @@ export default async function EditCharacterPage({
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         }>
-          <EditCharacterTabs characterId={params.id} defaultTab={finalDefaultTab} />
+          <EditCharacterTabs characterId={id} defaultTab={finalDefaultTab} />
         </Suspense>
       </div>
     </div>
