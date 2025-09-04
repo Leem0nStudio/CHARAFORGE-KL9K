@@ -32,7 +32,7 @@ export default async function Home() {
         if (featuredCharacters.length === 0) return null;
         // Prefer a higher-rarity character for the hero section
         const sortedByRarity = [...featuredCharacters].sort((a, b) => (b.core.rarity || 0) - (a.core.rarity || 0));
-        return sortedByRarity[0];
+        return sortedByRarity[0] ?? null;
     })();
 
 

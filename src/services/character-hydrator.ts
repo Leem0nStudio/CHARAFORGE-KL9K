@@ -59,11 +59,11 @@ export async function toCharacterObject(docId: string, data: DocumentData): Prom
         },
         meta: {
             userId: meta?.userId || data.user_id || '',
-            userName: meta?.userName || undefined, // Will be hydrated later
+            userName: meta?.userName || undefined, // Denormalized for display
             status: meta?.status || 'private',
             isNsfw: meta?.isNsfw || false,
             dataPackId: meta?.dataPackId || null,
-            dataPackName: meta?.dataPackName || null,
+            dataPackName: meta?.dataPackName || null, // Denormalized for display
             createdAt: createdAt,
             likes: meta?.likes || 0,
         },
@@ -74,7 +74,7 @@ export async function toCharacterObject(docId: string, data: DocumentData): Prom
             versions: lineage?.versions || [{ id: docId, name: 'v.1', version: 1 }],
             branchedFromId: lineage?.branchedFromId || null,
             originalAuthorId: lineage?.originalAuthorId || null,
-            originalAuthorName: lineage?.originalAuthorName || undefined, // Will be hydrated later
+            originalAuthorName: lineage?.originalAuthorName || undefined, // Denormalized for display
         },
         settings: {
             isSharedToDataPack: settings?.isSharedToDataPack || false,

@@ -68,7 +68,7 @@ export function GachaCard({ character, disableLink = false, priority = false }: 
     }
 
     return (
-        <Link href={`/showcase/${character.id}`} className="block h-full">
+        <Link href={`/characters/${character.id}`} className="block h-full">
             {cardContent}
         </Link>
     );

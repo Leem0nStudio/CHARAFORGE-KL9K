@@ -23,7 +23,7 @@ export async function likeCharacter(characterId: string): Promise<ActionResponse
         if (error) throw error;
         
         // This could be further optimized with database functions/triggers
-        revalidatePath(`/showcase/${characterId}`);
+        revalidatePath(`/characters/${characterId}`);
         return { success: true, message: "Character liked!" };
 
     } catch (error) {
@@ -41,7 +41,7 @@ export async function unlikeCharacter(characterId: string): Promise<ActionRespon
        const { error } = await supabase.from('likes').delete().match({ character_id: characterId, user_id: uid });
        if (error) throw error;
 
-        revalidatePath(`/showcase/${characterId}`);
+        revalidatePath(`/characters/${characterId}`);
         return { success: true, message: "Character unliked." };
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -86,7 +86,7 @@ export async function unfollowUser(userIdToUnfollow: string): Promise<ActionResp
 }
 
 export async function checkRelationship(userId: string, otherUserId: string): Promise<{ isFollowing: boolean; isFollowedBy: boolean;}> {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { isFollowing: false, isFollowedBy: false };
     const [followingRes, followedByRes] = await Promise.all([
         supabase.from('follows').select('follower_id').eq('follower_id', userId).eq('following_id', otherUserId).maybeSingle(),
@@ -100,7 +100,7 @@ export async function checkRelationship(userId: string, otherUserId: string): Pr
 
 export async function getCharacterLikeStatus(characterId: string, userId?: string | null): Promise<boolean> {
     if (!userId) return false;
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return false;
     const { data, error } = await supabase.from('likes').select('user_id').eq('character_id', characterId).eq('user_id', userId).single();
     if(error && error.code !== 'PGRST116') console.error("Error getting like status", error);

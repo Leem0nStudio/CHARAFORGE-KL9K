@@ -97,7 +97,7 @@ export async function createCharacterVersion(characterId: string): Promise<Actio
     }
 
     revalidatePath('/characters');
-    revalidatePath(`/showcase/${newCharacterId}/edit`);
+    revalidatePath(`/characters/${newCharacterId}/edit`);
 
     return { success: true, message: `Created new version: ${newVersionName}`, characterId: newCharacterId };
 

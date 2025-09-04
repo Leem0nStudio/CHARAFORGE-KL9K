@@ -140,7 +140,7 @@ export default async function UserProfilePage({ params }: AsyncParams<{ uid: str
                         </div>
                     ) : (
                         <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg bg-card/50">
-                            <p>This creator hasn&apos;t published any characters yet.</p>
+                            <p>This creator hasn't published any characters yet.</p>
                         </div>
                     )}
                 </div>
