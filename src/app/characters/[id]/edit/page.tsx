@@ -65,15 +65,14 @@ async function EditCharacterTabs({ characterId, defaultTab }: { characterId: str
   );
 }
 
-// This page now correctly uses the standard Next.js props signature.
+
 export default async function EditCharacterPage({
   params,
   searchParams,
-}: {
-  params: { id: string };
+}: AsyncParams<{ id: string }> & {
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
-  const { id } = params;
+  const { id } = await params;
   const defaultTab = typeof searchParams?.tab === 'string' ? searchParams.tab : 'details';
   const validTabs = ['details', 'gallery', 'rpg', 'versions', 'sharing'];
   const finalDefaultTab = validTabs.includes(defaultTab) ? defaultTab : 'details';
