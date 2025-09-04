@@ -79,27 +79,6 @@ function buildPromptsFromBible(bible: CharacterBible): { renderPrompt: string; n
     return { renderPrompt, negativePrompt };
 }
 
-// Schema for the second step: generating the portrait
-const GeneratePortraitInputSchema = z.object({
-    description: z.string().min(1, { message: "A physical description is required." }).max(4000),
-    negativePrompt: z.string().optional(),
-    aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
-    backgroundStyle: z.enum(['scenic', 'white', 'black']).default('scenic'), // New field
-    selectedModel: z.custom<AiModel>().refine(data => !!data, { message: 'A base model must be selected.' }),
-    selectedLora: z.custom<AiModel>().optional().nullable(),
-    loraWeight: z.number().min(0).max(2).optional(),
-    userApiKey: z.string().optional(), // Pass the user's API key if available
-});
-export type GeneratePortraitInput = z.infer<typeof GeneratePortraitInputSchema>;
-
-export type GeneratePortraitOutput = {
-    success: boolean;
-    message: string;
-    imageUrl?: string;
-    error?: string;
-}
-
-
 // This is a wrapper around the new Character Bible action, keeping the interface simple for the generator.
 export async function generateCharacterCore(input: CharacterBibleInput): Promise<{ success: boolean; message: string; data?: CharacterBibleResult; error?: string; }> {
     try {
@@ -127,6 +106,25 @@ export async function generateCharacterCore(input: CharacterBibleInput): Promise
     }
 }
 
+// Schema for the second step: generating the portrait
+const GeneratePortraitInputSchema = z.object({
+    description: z.string().min(1, { message: "A physical description is required." }).max(4000),
+    negativePrompt: z.string().optional(),
+    aspectRatio: z.enum(['1:1', '16:9', '9:16']).default('1:1'),
+    backgroundStyle: z.enum(['scenic', 'white', 'black']).default('scenic'), // New field
+    selectedModel: z.custom<AiModel>().refine(data => !!data, { message: 'A base model must be selected.' }),
+    selectedLora: z.custom<AiModel>().optional().nullable(),
+    loraWeight: z.number().min(0).max(2).optional(),
+    userApiKey: z.string().optional(), // Pass the user's API key if available
+});
+export type GeneratePortraitInput = z.infer<typeof GeneratePortraitInputSchema>;
+
+export type GeneratePortraitOutput = {
+    success: boolean;
+    message: string;
+    imageUrl?: string;
+    error?: string;
+}
 
 export async function generateCharacterPortrait(input: GeneratePortraitInput): Promise<GeneratePortraitOutput> {
     const validation = GeneratePortraitInputSchema.safeParse(input);

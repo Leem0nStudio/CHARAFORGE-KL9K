@@ -17,7 +17,7 @@ type ActionResponse = {
     data?: Partial<AiModel>; // Used to return pre-filled data
 };
 
-const toAiModelObject = (row: Record<string, any>): AiModel => ({
+const toAiModelObject = (row: any): AiModel => ({
     id: row.id,
     name: row.name,
     type: row.type,

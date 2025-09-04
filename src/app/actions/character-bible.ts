@@ -1,7 +1,5 @@
 'use server';
 
-export const runtime = "nodejs";
-
 import { z } from 'zod';
 import { ai } from '@/ai/genkit';
 import { generateCharacterBible as characterBibleGen } from '@/ai/flows/character-bible/flow'; // Correctly import and alias
@@ -19,7 +17,6 @@ type SavedPrompt = {
  */
 export async function generateCharacterBible(input: CharacterBibleInput): Promise<{ success: boolean; data?: CharacterBible; message?: string }> {
     try {
-        console.log('Generating character bible with input:', input);
         // Use the aliased import
         const result = await characterBibleGen(input);
         return { success: true, data: result };
