@@ -1,5 +1,3 @@
-
-      
 'use server';
 
 /**
@@ -145,8 +143,8 @@ async function queryHuggingFaceInferenceAPI(data: { inputs: string, modelId: str
         return `data:${mimeType};base64,${base64Image}`;
 
     } catch (error) {
-        console.error("Hugging Face Inference API Error:", error);
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        console.error("Hugging Face Inference API Error:", message);
         throw new Error(`Failed to generate image via Hugging Face. Error: ${message}`);
     }
 }
@@ -227,7 +225,7 @@ async function queryModelsLabAPI(data: { prompt: string, negativePrompt?: string
 
         if (result.status === 'error') {
              const errorMessage = result.message || JSON.stringify(result);
-             console.error(`ModelsLab API Error:`, result);
+             console.error(`ModelsLab API Error:`, errorMessage);
              throw new Error(`ModelsLab API error: ${errorMessage}`);
         }
         
@@ -253,8 +251,8 @@ async function queryModelsLabAPI(data: { prompt: string, negativePrompt?: string
         throw new Error('ModelsLab API did not return a valid image or status.');
 
     } catch (error) {
-        console.error("ModelsLab API Error:", error);
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        console.error("ModelsLab API Error:", message);
         throw new Error(`Failed to generate image via ModelsLab. Error: ${message}`);
     }
 }
@@ -312,8 +310,8 @@ const generateCharacterImageFlow = ai.defineFlow(
             });
             imageUrl = media?.url;
         } catch (error) {
-            console.error(`Error generating image with Gemini:`, error);
             const message = error instanceof Error ? error.message : `An unknown error occurred with the Gemini engine.`;
+            console.error(`Error generating image with Gemini:`, message);
             throw new Error(`Failed to generate character image via Gemini. ${message}`);
         }
     } else if (engineId === 'modelslab') {
@@ -415,8 +413,8 @@ const generateCharacterImageFlow = ai.defineFlow(
             });
 
         } catch (error) {
-            console.error("Error in Hugging Face flow:", error);
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
+            console.error("Error in Hugging Face flow:", message);
             throw new Error(message);
         }
     } else if (engineId === 'openrouter') {
@@ -454,8 +452,8 @@ const generateCharacterImageFlow = ai.defineFlow(
             }
 
         } catch (error) {
-            console.error("Error in OpenRouter flow:", error);
             const message = error instanceof Error ? error.message : "An unknown error occurred.";
+            console.error("Error in OpenRouter flow:", message);
             throw new Error(`Failed to generate image via OpenRouter. Error: ${message}`);
         }
     } else {
@@ -469,6 +467,3 @@ const generateCharacterImageFlow = ai.defineFlow(
     return { imageUrl };
   }
 );
-    
-
-    
