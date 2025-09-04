@@ -1,7 +1,5 @@
 'use server';
 
-export const runtime = "nodejs";
-
 import { z } from 'zod';
 import { generateCharacterImage } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/types/generation';
