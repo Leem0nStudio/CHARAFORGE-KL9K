@@ -1,6 +1,6 @@
-export const runtime = "nodejs";
-
 'use server';
+
+export const runtime = "nodejs";
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
