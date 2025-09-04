@@ -2,6 +2,7 @@
 'use server';
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * @fileoverview This file contains the server-side authentication gatekeeper.
@@ -18,12 +19,17 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
  * @returns {Promise<string>} A promise that resolves to the authenticated user's UID.
  */
 export async function verifyAndGetUid(): Promise<string> {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     throw new Error("Authentication service is unavailable on the server.");
   }
   
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session }, error } = await supabase.auth.getSession();
+
+  if (error) {
+    console.error('Error fetching session:', error);
+    throw new Error('Authentication service failed.');
+  }
 
   if (!session) {
     throw new Error('User session not found. Please log in again.');
@@ -44,11 +50,12 @@ export async function verifyAndGetUid(): Promise<string> {
  * @returns {Promise<string>} A promise that resolves to the authenticated admin's UID.
  */
 export async function verifyIsAdmin(): Promise<string> {
-    const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) {
-        throw new Error("Authentication service is unavailable on the server.");
+      throw new Error("Authentication service is unavailable on the server.");
     }
+
+    const uid = await verifyAndGetUid();
     
     try {
         const { data: user, error } = await supabase.from('users').select('role').eq('id', uid).single();
