@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useCallback } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -117,7 +117,7 @@ export function EditDataPackForm({ packId }: { packId: string }) {
     mode: 'onChange',
   });
   
-  const fetchDataAndResetForm = async (id: string) => {
+  const fetchDataAndResetForm = useCallback(async (id: string) => {
       setIsLoading(true);
       try {
         const data = await getDataPackForAdmin(id);
@@ -135,20 +135,22 @@ export function EditDataPackForm({ packId }: { packId: string }) {
             imported: data.imported || false,
             coverImageUrl: data.coverImageUrl || undefined,
           });
+        } else {
+          throw new Error('Datapack not found');
         }
-      } catch (e) {
+      } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch DataPack data.' });
+        router.push('/admin/datapacks');
       } finally {
         setIsLoading(false);
       }
-  };
+  }, [form, toast, router]);
 
   useEffect(() => {
     if (packId && packId !== 'new') {
        fetchDataAndResetForm(packId);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packId]);
+  }, [packId, fetchDataAndResetForm]);
 
  const handleAiSchemaGenerated = (schemaYaml: string) => {
     try {

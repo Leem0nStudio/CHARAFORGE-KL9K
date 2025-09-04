@@ -95,7 +95,7 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
         const [models, loras] = await Promise.all([getModels('model'), getModels('lora')]);
         setAvailableModels(models);
         setAvailableLoras(loras);
-      } catch (error) {
+      } catch {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not load AI models.' });
       } finally {
         setIsLoadingModels(false);

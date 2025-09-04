@@ -1,7 +1,4 @@
 
-
-'use server';
-
 import { EditDataPackForm } from '@/app/admin/datapacks/[id]/edit-datapack-form';
 
 export default async function EditDataPackPage({ params }: { params: { id: string } }) {

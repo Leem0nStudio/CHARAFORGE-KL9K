@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -149,10 +148,9 @@ export async function createDataPackFromFiles(formData: FormData): Promise<Actio
 
         if (insertError) throw insertError;
 
-        let coverImageUrl = null;
         if(coverImageBuffer) {
             const destinationPath = `datapacks/${insertedRow.id}/cover.png`;
-            coverImageUrl = await uploadToStorage(coverImageBuffer, destinationPath);
+            const coverImageUrl = await uploadToStorage(coverImageBuffer, destinationPath);
             const { error: updateError } = await supabase.from('datapacks').update({ cover_image_url: coverImageUrl }).eq('id', insertedRow.id);
             if(updateError) console.warn("Failed to update cover image URL for new datapack", updateError);
         }
