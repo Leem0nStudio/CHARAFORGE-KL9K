@@ -13,7 +13,6 @@ import { Separator } from '../ui/separator';
 import type { Comment } from '@/app/actions/comments';
 import { CommentSection } from '@/components/comments/comment-section';
 
-
 const PathIcon: React.FC<{ path: string | null }> = ({ path }) => {
     const iconMap: Record<string, React.ReactNode> = {
       Warrior: <Swords className="text-red-400" />,
@@ -148,7 +147,7 @@ export function GenshinLikeShowcase({ character, currentUserId, isLikedInitially
           </div>
           <div className="absolute inset-0 flex items-center justify-center">
             <Image 
-                src={character.visuals.showcaseImageUrl || character.visuals.imageUrl} 
+                src={character.visuals.showcaseImageUrl || character.visuals.imageUrl || 'https://placehold.co/600x600.png'}
                 alt={character.core.name} 
                 width={1024}
                 height={1024}

@@ -31,7 +31,7 @@ const rarityStyles = {
 };
 
 
-export function GachaCard({ character, disableLink = false }: { character: Character, disableLink?: boolean }) {
+export function GachaCard({ character, disableLink = false, priority = false }: { character: Character, disableLink?: boolean, priority?: boolean }) {
     const rarity = character.core.rarity || 1;
     const styles = rarityStyles[rarity as keyof typeof rarityStyles] || rarityStyles[1];
 
@@ -45,9 +45,10 @@ export function GachaCard({ character, disableLink = false }: { character: Chara
         whileHover={{ y: -5 }}
       >
         <Image
-          src={character.visuals.imageUrl}
+          src={character.visuals.imageUrl || 'https://placehold.co/600x600.png'}
           alt={character.core.name}
           fill
+          priority={priority} // Pass the priority prop to the Next.js Image component
           className="object-cover transition-transform duration-300 group-hover:scale-105"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
@@ -71,25 +72,4 @@ export function GachaCard({ character, disableLink = false }: { character: Chara
             {cardContent}
         </Link>
     );
-}
-
-// Add keyframes for subtle glow animations if they don't exist
-const customKeyframes = `
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
-  50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.7); }
-}
-@keyframes pulse-glow-subtle {
-  0%, 100% { box-shadow: 0 0 10px rgba(192, 132, 252, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(192, 132, 252, 0.5); }
-}
-`;
-
-const styleSheet = typeof document !== 'undefined' ? document.styleSheets[0] : null;
-if (styleSheet && !styleSheet.cssRules[0]?.cssText.includes('pulse-glow')) {
-    try {
-        styleSheet.insertRule(customKeyframes, styleSheet.cssRules.length);
-    } catch(e) {
-        // In some environments, this might not be possible. It's a progressive enhancement.
-    }
 }
