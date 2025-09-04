@@ -111,6 +111,7 @@ export type Character = {
   generation: {
     textEngine?: 'gemini' | 'openrouter';
     imageEngine?: 'gemini' | 'openrouter' | 'huggingface' | 'vertexai' | 'comfyui' | 'modelslab' | 'rundiffusion';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     wizardData?: Record<string, any> | null;
     originalPrompt?: string; // The original simple text prompt
   }
@@ -141,6 +142,7 @@ export const SaveCharacterInputSchema = z.object({
   dataPackId: z.string().optional().nullable(),
   textEngine: z.enum(['gemini', 'openrouter']).optional(),
   imageEngine: z.enum(['gemini', 'openrouter', 'huggingface', 'vertexai', 'comfyui', 'modelslab', 'rundiffusion']).optional(),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   wizardData: z.record(z.any()).optional().nullable(),
   originalPrompt: z.string().optional(),
 });
