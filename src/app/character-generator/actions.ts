@@ -1,10 +1,10 @@
 'use server';
 
 import { z } from 'zod';
-import { generateCharacterImage } from '@/ai/flows/character-image/flow';
+import { generateCharacterImage as generateCharacterImageFlow } from '@/ai/flows/character-image/flow';
 import type { ImageEngineConfig } from '@/types/generation';
 import type { AiModel } from '@/types/ai-model';
-import { generateCharacterBible } from '../actions/character-bible';
+import { generateCharacterBible as generateCharacterBibleFlow } from '@/ai/flows/character-bible/flow';
 import type { CharacterBible, CharacterBibleInput } from '@/ai/flows/character-bible/types';
 
 
@@ -82,24 +82,21 @@ function buildPromptsFromBible(bible: CharacterBible): { renderPrompt: string; n
 // This is a wrapper around the new Character Bible action, keeping the interface simple for the generator.
 export async function generateCharacterCore(input: CharacterBibleInput): Promise<{ success: boolean; message: string; data?: CharacterBibleResult; error?: string; }> {
     try {
-        // Call the corrected action
-        const result = await generateCharacterBible(input);
+        // Call the Genkit flow
+        const result = await generateCharacterBibleFlow(input);
 
-        if (result.success && result.data) {
-            // Build the prompts from the bible data
-            const { renderPrompt, negativePrompt } = buildPromptsFromBible(result.data);
+        // Build the prompts from the bible data
+        const { renderPrompt, negativePrompt } = buildPromptsFromBible(result);
 
-            return { 
-                success: true, 
-                message: "Character Core generated successfully!",
-                data: {
-                    bible: result.data,
-                    renderPrompt,
-                    negativePrompt,
-                }
-            };
-        }
-        throw new Error(result.message || "Failed to generate Character Bible.");
+        return { 
+            success: true, 
+            message: "Character Core generated successfully!",
+            data: {
+                bible: result,
+                renderPrompt,
+                negativePrompt,
+            }
+        };
     } catch (error) {
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, message: "Failed to generate character core.", error: message };
@@ -182,7 +179,7 @@ export async function generateCharacterPortrait(input: GeneratePortraitInput): P
             finalDescription = description.replace(/environment:.*?;/g, `(${backgroundStyle} background),`);
         }
 
-        const imageResult = await generateCharacterImage({ 
+        const imageResult = await generateCharacterImageFlow({ 
             description: finalDescription,
             negativePrompt: negativePrompt,
             engineConfig: imageEngineConfig 

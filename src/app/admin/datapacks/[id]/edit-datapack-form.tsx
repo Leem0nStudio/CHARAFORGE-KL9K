@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useEffect, useCallback } from 'react';
@@ -133,7 +132,6 @@ export function EditDataPackForm({ packId }: { packId: string }) {
             schema: data.schema || { characterProfileSchema: {}, promptTemplates: [] },
             isNsfw: data.isNsfw || false,
             imported: data.imported || false,
-            coverImageUrl: data.coverImageUrl || undefined,
           });
         } else {
           throw new Error('Datapack not found');

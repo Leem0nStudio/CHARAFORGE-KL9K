@@ -1,4 +1,3 @@
-
 import { Suspense } from 'react';
 import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 import { Loader2 } from 'lucide-react';

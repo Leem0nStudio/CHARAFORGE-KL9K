@@ -1,4 +1,3 @@
-
 import { EditDataPackForm } from '@/app/admin/datapacks/[id]/edit-datapack-form';
 import type { AsyncParams } from '@/types/next';
 

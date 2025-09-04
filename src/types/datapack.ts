@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 export interface Option {
@@ -92,9 +91,8 @@ export const DataPackFormSchema = z.object({
   tags: z.array(z.string()).optional(),
   schema: DataPackSchemaSchema,
   isNsfw: z.boolean().optional(),
-  extends: z.array(z.string()).optional(),
-  includes: z.array(z.string()).optional(),
   imported: z.boolean().optional(),
+  coverImageUrl: z.string().url().optional(), // Added for form handling
 });
 
 

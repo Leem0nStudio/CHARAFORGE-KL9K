@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useEffect, useRef } from 'react';
@@ -21,14 +20,14 @@ import { getModels } from '@/app/actions/ai-models';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Save, Image as ImageIcon, Package } from 'lucide-react';
-import { ModelSelectorModal } from './model-selector-modal';
-import { VisualModelSelector } from './visual-model-selector';
-import { DataPackSelector } from './datapack-selector';
+import { ModelSelectorModal } from '../components/model-selector-modal';
+import { VisualModelSelector } from '../components/visual-model-selector';
+import { DataPackSelector } from '../components/datapack-selector';
 import { geminiImagePlaceholder } from '@/lib/app-config';
-import { PromptEditor } from './prompt-editor';
+import { PromptEditor } from '../components/prompt-editor';
 import { useRouter } from 'next/navigation';
 import type { DataPack, PromptTemplate } from '@/types/datapack';
-import { CharacterRevealScreen } from './character/character-reveal-screen';
+import { CharacterRevealScreen } from '../components/character/character-reveal-screen';
 import { v4 as uuidv4 } from 'uuid';
 
 const coreFormSchema = z.object({
@@ -65,9 +64,8 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
   // State Management
   const [characterBibleResult, setCharacterBibleResult] = useState<CharacterBibleResult | null>(null);
   const [finalImageUrl, setFinalImageUrl] = useState<string | null>(null);
-  const [isDataPackWizardOpen, setIsDataPackWizardOpen] = useState(false);
-  const [activePack, setActivePack] = useState<DataPack | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
+  const [isDataPackSelectorOpen, setIsDataPackSelectorOpen] = useState(false);
+  const [activeDataPack, setActiveDataPack] = useState<DataPack | null>(null);
   const [showReveal, setShowReveal] = useState(false);
   
   // Model Selection
@@ -95,7 +93,7 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
         const [models, loras] = await Promise.all([getModels('model'), getModels('lora')]);
         setAvailableModels(models);
         setAvailableLoras(loras);
-      } catch (error) {
+      } catch {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not load AI models.' });
       } finally {
         setIsLoadingModels(false);
@@ -149,7 +147,7 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
 
                 const result = await saveCharacter({
                     bible: characterBibleResult.bible,
-                    dataPackId: activePack?.id,
+                    dataPackId: activeDataPack?.id,
                     textEngine: 'gemini',
                     imageEngine: selectedModel.engine,
                     wizardData: coreForm.watch('prompt') === characterBibleResult.renderPrompt ? null : coreForm.getValues(),
@@ -168,13 +166,8 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
             }
         });
     }
-    
-    const handleDataPackSelect = (pack: DataPack) => {
-        setActivePack(pack);
-        setSelectedTemplate(pack.schema.promptTemplates[0] || null);
-    };
 
-    const handleWizardComplete = (wizardData: Record<string, string>, pack: DataPack, template: PromptTemplate) => {
+    const handleWizardComplete = (wizardData: Record<string, any>, pack: DataPack, template: PromptTemplate) => {
         const expandedPrompt = expandTemplate(template.template, wizardData);
         
         const cleanedPrompt = expandedPrompt
@@ -184,26 +177,21 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
           .trim();
 
         coreForm.setValue('prompt', cleanedPrompt);
-        setIsDataPackWizardOpen(false);
+        setActiveDataPack(pack);
+        setIsDataPackSelectorOpen(false);
     };
 
     const handleBackFromWizard = () => {
-        setIsDataPackWizardOpen(false);
-        setActivePack(null);
-        setSelectedTemplate(null);
+        setIsDataPackSelectorOpen(false);
+        setActiveDataPack(null);
     };
 
-    if (isDataPackWizardOpen) {
-        return activePack && selectedTemplate ? (
-             <DataPackSelector.Wizard 
-                pack={activePack}
-                selectedTemplate={selectedTemplate}
-                onTemplateChange={(name) => setSelectedTemplate(activePack.schema.promptTemplates.find(t => t.name === name) || null)}
+    if (isDataPackSelectorOpen) {
+        return (
+            <DataPackSelector 
                 onWizardComplete={handleWizardComplete}
                 onBack={handleBackFromWizard}
-             />
-        ) : (
-            <DataPackSelector onSelectPack={handleDataPackSelect} onBack={handleBackFromWizard} />
+            />
         );
     }
 
@@ -238,7 +226,7 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>The Forge</span>
-             <Button variant="outline" size="sm" onClick={() => setIsDataPackWizardOpen(true)} disabled={isLoading}>
+             <Button variant="outline" size="sm" onClick={() => setIsDataPackSelectorOpen(true)} disabled={isLoading}>
                  <Package className="mr-2"/> DataPack Wizard
              </Button>
           </CardTitle>
@@ -253,13 +241,9 @@ export function CharacterGenerator({ authUser }: { authUser: UserProfile | null 
                     value={coreForm.watch('prompt')}
                     onChange={(newVal) => coreForm.setValue('prompt', newVal)}
                     disabled={isLoading}
-                    activePack={activePack}
-                    selectedTemplate={selectedTemplate}
-                    onTemplateChange={(name) => {
-                        if(activePack) {
-                            setSelectedTemplate(activePack.schema.promptTemplates.find(t => t.name === name) || null);
-                        }
-                    }}
+                    activePack={activeDataPack}
+                    selectedTemplate={null} // Simplified, wizard handles its own state
+                    onTemplateChange={() => {}} // Simplified
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <VisualModelSelector label="Base Model" model={selectedModel} onOpen={() => setIsModelModalOpen(true)} disabled={isLoading} isLoading={isLoadingModels} />
