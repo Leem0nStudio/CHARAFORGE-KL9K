@@ -5,13 +5,14 @@ import { Suspense } from 'react';
 import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 import { Loader2 } from 'lucide-react';
 
-interface EditDataPackLayoutProps {
+// This component now only sets up the layout and suspense boundary.
+export default async function EditDataPackLayout({
+  params,
+  children,
+}: {
   params: { id: string };
   children: React.ReactNode;
-}
-
-// This component now only sets up the layout and suspense boundary.
-export default async function EditDataPackLayout({ params, children }: EditDataPackLayoutProps) {
+}) {
   const { id } = params;
   const isNew = id === 'new';
   const title = isNew ? 'Create DataPack' : `Edit DataPack`;
