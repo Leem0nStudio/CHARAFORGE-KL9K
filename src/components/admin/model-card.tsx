@@ -9,9 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { enqueueModelSyncJob } from '@/app/actions/tasks';
+import { syncModelDirectly } from '@/app/actions/tasks';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { User, Download, FlaskConical, AlertTriangle, CheckCircle } from 'lucide-react';
+import { User, Download, FlaskConical, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // This component is defined and used only within this file.
@@ -22,9 +22,9 @@ function SyncButton({ model }: { model: AiModel }) {
 
     const handleSync = () => {
         startSyncTransition(async () => {
-            const result = await enqueueModelSyncJob(model.id);
+            const result = await syncModelDirectly(model.id);
             if (result.success) {
-                toast({ title: 'Sync Queued', description: result.message });
+                toast({ title: 'Sync Complete', description: result.message });
             } else {
                 toast({ variant: 'destructive', title: 'Sync Failed', description: result.error || result.message });
             }
@@ -38,11 +38,11 @@ function SyncButton({ model }: { model: AiModel }) {
     const syncStatus = model.syncStatus || 'notsynced';
     
     const statusMap = {
-        notsynced: { text: 'Sync Now', icon: <Download className="mr-2"/>, color: 'bg-blue-600 hover:bg-blue-700', disabled: false },
-        queued: { text: 'Queued', icon: <Download className="mr-2 animate-pulse"/>, color: 'bg-gray-500', disabled: true },
-        syncing: { text: 'Syncing...', icon: <Download className="mr-2 animate-spin"/>, color: 'bg-amber-500', disabled: true },
+        notsynced: { text: 'Sync Model', icon: <Download className="mr-2"/>, color: 'bg-blue-600 hover:bg-blue-700', disabled: false },
+        queued: { text: 'Queued', icon: <Loader2 className="mr-2 animate-pulse"/>, color: 'bg-gray-500', disabled: true },
+        syncing: { text: 'Syncing...', icon: <Loader2 className="mr-2 animate-spin"/>, color: 'bg-amber-500', disabled: true },
         synced: { text: 'Synced', icon: <CheckCircle className="mr-2"/>, color: 'bg-green-600', disabled: true },
-        error: { text: 'Error - Retry', icon: <AlertTriangle className="mr-2"/>, color: 'bg-red-600 hover:bg-red-700', disabled: false },
+        error: { text: 'Sync Error - Retry', icon: <AlertTriangle className="mr-2"/>, color: 'bg-red-600 hover:bg-red-700', disabled: false },
     }
     const currentStatus = statusMap[syncStatus];
 
@@ -53,7 +53,7 @@ function SyncButton({ model }: { model: AiModel }) {
             disabled={currentStatus.disabled || isSyncing}
             onClick={handleSync}
         >
-            {isSyncing ? <Download className="mr-2 animate-spin"/> : currentStatus.icon}
+            {isSyncing ? <Loader2 className="mr-2 animate-spin"/> : currentStatus.icon}
             {isSyncing ? "Please Wait..." : currentStatus.text}
         </Button>
     );
@@ -120,5 +120,3 @@ export function ModelCard({ model }: { model: AiModel }) {
         </Card>
     )
 }
-
-    

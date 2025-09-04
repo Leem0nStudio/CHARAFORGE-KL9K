@@ -26,7 +26,13 @@ async function getCivitaiDownloadUrl(versionId: string): Promise<string> {
     return `${downloadUrl}?token=${apiKey}`;
 }
 
-export async function enqueueModelSyncJob(modelId: string): Promise<ActionResponse> {
+/**
+ * Performs a direct, synchronous download of a model from Civitai and uploads it to storage.
+ * This replaces the previous Cloud Tasks-based asynchronous approach.
+ * @param modelId The ID of the model to sync.
+ * @returns A promise that resolves to an ActionResponse.
+ */
+export async function syncModelDirectly(modelId: string): Promise<ActionResponse> {
     await verifyIsAdmin();
     const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
@@ -46,6 +52,7 @@ export async function enqueueModelSyncJob(modelId: string): Promise<ActionRespon
         
         const response = await axios.get(downloadUrl, { responseType: 'stream' });
         
+        // This logic assumes the model name includes the extension, e.g., "MyModel.safetensors"
         const fileExtension = modelData.name?.split('.').pop() || 'safetensors';
         const blobName = `models/${modelData.name.replace(/\s+/g, '_')}/${modelData.version_id}.${fileExtension}`;
         
