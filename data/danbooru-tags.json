@@ -1,55 +1,33 @@
+
 {
   "headwear": [
-    {
-      "name": "little_red_riding_hood_(fairy_tale)",
-      "post_count": 2400
-    },
-    {
-      "name": "little_red_riding_hood_(fairy_tale_character)",
-      "post_count": 2144
-    },
-    {
-      "name": "ookami_mio_(hoodie)",
-      "post_count": 1121
-    },
-    {
-      "name": "little_red_riding_hood_(fairy_tale_character)_(cosplay)",
-      "post_count": 1108
-    },
-    {
-      "name": "rapi_(red_hood)_(red_flavor)_(nikke)",
-      "post_count": 289
-    },
-    {
-      "name": "shinohata_sachie_(hamsterfragment)",
-      "post_count": 284
-    },
-    {
-      "name": "capcom_vs._snk",
-      "post_count": 223
-    },
-    {
-      "name": "capcom_vs._snk_2",
-      "post_count": 216
-    },
-    {
-      "name": "ralsei_(hat)",
-      "post_count": 206
-    },
-    {
-      "name": "tokino_sora_(hoodie)",
-      "post_count": 133
-    },
-    {
-      "name": "yuhata_(yuh4t4)",
-      "post_count": 104
-    }
+    { "name": "beret", "post_count": 27360 },
+    { "name": "hairband", "post_count": 249603 },
+    { "name": "hairpin", "post_count": 96739 },
+    { "name": "hat", "post_count": 313175 },
+    { "name": "helmet", "post_count": 104768 },
+    { "name": "hood", "post_count": 105952 },
+    { "name": "tiara", "post_count": 48216 },
+    { "name": "witch hat", "post_count": 42721 }
   ],
   "topwear": [
-    {
-      "name": "cu_chulainn_(aloha_shirt)_(fate)",
-      "post_count": 238
-    }
+    { "name": "armor", "post_count": 218206 },
+    { "name": "blouse", "post_count": 101018 },
+    { "name": "corset", "post_count": 55191 },
+    { "name": "hoodie", "post_count": 100492 },
+    { "name": "jacket", "post_count": 224424 },
+    { "name": "pauldrons", "post_count": 29851 },
+    { "name": "shirt", "post_count": 473489 },
+    { "name": "sweater", "post_count": 154611 },
+    { "name": "vest", "post_count": 94848 }
   ],
-  "bottomwear": []
+  "bottomwear": [
+    { "name": "greaves", "post_count": 14034 },
+    { "name": "jeans", "post_count": 78601 },
+    { "name": "leggings", "post_count": 94392 },
+    { "name": "pants", "post_count": 139178 },
+    { "name": "shorts", "post_count": 182745 },
+    { "name": "skirt", "post_count": 491873 },
+    { "name": "trousers", "post_count": 24200 }
+  ]
 }
