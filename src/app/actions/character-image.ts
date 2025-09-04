@@ -1,5 +1,6 @@
 
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -18,9 +19,9 @@ type ActionResponse = {
 };
 
 export async function generateNewCharacterImage(characterId: string, description: string, engineConfig: ImageEngineConfig): Promise<ActionResponse & { newImageUrl?: string }> {
-     const uid = await verifyAndGetUid(); 
-     const supabase = getSupabaseServerClient();
+     const supabase = await getSupabaseServerClient();
      if (!supabase) return { success: false, message: 'Database service is not available.' };
+     const uid = await verifyAndGetUid(); 
      
      try {
         const { imageUrl } = await generateCharacterImageFlow({ description, engineConfig });
@@ -30,7 +31,7 @@ export async function generateNewCharacterImage(characterId: string, description
         }
         
         const destinationPath = `usersImg/${uid}/${characterId}/${uuidv4()}.png`;
-        const publicUrl = await uploadToStorage(imageUrl, destinationPath);
+        const publicUrl = await uploadToStorage(imageUrl, destinationPath, supabase);
         
         // Fetch current gallery and append
         const { data: characterData, error: fetchError } = await supabase
@@ -66,9 +67,9 @@ export async function updateCharacterImages(
   gallery: string[],
   primaryImageUrl: string,
 ): Promise<ActionResponse> {
-  const uid = await verifyAndGetUid();
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { success: false, message: 'Database service is not available.' };
+  const uid = await verifyAndGetUid();
   
   try {
      const { data: characterData, error: fetchError } = await supabase
@@ -125,9 +126,9 @@ export async function updateCharacterImages(
 
 
 export async function reprocessCharacterImage(characterId: string): Promise<ActionResponse> {
-    const uid = await verifyAndGetUid();
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) return { success: false, message: 'Database service is not available.' };
+    const uid = await verifyAndGetUid();
     
     try {
         const { data: characterData, error: fetchError } = await supabase
@@ -166,7 +167,7 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
             .toBuffer();
 
         const destinationPath = `showcase-images/${uid}/${characterId}/${uuidv4()}.webp`;
-        const showcaseImageUrl = await uploadToStorage(processedBuffer, destinationPath);
+        const showcaseImageUrl = await uploadToStorage(processedBuffer, destinationPath, supabase);
 
         const newVisuals = {
             ...characterData.visual_details,
@@ -189,10 +190,21 @@ export async function reprocessCharacterImage(characterId: string): Promise<Acti
     } catch(error) {
         const message = error instanceof Error ? error.message : 'Failed to reprocess image.';
         console.error("Reprocess Error:", message);
-        await supabase
-            .from('characters')
-            .update({ visual_details: { showcaseProcessingStatus: 'failed' } })
-            .eq('id', characterId);
+        const supabaseClient = await getSupabaseServerClient();
+        if (supabaseClient) {
+            const { data: characterData, error: fetchError } = await supabaseClient
+                .from('characters')
+                .select('visual_details')
+                .eq('id', characterId)
+                .single();
+            
+            if (characterData) {
+                await supabaseClient
+                    .from('characters')
+                    .update({ visual_details: { ...characterData.visual_details, showcaseProcessingStatus: 'failed' } })
+                    .eq('id', characterId);
+            }
+        }
          revalidatePath(`/characters/${characterId}/edit`);
         return { success: false, message };
     }

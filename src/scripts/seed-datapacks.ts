@@ -12,6 +12,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!supabaseUrl || !supabaseKey) {
   throw new Error('Supabase URL or Service Role Key is not set in environment variables.');
 }
+// This client is created with the service role key for admin-level access during seeding.
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 
@@ -78,8 +79,8 @@ async function seedDataPacks() {
                  if (coverImageExists) {
                     const fileContent = await fs.readFile(coverImagePath);
                     const destination = `datapacks/${packId}/cover.png`;
-                    // Use the centralized uploadToStorage service
-                    coverImageUrl = await uploadToStorage(fileContent, destination);
+                    // Use the centralized uploadToStorage service, passing our admin client
+                    coverImageUrl = await uploadToStorage(fileContent, destination, supabase);
                     console.log(`- Cover image uploaded to ${coverImageUrl}`);
                  } else {
                     console.log('- No cover image found for this pack.');

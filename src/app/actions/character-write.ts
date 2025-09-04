@@ -1,5 +1,6 @@
 
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -105,7 +106,7 @@ export async function saveCharacter(input: SaveCharacterInput, imageFile: File) 
     
     // The image file is now uploaded directly from the client via this server action
     const destinationPath = `raw-uploads/${userId}/${characterId}/${imageFile.name}`;
-    const storageUrl = await uploadToStorage(imageFile, destinationPath);
+    const storageUrl = await uploadToStorage(imageFile, destinationPath, supabase);
 
     const archetype = bible.identity.role;
     const isPlayable = !!archetype;
@@ -672,7 +673,7 @@ export async function rollForCharacterStats(characterId: string): Promise<Action
         if (supabase) {
             await supabase
                 .from('characters')
-                .update({ rpg_details: { statsStatus: 'failed', skillsStatus: 'failed' }})
+                .update({ rpg_details: { ...((await supabase.from('characters').select('rpg_details').eq('id', characterId).single()).data?.rpg_details), statsStatus: 'failed', skillsStatus: 'failed' }})
                 .eq('id', characterId);
         }
         return { success: false, message };

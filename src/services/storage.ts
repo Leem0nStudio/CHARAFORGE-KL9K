@@ -2,21 +2,25 @@
 'use server';
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * A centralized, robust function to upload a file to Supabase Storage.
  * It can handle both File objects (from form data) and Buffers (from AI generation).
+ * It now accepts an optional Supabase client instance to be usable from different environments.
  * 
  * @param {File | Buffer | ArrayBuffer | string} fileSource The source of the file (File, Buffer, ArrayBuffer, or a base64 data URI).
  * @param {string} destinationPath The desired path within the bucket (e.g., 'avatars/userId').
+ * @param {SupabaseClient} [supabaseClient] - Optional Supabase client instance. If not provided, it will create one for server-side context.
  * @returns {Promise<string>} A promise that resolves to the public URL of the uploaded file.
  * @throws {Error} Throws an error if the upload fails.
  */
 export async function uploadToStorage(
     fileSource: File | Buffer | ArrayBuffer | string,
-    destinationPath: string
+    destinationPath: string,
+    supabaseClient?: SupabaseClient
 ): Promise<string> {
-    const supabase = await getSupabaseServerClient();
+    const supabase = supabaseClient || await getSupabaseServerClient();
     if (!supabase) {
         throw new Error("Storage service is not available. Supabase client failed to initialize.");
     }
