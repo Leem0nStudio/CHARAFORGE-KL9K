@@ -13,7 +13,6 @@ import { EditVersionsTab } from './edit-versions-tab';
 import { EditSharingTab } from './edit-sharing-tab';
 import { RpgAttributesTab } from './rpg-attributes-tab';
 import { Loader2 } from 'lucide-react';
-import type { AsyncParams } from '@/types/next';
 
 async function EditCharacterTabs({ characterId, defaultTab }: { characterId: string; defaultTab: string }) {
   let uid: string;
@@ -64,12 +63,15 @@ async function EditCharacterTabs({ characterId, defaultTab }: { characterId: str
   );
 }
 
-// This page now correctly uses AsyncParams and handles searchParams inside the component.
+// This page now correctly uses the standard Next.js props signature.
 export default async function EditCharacterPage({
   params,
   searchParams,
-}: AsyncParams<{ id: string }> & { searchParams?: { [key:string]: string | string[] | undefined }}) {
-  const { id } = await params;
+}: {
+  params: { id: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
+}) {
+  const { id } = params;
   const defaultTab = typeof searchParams?.tab === 'string' ? searchParams.tab : 'details';
   const validTabs = ['details', 'gallery', 'rpg', 'versions', 'sharing'];
   const finalDefaultTab = validTabs.includes(defaultTab) ? defaultTab : 'details';
