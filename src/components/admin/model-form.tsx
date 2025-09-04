@@ -1,12 +1,12 @@
-
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { addAiModelFromSource, deleteModel, upsertModel } from '@/app/actions/ai-models';
+import { deleteModel, upsertModel } from '@/app/actions/ai-models';
 import { UpsertModelSchema, type AiModel, type UpsertAiModel } from '@/types/ai-model';
+import { ModelSourceImporter } from '@/components/admin/model-source-importer';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,6 @@ import { Textarea } from '../ui/textarea';
 import Link from 'next/link';
 import { ScrollArea } from '../ui/scroll-area';
 
-
 const engineDescriptions: Record<string, string> = {
     comfyui: "For self-hosted ComfyUI or A1111 servers. Requires a direct URL to the server's API.",
     rundiffusion: "For private, high-performance RunDiffusion servers. Requires the session's API URL.",
@@ -31,13 +30,10 @@ const engineDescriptions: Record<string, string> = {
     openrouter: "A meta-API that provides access to various models, including DALL-E, SD3, and more.",
 };
 
-
 function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, isOpen: boolean, setIsOpen: (isOpen: boolean) => void }) {
     const [isProcessing, startTransition] = useTransition();
     const { toast } = useToast();
     const isEditing = !!model;
-    const [importSource, setImportSource] = useState<'civitai' | 'modelslab'>('civitai');
-    const [sourceModelId, setSourceModelId] = useState('');
     const [activeTab, setActiveTab] = useState(isEditing ? 'manual' : 'import');
 
     const form = useForm<UpsertAiModel>({
@@ -58,6 +54,22 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
         },
     });
 
+    const handleDataFetched = (data: Partial<UpsertAiModel>) => {
+        form.reset({
+            name: data.name || '',
+            type: data.type || 'lora',
+            engine: data.engine || 'huggingface',
+            hf_id: data.hf_id || '',
+            civitaiModelId: data.civitaiModelId || '',
+            modelslabModelId: data.modelslabModelId || '',
+            versionId: data.versionId || '',
+            baseModel: data.baseModel || '',
+            triggerWords: Array.isArray(data.triggerWords) ? data.triggerWords.join(', ') : '',
+        });
+        setActiveTab('manual');
+        toast({ title: 'Data Fetched!', description: 'Model info has been pre-filled. Please review and save manually.' });
+    };
+
     const onSubmit = (values: UpsertAiModel) => {
         startTransition(async () => {
             const finalValues = { ...values };
@@ -77,6 +89,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                 toast({ title: 'Success', description: result.message });
                 setIsOpen(false);
                 form.reset();
+                setActiveTab(isEditing ? 'manual' : 'import');
             } else {
                 toast({ variant: 'destructive', title: 'Error', description: result.error });
             }
@@ -95,34 +108,6 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
             }
         });
     };
-    
-    const handleSourceImport = () => {
-        if (!sourceModelId) {
-            toast({ variant: 'destructive', title: 'Error', description: `A Model ID from ${importSource} is required.`});
-            return;
-        }
-
-        startTransition(async () => {
-            const result = await addAiModelFromSource(importSource, sourceModelId);
-            if (result.success && result.data) {
-                form.reset({
-                    name: result.data.name || '',
-                    type: result.data.type || 'lora',
-                    engine: result.data.engine || 'huggingface',
-                    hf_id: result.data.hf_id || '',
-                    civitaiModelId: result.data.civitaiModelId || '',
-                    modelslabModelId: result.data.modelslabModelId || '',
-                    versionId: result.data.versionId || '',
-                    baseModel: result.data.baseModel || '',
-                    triggerWords: result.data.triggerWords?.join(', ') || '',
-                });
-                setActiveTab('manual'); 
-                toast({ title: 'Data Fetched!', description: 'Model info has been pre-filled. Please review and save manually.' });
-            } else {
-                toast({ variant: 'destructive', title: 'Import Error', description: result.error || result.message });
-            }
-        });
-    }
 
     const watchEngine = form.watch('engine');
     const watchType = form.watch('type');
@@ -295,33 +280,9 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                         </TabsContent>
                         
                         {!isEditing && (
-                             <TabsContent value="import">
-                                <div className="space-y-4">
-                                     <div className="space-y-2">
-                                        <Label>Import Source</Label>
-                                        <Select onValueChange={(value: 'civitai' | 'modelslab') => setImportSource(value)} defaultValue={importSource}>
-                                            <SelectTrigger><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="civitai">Civitai</SelectItem>
-                                                <SelectItem value="modelslab">ModelsLab</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="sourceModelId">Model ID or Slug from {importSource}</Label>
-                                        <Input
-                                            id="sourceModelId"
-                                            placeholder="e.g., 9251 or a-text-slug"
-                                            value={sourceModelId}
-                                            onChange={(e) => setSourceModelId(e.target.value)}
-                                        />
-                                    </div>
-                                     <Button type="button" onClick={handleSourceImport} disabled={isProcessing} className="w-full">
-                                        {isProcessing && <Loader2 className="animate-spin mr-2"/>}
-                                        Fetch & Pre-fill Form
-                                    </Button>
-                                </div>
-                             </TabsContent>
+                            <TabsContent value="import">
+                                <ModelSourceImporter onDataFetched={handleDataFetched} />
+                            </TabsContent>
                         )}
                         </div>
                         </ScrollArea>
@@ -348,11 +309,13 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
                         )}
                         {!isEditing && <div></div>} 
                         <div className="flex gap-2">
-                            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isProcessing}>
-                                {isProcessing && <Loader2 className="animate-spin mr-2"/>}
-                                {isEditing ? 'Save Changes' : 'Add Manually'}
-                            </Button>
+                             <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
+                            {activeTab === 'manual' && (
+                                <Button type="submit" disabled={isProcessing}>
+                                    {isProcessing && <Loader2 className="animate-spin mr-2"/>}
+                                    {isEditing ? 'Save Changes' : 'Add Manually'}
+                                </Button>
+                            )}
                         </div>
                     </DialogFooter>
                 </form>
@@ -364,6 +327,7 @@ function AddOrEditModelDialog({ model, isOpen, setIsOpen }: { model?: AiModel, i
 export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: boolean }) {
     const [isOpen, setIsOpen] = useState(false);
 
+    // When editing, we don't need the importer, just the dialog.
     if (isEditing && model) {
         return (
             <>
@@ -374,7 +338,8 @@ export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: b
             </>
         )
     }
-
+    
+    // For adding a new model, we also show the dialog.
     return (
         <>
             <Button onClick={() => setIsOpen(true)}>
@@ -384,5 +349,3 @@ export function ModelForm({ model, isEditing }: { model?: AiModel, isEditing?: b
         </>
     );
 }
-
-    
