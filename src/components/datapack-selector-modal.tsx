@@ -2,7 +2,7 @@
 'use client';
 
 // This file is deprecated and no longer used by the main generator flow.
-// The new full-screen cascader UI is in `datapack-selector.tsx`.
+// The new full-screen UI is in `datapack-selector.tsx`.
 // This file is kept for posterity or if a modal-based selector is needed elsewhere in the future.
 
 import { Dialog } from '@/components/ui/dialog';

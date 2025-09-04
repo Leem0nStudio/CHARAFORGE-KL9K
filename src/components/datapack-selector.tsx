@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { DataPackCard } from '@/components/datapack/datapack-card';
 import { motion } from 'framer-motion';
-import { getDatasetForDataPack } from '@/services/composition';
+import { getDatasetForDataPack, expandTemplate } from '@/services/composition';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
@@ -48,16 +48,13 @@ function DataPackWizard({
     pack, 
     onWizardComplete, 
     onBack,
-    selectedTemplate,
-    onTemplateChange
 }: { 
     pack: DataPack, 
     onWizardComplete: (wizardData: Record<string, any>, pack: DataPack, template: PromptTemplate) => void, 
     onBack: () => void,
-    selectedTemplate: PromptTemplate | null;
-    onTemplateChange: (templateName: string) => void;
 }) {
     const { handleSubmit, control, setValue } = useForm();
+    const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(pack.schema.promptTemplates[0] || null);
     
     const dataset = getDatasetForDataPack(pack);
 
@@ -116,7 +113,10 @@ function DataPackWizard({
                     <CardContent className="flex-grow overflow-hidden space-y-4">
                         <div>
                              <Label>Prompt Template</Label>
-                             <Select onValueChange={onTemplateChange} defaultValue={selectedTemplate.name}>
+                             <Select 
+                                onValueChange={(name) => setSelectedTemplate(pack.schema.promptTemplates.find(t => t.name === name) || null)} 
+                                defaultValue={selectedTemplate.name}
+                            >
                                  <SelectTrigger><SelectValue/></SelectTrigger>
                                  <SelectContent>
                                      {pack.schema.promptTemplates.map(t => (
@@ -214,12 +214,30 @@ function PackGallery({ onChoosePack, onBack }: { onChoosePack: (pack: DataPack) 
 }
 
 interface DataPackSelectorProps {
-    onSelectPack: (pack: DataPack) => void;
     onBack: () => void;
+    onWizardComplete: (wizardData: Record<string, any>, pack: DataPack, template: PromptTemplate) => void, 
 }
 
-export function DataPackSelector({ onSelectPack, onBack }: DataPackSelectorProps) {
-    return <PackGallery onChoosePack={onSelectPack} onBack={onBack} />;
-}
+export function DataPackSelector({ onBack, onWizardComplete }: DataPackSelectorProps) {
+    const [selectedPack, setSelectedPack] = useState<DataPack | null>(null);
 
-DataPackSelector.Wizard = DataPackWizard;
+    const handleBack = () => {
+        if (selectedPack) {
+            setSelectedPack(null); // Go back to pack gallery
+        } else {
+            onBack(); // Go back to generator
+        }
+    }
+
+    if (selectedPack) {
+        return (
+            <DataPackWizard 
+                pack={selectedPack}
+                onWizardComplete={onWizardComplete}
+                onBack={handleBack}
+            />
+        );
+    }
+    
+    return <PackGallery onChoosePack={setSelectedPack} onBack={handleBack} />;
+}
