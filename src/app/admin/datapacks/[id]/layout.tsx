@@ -4,14 +4,16 @@
 import { Suspense } from 'react';
 import { AdminPageLayout } from '@/components/admin/admin-page-layout';
 import { Loader2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 // This component now only sets up the layout and suspense boundary.
+// The problematic interface has been removed and props are typed inline.
 export default async function EditDataPackLayout({
   params,
   children,
 }: {
   params: { id: string };
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const { id } = params;
   const isNew = id === 'new';
