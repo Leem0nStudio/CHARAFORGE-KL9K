@@ -63,13 +63,15 @@ async function EditCharacterTabs({ characterId, defaultTab }: { characterId: str
   );
 }
 
+interface EditCharacterPageProps {
+  params: { id: string };
+  searchParams?: { [key:string]: string | string[] | undefined };
+}
+
 export default async function EditCharacterPage({
   params,
   searchParams,
-}: {
-  params: { id: string };
-  searchParams?: { [key: string]: string | string[] | undefined };
-}) {
+}: EditCharacterPageProps) {
   const defaultTab = typeof searchParams?.tab === 'string' ? searchParams.tab : 'details';
   const validTabs = ['details', 'gallery', 'rpg', 'versions', 'sharing'];
   const finalDefaultTab = validTabs.includes(defaultTab) ? defaultTab : 'details';
