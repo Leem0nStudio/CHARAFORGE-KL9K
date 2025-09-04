@@ -7,20 +7,11 @@ import { Loader2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 // This component now only sets up the layout and suspense boundary.
-// The problematic interface has been removed and props are typed inline.
-export default async function EditDataPackLayout({
-  params,
-  children,
-}: {
-  params: { id: string };
-  children: ReactNode;
-}) {
-  const { id } = params;
-  const isNew = id === 'new';
-  const title = isNew ? 'Create DataPack' : `Edit DataPack`;
-
+// It has been simplified to match the expected signature for a Next.js layout.
+export default function EditDataPackLayout({ children }: { children: ReactNode }) {
+  // The title is now managed by the child page component to avoid complexity here.
   return (
-    <AdminPageLayout title={title}>
+    <AdminPageLayout title="DataPack Editor">
         <Suspense fallback={
             <div className="flex justify-center items-center p-16">
                 <Loader2 className="h-8 w-8 animate-spin" />
